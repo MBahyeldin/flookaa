@@ -1,0 +1,183 @@
+all:
+  hosts:
+    main:
+      ansible_host: "{{ ansible_host_machine.ansible_host }}"
+      ansible_connection: ssh
+      ansible_ssh_private_key_file: ~/ssh-keys/lxd_dev.pem
+      ansible_user: ubuntu
+      ansible_python_interpreter: /usr/bin/python3
+      ansible_become: true
+      ansible_become_method: sudo
+      ansible_become_user: root
+
+  vars:
+    lxd_containers:
+      - name: "redis"
+        source_alias: "24.04"
+        source_type: "image"
+        profiles:
+          - "default"
+        state: "started"
+        container_user: "ubuntu"
+        container_ssh_key: "~/ssh-keys/lxd_dev.pem"
+        container_memory_limit: "4GB"
+        container_cpu_limit: "2"
+        container_root_disk_size: "10GB"
+        ipv4_address: "{{ containers.redis.ip }}"
+
+        devices:
+          redisport:
+            connect: tcp:127.0.0.1:6379
+            listen: tcp:0.0.0.0:6379
+            type: proxy
+          sshport:
+            connect: tcp:127.0.0.1:22
+            listen: "tcp:0.0.0.0:{{ containers.redis.ports.ssh }}"
+            type: proxy
+          gRPCport:
+            connect: "tcp:127.0.0.1:{{ containers.redis.ports.grpc }}"
+            listen: "tcp:0.0.0.0:{{ containers.redis.ports.grpc }}"
+            type: proxy
+
+      - name: "app"
+        source_alias: "24.04"
+        source_type: "image"
+        profiles:
+          - "default"
+        state: "started"
+        container_user: "ubuntu"
+        container_ssh_key: "~/ssh-keys/lxd_dev.pem"
+        container_memory_limit: "4GB"
+        container_cpu_limit: "2"
+        container_root_disk_size: "10GB"
+        ipv4_address: "{{ containers.app.ip }}"
+
+        devices:
+          sshport:
+            connect: tcp:127.0.0.1:22
+            listen: "tcp:0.0.0.0:{{ containers.app.ports.ssh }}"
+            type: proxy
+          gRPCport:
+            connect: "tcp:127.0.0.1:{{ containers.app.ports.grpc }}"
+            listen: "tcp:0.0.0.0:{{ containers.app.ports.grpc }}"
+            type: proxy
+          promtail:
+            connect: "tcp:127.0.0.1:9080"
+            listen: "tcp:0.0.0.0:9030"
+            type: proxy
+
+      - name: "s3"
+        source_alias: "24.04"
+        source_type: "image"
+        profiles:
+          - "default"
+        state: "started"
+        container_user: "ubuntu"
+        container_ssh_key: "~/ssh-keys/lxd_dev.pem"
+        container_memory_limit: "4GB"
+        container_cpu_limit: "2"
+        container_root_disk_size: "10GB"
+        ipv4_address: "{{ containers.s3.ip }}"
+
+        devices:
+          sshport:
+            connect: tcp:127.0.0.1:22
+            listen: "tcp:0.0.0.0:{{ containers.s3.ports.ssh }}"
+            type: proxy
+          gRPCport:
+            connect: "tcp:127.0.0.1:{{ containers.s3.ports.grpc }}"
+            listen: "tcp:0.0.0.0:{{ containers.s3.ports.grpc }}"
+            type: proxy
+
+      - name: "postgres"
+        source_alias: "24.04"
+        source_type: "image"
+        profiles:
+          - "default"
+        state: "started"
+        container_user: "ubuntu"
+        container_ssh_key: "~/ssh-keys/lxd_dev.pem"
+        container_memory_limit: "4GB"
+        container_cpu_limit: "2"
+        container_root_disk_size: "10GB"
+        ipv4_address: "{{ containers.postgres.ip }}"
+
+        devices:
+          sshport:
+            connect: tcp:127.0.0.1:22
+            listen: "tcp:0.0.0.0:{{ containers.postgres.ports.ssh }}"
+            type: proxy
+          postgres:
+            connect: "tcp:127.0.0.1:{{ containers.postgres.ports.postgres }}"
+            listen: "tcp:0.0.0.0:{{ containers.postgres.ports.postgres }}"
+            type: proxy
+
+      - name: "nats"
+        source_alias: "24.04"
+        source_type: "image"
+        profiles:
+          - "default"
+        state: "started"
+        container_user: "ubuntu"
+        container_ssh_key: "~/ssh-keys/lxd_dev.pem"
+        container_memory_limit: "4GB"
+        container_cpu_limit: "2"
+        container_root_disk_size: "10GB"
+        ipv4_address: "{{ containers.nats.ip }}"
+        devices:
+          sshport:
+            connect: tcp:127.0.0.1:22
+            listen: "tcp:0.0.0.0:{{ containers.nats.ports.ssh }}"
+            type: proxy
+          natsport:
+            connect: "tcp:127.0.0.1:{{ containers.nats.ports.nats }}"
+            listen: "tcp:0.0.0.0:{{ containers.nats.ports.nats }}"
+            type: proxy
+          httpPort:
+            connect: "tcp:127.0.0.1:{{ containers.nats.ports.http }}"
+            listen: "tcp:0.0.0.0:{{ containers.nats.ports.http }}"
+            type: proxy
+
+      - name: "grafana"
+        source_alias: "24.04"
+        source_type: "image"
+        profiles:
+          - "default"
+        state: "started"
+        container_user: "ubuntu"
+        container_ssh_key: "~/ssh-keys/lxd_dev.pem"
+        container_memory_limit: "4GB"
+        container_cpu_limit: "2"
+        container_root_disk_size: "10GB"
+        ipv4_address: "{{ containers.grafana.ip }}"
+        devices:
+          sshport:
+            connect: tcp:127.0.0.1:22
+            listen: "tcp:0.0.0.0:{{ containers.grafana.ports.ssh }}"
+            type: proxy
+          httpport:
+            connect: "tcp:127.0.0.1:{{ containers.grafana.ports.http }}"
+            listen: "tcp:0.0.0.0:{{ containers.grafana.ports.http }}"
+            type: proxy
+
+      - name: "neo4j"
+        source_alias: "24.04"
+        source_type: "image"
+        profiles:
+          - "default"
+        state: "started"
+        container_user: "ubuntu"
+        container_ssh_key: "~/ssh-keys/lxd_dev.pem"
+        container_memory_limit: "4GB"
+        container_cpu_limit: "2"
+        container_root_disk_size: "10GB"
+        ipv4_address: "{{ containers.neo4j.ip }}"
+        devices:
+          sshport:
+            connect: tcp:127.0.0.1:22
+            listen: "tcp:0.0.0.0:{{ containers.neo4j.ports.ssh }}"
+            type: proxy
+          neo4jport:
+            connect: "tcp:127.0.0.1:{{ containers.neo4j.ports.bolt }}"
+            listen: "tcp:0.0.0.0:{{ containers.neo4j.ports.bolt }}"
+            type: proxy

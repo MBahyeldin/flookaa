@@ -1,0 +1,15 @@
+mutation CreateLike(
+  $targetId: ObjectId!
+  $targetType: PostType!
+  $owner: OwnerInput!
+  $liked: Boolean!
+) {
+  createLike(
+    input: {
+      owner: $owner
+      targetId: $targetId
+      targetType: $targetType
+      liked: $liked
+    }
+  )
+}

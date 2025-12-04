@@ -1,0 +1,66 @@
+---
+- name: Install Alloy
+  ansible.builtin.apt:
+    name: alloy
+    state: present
+
+- name: Copy Alloy environment file
+  ansible.builtin.template:
+    src: shared/alloy.env.j2
+    dest: /etc/default/alloy
+    mode: "0644"
+    owner: root
+    group: root
+  notify: Restart Alloy
+
+- name: Copy Alloy configuration file
+  ansible.builtin.template:
+    src: shared/alloy.config.yml.j2
+    dest: /etc/alloy/config.alloy
+    mode: "0644"
+    owner: alloy
+    group: root
+  notify: Restart Alloy
+
+- name: Create Alloy log directory
+  ansible.builtin.file:
+    path: /var/log/alloy
+    state: directory
+    mode: "0755"
+    owner: alloy
+    group: root
+
+- name: Create Alloy data directory
+  ansible.builtin.file:
+    path: /var/lib/alloy/data
+    state: directory
+    mode: "0755"
+    owner: alloy
+    group: root
+
+- name: Copy alloy systemd service file
+  ansible.builtin.template:
+    src: shared/alloy.service.j2
+    dest: /usr/lib/systemd/system/alloy.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Alloy
+
+- name: Add alloy user to systemd-journal group
+  ansible.builtin.user:
+    name: alloy
+    groups: systemd-journal
+    append: true
+
+- name: Ensure Alloy is started and enabled
+  ansible.builtin.systemd:
+    name: alloy
+    enabled: true
+    state: started
+
+- name: Open Alloy port (9080)
+  community.general.ufw:
+    rule: allow
+    port: 9080
+    proto: tcp

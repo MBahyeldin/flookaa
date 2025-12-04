@@ -1,0 +1,42 @@
+// For a full configuration reference, see https://grafana.com/docs/alloy
+logging {
+  level = "warn"
+}
+
+loki.write "grafana_loki" {
+  endpoint {
+    url = "http://{{ containers.grafana.ip }}:3100/loki/api/v1/push"
+  }
+}
+
+loki.source.journal "{{ alloy_monitor_service }}_journal" {
+  max_age       = "24h0m0s"
+  relabel_rules = discovery.relabel.logs_integrations_integrations_node_exporter_journal_scrape.rules
+  forward_to    = [loki.write.grafana_loki.receiver]
+
+  matches = "_SYSTEMD_UNIT={{ alloy_monitor_service }}.service"
+}
+
+discovery.relabel "logs_integrations_integrations_node_exporter_journal_scrape" {
+  targets = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+
+  rule {
+    source_labels = ["__journal__boot_id"]
+    target_label  = "boot_id"
+  }
+
+  rule {
+    source_labels = ["__journal__transport"]
+    target_label  = "transport"
+  }
+
+  rule {
+    source_labels = ["__journal_priority_keyword"]
+    target_label  = "level"
+  }
+}

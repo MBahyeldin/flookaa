@@ -1,0 +1,232 @@
+---
+- name: Setup grafana
+  hosts: grafana
+  gather_facts: true
+  become: true
+  vars_files:
+    - universe.yml
+  roles:
+    - init_container
+
+  tasks:
+    - name: Install Grafana
+      ansible.builtin.apt:
+        name: grafana
+        state: "{{ grafana_version }}"
+
+    - name: Enable and start Grafana service
+      ansible.builtin.systemd:
+        name: grafana-server
+        enabled: true
+        state: started
+
+    - name: Ensure Grafana listens on all interfaces
+      ansible.builtin.lineinfile:
+        path: /etc/grafana/grafana.ini
+        regexp: '^;?http_addr ='
+        line: 'http_addr = 0.0.0.0'
+        backup: true
+      notify: Restart Grafana
+
+    - name: Reset Grafana admin password
+      ansible.builtin.command: >
+        grafana-cli --homepath /usr/share/grafana admin reset-admin-password {{ grafana_admin_password }}
+      environment:
+        GF_PATHS_CONFIG: /etc/grafana/grafana.ini
+        GF_PATHS_DATA: /var/lib/grafana
+        GF_PATHS_HOME: /usr/share/grafana
+      args:
+        chdir: /usr/share/grafana
+      register: grafana_reset
+      when: not ansible_facts['files']['/var/lib/grafana/.admin_password_set'] is defined
+      changed_when: grafana_reset.rc == 0
+
+    - name: Mark password as set
+      ansible.builtin.file:
+        path: /var/lib/grafana/.admin_password_set
+        state: touch
+        mode: '0644'
+      when: grafana_reset.rc == 0
+      changed_when: false
+
+
+    - name: Open Grafana port (3000)
+      community.general.ufw:
+        rule: allow
+        port: 3000
+        proto: tcp
+
+    - name: Create loki user
+      ansible.builtin.user:
+        name: loki
+        system: true
+        shell: /bin/bash
+        create_home: true
+        home: /home/loki
+
+    - name: Create loki group
+      ansible.builtin.group:
+        name: loki
+        system: true
+
+    - name: Install loki
+      ansible.builtin.apt:
+        name: loki
+        state: present
+
+    - name: Start loki service
+      ansible.builtin.systemd:
+        name: loki
+        enabled: true
+        state: started
+
+    - name: Open Loki port (3100)
+      community.general.ufw:
+        rule: allow
+        port: 3100
+        proto: tcp
+
+    - name: Copy Loki configuration file
+      ansible.builtin.template:
+        src: grafana/loki-config.yml.j2
+        dest: /etc/loki/config.yml
+        owner: loki
+        group: loki
+        mode: '0644'
+      notify: Restart Loki
+
+    - name: Copy Loki systemd service file
+      ansible.builtin.template:
+        src: grafana/loki.service.j2
+        dest: /etc/systemd/system/loki.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Loki
+
+    - name: Is Prometheus installed?
+      ansible.builtin.stat:
+        path: /opt/prometheus
+      register: prometheus_installed
+
+    - name: Download Prometheus
+      ansible.builtin.get_url:
+        url: "https://github.com/prometheus/prometheus/releases/download/v3.5.0/prometheus-3.5.0.linux-arm64.tar.gz"
+        dest: /tmp/prometheus.tar.gz
+        mode: '0644'
+      when: not prometheus_installed.stat.exists
+
+
+    - name: Extract Prometheus
+      ansible.builtin.unarchive:
+        src: /tmp/prometheus.tar.gz
+        dest: /opt/
+        remote_src: true
+        creates: /opt/prometheus-3.5.0.linux-arm64
+
+    - name: Create symlink for Prometheus
+      ansible.builtin.file:
+        src: /opt/prometheus-3.5.0.linux-arm64
+        dest: /opt/prometheus
+        state: link
+
+    - name: Create prometheus user
+      ansible.builtin.user:
+        name: prometheus
+        system: true
+        shell: /bin/bash
+        create_home: true
+        home: /home/prometheus
+        group: root
+
+    - name: Create prometheus etc directory
+      ansible.builtin.file:
+        path: /etc/prometheus
+        state: directory
+        owner: prometheus
+        group: root
+        mode: '0755'
+
+    - name: Copy Prometheus systemd service file
+      ansible.builtin.template:
+        src: grafana/prometheus.service.j2
+        dest: /etc/systemd/system/prometheus.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Prometheus
+
+    - name: Copy Prometheus configuration file
+      ansible.builtin.template:
+        src: grafana/prometheus.yml.j2
+        dest: /etc/prometheus/prometheus.yml
+        owner: prometheus
+        group: root
+        mode: '0644'
+      notify: Restart Prometheus
+
+    - name: Create Prometheus data directory
+      ansible.builtin.file:
+        path: /var/lib/prometheus/data
+        state: directory
+        owner: prometheus
+        group: root
+        mode: '0755'
+
+    - name: Create Prometheus tls directory
+      ansible.builtin.file:
+        path: /etc/prometheus/tls
+        state: directory
+        owner: prometheus
+        group: root
+        mode: '0755'
+
+    - name: Copy Prometheus Certificate
+      ansible.builtin.copy:
+        src: files/ssl/{{ item }}
+        dest: /etc/prometheus/tls/{{ item }}
+        owner: prometheus
+        group: root
+        mode: '0644'
+      loop:
+        - "metrics.crt"
+        - "metrics.key"
+      notify: Restart Prometheus
+
+    - name: Copy server certificate
+      ansible.builtin.copy:
+        src: "{{ server_cert }}"
+        dest: /etc/prometheus/tls/server.crt
+        owner: prometheus
+        group: root
+        mode: '0644'
+        remote_src: true
+      notify: Restart Prometheus
+
+    - name: Ensure Prometheus is started and enabled
+      ansible.builtin.systemd:
+        name: prometheus
+        enabled: true
+        state: started
+
+    - name: Open Prometheus port (9090)
+      community.general.ufw:
+        rule: allow
+        port: 9090
+        proto: tcp
+
+  handlers:
+    - name: Restart Grafana
+      ansible.builtin.systemd:
+        name: grafana-server
+        state: restarted
+
+    - name: Restart Loki
+      ansible.builtin.systemd:
+        name: loki
+        state: restarted
+
+    - name: Restart Prometheus
+      ansible.builtin.systemd:
+        name: prometheus
+        state: restarted

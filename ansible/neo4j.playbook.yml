@@ -1,0 +1,83 @@
+---
+- name: Setup neo4j
+  hosts: neo4j
+  gather_facts: true
+  vars_files:
+    - universe.yml
+  roles:
+    - init_container
+
+  tasks:
+    - name: Ensure neo4j group exists
+      ansible.builtin.group:
+        name: "{{ neo4j_group }}"
+        gid: "{{ neo4j_group_id }}"
+        state: present
+        system: true
+
+    - name: Ensure neo4j user exists
+      ansible.builtin.user:
+        name: "{{ neo4j_user }}"
+        uid: "{{ neo4j_user_id }}"
+        group: "{{ neo4j_group }}"
+        create_home: true
+        shell: /usr/bin/bash
+        home: "/home/{{ neo4j_user }}"
+        state: present
+        system: true
+
+    - name: Add neo4j gpg key
+      ansible.builtin.apt_key:
+        url: https://debian.neo4j.com/neotechnology.gpg.key
+        state: present
+
+    - name: Add neo4j repository
+      ansible.builtin.apt_repository:
+        repo: "deb https://debian.neo4j.com stable 4.4"
+        state: present
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Install neo4j
+      ansible.builtin.apt:
+        name: neo4j
+        state: present
+        update_cache: true
+
+    - name: Configure neo4j to allow remote connections
+      ansible.builtin.lineinfile:
+        path: /etc/neo4j/neo4j.conf
+        regexp: '^#?dbms.connectors.default_listen_address='
+        line: 'dbms.connectors.default_listen_address=0.0.0.0'
+
+    - name: Configure neo4j bolt connector
+      ansible.builtin.lineinfile:
+        path: /etc/neo4j/neo4j.conf
+        regexp: '^#?dbms.connector.bolt.listen_address='
+        line: 'dbms.connector.bolt.listen_address=0.0.0.0:{{ containers.neo4j.ports.bolt }}'
+
+    - name: Configure neo4j authentication
+      ansible.builtin.lineinfile:
+        path: /etc/neo4j/neo4j.conf
+        regexp: '^#?dbms.security.auth_enabled='
+        line: 'dbms.security.auth_enabled=true'
+
+    - name: Set initial password for neo4j user
+      ansible.builtin.command: >
+        neo4j-admin set-initial-password {{ neo4j_initial_password }}
+      args:
+        creates: /var/lib/neo4j/data/dbms/auth
+
+    - name: Ensure neo4j is started and enabled
+      ansible.builtin.service:
+        name: neo4j
+        state: started
+        enabled: true
+
+    - name: Restart neo4j to apply any configuration changes
+      ansible.builtin.service:
+        name: neo4j
+        state: restarted
+        enabled: true

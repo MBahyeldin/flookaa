@@ -1,0 +1,40 @@
+---
+- name: Update APT cache
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - software-properties-common
+      - wget
+      - gnupg2
+    state: present
+
+- name: Add Grafana GPG key
+  ansible.builtin.get_url:
+    url: https://packages.grafana.com/gpg.key
+    dest: /usr/share/keyrings/grafana.key
+    mode: '0644'
+
+- name: Add Grafana APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/grafana.key] https://packages.grafana.com/oss/deb stable main"
+    state: present
+
+- name: Run add_ssh_public_key role to add SSH key to container
+  ansible.builtin.include_role:
+    name: add_ssh_public_key
+    tasks_from: main
+
+- name: Run grpc_server role to set up gRPC server in container
+  ansible.builtin.include_role:
+    name: grpc_server
+    tasks_from: main
+  when: not no_grpc_services | default(false)
+
+- name: Run alloy role to set up alloy Agent in container
+  ansible.builtin.include_role:
+    name: alloy
+    tasks_from: main

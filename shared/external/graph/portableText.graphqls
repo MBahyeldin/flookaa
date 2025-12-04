@@ -1,0 +1,199 @@
+directive @oneof on INPUT_OBJECT
+
+"""
+A span of text inside a block
+"""
+enum SpanType {
+  span
+}
+
+type Span {
+  _type: SpanType!
+  _key: ID!
+  text: String!
+  marks: [String!]!
+}
+
+"""
+Mark definitions (annotations) base
+"""
+interface MarkDef {
+  _key: ID!
+  _type: MarkDefType!
+}
+
+enum MarkDefType {
+  link
+  comment
+}
+
+"""
+MarkDef for links
+"""
+type LinkMarkDef implements MarkDef {
+  _key: ID!
+  _type: MarkDefType!
+  href: String!
+  title: String
+}
+
+"""
+MarkDef for comments
+"""
+type CommentMarkDef implements MarkDef {
+  _key: ID!
+  _type: MarkDefType!
+  text: String!
+}
+
+"""
+Union of all possible markDefs
+"""
+type MarkDefs {
+  link: LinkMarkDef
+  comment: CommentMarkDef
+}
+
+"""
+A block of rich text
+"""
+enum BlockType {
+  block
+  image
+  break
+}
+
+enum StyleType {
+  normal
+  h1
+  h2
+  h3
+  h4
+  h5
+  h6
+  blockquote
+}
+
+interface Block {
+  _type: BlockType!
+  _key: ID!
+}
+
+enum ListItemType {
+  bullet
+  number
+}
+
+type BlockBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  style: StyleType!
+  children: [Span!]!
+  markDefs: [MarkDefs!]!
+  listItem: ListItemType
+  level: Int
+}
+
+type ImageBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  src: String!
+  alt: String
+  caption: String
+  width: String # tailwind css classes only, sanitized
+  height: String # tailwind css classes only, sanitized
+}
+
+type BreakBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+}
+
+"""
+Union of all possible blocks
+"""
+type Blocks {
+  block: BlockBlock
+  image: ImageBlock
+  break: BreakBlock
+}
+
+"""
+Top-level PortableText document
+"""
+type PortableText {
+  blocks: [Blocks!]!
+}
+
+# ===============================
+# Inputs
+# ===============================
+
+input SpanInput {
+  _type: SpanType!
+  _key: ID!
+  text: String!
+  marks: [String!]!
+}
+
+input LinkMarkDefInput {
+  _key: ID!
+  _type: MarkDefType!
+  href: String!
+  title: String
+}
+
+input CommentMarkDefInput {
+  _key: ID!
+  _type: MarkDefType!
+  text: String!
+}
+
+"""
+Oneof input for markDefs
+"""
+input MarkDefInput @oneof {
+  link: LinkMarkDefInput
+  comment: CommentMarkDefInput
+}
+
+"""
+Block inputs
+"""
+input BlockBlockInput {
+  _type: BlockType!
+  _key: ID!
+  style: StyleType!
+  children: [SpanInput!]!
+  markDefs: [MarkDefInput!]!
+  listItem: ListItemType
+  level: Int
+}
+
+input ImageBlockInput {
+  _type: BlockType!
+  _key: ID!
+  src: String!
+  alt: String
+  caption: String
+  width: String
+  height: String
+}
+
+input BreakBlockInput {
+  _type: BlockType!
+  _key: ID!
+}
+
+"""
+Oneof input for blocks
+"""
+input BlockInput @oneof {
+  block: BlockBlockInput
+  image: ImageBlockInput
+  break: BreakBlockInput
+}
+
+input PortableTextInput {
+  blocks: [BlockInput!]!
+}

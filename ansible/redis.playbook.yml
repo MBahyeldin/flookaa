@@ -1,0 +1,136 @@
+---
+- name: Setup redis
+  hosts: redis
+  gather_facts: true
+  become: true
+  vars_files:
+    - universe.yml
+  roles:
+    - init_container
+
+
+  tasks:
+    - name: Ensure app group exists
+      ansible.builtin.group:
+        name: "{{ app_group }}"
+        gid: "{{ app_group_id }}"
+        state: present
+        system: true
+
+    - name: Ensure app user exists
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        uid: "{{ app_user_id }}"
+        group: "{{ app_group }}"
+        create_home: true
+        shell: /usr/bin/bash
+        home: "/home/{{ app_user }}"
+        state: present
+        system: true
+
+    - name: Add SSH public key to authorized_keys for app user
+      ansible.builtin.authorized_key:
+        user: "{{ app_user }}"
+        key: "{{ lookup('file', app_ssh_key) }}"
+        state: present
+
+    - name: Copy app service file
+      ansible.builtin.template:
+        src: "templates/redis/app.service.j2"
+        dest: "/etc/systemd/system/{{ service_managed_by_gRPC }}.service"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Reload systemd to recognize new app service
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Ensure app service is started and enabled
+      ansible.builtin.service:
+        name: "{{ service_managed_by_gRPC }}"
+        state: started
+        enabled: true
+
+    - name: Ensure redis group exists
+      ansible.builtin.group:
+        name: "{{ redis_group }}"
+        gid: "{{ redis_group_id }}"
+        state: present
+        system: true
+
+    - name: Ensure redis user exists
+      ansible.builtin.user:
+        name: "{{ redis_user }}"
+        uid: "{{ redis_user_id }}"
+        group: "{{ redis_group }}"
+        create_home: true
+        shell: /usr/bin/bash
+        home: "/home/{{ redis_user }}"
+        state: present
+        system: true
+
+    - name: Ensure redis data directory exists
+      ansible.builtin.file:
+        path: "{{ redis_data_dir }}"
+        state: directory
+        owner: "{{ redis_user }}"
+        group: "{{ redis_group }}"
+        mode: '0755'
+
+    - name: Ensure redis log directory exists
+      ansible.builtin.file:
+        path: "{{ redis_log_dir }}"
+        state: directory
+        owner: "{{ redis_user }}"
+        group: "{{ redis_group }}"
+        mode: '0755'
+
+    - name: Ensure redis config directory exists
+      ansible.builtin.file:
+        path: "{{ redis_config_dir }}"
+        state: directory
+        owner: "{{ redis_user }}"
+        group: "{{ redis_group }}"
+        mode: '0755'
+
+    - name: Copy redis configuration file
+      ansible.builtin.template:
+        src: "templates/redis/conf.j2"
+        dest: "{{ redis_config_dir }}/redis.conf"
+        owner: "{{ redis_user }}"
+        group: "{{ redis_group }}"
+        mode: '0644'
+
+    - name: Install redis server
+      ansible.builtin.apt:
+        name: redis-server
+        state: present
+        update_cache: true
+
+    - name: Ensure redis is started and enabled
+      ansible.builtin.service:
+        name: redis-server
+        state: started
+        enabled: true
+
+    - name: Restart redis to apply new configuration
+      ansible.builtin.service:
+        name: redis-server
+        state: restarted
+
+    - name: Open redis port in UFW
+      community.general.ufw:
+        rule: allow
+        port: "{{ redis_port }}"
+        proto: tcp
+        comment: "Allow Redis traffic"
+        state: enabled
+
+    - name: Verify Redis is running and listening on the correct port
+      ansible.builtin.shell: "set -o pipefail && ss -tuln | grep :{{ redis_port }}"
+      args:
+        executable: /bin/bash
+      register: redis_port_check
+      changed_when: false
+      failed_when: redis_port_check.rc != 0

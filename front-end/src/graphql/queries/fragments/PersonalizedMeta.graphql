@@ -1,0 +1,12 @@
+fragment PersonalizedMetaFields on PersonalizedMeta {
+    likedByUser
+    viewedByUser
+    sharedByUser
+    acl {
+      canView
+      canLike
+      canReply
+      canShare
+      canComment
+    }
+}

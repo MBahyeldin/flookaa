@@ -1,0 +1,39 @@
+all:
+  hosts:
+    nats:
+      ip: "{{ containers.nats.ip }}"
+      ansible_host: "{{ ansible_host_machine.ansible_host }}"
+      lxc_container: "nats"
+      ansible_connection: lxc_ssh
+      ansible_ssh_private_key_file: ~/ssh-keys/lxd_dev.pem
+      ansible_user: ubuntu
+      ansible_python_interpreter: /usr/bin/python3
+      ansible_become: true
+      ansible_become_method: sudo
+      ansible_become_user: root
+
+  vars:
+    container_user: "root"
+    container_ssh_key: "./files/ssh-key.pem"
+
+    grpc_service_name: "gRPC-server"
+    grpc_port: "{{ containers.nats.ports.grpc }}"
+    grpc_user: "gRPC"
+    grpc_group: "gRPC"
+    grpc_user_id: 2002
+    grpc_group_id: 2002
+    grpc_binary_path: "/home/gRPC/server"
+    grpc_working_dir: "/home/gRPC"
+    grpc_watching_dir: "/home/gRPC/watched"
+    grpc_ssh_key: "./files/ssh-key.pem"
+
+    service_managed_by_gRPC: "nats"
+    service_working_dir: "/opt/{{ service_managed_by_gRPC }}/current"
+    service_binary_name: "ws_proxy"
+    app_user: "app"
+    app_group: "app"
+    app_user_id: 2003
+    app_group_id: 2003
+    app_ssh_key: "./files/ssh-key.pem"
+
+    alloy_monitor_service: "nats"

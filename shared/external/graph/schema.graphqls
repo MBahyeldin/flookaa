@@ -1,0 +1,238 @@
+scalar DateTime
+scalar Int64
+scalar Int32
+scalar ObjectId
+scalar JSON
+
+enum PostType {
+  POST
+  COMMENT
+  REPLY
+}
+
+enum Privacy {
+  PUBLIC
+  FRIENDS
+  PRIVATE
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  GIF
+}
+
+enum OwnerType {
+  USER
+  CHANNEL
+  PAGE
+}
+
+type Media {
+  type: MediaType!
+  url: String!
+}
+
+# Meta information for posts, comments, and replies
+# e.g., likesCount, sharesCount, commentsCount, viewsCount
+# will be stored in a separate collection and referenced by the post/comment/reply ID
+# will be cached in memory for quick access
+# post:postId:meta
+type Meta {
+  likesCount: Int32!
+  sharesCount: Int32!
+  viewsCount: Int32!
+  commentsCount: Int32 # only for posts
+}
+
+# Personalized meta information for the current user
+# e.g., whether the current user has liked/shared/viewed the post/comment/reply
+# will be fetched separately based on the current user context
+type PersonalizedMeta {
+  likedByUser: Boolean!
+  sharedByUser: Boolean!
+  viewedByUser: Boolean!
+  acl: ACL!
+}
+
+type ACL {
+  canView: Boolean!
+  canComment: Boolean!
+  canReply: Boolean!
+  canShare: Boolean!
+  canLike: Boolean!
+}
+
+type Owner {
+  type: OwnerType!
+  id: Int64! # userId for USER, channelId for CHANNEL, pageId for PAGE
+}
+
+input OwnerInput {
+  id: Int64!
+  type: OwnerType! # e.g. USER, PAGE, GROUP, etc.
+}
+
+type User {
+  id: Int64!
+  username: String!
+  fullName: String!
+  profileImageUrl: String
+}
+
+# Generic object for posts, comments, and replies
+type PostGenericDocument {
+  _id: ObjectId!
+  type: PostType!
+  parentId: ObjectId
+  authorId: Int64!
+  owner: Owner
+  content: PortableText
+  rawContent: JSON!
+  tags: [String!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  deletedAt: DateTime
+  edited: Boolean!
+  privacy: Privacy!
+  deniedUserIds: [Int64!]
+  allowedUserIds: [Int64!]
+}
+
+type Post {
+  _id: ObjectId!
+  type: PostType!
+  authorId: Int64!
+  author: User! # author of the post will be fetched using authorId
+  owner: Owner!
+  content: PortableText
+  rawContent: JSON!
+  tags: [String!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  deletedAt: DateTime
+  edited: Boolean!
+  privacy: Privacy!
+  deniedUserIds: [Int64!]!
+  allowedUserIds: [Int64!]!
+  meta: Meta!
+  personalizedMeta: PersonalizedMeta!
+}
+
+type Comment {
+  _id: ObjectId!
+  type: PostType!
+  parentId: ObjectId!
+  authorId: Int64!
+  author: User! # author of the comment will be fetched using authorId
+  content: PortableText
+  rawContent: JSON!
+  tags: [String!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  deletedAt: DateTime
+  edited: Boolean!
+  deniedUserIds: [Int64!]!
+  allowedUserIds: [Int64!]!
+  privacy: Privacy!
+  meta: Meta!
+  personalizedMeta: PersonalizedMeta!
+}
+
+input PostInput {
+  authorId: Int64!
+  content: PortableTextInput!
+  tags: [String!]
+  owner: OwnerInput!
+  privacy: Privacy!
+  deniedUserIds: [Int64!]!
+  allowedUserIds: [Int64!]!
+}
+
+enum SimpleInputType {
+  TEXT
+  MEDIA
+  VOICE
+}
+
+input SimpleInput {
+  type: SimpleInputType!
+  content: String!
+}
+
+input CommentInput {
+  parentId: ObjectId!
+  level: Int32!
+  authorId: Int64!
+  content: SimpleInput!
+  tags: [String!]
+  owner: OwnerInput!
+  privacy: Privacy!
+  deniedUserIds: [Int64!]!
+  allowedUserIds: [Int64!]!
+}
+
+input LikeInput {
+  targetId: ObjectId! # postId, commentId, or replyId
+  targetType: PostType!
+  owner: OwnerInput!
+  liked: Boolean! # true for like, false for unlike
+}
+
+# Mutations
+type Mutation {
+  createPost(input: PostInput!): PostGenericDocument!
+
+  createComment(input: CommentInput!): PostGenericDocument!
+
+  createLike(input: LikeInput!): Boolean!
+
+  deletePost(id: ObjectId!, owner: OwnerInput!): Boolean!
+
+  deleteComment(id: ObjectId!, owner: OwnerInput!): Boolean!
+
+  deleteReply(id: ObjectId!, owner: OwnerInput!): Boolean!
+}
+
+# Inputs
+input MediaInput {
+  type: MediaType!
+  url: String!
+}
+
+type Channel {
+  id: Int64!
+  name: String!
+  description: String
+  bannerImageUrl: String
+  thumbnailUrl: String
+  profileImageUrl: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  posts: [Post!]!
+  totalPosts: Int!
+  owner: User!
+  membersCount: Int
+  followersCount: Int
+  isMember: Boolean!
+  isFollower: Boolean!
+}
+
+# Queries
+type Query {
+  getPosts(
+    owner: OwnerInput!
+    ids: [ObjectId!]
+    limit: Int
+    offset: Int
+  ): [Post!]!
+
+  getComments(
+    parentId: ObjectId!
+    limit: Int
+    offset: Int
+  ): [Comment!]!
+
+  getChannel(id: Int64!): Channel
+}
+

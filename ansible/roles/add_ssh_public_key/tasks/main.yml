@@ -1,0 +1,7 @@
+---
+- name: Add SSH public key to authorized_keys
+  ansible.builtin.authorized_key:
+    user: "{{ container_user }}"
+    key: "{{ lookup('file', container_ssh_key) }}"
+    state: present
+  become: true

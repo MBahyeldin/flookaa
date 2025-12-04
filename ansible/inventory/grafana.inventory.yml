@@ -1,0 +1,22 @@
+all:
+  hosts:
+    grafana:
+      ip: "{{ containers.grafana.ip }}"
+      ansible_host: "{{ ansible_host_machine.ansible_host }}"
+      lxc_container: "grafana"
+      ansible_connection: lxc_ssh
+      ansible_ssh_private_key_file: ~/ssh-keys/lxd_dev.pem
+      ansible_user: ubuntu
+      ansible_python_interpreter: /usr/bin/python3
+      ansible_become: true
+      ansible_become_method: sudo
+
+  vars:
+    container_user: "root"
+    container_ssh_key: "./files/ssh-key.pem"
+    grafana_version: "latest"
+    grafana_admin_password: "{{ vault_grafana_admin_password }}"
+
+    no_grpc_services: true
+
+    alloy_monitor_service: "grafana-server"

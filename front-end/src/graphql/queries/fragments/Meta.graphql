@@ -1,0 +1,6 @@
+fragment MetaFields on Meta {
+    commentsCount
+    likesCount
+    viewsCount
+    sharesCount
+}

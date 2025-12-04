@@ -1,0 +1,23 @@
+[Unit]
+Description=NATS Server
+Documentation=https://docs.nats.io/
+After=network.target
+
+[Service]
+User=nats
+Group=nats
+Type=simple
+ExecStart=/usr/local/bin/nats-server -c /etc/nats/nats-server.conf
+Restart=on-failure
+RestartSec=5s
+LimitNOFILE=65536
+
+# Optional: set working directory for JetStream storage
+WorkingDirectory=/var/lib/nats
+
+# Logs to journald by default
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

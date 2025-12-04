@@ -1,0 +1,16 @@
+schema: https://lxd-development-app/query
+documents: "src/graphql/**/*.graphql"
+generates:
+  src/generated/graphql.ts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-react-apollo"
+    config:
+      enumsAsTypes: true
+      scalars:
+        ID: string
+        UUID: string
+        DateTime: string
+      withHooks: true
+      apolloReactHooksImportFrom: "@apollo/client/react" # ✅ correct

@@ -1,0 +1,31 @@
+mutation CreatePost(
+  $authorId: Int64!
+  $content: PortableTextInput!
+  $tags: [String!]
+  $privacy: Privacy!
+  $owner: OwnerInput!
+  $allowedUserIds: [Int64!]!
+  $deniedUserIds: [Int64!]!
+) {
+  createPost(
+    input: {
+      authorId: $authorId
+      tags: $tags
+      privacy: $privacy
+      owner: $owner
+      content: $content
+      deniedUserIds: $deniedUserIds
+      allowedUserIds: $allowedUserIds
+    }
+  ) {
+    _id
+    authorId
+    owner {
+      type
+    }
+    rawContent
+    tags
+    privacy
+    createdAt
+  }
+}

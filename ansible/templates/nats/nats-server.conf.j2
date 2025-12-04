@@ -1,0 +1,15 @@
+# Listen on port 4222 for client connections
+listen: 0.0.0.0:4222
+
+# Server name (optional, but helpful for clustering later)
+server_name: nats-server
+
+# Enable JetStream persistence
+jetstream {
+  store_dir: "/var/lib/nats/jetstream"
+}
+
+# Disable authentication (open server)
+authorization {
+  # No users or tokens -> all clients can connect
+}

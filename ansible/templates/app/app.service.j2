@@ -1,0 +1,33 @@
+[Unit]
+Description=App Service for Redis
+After=network.target
+
+[Service]
+Environment='DATABASE_DSN={{ vault_DATABASE_DSN }}'
+Environment='MONGODB_DSN={{ vault_MONGODB_DSN }}'
+Environment='ADMIN_EMAIL={{ vault_ADMIN_EMAIL }}'
+Environment='ADMIN_PASSWORD={{ vault_ADMIN_PASSWORD }}'
+Environment='NATS_CONNECTION={{ vault_NATS_CONNECTION }}'
+Environment='JWT_SECRET_KEY={{ vault_JWT_SECRET_KEY }}'
+Environment='REDIS_ADDR={{ vault_REDIS_ADDR }}'
+Environment='REDIS_PASSWORD={{ vault_REDIS_PASSWORD }}'
+Environment='NEO4J_URI={{ vault_NEO4J_URI }}'
+Environment='NEO4J_USER={{ vault_NEO4J_USER }}'
+Environment='NEO4J_PASSWORD={{ vault_NEO4J_PASSWORD }}'
+WorkingDirectory={{ service_working_dir }}
+ExecStart={{ service_working_dir }}/{{ service_binary_name }}
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+# Resource limits
+LimitNOFILE=65535
+
+# Runs as root by default (no User= specified)
+User={{ app_user }}
+Group={{ app_group }}
+
+[Install]
+WantedBy=multi-user.target
+

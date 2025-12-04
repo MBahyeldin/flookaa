@@ -1,0 +1,29 @@
+fragment PostFields on Post {
+  _id
+  type
+  authorId
+  author {
+    id
+    username
+    fullName
+    profileImageUrl
+  }
+  owner {
+    id
+    type
+  }
+  rawContent
+  createdAt
+  privacy
+  meta {
+    ...MetaFields
+  }
+  personalizedMeta {
+    ...PersonalizedMetaFields
+  }
+  allowedUserIds
+  deniedUserIds
+  edited
+  tags
+  updatedAt
+}

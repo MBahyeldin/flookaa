@@ -1,0 +1,5 @@
+query GetPosts($owner: OwnerInput!, $ids: [ObjectId!], $limit: Int, $offset: Int) {
+  getPosts(owner: $owner, ids: $ids, limit: $limit, offset: $offset) {
+    ...PostFields
+  }
+}

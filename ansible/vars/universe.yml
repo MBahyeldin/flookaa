@@ -1,0 +1,50 @@
+ansible_host_machine:
+  ansible_host: 192.168.64.2
+  ansible_connection: ssh
+  ansible_ssh_private_key_file: ~/ssh-keys/lxd_dev.pem
+  ansible_user: ubuntu
+  ansible_python_interpreter: /usr/bin/python3
+  ansible_become: true
+  ansible_become_method: sudo
+  ansible_become_user: root
+
+server_cert: "/etc/ssl/certs/server.crt"
+
+containers:
+  redis:
+    ip: "10.0.0.60"
+    ports:
+      ssh: 2260
+      grpc: 5060
+  app: 
+    ip: "10.0.0.30"
+    ports:
+      ssh: 2230
+      grpc: 5030
+  postgres:
+    ip: "10.0.0.20"
+    ports:
+      ssh: 2220
+      postgres: 5432
+  s3:
+    ip: "10.0.0.40"
+    ports:
+      ssh: 2240
+      grpc: 5040
+  nats:
+    ip: "10.0.0.70"
+    ports:
+      ssh: 2270
+      grpc: 5070
+      nats: 4222
+      http: 8080
+  grafana:
+    ip: "10.0.0.80"
+    ports:
+      ssh: 2280
+      http: 3000
+  neo4j:
+    ip: "10.0.0.90"
+    ports:
+      ssh: 2290
+      bolt: 7687

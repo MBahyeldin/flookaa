@@ -1,0 +1,98 @@
+---
+- name: Gather and show host information
+  hosts: main
+  become: true
+  gather_facts: true
+  vars_files:
+    - universe.yml
+  vars:
+    show_full_facts: false
+
+  tasks:
+    - name: Ensure snapd is installed
+      ansible.builtin.apt:
+        name: snapd
+        state: present
+        update_cache: true
+
+    - name: Ensure LXD is installed via snap
+      community.general.snap:
+        name: lxd
+        state: present
+
+    - name: Ensure LXD is initialized
+      ansible.builtin.command: lxd init --auto
+      args:
+        creates: /var/snap/lxd/common/lxd/containers
+      register: lxd_init
+      changed_when: lxd_init.rc == 0 and 'LXD is already initialized' not in lxd_init.stdout
+
+    - name: Disable DHCP on lxdbr0 (IPv4 & IPv6)
+      ansible.builtin.command: >
+        lxc network set lxdbr0 {{ item.key }} {{ item.value }}
+      loop:
+        - { key: "ipv4.dhcp", value: "false" }
+        - { key: "ipv6.dhcp", value: "false" }
+        - { key: "ipv6.dhcp.stateful", value: "false" }
+      changed_when: false
+
+    - name: Enable Prometheus server
+      ansible.builtin.command: lxc config set core.metrics_address ":8444"
+      changed_when: false
+
+    - name: Disable authentication for Prometheus metrics endpoint
+      ansible.builtin.command: >
+        lxc config set core.metrics_authentication false
+      changed_when: false
+
+    - name: Copy metrics TLS certificate
+      ansible.builtin.copy:
+        src: files/ssl/{{ item }}
+        dest: /home/{{ ansible_user }}/{{ item }}
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Trust metrics Certificate into LXD
+      loop:
+        - "metrics.crt"
+        - "metrics.key"
+
+    - name: Launch and configure LXC containers
+      community.general.lxd_container:
+        name: "{{ item.name }}"
+        source:
+          type: "{{ item.source_type }}"
+          alias: "{{ item.source_alias }}"
+          server: https://cloud-images.ubuntu.com/releases/
+          protocol: simplestreams
+          mode: pull
+        profiles: "{{ item.profiles }}"
+        state: "{{ item.state }}"
+        config:
+          limits.memory: "{{ item.container_memory_limit }}"
+          limits.cpu: "{{ item.container_cpu_limit }}"
+        devices: "{{ item.devices }}"
+      loop: "{{ lxd_containers }}"
+
+    - name: Override container (IPv4)
+      ansible.builtin.command: lxc config device override {{ item.name }} eth0 ipv4.address={{ item.ipv4_address }}
+      loop: "{{ lxd_containers }}"
+      when: item.ipv4_address is defined
+      changed_when: false
+
+    - name: Restart containers to apply network changes
+      ansible.builtin.command: lxc restart {{ item.name }}
+      loop: "{{ lxd_containers }}"
+      changed_when: false
+
+    - name: Copy server TLS certificate to grafana container
+      ansible.builtin.command:
+        lxc file push /var/snap/lxd/common/lxd/server.crt "grafana{{ server_cert }}"
+      changed_when: false
+
+  handlers:
+    - name: Trust metrics Certificate into LXD
+      ansible.builtin.command: >
+        lxc config trust add /home/{{ ansible_user }}/metrics.crt --type client
+      listen: Trust metrics Certificate into LXD
+      changed_when: false

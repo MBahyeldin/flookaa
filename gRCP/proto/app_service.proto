@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package app_service;
+
+option go_package = "./app_service";
+
+// Service definition
+service AppService {
+  rpc StopService(Empty) returns (Status);
+  rpc StartService(Empty) returns (Status);
+  rpc RestartApp(Empty) returns (Status);
+  rpc SwitchCurrent(SwitchRequest) returns (Status);
+  rpc Rollback(RollbackRequest) returns (Status);
+}
+
+// Messages
+message Empty {}
+
+message Status {
+  bool success = 1;
+  string message = 2;
+}
+
+message SwitchRequest {
+  string version = 1;
+}
+
+message RollbackRequest {
+  string version = 1;
+}

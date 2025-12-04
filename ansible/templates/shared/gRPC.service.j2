@@ -1,0 +1,25 @@
+[Unit]
+Description=gRPC Server
+After=network.target
+
+[Service]
+WorkingDirectory={{ grpc_working_dir }}
+Environment="GRPC_PORT={{ grpc_port }}"
+Environment="GRPC_WATCHING_DIR={{ grpc_watching_dir }}"
+ExecStart={{ grpc_binary_path }} -service {{ service_managed_by_gRPC }}
+
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+# Resource limits
+LimitNOFILE=65535
+
+# Runs as root by default (no User= specified)
+User={{ grpc_user }}
+Group={{ grpc_group }}
+
+[Install]
+WantedBy=multi-user.target
+

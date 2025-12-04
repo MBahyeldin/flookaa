@@ -1,0 +1,16 @@
+[Unit]
+Description=prometheus service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=prometheus
+ExecStart=/opt/prometheus/prometheus --config.file /etc/prometheus/prometheus.yml --storage.tsdb.path /var/lib/prometheus/data
+# Give a reasonable amount of time for prometheus to start up/shut down``
+TimeoutSec = 120
+Restart = on-failure
+RestartSec = 2
+
+[Install]
+WantedBy=multi-user.target

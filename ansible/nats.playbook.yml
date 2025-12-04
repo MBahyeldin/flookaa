@@ -1,0 +1,181 @@
+---
+- name: Setup nats
+  hosts: nats
+  gather_facts: true
+  become: true
+  vars_files:
+    - universe.yml
+  roles:
+    - init_container
+
+
+  tasks:
+    - name: Ensure app group exists
+      ansible.builtin.group:
+        name: "{{ app_group }}"
+        gid: "{{ app_group_id }}"
+        state: present
+        system: true
+
+    - name: Ensure app user exists
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        uid: "{{ app_user_id }}"
+        group: "{{ app_group }}"
+        create_home: true
+        shell: /usr/bin/bash
+        home: "/home/{{ app_user }}"
+        state: present
+        system: true
+
+    - name: Add SSH public key to authorized_keys for app user
+      ansible.builtin.authorized_key:
+        user: "{{ app_user }}"
+        key: "{{ lookup('file', app_ssh_key) }}"
+        state: present
+      become: true
+
+    - name: Copy app service file
+      ansible.builtin.template:
+        src: "templates/nats/ws.service.j2"
+        dest: "/etc/systemd/system/{{ service_managed_by_gRPC }}.service"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Reload systemd to recognize new nats service
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Ensure app service is started and enabled
+      ansible.builtin.service:
+        name: "{{ service_managed_by_gRPC }}"
+        state: started
+        enabled: true
+
+    - name: Restart app service to apply environment variable changes
+      ansible.builtin.service:
+        name: "{{ service_managed_by_gRPC }}"
+        state: restarted
+        enabled: true
+
+    - name: Create nats user and group
+      ansible.builtin.group:
+        name: nats
+        gid: 2004
+        state: present
+        system: true
+    - name: Ensure nats user exists
+      ansible.builtin.user:
+        name: nats
+        uid: 2004
+        group: nats
+        create_home: false
+        shell: /usr/sbin/nologin
+        state: present
+        system: true
+
+    - name: Create nats directory
+      ansible.builtin.file:
+        path: "/etc/nats"
+        state: directory
+        owner: nats
+        group: nats
+        mode: "0755"
+
+    - name: Create nats data directory
+      ansible.builtin.file:
+        path: "/var/lib/nats"
+        state: directory
+        owner: nats
+        group: nats
+        mode: "0755"
+
+    - name: Get nats shell script
+      ansible.builtin.get_url:
+        url: "https://binaries.nats.dev/nats-io/nats-server/v2@v2.11.6"
+        dest: "/tmp/nats-server-install.sh"
+        mode: "0755"
+        owner: nats
+        group: nats
+
+    - name: Run nats script
+      ansible.builtin.shell: |
+        /tmp/nats-server-install.sh
+      args:
+        creates: /usr/local/bin/nats-server
+
+    - name: Add nats config file
+      ansible.builtin.template:
+        src: "templates/nats/nats-server.conf.j2"
+        dest: "/etc/nats/nats-server.conf"
+        owner: nats
+        group: nats
+        mode: "0644"
+
+    - name: Add nats systemd service file
+      ansible.builtin.template:
+        src: "templates/nats/nats-server.service.j2"
+        dest: "/etc/systemd/system/nats-server.service"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Reload systemd to recognize new nats-server service
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Start nats-server service
+      ansible.builtin.service:
+        name: nats-server
+        state: started
+        enabled: true
+
+    - name: Ensure firewall allows NATS port
+      community.general.ufw:
+        rule: allow
+        port: "{{ containers.nats.ports.nats }}"
+        proto: tcp
+        state: enabled
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Ensure firewall allows HTTP port
+      community.general.ufw:
+        rule: allow
+        port: "{{ containers.nats.ports.http }}"
+        proto: tcp
+        state: enabled
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Ensure firewall allows gRPC port
+      community.general.ufw:
+        rule: allow
+        port: "{{ containers.nats.ports.grpc }}"
+        proto: tcp
+        state: enabled
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Reload UFW to apply changes
+      community.general.ufw:
+        state: reloaded
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Ensure nats-server is started and enabled
+      ansible.builtin.service:
+        name: nats-server
+        state: started
+        enabled: true
+
+    - name: Restart nats-server to apply configuration changes
+      ansible.builtin.service:
+        name: nats-server
+        state: restarted
+        enabled: true
+
+    - name: Verify nats-server is running
+      ansible.builtin.systemd:
+        name: nats-server
+        state: started
+        enabled: true
+      register: nats_status
+      changed_when: false

@@ -1,0 +1,1 @@
+DO NOT RUN vault-pass.bash directly it should only be run passed as a paramater to ansible-playbook

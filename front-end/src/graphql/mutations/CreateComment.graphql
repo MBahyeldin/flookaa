@@ -1,0 +1,32 @@
+mutation CreateComment(
+  $parentId: ObjectId!
+  $level: Int32!
+  $authorId: Int64!
+  $content: SimpleInput!
+  $tags: [String!]
+  $privacy: Privacy!
+  $owner: OwnerInput!
+  $allowedUserIds: [Int64!]!
+  $deniedUserIds: [Int64!]!
+) {
+  createComment(
+    input: {
+      owner: $owner
+      parentId: $parentId
+      level: $level
+      authorId: $authorId
+      tags: $tags
+      privacy: $privacy
+      content: $content
+      allowedUserIds: $allowedUserIds
+      deniedUserIds: $deniedUserIds
+    }
+  ) {
+    _id
+    authorId
+    rawContent
+    tags
+    privacy
+    createdAt
+  }
+}

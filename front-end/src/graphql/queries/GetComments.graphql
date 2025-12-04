@@ -1,0 +1,5 @@
+query GetComments($parentId: ObjectId!, $limit: Int, $offset: Int) {
+  getComments(parentId: $parentId, limit: $limit, offset: $offset) {
+    ...CommentFields
+  }
+}

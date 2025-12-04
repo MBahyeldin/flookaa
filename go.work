@@ -1,0 +1,10 @@
+go 1.25.0
+
+use (
+	./backend
+	./redis
+	./shared
+	./gRCP/client
+	./gRCP/server
+	./s3
+)

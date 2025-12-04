@@ -1,0 +1,25 @@
+all:
+  hosts:
+    postgres:
+      ip: "{{ containers.postgres.ip }}"
+      ansible_host: "{{ ansible_host_machine.ansible_host }}"
+      lxc_container: "postgres"
+      ansible_connection: lxc_ssh
+      ansible_ssh_private_key_file: ~/ssh-keys/lxd_dev.pem
+      ansible_user: ubuntu
+      ansible_python_interpreter: /usr/bin/python3
+      ansible_become: true
+      ansible_become_method: su
+
+  vars:
+    container_user: "root"
+    container_ssh_key: "./files/ssh-key.pem"
+
+    postgres_user: "postgres"
+    postgres_group: "postgres"
+    postgres_user_id: 2001
+    postgres_group_id: 2001
+    postgres_version: "16"
+
+    alloy_monitor_service: "postgres"
+    no_grpc_services: true

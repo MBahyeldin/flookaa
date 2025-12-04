@@ -1,0 +1,26 @@
+[Unit]
+Description=App Service for Redis
+After=network.target
+
+[Service]
+Environment='NATS_CONNECTION={{ vault_NATS_CONNECTION }}'
+Environment='REDIS_ADDR={{ vault_REDIS_ADDR }}'
+Environment='REDIS_PASSWORD={{ vault_REDIS_PASSWORD }}'
+
+WorkingDirectory={{ service_working_dir }}
+ExecStart={{ service_working_dir }}/{{ service_binary_name }}
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+# Resource limits
+LimitNOFILE=65535
+
+# Runs as root by default (no User= specified)
+User={{ app_user }}
+Group={{ app_group }}
+
+[Install]
+WantedBy=multi-user.target
+

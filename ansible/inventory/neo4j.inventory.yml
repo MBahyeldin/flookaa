@@ -1,0 +1,27 @@
+all:
+  hosts:
+    neo4j:
+      ip: "{{ containers.neo4j.ip }}"
+      ansible_host: "{{ ansible_host_machine.ansible_host }}"
+      lxc_container: "neo4j"
+      ansible_connection: lxc_ssh
+      ansible_ssh_private_key_file: ~/ssh-keys/lxd_dev.pem
+      ansible_user: ubuntu
+      ansible_python_interpreter: /usr/bin/python3
+      ansible_become: true
+      ansible_become_method: su
+
+  vars:
+    container_user: "root"
+    container_ssh_key: "./files/ssh-key.pem"
+
+    neo4j_user: "neo4j"
+    neo4j_group: "neo4j"
+    neo4j_user_id: 2001
+    neo4j_group_id: 2001
+
+    alloy_monitor_service: "neo4j"
+
+    no_grpc_services: true
+
+    neo4j_initial_password: "{{ vault_neo4j_initial_password}}"

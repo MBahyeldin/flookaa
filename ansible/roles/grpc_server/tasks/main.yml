@@ -1,0 +1,100 @@
+---
+- name: Ensure gRPC group exists
+  ansible.builtin.group:
+    name: "{{ grpc_group }}"
+    gid: "{{ grpc_group_id }}"
+    state: present
+    system: true
+
+- name: Ensure gRPC user exists
+  ansible.builtin.user:
+    name: "{{ grpc_user }}"
+    uid: "{{ grpc_user_id }}"
+    group: "{{ grpc_group }}"
+    create_home: true
+    shell: /usr/bin/bash
+    home: "/home/{{ grpc_user }}"
+    state: present
+    system: true
+
+- name: Add SSH public key to authorized_keys
+  ansible.builtin.authorized_key:
+    user: "{{ grpc_user }}"
+    key: "{{ lookup('file', grpc_ssh_key) }}"
+    state: present
+  become: true
+
+- name: Ensure gRPC working directory exists
+  ansible.builtin.file:
+    path: "{{ grpc_working_dir }}"
+    state: directory
+    owner: "{{ grpc_user }}"
+    group: "{{ grpc_group }}"
+    mode: "0755"
+
+- name: Copy gRPC service file
+  ansible.builtin.template:
+    src: "templates/shared/gRPC.service.j2"
+    dest: "/etc/systemd/system/{{ grpc_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Copy gRPC binary to server
+  ansible.builtin.copy:
+    src: "./files/gRPC/server"
+    dest: "{{ grpc_binary_path }}"
+    owner: "{{ grpc_user }}"
+    group: "{{ grpc_group }}"
+    mode: "0755"
+
+- name: Reload systemd to recognize new gRPC service
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Ensure gRPC service is started and enabled
+  ansible.builtin.service:
+    name: "{{ grpc_service_name }}"
+    state: started
+    enabled: true
+
+- name: Ensure gRPC service is restarted to apply any changes
+  ansible.builtin.systemd:
+    name: "{{ grpc_service_name }}"
+    state: restarted
+    enabled: true
+
+- name: Ensure app directory exists
+  ansible.builtin.file:
+    path: "/opt/{{ service_managed_by_gRPC }}"
+    state: directory
+    owner: "{{ grpc_user }}"
+    group: "{{ grpc_group }}"
+    mode: "0755"
+
+- name: Ensure watched directory exists
+  ansible.builtin.file:
+    path: "{{ grpc_watching_dir }}"
+    state: directory
+    owner: "{{ grpc_user }}"
+    group: "{{ grpc_group }}"
+    mode: "0755"
+
+- name: Allow gRPC user to manage services via sudo
+  ansible.builtin.copy:
+    dest: "/etc/sudoers.d/{{ service_managed_by_gRPC }}"
+    owner: root
+    group: root
+    mode: "0440"
+    content: |
+      {{ grpc_user }} ALL=NOPASSWD: /bin/systemctl start {{ service_managed_by_gRPC }}.service, \
+        /bin/systemctl stop {{ service_managed_by_gRPC }}.service, \
+        /bin/systemctl restart {{ service_managed_by_gRPC }}.service, \
+        /bin/systemctl status {{ service_managed_by_gRPC }}.service, \
+        /bin/systemctl is-active {{ service_managed_by_gRPC }}.service, \
+        /bin/systemctl is-enabled {{ service_managed_by_gRPC }}.service, \
+        /bin/systemctl reload {{ service_managed_by_gRPC }}.service, \
+        /bin/systemctl start {{ service_managed_by_gRPC }}.service, \
+        /bin/systemctl stop {{ service_managed_by_gRPC }}.service, \
+        /bin/systemctl restart {{ service_managed_by_gRPC }}.service
+    validate: '/usr/sbin/visudo -cf %s'

@@ -1,0 +1,146 @@
+---
+- name: Setup postgres
+  hosts: postgres
+  gather_facts: true
+  vars_files:
+    - universe.yml
+  roles:
+    - init_container
+
+  tasks:
+    - name: Ensure postgres group exists
+      ansible.builtin.group:
+        name: "{{ postgres_group }}"
+        gid: "{{ postgres_group_id }}"
+        state: present
+        system: true
+
+    - name: Ensure postgres user exists
+      ansible.builtin.user:
+        name: "{{ postgres_user }}"
+        uid: "{{ postgres_user_id }}"
+        group: "{{ postgres_group }}"
+        create_home: yes
+        shell: /usr/bin/bash
+        home: "/home/{{ postgres_user }}"
+        state: present
+        system: true
+
+    - name: Install PostgreSQL
+      ansible.builtin.apt:
+        name: "postgresql-{{ postgres_version }}"
+        state: present
+        update_cache: yes
+
+    - name: Copy pg_hba.conf
+      ansible.builtin.template:
+        src: "templates/postgres/pg_hba.conf.j2"
+        dest: "/etc/postgresql/{{ postgres_version }}/main/pg_hba.conf"
+        owner: postgres
+        group: postgres
+        mode: "0640"
+
+    - name: Update postgresql.conf to listen on all addresses
+      ansible.builtin.lineinfile:
+        path: "/etc/postgresql/{{ postgres_version }}/main/postgresql.conf"
+        regexp: "^#listen_addresses = 'localhost'$"
+        line: "listen_addresses = '*'"
+        state: present
+
+    - name: Ensure PostgreSQL service is reloaded to apply pg_hba.conf changes
+      ansible.builtin.systemd:
+        name: postgresql
+        state: reloaded
+
+    - name: Ensure PostgreSQL is started and enabled
+      ansible.builtin.service:
+        name: postgresql
+        state: started
+        enabled: true
+
+    - name: Restart PostgreSQL to apply any configuration changes
+      ansible.builtin.service:
+        name: postgresql
+        state: restarted
+        enabled: true
+
+    - name: Ensure psycopg2 is installed system-wide
+      become: yes
+      ansible.builtin.apt:
+        name: python3-psycopg2
+        state: present
+
+    - name: Ensure PostgreSQL database exists
+      community.postgresql.postgresql_db:
+        name: "{{ vault_POSTGRES_DB_APP }}"
+        state: present
+      become_user: "{{ postgres_user }}"
+      become: true
+
+    - name: Ensure PostgreSQL database exists
+      community.postgresql.postgresql_db:
+        name: "{{ vault_POSTGRES_DB_S3 }}"
+        state: present
+      become_user: "{{ postgres_user }}"
+      become: true
+
+    - name: Ensure PostgreSQL user exists
+      community.postgresql.postgresql_user:
+        name: "{{ vault_POSTGRES_USER }}"
+        password: "{{ vault_POSTGRES_PASSWORD }}"
+        state: present
+        login_db: "{{ vault_POSTGRES_DB_APP }}"
+      become_user: "{{ postgres_user }}"
+      become: true
+
+    - name: Ensure PostgreSQL user exists
+      community.postgresql.postgresql_user:
+        name: "{{ vault_POSTGRES_USER }}"
+        password: "{{ vault_POSTGRES_PASSWORD }}"
+        state: present
+        login_db: "{{ vault_POSTGRES_DB_S3 }}"
+      become_user: "{{ postgres_user }}"
+      become: true
+
+    - name: Ensure PostgreSQL user has access to the application database
+      community.postgresql.postgresql_privs:
+        login_db: "{{ vault_POSTGRES_DB_APP }}"
+        role: "{{ vault_POSTGRES_USER }}"
+        privs: "ALL"
+        type: database
+        state: present
+      become_user: "{{ postgres_user }}"
+      become: true
+
+    - name: Ensure PostgreSQL user has access to the S3 database
+      community.postgresql.postgresql_privs:
+        login_db: "{{ vault_POSTGRES_DB_S3 }}"
+        role: "{{ vault_POSTGRES_USER }}"
+        privs: "ALL"
+        type: database
+        state: present
+      become_user: "{{ postgres_user }}"
+      become: true
+
+    - name: Grant privileges on public schema
+      community.postgresql.postgresql_privs:
+        login_db: "{{ vault_POSTGRES_DB_APP }}"
+        roles: "{{ vault_POSTGRES_USER }}"
+        type: schema
+        objs: public
+        privs: ALL
+        state: present
+      become: true
+      become_user: postgres
+
+    - name: Grant privileges on public schema
+      community.postgresql.postgresql_privs:
+        login_db: "{{ vault_POSTGRES_DB_S3 }}"
+        roles: "{{ vault_POSTGRES_USER }}"
+        type: schema
+        objs: public
+        privs: ALL
+        state: present
+      become: true
+      become_user: postgres
+

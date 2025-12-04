@@ -1,0 +1,11 @@
+version: "2"
+sql:
+  - schema: "external/db/postgres/migrations"
+    queries: "external/db/postgres/queries/"
+    engine: "postgresql"
+    database:
+      uri: "${DATABASE_DSN}"
+    gen:
+      go:
+        package: "db"
+        out: "pkg/db"

@@ -1,0 +1,25 @@
+query GetChannel($id: Int64!) {
+  getChannel(id: $id) {
+    id
+    name
+    description
+    bannerImageUrl
+    thumbnailUrl
+    createdAt
+    posts {
+      ...PostFields
+    }
+    totalPosts
+    owner {
+      id
+      username
+      fullName
+      profileImageUrl
+    }
+    isMember
+    isFollower
+    membersCount
+    followersCount
+  }
+}
+
