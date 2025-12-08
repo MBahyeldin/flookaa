@@ -2,7 +2,7 @@
 
 # Define the commands
 commands=(
-  "ansible-playbook   hosting-machine.playbook.yml      -i inventory/hosting-machine.inventory.yml                             --vault-password-file ./internal-scripts/vault-pass.bash"
+  "ansible-playbook   hosting-machine.playbook.yml      -i inventory/hosting-machine.inventory.yml                             --vault-password-file ./internal-scripts/vault-pass.bash --ask-become-pass"
   "ansible-playbook   redis.playbook.yml                -i inventory/redis.inventory.yml           -e @vars/redis_vault.yml    --vault-password-file ./internal-scripts/vault-pass.bash"
   "ansible-playbook   app.playbook.yml                  -i inventory/app.inventory.yml             -e @vars/app_vault.yml      --vault-password-file ./internal-scripts/vault-pass.bash"
   "ansible-playbook   postgres.playbook.yml             -i inventory/postgres.inventory.yml        -e @vars/postgres_vault.yml --vault-password-file ./internal-scripts/vault-pass.bash"

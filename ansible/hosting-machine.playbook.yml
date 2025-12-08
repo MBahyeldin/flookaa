@@ -27,13 +27,15 @@
       register: lxd_init
       changed_when: lxd_init.rc == 0 and 'LXD is already initialized' not in lxd_init.stdout
 
+    - name: Disable ipv6 on lxdbr0
+      ansible.builtin.command: lxc network set lxdbr0 ipv6.address none
+      changed_when: false
+
     - name: Disable DHCP on lxdbr0 (IPv4 & IPv6)
       ansible.builtin.command: >
         lxc network set lxdbr0 {{ item.key }} {{ item.value }}
       loop:
         - { key: "ipv4.dhcp", value: "false" }
-        - { key: "ipv6.dhcp", value: "false" }
-        - { key: "ipv6.dhcp.stateful", value: "false" }
       changed_when: false
 
     - name: Enable Prometheus server
@@ -56,6 +58,21 @@
       loop:
         - "metrics.crt"
         - "metrics.key"
+
+    - name: Enable security.ipv4_filtering on default profile
+      community.general.lxd_profile:
+        name: default
+        state: present
+        devices:
+          eth0:
+            name: eth0
+            network: lxdbr0
+            type: nic
+            security.ipv4_filtering: "true"
+          root:
+            path: /
+            pool: default
+            type: disk
 
     - name: Launch and configure LXC containers
       community.general.lxd_container:
