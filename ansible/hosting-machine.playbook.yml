@@ -36,6 +36,9 @@
         lxc network set lxdbr0 {{ item.key }} {{ item.value }}
       loop:
         - { key: "ipv4.dhcp", value: "false" }
+        - { key: "ipv6.dhcp", value: "false" }
+        - { key: "ipv4.address", value: "{{ gateway4 }}/24" }
+        - { key: "ipv4.nat", value: "true" }
       changed_when: false
 
     - name: Enable Prometheus server
@@ -59,7 +62,7 @@
         - "metrics.crt"
         - "metrics.key"
 
-    - name: Enable security.ipv4_filtering on default profile
+    - name: default profile configuration
       community.general.lxd_profile:
         name: default
         state: present
@@ -68,7 +71,6 @@
             name: eth0
             network: lxdbr0
             type: nic
-            security.ipv4_filtering: "true"
           root:
             path: /
             pool: default
@@ -90,12 +92,6 @@
           limits.cpu: "{{ item.container_cpu_limit }}"
         devices: "{{ item.devices }}"
       loop: "{{ lxd_containers }}"
-
-    - name: Override container (IPv4)
-      ansible.builtin.command: lxc config device override {{ item.name }} eth0 ipv4.address={{ item.ipv4_address }}
-      loop: "{{ lxd_containers }}"
-      when: item.ipv4_address is defined
-      changed_when: false
 
     - name: Restart containers to apply network changes
       ansible.builtin.command: lxc restart {{ item.name }}

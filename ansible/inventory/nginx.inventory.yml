@@ -1,0 +1,28 @@
+all:
+  hosts:
+    nginx:
+      ip: "{{ containers.nginx.ip }}"
+      ansible_host: "{{ ansible_host_machine.ansible_host }}"
+      lxc_container: "nginx"
+      ansible_connection: lxc_ssh
+      ansible_ssh_private_key_file: ~/ssh-keys/lxd_dev.pem
+      ansible_user: ubuntu
+      ansible_python_interpreter: /usr/bin/python3
+      ansible_become: true
+      ansible_become_method: sudo
+      ansible_become_user: root
+
+  vars:
+    container_user: "root"
+    container_ssh_key: "./files/ssh-key.pem"
+    no_grpc_services: true
+    openresty_version: "1.27.1.2"
+    logging_dir: "/var/log/openresty"
+
+    alloy_monitor_service: "nginx"
+    
+    geoip_dir: "/opt/geoip"
+    maxmind_license_key: "{{ MAXMIND_KEY }}"
+
+    nginx_web_root: "/opt/wwwroot/flookaa.com"
+    nginx_path: "/usr/local/openresty/nginx"

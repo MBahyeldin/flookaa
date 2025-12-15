@@ -1,6 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { SubscribeChannelPayload, SubscribeDefaultPayload, WsEventMessage, WsMessage } from "@/types/Ws";
 
+const WEBSOCKET_BASE_URL = import.meta.env.VITE_WEBSOCKET_BASE_URL;
+
+if (!WEBSOCKET_BASE_URL) {
+    throw new Error("WEBSOCKET_BASE_URL is not defined in environment variables");
+}
+
 type MessageListener = (payload: WsEventMessage) => void;
 
 export default class WebSocketService {
@@ -26,7 +32,7 @@ export default class WebSocketService {
     }
 
     private async waitForWebSocketOpen(): Promise<void> {
-        this.ws = new WebSocket("ws://localhost:5173/ws");
+        this.ws = new WebSocket(`${WEBSOCKET_BASE_URL}/ws`);
 
         return new Promise((resolve, reject) => {
             if (!this.ws) return reject(new Error("WebSocket is not initialized"));

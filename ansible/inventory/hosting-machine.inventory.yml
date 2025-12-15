@@ -12,6 +12,29 @@ all:
 
   vars:
     lxd_containers:
+      - name: "nginx"
+        source_alias: "24.04"
+        source_type: "image"
+        profiles:
+          - "default"
+        state: "started"
+        container_user: "ubuntu"
+        container_ssh_key: "~/ssh-keys/lxd_dev.pem"
+        container_memory_limit: "2GB"
+        container_cpu_limit: "1"
+        container_root_disk_size: "5GB"
+        ipv4_address: "{{ containers.nginx.ip }}"
+
+        devices:
+          sshport:
+            connect: tcp:127.0.0.1:22
+            listen: "tcp:0.0.0.0:{{ containers.nginx.ports.ssh }}"
+            type: proxy
+          httpport:
+            connect: "tcp:127.0.0.1:80"
+            listen: "tcp:0.0.0.0:{{ containers.nginx.ports.http }}"
+            type: proxy
+
       - name: "redis"
         source_alias: "24.04"
         source_type: "image"

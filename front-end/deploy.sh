@@ -5,4 +5,4 @@ echo "Starting front-end deployment..."
 
 pnpm run build
 
-scp -r dist/* mini-onshape:/home/azureuser/www/html/
+scp -r dist/* flookaa-front-end:/opt/wwwroot/flookaa.com/

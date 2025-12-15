@@ -1,0 +1,14 @@
+network:
+  version: 2
+  ethernets:
+    eth0:
+      link-local: []
+      dhcp6: no
+      accept-ra: no
+      addresses:
+        - "{{ ip }}/24"
+      gateway4: "{{ gateway4 }}"
+      nameservers:
+        addresses:
+          - 8.8.8.8
+          - 8.8.4.4

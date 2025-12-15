@@ -1,0 +1,74 @@
+---
+- name: Ensure GeoIP directory exists
+  ansible.builtin.file:
+    path: "{{ geoip_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Download GeoLite2-Country database
+  ansible.builtin.get_url:
+    url: "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key={{ maxmind_license_key }}&suffix=tar.gz"
+    dest: "{{ geoip_dir }}/GeoLite2-Country.tar.gz"
+    mode: "0644"
+
+- name: Download GeoLite2-City database
+  ansible.builtin.get_url:
+    url: "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key={{ maxmind_license_key }}&suffix=tar.gz"
+    dest: "{{ geoip_dir }}/GeoLite2-City.tar.gz"
+    mode: "0644"
+
+- name: Extract Country DB archive
+  ansible.builtin.unarchive:
+    src: "{{ geoip_dir }}/GeoLite2-Country.tar.gz"
+    dest: "{{ geoip_dir }}"
+    remote_src: true
+
+- name: Extract City DB archive
+  ansible.builtin.unarchive:
+    src: "{{ geoip_dir }}/GeoLite2-City.tar.gz"
+    dest: "{{ geoip_dir }}"
+    remote_src: true
+
+- name: Find extracted country mmdb files
+  ansible.builtin.find:
+    paths: "{{ geoip_dir }}"
+    patterns: "GeoLite2-Country.mmdb"
+    file_type: file
+    recurse: true
+  register: country_mmdb_files
+
+- name: Pick newest country mmdb
+  ansible.builtin.set_fact:
+    newest_country_mmdb: "{{ (country_mmdb_files.files | sort(attribute='mtime', reverse=True))[0].path }}"
+
+- name: Move newest country mmdb into place
+  ansible.builtin.command:
+    cmd: mv "{{ newest_country_mmdb }}" "{{ geoip_dir }}/GeoLite2-Country.mmdb"
+  changed_when: false
+
+- name: Find extracted city mmdb files
+  ansible.builtin.find:
+    paths: "{{ geoip_dir }}"
+    patterns: "GeoLite2-City.mmdb"
+    file_type: file
+    recurse: true
+  register: city_mmdb_files
+
+- name: Pick newest city mmdb
+  ansible.builtin.set_fact:
+    newest_city_mmdb: "{{ (city_mmdb_files.files | sort(attribute='mtime', reverse=True))[0].path }}"
+
+- name: Move newest city mmdb into place
+  ansible.builtin.command:
+    cmd: mv "{{ newest_city_mmdb }}" "{{ geoip_dir }}/GeoLite2-City.mmdb"
+  changed_when: false
+
+- name: Move country mmdb to nginx readable location
+  ansible.builtin.command:
+    cmd: cp "{{ geoip_dir }}/GeoLite2-Country.mmdb" "{{ nginx_path }}/GeoIP/GeoLite2-Country.mmdb"
+  changed_when: false
+
+- name: Move city mmdb to nginx readable location
+  ansible.builtin.command:
+    cmd: cp "{{ geoip_dir }}/GeoLite2-City.mmdb" "{{ nginx_path }}/GeoIP/GeoLite2-City.mmdb"
+  changed_when: false

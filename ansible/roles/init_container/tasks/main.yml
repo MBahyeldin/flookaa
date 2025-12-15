@@ -1,4 +1,9 @@
 ---
+- name: Configure Netplan 
+  ansible.builtin.include_role:
+    name: netplan
+    tasks_from: main
+
 - name: Update APT cache
   ansible.builtin.apt:
     update_cache: true

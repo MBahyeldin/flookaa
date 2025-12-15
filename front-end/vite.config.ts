@@ -13,40 +13,20 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/api/v1/upload": {
-        target: "https://lxd-development-s3",
-        changeOrigin: true,
-        secure: false,
-      },
-      "/api/v1/audio": {
-        target: "https://lxd-development-s3",
-        changeOrigin: true,
-        secure: false,
-      },
-      "/files": {
-        target: "https://lxd-development-s3",
-        changeOrigin: true,
-        secure: false,
-      },
-      "/audio": {
-        target: "https://lxd-development-s3",
-        changeOrigin: true,
-        secure: false,
-      },
       "/api": {
-        target: "https://lxd-development-app",
+        target: process.env.VITE_API_BASE_URL || "https://lxd-development-app",
         changeOrigin: true,
         secure: false,
         cookieDomainRewrite: "localhost", // 👈 rewrites cookie domain
       },
       "/query": {
-        target: "https://lxd-development-app",
+        target: process.env.VITE_API_BASE_URL || "https://lxd-development-app",
         changeOrigin: true,
         secure: false,
         cookieDomainRewrite: "localhost", // 👈 rewrites cookie domain
       },
       "/ws": {
-        target: "ws://lxd-development:8080",
+        target: process.env.VITE_WEBSOCKET_BASE_URL || "ws://lxd-development-app",
         changeOrigin: true,
         secure: false,
         cookieDomainRewrite: "localhost", // 👈 rewrites cookie domain

@@ -8,7 +8,14 @@ ansible_host_machine:
 
 server_cert: "/etc/ssl/certs/server.crt"
 
+gateway4: "10.0.0.1"
+
 containers:
+  nginx:
+    ip: "10.0.0.10"
+    ports:
+      ssh: 2210
+      http: 80
   redis:
     ip: "10.0.0.60"
     ports:

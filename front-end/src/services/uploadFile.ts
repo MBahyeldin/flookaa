@@ -1,4 +1,4 @@
-const S3_BUCKET_BASE_URL = import.meta.env.S3_BUCKET_BASE_URL || "";
+const S3_BUCKET_BASE_URL = import.meta.env.VITE_S3_BUCKET_BASE_URL || "";
 
 export default async function uploadFile(file: File): Promise<string> {
   const { ticket_id } = await uploadFileStepOne(file);

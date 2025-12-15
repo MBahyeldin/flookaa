@@ -1,0 +1,108 @@
+---
+- name: Install required dependencies
+  ansible.builtin.apt:
+    name:
+      - libmaxminddb-dev
+      - build-essential
+      - git
+      - libpcre3
+      - libpcre3-dev
+      - zlib1g-dev
+      - libssl-dev
+      - wget
+      - curl
+      - unzip
+    state: present
+
+- name: Create build directory
+  ansible.builtin.file:
+    path: /opt/build
+    state: directory
+
+- name: Clone GeoIP2 Nginx module
+  ansible.builtin.git:
+    repo: https://github.com/leev/ngx_http_geoip2_module.git
+    dest: /opt/build/ngx_http_geoip2_module
+    version: master
+
+- name: Check if OpenResty is already installed
+  ansible.builtin.stat:
+    path: /opt/build/openresty-{{ openresty_version }}
+  register: openresty_stat
+
+- name: Download OpenResty source if not present
+  ansible.builtin.get_url:
+    url: "https://openresty.org/download/openresty-{{ openresty_version }}.tar.gz"
+    dest: /opt/build/openresty.tar.gz
+
+- name: Extract OpenResty
+  ansible.builtin.unarchive:
+    src: /opt/build/openresty.tar.gz
+    dest: /opt/build
+    remote_src: yes
+
+
+- name: Configure OpenResty with GeoIP2 module
+  ansible.builtin.shell: 
+    cmd: >
+      ./configure \
+        --with-openssl='${which openssl}' \
+        --with-http_ssl_module \
+        --with-http_v2_module \
+        --with-stream \
+        --with-stream_ssl_module \
+        --with-http_realip_module \
+        --with-http_stub_status_module \
+        --with-http_gzip_static_module \
+        --with-http_auth_request_module \
+        --add-module=/opt/build/ngx_http_geoip2_module
+  args:
+    chdir: "/opt/build/openresty-{{ openresty_version }}"
+    creates: "/opt/build/openresty-{{ openresty_version }}/Makefile"
+
+- name: Build OpenResty
+  ansible.builtin.shell: 
+    cmd: make -j{{ ansible_processor_vcpus }}
+  args:
+    chdir: "/opt/build/openresty-{{ openresty_version }}"
+  when: ansible_facts['os_family'] != ""
+
+
+- name: Install OpenResty
+  ansible.builtin.shell: 
+    cmd: make install
+  args:
+    chdir: "/opt/build/openresty-{{ openresty_version }}"
+  become: yes
+
+- name: Create nginx Directories
+  ansible.builtin.file:
+    path: "{{ nginx_path }}/{{ item }}"
+    state: directory
+    mode: "u=rwx,g=+rwx,o="
+    owner: "www-data"
+    group: "www-data"
+  loop:
+    - "conf.d"
+    - "sites-available"
+    - "sites-enabled"
+    - "auth"
+    - "GeoIP"
+
+- name: Create root HTML directory
+  ansible.builtin.file:
+    path: "{{ nginx_web_root }}"
+    state: directory
+    mode: "u=rwx,g=+rwx,o="
+    owner: "www-data"
+    group: "www-data"
+
+- name: Do we need to init geoip databases?
+  ansible.builtin.stat:
+    path: "{{ geoip_dir }}/GeoLite2-Country.mmdb"
+  register: country_mmdb_files_check
+
+- name: Init geoip databases
+  ansible.builtin.include_role:
+    name: maxmind
+  when: not country_mmdb_files_check.stat.exists

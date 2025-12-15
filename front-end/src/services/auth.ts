@@ -1,11 +1,17 @@
 import type { Info } from "@/types/auth";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  throw new Error("API_BASE_URL is not defined");
+}
+
 export async function fetchCurrentUser(): Promise<Info | null> {
   try {
     const isLoggedIn = localStorage.getItem("loginSuccess");
     if (!isLoggedIn) return null;
 
-    const resp = await fetch(`/api/v1/auth/info`, { credentials: "include" });
+    const resp = await fetch(`${API_BASE_URL}/api/v1/auth/info`, { credentials: "include" });
     if (!resp.ok) return null;
 
     return (await resp.json()) as Info;
@@ -19,7 +25,7 @@ export async function logOut(): Promise<void> {
   console.log("Logging out...");
 
   try {
-    await fetch(`/api/v1/auth/logout`, {
+    await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
       method: "POST",
       credentials: "include",
     });
