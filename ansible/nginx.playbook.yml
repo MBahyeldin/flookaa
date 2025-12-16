@@ -36,33 +36,31 @@
         group: root
         mode: '0644'
 
-    - name: Copy Nginx site configuration for flookaa.com
+    - name: Copy Nginx sites configuration
       ansible.builtin.template:
-        src: templates/nginx/sites/flookaa.conf
-        dest: "{{ nginx_path }}/sites-available/flookaa.conf"
+        src: "templates/nginx/sites/{{ item.template }}"
+        dest: "{{ nginx_path }}/sites-available/{{ item.dest }}"
         owner: root
         group: root
         mode: '0644'
+      loop:
+        - { template: "flookaa.conf.j2", dest: "flookaa.conf" }
+        - { template: "grafana.conf.j2", dest: "grafana.conf" }
+        - { template: "default.conf.j2", dest: "default.conf" }
+        - { template: "api.conf.j2", dest: "api.conf" }
+        - { template: "ws.conf.j2", dest: "ws.conf" }
 
-    - name: Enable Nginx site for flookaa.com
+    - name: Enable Nginx sites
       ansible.builtin.file:
-        src: "{{ nginx_path }}/sites-available/flookaa.conf"
-        dest: "{{ nginx_path }}/sites-enabled/flookaa.conf"
+        src: "{{ nginx_path }}/sites-available/{{ item.dest }}"
+        dest: "{{ nginx_path }}/sites-enabled/{{ item.dest }}"
         state: link
-
-    - name: Copy Nginx default configuration for flookaa.com
-      ansible.builtin.template:
-        src: templates/nginx/sites/default.conf
-        dest: "{{ nginx_path }}/sites-available/default.conf"
-        owner: root
-        group: root
-        mode: '0644'
-
-    - name: Enable Nginx site for default
-      ansible.builtin.file:
-        src: "{{ nginx_path }}/sites-available/default.conf"
-        dest: "{{ nginx_path }}/sites-enabled/default.conf"
-        state: link
+      loop:
+        - { dest: "flookaa.conf" }
+        - { dest: "grafana.conf" }
+        - { dest: "default.conf" }
+        - { dest: "api.conf" }
+        - { dest: "ws.conf" }
 
     - name: Ensure Nginx is started and enabled
       ansible.builtin.service:

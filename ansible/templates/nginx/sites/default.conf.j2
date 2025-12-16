@@ -1,0 +1,11 @@
+
+
+server {
+  listen 80;
+  server_tokens off;
+
+  location / {
+    add_header X-is-default: "true" always;
+    return 588;
+  }
+}

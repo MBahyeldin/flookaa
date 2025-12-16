@@ -8,9 +8,11 @@ commands=(
   "ansible-playbook   app.playbook.yml                  -i inventory/app.inventory.yml             -e @vars/app_vault.yml      --vault-password-file ./internal-scripts/vault-pass.bash"
   "ansible-playbook   postgres.playbook.yml             -i inventory/postgres.inventory.yml        -e @vars/postgres_vault.yml --vault-password-file ./internal-scripts/vault-pass.bash"
   "ansible-playbook   s3.playbook.yml                   -i inventory/s3.inventory.yml              -e @vars/s3_vault.yml       --vault-password-file ./internal-scripts/vault-pass.bash"
+  "ansible-playbook   mongodb.playbook.yml              -i inventory/mongodb.inventory.yml                                     --vault-password-file ./internal-scripts/vault-pass.bash"
   "ansible-playbook   nats.playbook.yml                 -i inventory/nats.inventory.yml                                        --vault-password-file ./internal-scripts/vault-pass.bash"
   "ansible-playbook   grafana.playbook.yml              -i inventory/grafana.inventory.yml         -e @vars/grafana_vault.yml  --vault-password-file ./internal-scripts/vault-pass.bash"
   "ansible-playbook   neo4j.playbook.yml                -i inventory/neo4j.inventory.yml           -e @vars/neo4j_vault.yml    --vault-password-file ./internal-scripts/vault-pass.bash"
+  "ansible-playbook   internal-build.playbook.yml       -i inventory/internal-build.inventory.yml"
  )
 
 # Display the menu

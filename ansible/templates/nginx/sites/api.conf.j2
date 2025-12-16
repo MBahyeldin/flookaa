@@ -1,0 +1,29 @@
+server {
+    listen 443 ssl;
+    server_name api.flookaa.com;
+
+
+    # SSL certificate
+    ssl_certificate /etc/letsencrypt/live/api.flookaa.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.flookaa.com/privkey.pem;
+
+    set $app_host "{{ containers.app.ip }}:{{ containers.app.ports.http }}";
+
+    ## api proxy pass
+    location / {
+        proxy_pass http://$app_host;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    ## Health check
+    location /health {
+        return 200 "OK\n";
+    }
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+}

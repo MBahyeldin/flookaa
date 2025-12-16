@@ -34,6 +34,10 @@ all:
             connect: "tcp:127.0.0.1:80"
             listen: "tcp:0.0.0.0:{{ containers.nginx.ports.http }}"
             type: proxy
+          httpsport:
+            connect: "tcp:127.0.0.1:443"
+            listen: "tcp:0.0.0.0:{{ containers.nginx.ports.https }}"
+            type: proxy
 
       - name: "redis"
         source_alias: "24.04"
@@ -84,10 +88,6 @@ all:
             connect: "tcp:127.0.0.1:{{ containers.app.ports.grpc }}"
             listen: "tcp:0.0.0.0:{{ containers.app.ports.grpc }}"
             type: proxy
-          promtail:
-            connect: "tcp:127.0.0.1:9080"
-            listen: "tcp:0.0.0.0:9030"
-            type: proxy
 
       - name: "s3"
         source_alias: "24.04"
@@ -110,6 +110,29 @@ all:
           gRPCport:
             connect: "tcp:127.0.0.1:{{ containers.s3.ports.grpc }}"
             listen: "tcp:0.0.0.0:{{ containers.s3.ports.grpc }}"
+            type: proxy
+
+      - name: mongodb
+        source_alias: "jammy"
+        source_type: "image"
+        profiles:
+          - "default"
+        state: "started"
+        container_user: "ubuntu"
+        container_ssh_key: "~/ssh-keys/lxd_dev.pem"
+        container_memory_limit: "4GB"
+        container_cpu_limit: "2"
+        container_root_disk_size: "10GB"
+        ipv4_address: "{{ containers.mongodb.ip }}"
+
+        devices:
+          sshport:
+            connect: tcp:127.0.0.1:22
+            listen: "tcp:0.0.0.0:{{ containers.mongodb.ports.ssh }}"
+            type: proxy
+          mongoport:
+            connect: "tcp:127.0.0.1:{{ containers.mongodb.ports.mongo }}"
+            listen: "tcp:0.0.0.0:{{ containers.mongodb.ports.mongo }}"
             type: proxy
 
       - name: "postgres"
@@ -203,4 +226,26 @@ all:
           neo4jport:
             connect: "tcp:127.0.0.1:{{ containers.neo4j.ports.bolt }}"
             listen: "tcp:0.0.0.0:{{ containers.neo4j.ports.bolt }}"
+            type: proxy
+
+      - name: "internal-build"
+        source_alias: "24.04"
+        source_type: "image"
+        profiles:
+          - "default"
+        state: "started"
+        container_user: "ubuntu"
+        container_ssh_key: "~/ssh-keys/lxd_dev.pem"
+        container_memory_limit: "4GB"
+        container_cpu_limit: "2"
+        container_root_disk_size: "10GB"
+        ipv4_address: "{{ containers.internal_build.ip }}"
+        devices:
+          sshport:
+            connect: tcp:127.0.0.1:22
+            listen: "tcp:0.0.0.0:{{ containers.internal_build.ports.ssh }}"
+            type: proxy
+          httpport:
+            connect: "tcp:127.0.0.1:{{ containers.internal_build.ports.http }}"
+            listen: "tcp:0.0.0.0:{{ containers.internal_build.ports.http }}"
             type: proxy

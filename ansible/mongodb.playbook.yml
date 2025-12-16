@@ -1,0 +1,85 @@
+---
+- name: Setup mongodb
+  hosts: mongodb
+  gather_facts: true
+  vars_files:
+    - universe.yml
+  roles:
+    # - init_container
+
+  tasks:
+    - name: Ensure mongod group exists
+      ansible.builtin.group:
+        name: "{{ mongod_group }}"
+        gid: "{{ mongod_group_id }}"
+        state: present
+        system: true
+
+    - name: Ensure mongod user exists
+      ansible.builtin.user:
+        name: "{{ mongod_user }}"
+        uid: "{{ mongod_user_id }}"
+        group: "{{ mongod_group }}"
+        create_home: yes
+        shell: /usr/bin/bash
+        home: "/home/{{ mongod_user }}"
+        state: present
+        system: true
+
+    - name: Ensure data directory exists
+      ansible.builtin.file:
+        path: "{{ data_directory }}"
+        state: directory
+        owner: "{{ mongod_user }}"
+        group: "{{ mongod_group }}"
+        mode: "0755"
+
+    - name: Add MongoDB GPG key
+      ansible.builtin.apt_key:
+        url: https://www.mongodb.org/static/pgp/server-7.0.asc
+        state: present
+        keyring: /usr/share/keyrings/mongodb-server-7.0.gpg
+
+    - name: Add MongoDB repository
+      ansible.builtin.apt_repository:
+        repo: "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu {{ ansible_facts[\"distribution_release\"] }}/mongodb-org/7.0 multiverse"
+        state: present
+        filename: mongodb-org-7.0
+
+    - name: Install MongoDB
+      ansible.builtin.apt:
+        name: "mongodb-org"
+        state: present
+        update_cache: yes
+
+    - name: Copy mongod.conf
+      ansible.builtin.template:
+        src: "templates/mongodb/mongod.conf.j2"
+        dest: "/etc/mongod.conf"
+        owner: "{{ mongod_user }}"
+        group: "{{ mongod_group }}"
+        mode: "0640"
+
+    - name: Copy mongod systemd service file
+      ansible.builtin.template:
+        src: "templates/mongodb/mongod.service.j2"
+        dest: "/etc/systemd/system/mongod.service"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Ensure MongoDB is started and enabled
+      ansible.builtin.service:
+        name: mongod
+        state: started
+        enabled: true
+
+    - name: reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: yes
+
+    - name: Restart MongoDB to apply any configuration changes
+      ansible.builtin.service:
+        name: mongod
+        state: restarted
+        enabled: true

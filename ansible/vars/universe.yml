@@ -16,6 +16,7 @@ containers:
     ports:
       ssh: 2210
       http: 80
+      https: 443
   redis:
     ip: "10.0.0.60"
     ports:
@@ -26,6 +27,7 @@ containers:
     ports:
       ssh: 2230
       grpc: 5030
+      http: 8080
   postgres:
     ip: "10.0.0.20"
     ports:
@@ -36,6 +38,11 @@ containers:
     ports:
       ssh: 2240
       grpc: 5040
+  mongodb:
+    ip: "10.0.0.50"
+    ports:
+      ssh: 2250
+      mongo: 27017
   nats:
     ip: "10.0.0.70"
     ports:
@@ -53,3 +60,10 @@ containers:
     ports:
       ssh: 2290
       bolt: 7687
+
+  
+  internal_build:
+    ip: "10.0.0.100"
+    ports:
+      ssh: 22100
+      http: 57017

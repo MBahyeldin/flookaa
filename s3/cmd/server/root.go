@@ -14,10 +14,9 @@ import (
 func StartServer() {
 	r := gin.Default()
 
-	// allow CORS for frontend running on localhost:5173
 	// in production, change this to frontend domain
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowOrigins:     []string{"flookaa.com"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,

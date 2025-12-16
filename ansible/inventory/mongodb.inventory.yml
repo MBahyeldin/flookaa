@@ -1,0 +1,27 @@
+all:
+  hosts:
+    mongodb:
+      ip: "{{ containers.mongodb.ip }}"
+      ansible_host: "{{ ansible_host_machine.ansible_host }}"
+      lxc_container: "mongodb"
+      ansible_connection: lxc_ssh
+      ansible_ssh_private_key_file: ~/ssh-keys/lxd_dev.pem
+      ansible_user: ubuntu
+      ansible_python_interpreter: /usr/bin/python3
+      ansible_become: true
+      ansible_become_method: su
+
+  vars:
+    container_user: "root"
+    container_ssh_key: "./files/ssh-key.pem"
+
+    mongod_user: "mongodb"
+    mongod_group: "mongodb"
+    mongod_user_id: 2001
+    mongod_group_id: 2001
+
+    data_directory: "/var/lib/mongodb"
+    log_directory: "/var/log/mongodb"
+
+    alloy_monitor_service: "mongod"
+    no_grpc_services: true

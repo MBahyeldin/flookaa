@@ -7,8 +7,8 @@ OUTPUT_DIR="bin"
 # Make sure output directory exists
 mkdir -p "$OUTPUT_DIR"
 
-echo "🔨 Building $APP_NAME for macOS (arm64)..."
-GOOS=darwin GOARCH=arm64 go build -o "$OUTPUT_DIR/$APP_NAME" .
+echo "🔨 Building $APP_NAME for macOS (amd64)..."
+GOOS=darwin GOARCH=amd64 go build -o "$OUTPUT_DIR/$APP_NAME" .
 
 echo "✅ Build complete: $OUTPUT_DIR/$APP_NAME"
 

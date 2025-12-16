@@ -1,7 +1,7 @@
 all:
   hosts:
     redis:
-      ip: "{{ containers_ips.redis }}"
+      ip: "{{ containers.redis.ip }}"
       ansible_host: "{{ ansible_host_machine.ansible_host }}"
       lxc_container: "redis"
       ansible_connection: lxc_ssh
@@ -39,13 +39,13 @@ all:
     grpc_watching_dir: "/home/gRPC/watched"
     grpc_ssh_key: "./files/ssh-key.pem"
 
-    service_managed_by_gRPC: "app"  # Example service name managed by gRPC
+    service_managed_by_gRPC: "redis_projection"
     service_working_dir: "/opt/{{ service_managed_by_gRPC }}/current"
-    service_binary_name: "app"
-    app_user: "app"
-    app_group: "app"
+    service_binary_name: "redis_projection"
+    app_user: "redis_projection"
+    app_group: "redis_projection"
     app_user_id: 2003
     app_group_id: 2003
     app_ssh_key: "./files/ssh-key.pem"
 
-    alloy_monitor_service: "app"
+    alloy_monitor_service: "redis_projection"

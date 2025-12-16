@@ -65,6 +65,7 @@
         gid: 2004
         state: present
         system: true
+
     - name: Ensure nats user exists
       ansible.builtin.user:
         name: nats
@@ -103,6 +104,7 @@
       ansible.builtin.shell: |
         /tmp/nats-server-install.sh
       args:
+        chdir: /usr/local/bin
         creates: /usr/local/bin/nats-server
 
     - name: Add nats config file

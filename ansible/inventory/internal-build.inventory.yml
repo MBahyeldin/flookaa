@@ -1,0 +1,25 @@
+all:
+  hosts:
+    internal_build:
+      ip: "{{ containers.internal_build.ip }}"
+      ansible_host: "{{ ansible_host_machine.ansible_host }}"
+      lxc_container: "internal-build"
+      ansible_connection: lxc_ssh
+      ansible_ssh_private_key_file: ~/ssh-keys/lxd_dev.pem
+      ansible_user: ubuntu
+      ansible_python_interpreter: /usr/bin/python3
+      ansible_become: true
+      ansible_become_method: su
+
+
+  vars:
+    container_user: "devBuilder"
+    container_ssh_key: "./files/ssh-key.pem"
+    build_user: "{{ container_user }}"
+    build_group: "{{ container_user }}"
+    build_home: "/home/{{ build_user }}"
+    build_shell: "/bin/bash"
+    build_workspace: "{{ build_home }}/workspace"
+
+
+

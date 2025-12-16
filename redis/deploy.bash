@@ -7,8 +7,8 @@ OUTPUT_DIR="bin"
 # Make sure output directory exists
 mkdir -p "$OUTPUT_DIR"
 
-echo "🔨 Building $APP_NAME for Linux (arm64)..."
-GOOS=linux GOARCH=arm64 go build -o "$OUTPUT_DIR/$APP_NAME" .
+echo "🔨 Building $APP_NAME for Linux (amd64)..."
+GOOS=linux GOARCH=amd64 go build -o "$OUTPUT_DIR/$APP_NAME" .
 
 # deploy to remote server
 echo "🚀 Deploying to remote server..."

@@ -111,7 +111,7 @@
 
     - name: Download Prometheus
       ansible.builtin.get_url:
-        url: "https://github.com/prometheus/prometheus/releases/download/v3.5.0/prometheus-3.5.0.linux-arm64.tar.gz"
+        url: "https://github.com/prometheus/prometheus/releases/download/v3.5.0/prometheus-3.5.0.linux-amd64.tar.gz"
         dest: /tmp/prometheus.tar.gz
         mode: '0644'
       when: not prometheus_installed.stat.exists
@@ -122,11 +122,11 @@
         src: /tmp/prometheus.tar.gz
         dest: /opt/
         remote_src: true
-        creates: /opt/prometheus-3.5.0.linux-arm64
+        creates: /opt/prometheus-3.5.0.linux-amd64
 
     - name: Create symlink for Prometheus
       ansible.builtin.file:
-        src: /opt/prometheus-3.5.0.linux-arm64
+        src: /opt/prometheus-3.5.0.linux-amd64
         dest: /opt/prometheus
         state: link
 

@@ -1,0 +1,85 @@
+---
+- name: Setup internal_build
+  hosts: internal_build
+  become: true
+  vars_files:
+    - universe.yml
+  roles:
+    - add_ssh_public_key
+    - netplan
+
+  tasks:
+    - name: Make sure build group exists
+      ansible.builtin.group:
+        name: "{{ build_group }}"
+        state: present
+
+    - name: Make sure build user exists
+      ansible.builtin.user:
+        name: "{{ build_user }}"
+        group: "{{ build_group }}"
+        home: "{{ build_home }}"
+        shell: "{{ build_shell }}"
+        create_home: true
+        state: present
+
+    - name: Ensure build workspace directory exists
+      ansible.builtin.file:
+        path: "{{ build_workspace }}"
+        state: directory
+        owner: "{{ build_user }}"
+        group: "{{ build_group }}"
+        mode: '0755'
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - wget
+          - git
+          - ca-certificates
+          - apt-transport-https
+          - build-essential
+          - libssl-dev
+        state: present
+
+    - name: Install Rust programming language
+      ansible.builtin.shell: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      args:
+        creates: /home/{{ build_user }}/.cargo/bin/rustc
+      become_user: "{{ build_user }}"
+
+    - name: Ensure Cargo bin directory is in PATH
+      ansible.builtin.lineinfile:
+        path: /home/{{ build_user }}/.profile
+        line: 'export PATH="$HOME/.cargo/bin:$PATH"'
+        state: present
+
+    - name: Verify Rust installation
+      ansible.builtin.command: /home/{{ build_user }}/.cargo/bin/rustc --version
+      register: rust_version
+      changed_when: false
+
+    - name: Print Rust version
+      ansible.builtin.debug:
+        msg: "Rust version installed: {{ rust_version.stdout }}"
+
+    - name: Install Golang programming language
+      ansible.builtin.apt:
+        name: golang
+        state: present
+
+    - name: Verify Golang installation
+      ansible.builtin.command: go version
+      register: go_version
+      changed_when: false
+
+
+    - name: Make sure internal-build directory exists
+      ansible.builtin.file:
+        path: /home/{{ build_user }}/internal-build
+        state: directory
+        owner: "{{ build_user }}"
+        group: "{{ build_group }}"
+        mode: '0755'
