@@ -16,6 +16,8 @@ all:
     container_user: "root"
     container_ssh_key: "./files/ssh-key.pem"
 
+    S3_BASE_URL: "https://s3.flookaa.com"
+
     grpc_service_name: "gRPC-server"
     grpc_port: "{{ containers.app.ports.grpc }}"
     grpc_user: "gRPC"

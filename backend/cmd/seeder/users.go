@@ -17,7 +17,7 @@ var users = []db.CreateUserParams{
 		LastName:       "Doe",
 		EmailAddress:   os.Getenv("ADMIN_EMAIL"),
 		Phone:          "+1234567890",
-		HashedPassword: os.Getenv("ADMIN_PASSWORD"), // In a real scenario, ensure this is hashed
+		HashedPassword: sql.NullString{String: os.Getenv("ADMIN_PASSWORD"), Valid: true}, // In a real scenario, ensure this is hashed
 		Thumbnail:      sql.NullString{String: "/files/thumbnail.jpg", Valid: true},
 	},
 }
@@ -36,12 +36,11 @@ func SeedUsers() {
 			continue // User already exists, skip creation
 		}
 
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.HashedPassword), bcrypt.DefaultCost)
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.HashedPassword.String), bcrypt.DefaultCost)
 		if err != nil {
 			log.Fatal(err)
 		}
-		user.HashedPassword = string(hashedPassword)
-
+		user.HashedPassword = sql.NullString{String: string(hashedPassword), Valid: true}
 		_, err = q.CreateUser(ctx, user)
 		if err != nil {
 			log.Fatal(err)

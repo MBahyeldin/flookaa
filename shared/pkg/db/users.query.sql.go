@@ -16,9 +16,9 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (first_name, last_name, phone, email_address, hashed_password, thumbnail, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-RETURNING id, uuid, first_name, last_name, phone, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, bio, postal_code, other_platforms_accounts, country_id, state_id, city_id
+INSERT INTO users (first_name, last_name, phone, email_address, hashed_password, oauth_provider, thumbnail, is_verified, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+RETURNING id, uuid, first_name, last_name, phone, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, bio, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider
 `
 
 type CreateUserParams struct {
@@ -26,8 +26,10 @@ type CreateUserParams struct {
 	LastName       string
 	Phone          string
 	EmailAddress   string
-	HashedPassword string
+	HashedPassword sql.NullString
+	OauthProvider  NullOauthProvider
 	Thumbnail      sql.NullString
+	IsVerified     sql.NullBool
 }
 
 // -------------------------------
@@ -40,7 +42,9 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Phone,
 		arg.EmailAddress,
 		arg.HashedPassword,
+		arg.OauthProvider,
 		arg.Thumbnail,
+		arg.IsVerified,
 	)
 	var i User
 	err := row.Scan(
@@ -62,6 +66,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.CountryID,
 		&i.StateID,
 		&i.CityID,
+		&i.OauthProvider,
 	)
 	return i, err
 }
@@ -123,6 +128,40 @@ func (q *Queries) GetUserBasicInfo(ctx context.Context, id int64) (GetUserBasicI
 	return i, err
 }
 
+const getUserByEmailAddress = `-- name: GetUserByEmailAddress :one
+SELECT id, uuid, first_name, last_name, phone, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, bio, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider FROM users WHERE email_address = $1 AND deleted_at IS NULL LIMIT 1
+`
+
+// -------------------------------
+// 2.1 Get User by email and provider
+// -------------------------------
+func (q *Queries) GetUserByEmailAddress(ctx context.Context, emailAddress string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmailAddress, emailAddress)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.FirstName,
+		&i.LastName,
+		&i.Phone,
+		&i.EmailAddress,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.HashedPassword,
+		&i.Thumbnail,
+		&i.IsVerified,
+		&i.Bio,
+		&i.PostalCode,
+		pq.Array(&i.OtherPlatformsAccounts),
+		&i.CountryID,
+		&i.StateID,
+		&i.CityID,
+		&i.OauthProvider,
+	)
+	return i, err
+}
+
 const getUserFollowedChannels = `-- name: GetUserFollowedChannels :many
 SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.created_at, c.updated_at, c.deleted_at
 FROM channel_followers cf
@@ -174,11 +213,11 @@ SELECT id, email_address, hashed_password FROM users WHERE email_address = $1 LI
 type GetUserHashedPasswordByEmailRow struct {
 	ID             int64
 	EmailAddress   string
-	HashedPassword string
+	HashedPassword sql.NullString
 }
 
 // -------------------------------
-// 2. Get User HashedPassword by email for authentication
+// 2.0 Get User HashedPassword by email for authentication
 // -------------------------------
 func (q *Queries) GetUserHashedPasswordByEmail(ctx context.Context, emailAddress string) (GetUserHashedPasswordByEmailRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserHashedPasswordByEmail, emailAddress)
@@ -232,7 +271,7 @@ func (q *Queries) GetUserJoinedChannels(ctx context.Context, userID int64) ([]Ch
 }
 
 const getUserProfile = `-- name: GetUserProfile :one
-SELECT u.id, u.uuid, u.first_name, u.last_name, u.phone, u.email_address, u.created_at, u.updated_at, u.deleted_at, u.hashed_password, u.thumbnail, u.is_verified, u.bio, u.postal_code, u.other_platforms_accounts, u.country_id, u.state_id, u.city_id,
+SELECT u.id, u.uuid, u.first_name, u.last_name, u.phone, u.email_address, u.created_at, u.updated_at, u.deleted_at, u.hashed_password, u.thumbnail, u.is_verified, u.bio, u.postal_code, u.other_platforms_accounts, u.country_id, u.state_id, u.city_id, u.oauth_provider,
         (SELECT COALESCE(json_agg(json_build_object(
                'id', c.id,
                'name', c.name,
@@ -268,7 +307,7 @@ type GetUserProfileRow struct {
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 	DeletedAt              sql.NullTime
-	HashedPassword         string
+	HashedPassword         sql.NullString
 	Thumbnail              sql.NullString
 	IsVerified             sql.NullBool
 	Bio                    sql.NullString
@@ -277,6 +316,7 @@ type GetUserProfileRow struct {
 	CountryID              sql.NullInt64
 	StateID                sql.NullInt64
 	CityID                 sql.NullInt64
+	OauthProvider          NullOauthProvider
 	JoinedChannels         pqtype.NullRawMessage
 	FollowedChannels       pqtype.NullRawMessage
 }
@@ -306,6 +346,7 @@ func (q *Queries) GetUserProfile(ctx context.Context, id int64) (GetUserProfileR
 		&i.CountryID,
 		&i.StateID,
 		&i.CityID,
+		&i.OauthProvider,
 		&i.JoinedChannels,
 		&i.FollowedChannels,
 	)
@@ -349,11 +390,11 @@ UPDATE users
 SET hashed_password = $1,
     updated_at = NOW()
 WHERE id = $2
-RETURNING id, uuid, first_name, last_name, phone, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, bio, postal_code, other_platforms_accounts, country_id, state_id, city_id
+RETURNING id, uuid, first_name, last_name, phone, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, bio, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider
 `
 
 type ResetUserPasswordParams struct {
-	HashedPassword string
+	HashedPassword sql.NullString
 	ID             int64
 }
 
@@ -382,6 +423,7 @@ func (q *Queries) ResetUserPassword(ctx context.Context, arg ResetUserPasswordPa
 		&i.CountryID,
 		&i.StateID,
 		&i.CityID,
+		&i.OauthProvider,
 	)
 	return i, err
 }
@@ -418,7 +460,7 @@ func (q *Queries) ResolveUserByID(ctx context.Context, id int64) (ResolveUserByI
 }
 
 const searchUsersByName = `-- name: SearchUsersByName :many
-SELECT id, uuid, first_name, last_name, phone, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, bio, postal_code, other_platforms_accounts, country_id, state_id, city_id
+SELECT id, uuid, first_name, last_name, phone, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, bio, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider
 FROM users
 WHERE (first_name ILIKE '%' || $1 || '%'
        OR last_name ILIKE '%' || $1 || '%')
@@ -464,6 +506,7 @@ func (q *Queries) SearchUsersByName(ctx context.Context, arg SearchUsersByNamePa
 			&i.CountryID,
 			&i.StateID,
 			&i.CityID,
+			&i.OauthProvider,
 		); err != nil {
 			return nil, err
 		}
@@ -518,7 +561,7 @@ type UpdateUserParams struct {
 	LastName               string
 	Phone                  string
 	EmailAddress           string
-	HashedPassword         string
+	HashedPassword         sql.NullString
 	Thumbnail              sql.NullString
 	IsVerified             sql.NullBool
 	Bio                    sql.NullString
@@ -592,7 +635,7 @@ UPDATE users
 SET is_verified = TRUE,
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, uuid, first_name, last_name, phone, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, bio, postal_code, other_platforms_accounts, country_id, state_id, city_id
+RETURNING id, uuid, first_name, last_name, phone, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, bio, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider
 `
 
 // -------------------------------
@@ -620,6 +663,7 @@ func (q *Queries) VerifyUserEmail(ctx context.Context, id int64) (User, error) {
 		&i.CountryID,
 		&i.StateID,
 		&i.CityID,
+		&i.OauthProvider,
 	)
 	return i, err
 }

@@ -2,11 +2,11 @@ package users
 
 import (
 	"app/internal/models"
-	"app/util/token"
 	"database/sql"
 	"net/http"
 	"shared/external/db/postgres"
 	"shared/pkg/db"
+	"shared/util/token"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -86,7 +86,7 @@ func UpdateProfile(c *gin.Context) {
 		LastName:       getStringOrDefault(input.LastName, currentUser.LastName),
 		Phone:          getStringOrDefault(input.Phone, currentUser.Phone),
 		EmailAddress:   getStringOrDefault(input.EmailAddress, currentUser.EmailAddress),
-		HashedPassword: getStringOrDefault(input.HashedPassword, currentUser.HashedPassword),
+		HashedPassword: sql.NullString{String: input.HashedPassword, Valid: input.HashedPassword != ""},
 		Thumbnail:      sql.NullString{String: input.Thumbnail, Valid: input.Thumbnail != ""},
 		Bio:            sql.NullString{String: input.Bio, Valid: true},
 		CityID:         parseNullableInt64(input.CityID),

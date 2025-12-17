@@ -4,11 +4,11 @@ import (
 	"app/internal/models"
 	"app/util/email"
 	"app/util/encryption"
-	"app/util/token"
 	"database/sql"
 	"net/http"
 	"shared/external/db/postgres"
 	"shared/pkg/db"
+	"shared/util/token"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,7 +34,7 @@ func Create(c *gin.Context) {
 		LastName:       userRequest.LastName,
 		EmailAddress:   userRequest.EmailAddress,
 		Phone:          userRequest.Phone,
-		HashedPassword: hashedPassword,
+		HashedPassword: sql.NullString{String: hashedPassword, Valid: true},
 		Thumbnail:      sql.NullString(userRequest.Thumbnail),
 	}
 	// Use the global DbConn variable

@@ -143,6 +143,49 @@ func (ns NullEventTargetTypeEnum) Value() (driver.Value, error) {
 	return string(ns.EventTargetTypeEnum), nil
 }
 
+type OauthProvider string
+
+const (
+	OauthProviderGoogle   OauthProvider = "google"
+	OauthProviderGithub   OauthProvider = "github"
+	OauthProviderLinkedin OauthProvider = "linkedin"
+)
+
+func (e *OauthProvider) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = OauthProvider(s)
+	case string:
+		*e = OauthProvider(s)
+	default:
+		return fmt.Errorf("unsupported scan type for OauthProvider: %T", src)
+	}
+	return nil
+}
+
+type NullOauthProvider struct {
+	OauthProvider OauthProvider
+	Valid         bool // Valid is true if OauthProvider is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullOauthProvider) Scan(value interface{}) error {
+	if value == nil {
+		ns.OauthProvider, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.OauthProvider.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullOauthProvider) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.OauthProvider), nil
+}
+
 type OwnerEnum string
 
 const (
@@ -262,7 +305,7 @@ type User struct {
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 	DeletedAt              sql.NullTime
-	HashedPassword         string
+	HashedPassword         sql.NullString
 	Thumbnail              sql.NullString
 	IsVerified             sql.NullBool
 	Bio                    sql.NullString
@@ -271,6 +314,7 @@ type User struct {
 	CountryID              sql.NullInt64
 	StateID                sql.NullInt64
 	CityID                 sql.NullInt64
+	OauthProvider          NullOauthProvider
 }
 
 type UserRole struct {

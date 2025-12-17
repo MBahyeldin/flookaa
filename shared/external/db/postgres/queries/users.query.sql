@@ -2,15 +2,21 @@
 -- 1. Create a new user
 -- -------------------------------
 -- name: CreateUser :one
-INSERT INTO users (first_name, last_name, phone, email_address, hashed_password, thumbnail, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+INSERT INTO users (first_name, last_name, phone, email_address, hashed_password, oauth_provider, thumbnail, is_verified, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
 RETURNING *;
 
 -- -------------------------------
--- 2. Get User HashedPassword by email for authentication
+-- 2.0 Get User HashedPassword by email for authentication
 -- -------------------------------
 -- name: GetUserHashedPasswordByEmail :one
 SELECT id, email_address, hashed_password FROM users WHERE email_address = $1 LIMIT 1;
+
+-- -------------------------------
+-- 2.1 Get User by email and provider
+-- -------------------------------
+-- name: GetUserByEmailAddress :one
+SELECT * FROM users WHERE email_address = $1 AND deleted_at IS NULL LIMIT 1;
 
 -- -------------------------------
 -- 3. Update user details

@@ -1,9 +1,9 @@
 package middlewares
 
 import (
-	"app/util/token"
 	"fmt"
 	"log"
+	"shared/util/token"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"

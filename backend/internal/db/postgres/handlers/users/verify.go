@@ -2,11 +2,11 @@ package users
 
 import (
 	"app/internal/models"
-	"app/util/token"
 	"fmt"
 	"net/http"
 	"shared/external/db/postgres"
 	"shared/pkg/db"
+	"shared/util/token"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"

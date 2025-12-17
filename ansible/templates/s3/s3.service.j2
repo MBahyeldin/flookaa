@@ -4,6 +4,7 @@ After=network.target
 
 [Service]
 Environment='DATABASE_DSN={{ vault_DATABASE_DSN }}'
+Environment='JWT_SECRET_KEY={{ vault_JWT_SECRET_KEY }}'
 WorkingDirectory={{ service_working_dir }}
 ExecStart={{ service_working_dir }}/{{ service_binary_name }}
 

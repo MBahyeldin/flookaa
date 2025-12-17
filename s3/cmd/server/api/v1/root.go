@@ -10,6 +10,7 @@ func AddV1Group(r *gin.RouterGroup) *gin.RouterGroup {
 	v1Group := r.Group("/v1")
 	AddUploadRoutes(v1Group)
 	AddHealthRoutes(v1Group)
+	AddGetImageFromUrlRoutes(v1Group)
 	audio.AddAudioGroup(v1Group)
 	return v1Group
 }

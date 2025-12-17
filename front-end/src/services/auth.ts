@@ -9,9 +9,6 @@ if (!API_BASE_URL) {
 
 export async function fetchCurrentUser(): Promise<Info | null> {
   try {
-    const isLoggedIn = localStorage.getItem("loginSuccess");
-    if (!isLoggedIn) return null;
-
     const resp = await fetch(`${API_BASE_URL}/api/v1/auth/info`, { credentials: "include" });
     if (!resp.ok) return null;
     const setProfileId = useUserProfileStore.getState().setProfileId;
@@ -19,7 +16,7 @@ export async function fetchCurrentUser(): Promise<Info | null> {
     setProfileId(data.id);
     return (data);
   } catch (err) {
-    console.error("Failed to fetch user:", err);
+    console.log("Can't wait to see you log in again!");
     return null;
   }
 }

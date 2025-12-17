@@ -33,7 +33,7 @@ export default async function uploadAudio({
     });
     const data = await presignedUrl.json();
     console.log("Server response:", data);
-    return data.file_path;
+    return S3_BUCKET_BASE_URL + data.file_path;
   } catch (err) {
     console.error("Failed to upload audio file:", err);
     throw err;

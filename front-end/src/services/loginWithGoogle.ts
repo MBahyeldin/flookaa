@@ -4,8 +4,8 @@ if (!API_BASE_URL) {
     throw new Error("VITE_API_BASE_URL is not defined");
 }
 
-export default async function loginWithGoogle() {
-    const googleLoginUrl = `${API_BASE_URL}/api/v1/auth/google`;
+export default async function continueWithGoogle(state: "login" | "signup") {
+    const googleLoginUrl = `${API_BASE_URL}/api/v1/auth/google?state=${state}`;
     const oAuthUrlResp = await fetch(googleLoginUrl, {
         method: "GET",
         credentials: "include",
@@ -17,5 +17,4 @@ export default async function loginWithGoogle() {
 
     const { url } = await oAuthUrlResp.json();
     window.location.href = url;
-
 }

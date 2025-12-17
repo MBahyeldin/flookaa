@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS roles (
     deleted_at TIMESTAMP WITHOUT TIME ZONE
 );
 
+
+CREATE TYPE oauth_provider AS ENUM ('google', 'github', 'linkedin');
 -- -------------------------------
 -- 2. Users Table
 -- -------------------------------
@@ -23,7 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now() NOT NULL,
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now() NOT NULL,
     deleted_at TIMESTAMP WITHOUT TIME ZONE,
-    hashed_password VARCHAR(255) NOT NULL,
+    hashed_password VARCHAR(255),
     thumbnail VARCHAR(255),
     is_verified BOOLEAN DEFAULT FALSE,
     bio TEXT,
@@ -31,7 +33,15 @@ CREATE TABLE IF NOT EXISTS users (
     other_platforms_accounts TEXT[],
     country_id BIGINT REFERENCES countries(id),
     state_id BIGINT REFERENCES states(id),
-    city_id BIGINT REFERENCES cities(id)
+    city_id BIGINT REFERENCES cities(id),
+    oauth_provider oauth_provider
+);
+
+-- Ensure that either hashed_password or oauth_provider is set, but not both
+ALTER TABLE users
+ADD CONSTRAINT users_auth_method_check CHECK (
+    (hashed_password IS NOT NULL AND oauth_provider IS NULL)
+ OR (hashed_password IS NULL AND oauth_provider IS NOT NULL)
 );
 
 -- -------------------------------

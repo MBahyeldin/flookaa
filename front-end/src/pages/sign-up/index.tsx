@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Form } from "@/models/Forms/Form";
 import FormComponent from "@/components/form";
 import { Button } from "@/components/ui/button";
+import OAuthProviders from "@/components/oauth-providers";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -50,6 +51,7 @@ export default function SignupPage() {
               </div>
             </FormComponent>
           </>
+          <OAuthProviders state="signup" />
         </CardContent>
       </Card>
     </div>
