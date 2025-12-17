@@ -13,7 +13,7 @@ export default function VisitorPage() {
             Welcome to FLOOKA!
           </h1>
           <p className="font-[var(--font-inter)] font-semibold text-[1.5rem] text-muted leading-[100%] tracking-[0] md:w-[80%]">
-            Post, share, and connect on social media that respects your voyage.
+            Comming Soon, Stay toned!.
           </p>
           <Button className="mt-6" variant="default" size="lg" borderRadius="full">
             <Link to="/sign-up">Get Started</Link>

@@ -3,15 +3,23 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Search, Filter, Plus } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getChannels } from "@/services/channels";
 import type { Channel } from "@/types/channel";
 import { Input } from "@/components/ui/input";
 import { ChannelCard } from "./ChannelCard";
+import { useIsUserLoggedIn } from "@/stores/UserProfileStore";
 
 export default function ChannelsPage() {
+  const nagivate = useNavigate();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
+  const isUserLoggedIn = useIsUserLoggedIn();
+
+  if (!isUserLoggedIn) {
+    nagivate("/");
+  }
+
 
   useEffect(() => {
     const fetchChannels = async () => {

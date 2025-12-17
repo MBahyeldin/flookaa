@@ -8,7 +8,7 @@ if (!API_BASE_URL) {
 
 export async function getChannels(): Promise<{ channels: Channel[] } | null> {
   try {
-    const resp = await fetch(`${API_BASE_URL}/api/v1/channels`, {
+    const resp = await fetch(`${API_BASE_URL}/api/v1/channels/`, {
       credentials: "include",
     });
     if (!resp.ok) return null;

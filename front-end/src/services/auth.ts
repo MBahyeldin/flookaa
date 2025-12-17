@@ -1,3 +1,4 @@
+import { useUserProfileStore } from "@/stores/UserProfileStore";
 import type { Info } from "@/types/auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -13,8 +14,10 @@ export async function fetchCurrentUser(): Promise<Info | null> {
 
     const resp = await fetch(`${API_BASE_URL}/api/v1/auth/info`, { credentials: "include" });
     if (!resp.ok) return null;
-
-    return (await resp.json()) as Info;
+    const setProfileId = useUserProfileStore.getState().setProfileId;
+    const data = (await resp.json()) as Info;
+    setProfileId(data.id);
+    return (data);
   } catch (err) {
     console.error("Failed to fetch user:", err);
     return null;

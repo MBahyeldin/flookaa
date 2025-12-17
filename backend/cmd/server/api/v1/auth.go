@@ -1,6 +1,7 @@
 package v1
 
 import (
+	oauthproviders "app/internal/OAuthProviders"
 	"app/internal/db/postgres/handlers/users"
 	"net/http"
 
@@ -15,6 +16,7 @@ func AddAuthRoutes(r *gin.RouterGroup) {
 		authGroup.POST("/login", users.Login)
 		authGroup.POST("/logout", handleLogOut)
 		authGroup.GET("/info", users.Info)
+		authGroup.GET("/google", handleGoogleOAuth)
 	}
 }
 
@@ -31,4 +33,9 @@ func handleLogOut(c *gin.Context) {
 		SameSite: http.SameSiteNoneMode,
 	})
 	c.JSON(200, gin.H{"message": "Logged out successfully"})
+}
+
+func handleGoogleOAuth(c *gin.Context) {
+	url := oauthproviders.GetGoogleOAuthUrl()
+	c.JSON(http.StatusOK, gin.H{"url": url})
 }

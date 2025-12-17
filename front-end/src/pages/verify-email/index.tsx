@@ -10,6 +10,7 @@ import {
   Loader2,
   MailCheck,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function VerifyEmailPage() {
   const [verificationStatus, setVerificationStatus] = React.useState<
@@ -17,6 +18,7 @@ export default function VerifyEmailPage() {
   >("pending");
 
   React.useEffect(() => {
+    const navigate = useNavigate();
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
 
@@ -32,7 +34,7 @@ export default function VerifyEmailPage() {
         setVerificationStatus("success");
 
         setTimeout(() => {
-          window.location.href = "/";
+              navigate("/");
         }, 2000);
       } catch {
         setVerificationStatus("error");

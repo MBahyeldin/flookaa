@@ -19,3 +19,6 @@ export const useUserProfileStore = create(
       }),
   }))
 );
+
+export const useIsUserLoggedIn = () =>
+  useUserProfileStore((s) => s.profileId !== null);

@@ -17,7 +17,9 @@ Environment='NEO4J_PASSWORD={{ vault_NEO4J_PASSWORD }}'
 Environment='SMTP_EMAIL_ADDRESS={{ vault_SMTP_EMAIL_ADDRESS }}'
 Environment='SMTP_EMAIL_PASSWORD={{ vault_SMTP_EMAIL_PASSWORD }}'
 Environment='SMTP_HOST={{ vault_SMTP_HOST }}'
-Environment='SMTP_PORT= {{ vault_SMTP_PORT }}'
+Environment='SMTP_PORT={{ vault_SMTP_PORT }}'
+Environment='GOOGLE_OAUTH_CLIENT_ID={{ vault_GOOGLE_OAUTH_CLIENT_ID }}'
+Environment='GOOGLE_OAUTH_CLIENT_SECRET={{ vault_GOOGLE_OAUTH_CLIENT_SECRET }}'
 WorkingDirectory={{ service_working_dir }}
 ExecStart={{ service_working_dir }}/{{ service_binary_name }}
 
