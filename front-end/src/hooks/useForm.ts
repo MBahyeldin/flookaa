@@ -72,6 +72,7 @@ export default function useForm({
             "Content-Type": "application/json",
           },
           body: JSON.stringify(data),
+          credentials: "include",
         });
         if (!resp.ok) {
           const errorData = await resp.json();

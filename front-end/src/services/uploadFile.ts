@@ -8,7 +8,7 @@ export default async function uploadFile(file: File): Promise<string> {
     totalChunks,
     fileName: file.name,
   });
-  return result.url;
+  return S3_BUCKET_BASE_URL + result.url;
 }
 
 async function uploadFileStepOne(file: File): Promise<{ ticket_id: string }> {
@@ -31,6 +31,7 @@ async function uploadFileStepOne(file: File): Promise<{ ticket_id: string }> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
+      credentials: "include",
     });
     const data = await res.json();
     console.log("Server response:", data);
@@ -69,6 +70,7 @@ async function uploadFileStepTwo({
       const res = await fetch(path, {
         method: "POST",
         body: multipart,
+        credentials: "include",
       });
 
       console.log(`Uploaded chunk ${i}/${numChunks}, status: ${res.status}`);
@@ -107,6 +109,7 @@ async function uploadFileStepThree({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ fileName, totalChunks }),
+      credentials: "include",
     });
     if (!res.ok) {
       throw new Error("Failed to finalize upload");

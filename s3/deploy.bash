@@ -13,4 +13,4 @@ GOOS=linux GOARCH=amd64 go build -o "$OUTPUT_DIR/$APP_NAME" .
 echo "✅ Build complete: $OUTPUT_DIR/$APP_NAME"
 
 echo "🚀 Deploying to remote server..."
-scp "$OUTPUT_DIR/$APP_NAME" gRPC@flookaa-s3:/home/gRPC/watched
+scp "$OUTPUT_DIR/$APP_NAME" gRPC@s3:/home/gRPC/watched

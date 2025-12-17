@@ -29,6 +29,7 @@ export default async function uploadAudio({
     const presignedUrl = await fetch(path, {
       method: "POST",
       body: multipart,
+      credentials: "include",
     });
     const data = await presignedUrl.json();
     console.log("Server response:", data);

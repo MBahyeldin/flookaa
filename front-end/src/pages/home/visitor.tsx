@@ -16,7 +16,7 @@ export default function VisitorPage() {
             Post, share, and connect on social media that respects your voyage.
           </p>
           <Button className="mt-6" variant="default" size="lg" borderRadius="full">
-            <Link to="/signup">Get Started</Link>
+            <Link to="/sign-up">Get Started</Link>
           </Button>
         </div>
         <div className="flex relative items-center justify-center p-6">

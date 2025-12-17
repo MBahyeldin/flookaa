@@ -51,7 +51,9 @@ func Login(c *gin.Context) {
 		Path:     "/",
 		MaxAge:   86400,
 		HttpOnly: true,
-		Secure:   false, // change to true in production
+		Secure:   true,
+		Domain:   "flookaa.com",
+		SameSite: http.SameSiteNoneMode,
 	})
 	c.JSON(http.StatusOK, gin.H{"login": "successful", "token": token})
 }

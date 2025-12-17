@@ -2,6 +2,7 @@ package users
 
 import (
 	"app/internal/models"
+	"app/util/email"
 	"app/util/encryption"
 	"app/util/token"
 	"database/sql"
@@ -46,7 +47,7 @@ func Create(c *gin.Context) {
 		return
 	}
 
-	verificationCode, err := token.Generate(map[string]interface{}{
+	jwt, err := token.Generate(map[string]interface{}{
 		"email_address": createUser.EmailAddress,
 		"user_id":       createUser.ID,
 	})
@@ -56,13 +57,35 @@ func Create(c *gin.Context) {
 	}
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "jwt",
-		Value:    verificationCode,
+		Value:    jwt,
 		Path:     "/",
 		MaxAge:   86400,
 		HttpOnly: true,
-		Secure:   false, // change to true in production
+		Secure:   true,
+		Domain:   "flookaa.com",
+		SameSite: http.SameSiteNoneMode,
 	})
+
+	verificationCode, err := token.Generate(map[string]interface{}{
+		"email_address": createUser.EmailAddress,
+		"user_id":       createUser.ID,
+		"verify":        true,
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	verificationLink := "https://flookaa.com/verify-email?code=" + verificationCode
+
+	err = email.SendEmail(createUser.EmailAddress, verificationLink)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send verification email"})
+		return
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
-		"verification_code": verificationCode,
+		"message": "User created successfully. Please check your email to verify your account.",
 	})
 }

@@ -33,7 +33,7 @@ export default function AppSidebarFooter({ open }: { open: boolean }) {
                   {" "}
                   <Avatar className="w-8 h-8 cursor-pointer block">
                     <AvatarImage
-                      src={""}
+                      src={user?.thumbnail}
                       alt={user?.name || "User avatar"}
                       className="w-8 h-8 object-cover rounded-full"
                     />

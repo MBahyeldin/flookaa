@@ -6,6 +6,7 @@ import ChannelPage from "@/pages/(dashboard)/channels/[id]";
 import DashboardSettingsProfile from "@/pages/(dashboard)/settings/profile";
 import ChannelsPage from "@/pages/(dashboard)/channels";
 import CreateChannelPage from "@/pages/(dashboard)/channels/create";
+import VerifyEmailPage from "@/pages/verify-email";
 
 export default function AppRouter() {
   return (
@@ -24,6 +25,8 @@ export default function AppRouter() {
 
       <Route path="/sign-up" element={<Signup />} />
       <Route path="/login" element={<Login />} />
+
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
     </Routes>
   );
 }

@@ -15,7 +15,7 @@ import { ToggleTheme } from "@/components/toggle-theme";
 export default function Header() {
   const items = [
     { to: "/login", label: "Login", variant: "outline", borderRadius: "full" },
-    { to: "/signup", label: "Join FLOOKA", variant: "default", borderRadius: "full" },
+    { to: "/sign-up", label: "Join FLOOKA", variant: "default", borderRadius: "full" },
   ];
 
   return (

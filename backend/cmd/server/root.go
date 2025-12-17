@@ -16,6 +16,7 @@ import (
 	"shared/external/db/postgres"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,6 +31,23 @@ func StartServer() {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 	r := gin.Default()
+
+	// TODO: REMOVE LOCALHOST BEFORE DEPLOYMENT
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:  []string{"https://flookaa.com", "https://www.flookaa.com", "http://localhost:5173"},
+		AllowMethods:  []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		ExposeHeaders: []string{"Content-Length"},
+		AllowHeaders: []string{
+			"Origin",
+			"Content-Type",
+			"Authorization",
+			"Priority",
+			"Accept",
+			"Accept-Language",
+		},
+		AllowCredentials: true,
+	}))
+
 	r.Use(middlewares.AuthMiddleware())
 
 	api.AddApiGroup(r)

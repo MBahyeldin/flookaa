@@ -26,7 +26,9 @@ func handleLogOut(c *gin.Context) {
 		Path:     "/",
 		MaxAge:   86400,
 		HttpOnly: true,
-		Secure:   false, // change to true in production
+		Secure:   true,
+		Domain:   "flookaa.com",
+		SameSite: http.SameSiteNoneMode,
 	})
 	c.JSON(200, gin.H{"message": "Logged out successfully"})
 }

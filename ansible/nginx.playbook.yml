@@ -6,7 +6,7 @@
   vars_files:
     - universe.yml
   roles:
-    # - init_container
+    - init_container
 
   tasks:
     - name: Make sure logging directory exists
@@ -49,6 +49,7 @@
         - { template: "default.conf.j2", dest: "default.conf" }
         - { template: "api.conf.j2", dest: "api.conf" }
         - { template: "ws.conf.j2", dest: "ws.conf" }
+        - { template: "s3.conf.j2", dest: "s3.conf" }
 
     - name: Enable Nginx sites
       ansible.builtin.file:
@@ -61,6 +62,7 @@
         - { dest: "default.conf" }
         - { dest: "api.conf" }
         - { dest: "ws.conf" }
+        - { dest: "s3.conf" }
 
     - name: Ensure Nginx is started and enabled
       ansible.builtin.service:

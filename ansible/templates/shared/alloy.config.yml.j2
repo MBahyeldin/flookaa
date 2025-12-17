@@ -40,3 +40,22 @@ discovery.relabel "logs_integrations_integrations_node_exporter_journal_scrape" 
     target_label  = "level"
   }
 }
+
+
+
+{% if lxc_container == 'ngix' %}
+loki.source.file "nginx_logs" {
+  targets = [
+    {
+      __path__ = "/var/log/openresty/access.log",
+      "color" = "blue",
+    },
+    {
+      __path__ = "/var/log/openresty/error.log",
+      "color" = "red",
+    },
+  ]
+
+  forward_to = [loki.write.grafana_loki.receiver]
+}
+{% endif %}

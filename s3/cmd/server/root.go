@@ -14,11 +14,19 @@ import (
 func StartServer() {
 	r := gin.Default()
 
-	// in production, change this to frontend domain
+	// TODO: REMOVE LOCALHOST BEFORE DEPLOYMENT
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"flookaa.com"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		ExposeHeaders:    []string{"Content-Length"},
+		AllowOrigins:  []string{"https://flookaa.com", "https://www.flookaa.com", "http://localhost:5173"},
+		AllowMethods:  []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		ExposeHeaders: []string{"Content-Length"},
+		AllowHeaders: []string{
+			"Origin",
+			"Content-Type",
+			"Authorization",
+			"Priority",
+			"Accept",
+			"Accept-Language",
+		},
 		AllowCredentials: true,
 	}))
 

@@ -14,6 +14,10 @@ Environment='REDIS_PASSWORD={{ vault_REDIS_PASSWORD }}'
 Environment='NEO4J_URI={{ vault_NEO4J_URI }}'
 Environment='NEO4J_USER={{ vault_NEO4J_USER }}'
 Environment='NEO4J_PASSWORD={{ vault_NEO4J_PASSWORD }}'
+Environment='SMTP_EMAIL_ADDRESS={{ vault_SMTP_EMAIL_ADDRESS }}'
+Environment='SMTP_EMAIL_PASSWORD={{ vault_SMTP_EMAIL_PASSWORD }}'
+Environment='SMTP_HOST={{ vault_SMTP_HOST }}'
+Environment='SMTP_PORT= {{ vault_SMTP_PORT }}'
 WorkingDirectory={{ service_working_dir }}
 ExecStart={{ service_working_dir }}/{{ service_binary_name }}
 
