@@ -14,6 +14,7 @@ export default class WebSocketService {
 
     private ws: WebSocket | null = null;
     private listeners = new Map<string, Set<MessageListener>>();
+    private queuedMessages: WsMessage<any>[] = [];
 
     // 🔹 Singleton accessor
     public static getInstance(): WebSocketService {
@@ -29,6 +30,8 @@ export default class WebSocketService {
         console.log("Initializing WebSocketService");
         await this.waitForWebSocketOpen();
         this.subscribeToDefaultChannel();
+        this.flushQueuedMessages();
+        this.setHeartbeat();
     }
 
     private async waitForWebSocketOpen(): Promise<void> {
@@ -46,6 +49,17 @@ export default class WebSocketService {
                 reject(err);
             };
         });
+    }
+
+    private flushQueuedMessages() {
+        this.queuedMessages.forEach((msg) => this.sendMessage(msg));
+        this.queuedMessages = [];
+    }
+
+    private setHeartbeat() {
+        setInterval(() => {
+            this.ws?.send(JSON.stringify({ type: "HEARTBEAT" }));
+        }, 5000);
     }
 
     // 🔹 Attach listeners only once
@@ -86,7 +100,8 @@ export default class WebSocketService {
         if (this.ws?.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify(message));
         } else {
-            console.error("WebSocket not open", this.ws?.readyState);
+            this.queuedMessages.push(message);
+            console.warn("WebSocket not open. Message queued.");
         }
     }
 
