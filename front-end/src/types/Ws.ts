@@ -1,4 +1,4 @@
-import type { Comment, Owner, Privacy, Reply } from "@/generated/graphql";
+import type { Comment, Owner, Privacy } from "@/generated/graphql";
 
 type WsMessageType = "PING" | "SUBSCRIBE" | "UNSUBSCRIBE" | "MESSAGE";
 
@@ -38,7 +38,7 @@ type Event = {
 
 type WsEventMessage = {
   event: Event;
-  payload: Comment | Reply | PostEventPayload;
+  payload: Comment | PostEventPayload;
 };
 
 type PostEventPayload = {

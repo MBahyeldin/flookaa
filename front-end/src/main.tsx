@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App";
@@ -15,6 +15,7 @@ import { ThemeProvider } from "./Theme.context";
 const blockObjectsProvider = new BlockObjectsProvider();
 blockObjectsProvider.registerAll();
 const wsService = WebSocketService.getInstance();
+
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

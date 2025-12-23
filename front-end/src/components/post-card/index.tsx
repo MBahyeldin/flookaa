@@ -27,6 +27,7 @@ import { useBlockObjectsProvider } from "@/BlockObjectsProvider.context";
 import CommentSection from "../comment-section";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAppStore } from "@/stores/AppStore";
+import useAudioContext from "@/hooks/useAudioContext";
 
 
 
@@ -61,11 +62,14 @@ export function Post({
         },
       },
     });
-  };
+  };  
+
+  const { playSound } = useAudioContext();
 
 
   useEffect(() => {
     if (post.meta?.likesCount > localLikes) {
+      playSound("HEART_REACT");
       setTriggerHeartAnimation(true);
     }
     setLocalLikes(post.meta?.likesCount || 0);
@@ -182,24 +186,37 @@ export function Post({
               {/* Floating Heart Animation */}
               <AnimatePresence>
                 {triggerHeartAnimation && (
-                  <motion.div
-                    key="burst"
-                    initial={{ opacity: 0, scale: 0.6, y: 0 }}
-                    animate={{
-                      opacity: [0, 1, 0],
-                      scale: [0.6, 1.4, 1],
-                      y: [-5, -20, -30],
-                    }}
-                    exit={{ opacity: 0 }}
-                    transition={{
-                      duration: 0.8,
-                      ease: "easeOut",
-                    }}
-                    onAnimationComplete={() => setTriggerHeartAnimation(false)}
-                    className="absolute left-1/2 -translate-x-1/2 text-red-500"
-                  >
-                    <Heart className="h-5 w-5 fill-red-500 stroke-red-500" />
-                  </motion.div>
+                  <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none">
+                    {[...Array(6)].map((_, index) => {
+                      const spread = (index - 2.5) * 10 // horizontal distance
+
+                      return (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, scale: 0.6, y: 0, x: 0 }}
+                          animate={{
+                            opacity: [0, 1, 0],
+                            scale: [0.6, 1.4, 1],
+                            y: [-5, -20, -35],
+                            x: spread,
+                          }}
+                          transition={{
+                            duration: 1.0,
+                            delay: index * 0.3, // 100ms stagger
+                            ease: "easeOut",
+                          }}
+                          onAnimationComplete={() => {
+                            if (index === 5) {
+                              setTriggerHeartAnimation(false)
+                            }
+                          }}
+                          className="absolute text-red-500"
+                        >
+                          <Heart className="h-5 w-5 fill-red-500 stroke-red-500" />
+                        </motion.div>
+                      )
+                    })}
+                  </div>
                 )}
               </AnimatePresence>
             </Button>

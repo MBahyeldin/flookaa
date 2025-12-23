@@ -19,6 +19,8 @@ export interface AppState {
   addPosts: (posts: Post[]) => void;
   addCommentsToPost: (postId: string, comments: Comment[]) => void;
   addCommentsToComment: (commentId: string, comments: Comment[]) => void;
+
+  addOrRemoveLike: (targetType: "POST" | "COMMENT", targetId: string, inc: number) => void;
 }
 
 export const useAppStore = create(
@@ -84,6 +86,23 @@ export const useAppStore = create(
           state.comments[comment._id] = comment;
           if (!list.includes(comment._id)) list.push(comment._id);
           state.commentsByComment[comment._id] ??= [];
+        }
+      }),
+
+    addOrRemoveLike: (targetType, targetId, inc) =>
+      set((state) => {
+        if (targetType === "POST") {
+          const post = state.posts[targetId];
+          if (post) {            
+            post.meta.likesCount = (post.meta.likesCount ?? 0) + inc;
+          } else {
+            console.warn("Post not found in store for like update:", targetId);
+          }
+        } else if (targetType === "COMMENT") {
+          const comment = state.comments[targetId];
+          if (comment) {
+            comment.meta.likesCount = (comment.meta.likesCount ?? 0) + inc;
+          }
         }
       }),
   }))
