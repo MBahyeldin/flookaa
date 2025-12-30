@@ -12,8 +12,57 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
+const createPersona = `-- name: CreatePersona :one
+INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, is_default, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, NOW(), NOW())
+RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, created_at, updated_at, deleted_at
+`
+
+type CreatePersonaParams struct {
+	UserID      int64
+	Name        string
+	Description string
+	FirstName   string
+	LastName    string
+	Thumbnail   sql.NullString
+	Bio         sql.NullString
+}
+
+// ------------------------------
+// 3. CreatePersona
+// ------------------------------
+func (q *Queries) CreatePersona(ctx context.Context, arg CreatePersonaParams) (Persona, error) {
+	row := q.db.QueryRowContext(ctx, createPersona,
+		arg.UserID,
+		arg.Name,
+		arg.Description,
+		arg.FirstName,
+		arg.LastName,
+		arg.Thumbnail,
+		arg.Bio,
+	)
+	var i Persona
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Description,
+		&i.Slug,
+		&i.FirstName,
+		&i.LastName,
+		&i.Thumbnail,
+		&i.Bio,
+		&i.Privacy,
+		&i.IsDefault,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const getDefaultPersonaByUserId = `-- name: GetDefaultPersonaByUserId :one
-SELECT id, user_id, slug, first_name, last_name, thumbnail, bio, privacy, is_default, created_at, updated_at, deleted_at
+SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, created_at, updated_at, deleted_at
 FROM personas
 WHERE user_id = $1 AND is_default = TRUE
 LIMIT 1
@@ -28,6 +77,8 @@ func (q *Queries) GetDefaultPersonaByUserId(ctx context.Context, userID int64) (
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
+		&i.Name,
+		&i.Description,
 		&i.Slug,
 		&i.FirstName,
 		&i.LastName,
@@ -95,6 +146,42 @@ func (q *Queries) GetPersonaBasicInfo(ctx context.Context, id int64) (GetPersona
 		&i.UpdatedAt,
 		&i.JoinedChannels,
 		&i.FollowedChannels,
+	)
+	return i, err
+}
+
+const getPersonaByIdAndUserId = `-- name: GetPersonaByIdAndUserId :one
+SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, created_at, updated_at, deleted_at
+FROM personas
+WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+`
+
+type GetPersonaByIdAndUserIdParams struct {
+	ID     int64
+	UserID int64
+}
+
+// ------------------------------
+// 4. GetPersonaByIdAndUserId
+// ------------------------------
+func (q *Queries) GetPersonaByIdAndUserId(ctx context.Context, arg GetPersonaByIdAndUserIdParams) (Persona, error) {
+	row := q.db.QueryRowContext(ctx, getPersonaByIdAndUserId, arg.ID, arg.UserID)
+	var i Persona
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Description,
+		&i.Slug,
+		&i.FirstName,
+		&i.LastName,
+		&i.Thumbnail,
+		&i.Bio,
+		&i.Privacy,
+		&i.IsDefault,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -217,4 +304,52 @@ func (q *Queries) GetPersonaStats(ctx context.Context, id int64) (GetPersonaStat
 		&i.PostsCount,
 	)
 	return i, err
+}
+
+const getUserPersonasByUserId = `-- name: GetUserPersonasByUserId :many
+SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, created_at, updated_at, deleted_at
+FROM personas
+WHERE user_id = $1 AND deleted_at IS NULL
+ORDER BY created_at DESC
+`
+
+// ------------------------------
+// 2. GetUserPersonasByUserId
+// ------------------------------
+func (q *Queries) GetUserPersonasByUserId(ctx context.Context, userID int64) ([]Persona, error) {
+	rows, err := q.db.QueryContext(ctx, getUserPersonasByUserId, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Persona
+	for rows.Next() {
+		var i Persona
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Name,
+			&i.Description,
+			&i.Slug,
+			&i.FirstName,
+			&i.LastName,
+			&i.Thumbnail,
+			&i.Bio,
+			&i.Privacy,
+			&i.IsDefault,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

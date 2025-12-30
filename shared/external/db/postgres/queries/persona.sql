@@ -8,6 +8,32 @@ WHERE user_id = $1 AND is_default = TRUE
 LIMIT 1;
 
 
+-- ------------------------------
+-- 2. GetUserPersonasByUserId
+-- ------------------------------
+-- name: GetUserPersonasByUserId :many
+SELECT *
+FROM personas
+WHERE user_id = $1 AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+-- ------------------------------
+-- 3. CreatePersona
+-- ------------------------------
+-- name: CreatePersona :one
+INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, is_default, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, NOW(), NOW())
+RETURNING *;
+
+-- ------------------------------
+-- 4. GetPersonaByIdAndUserId
+-- ------------------------------
+-- name: GetPersonaByIdAndUserId :one
+SELECT *
+FROM personas
+WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL;
+
+
 -- -------------------------------
 -- 7. Get Persona Basic Info
 -- -------------------------------

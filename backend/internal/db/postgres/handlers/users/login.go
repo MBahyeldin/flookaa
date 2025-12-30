@@ -2,6 +2,7 @@ package users
 
 import (
 	"app/internal/models"
+	"app/util/cookies"
 	"app/util/encryption"
 	"fmt"
 	"net/http"
@@ -41,30 +42,15 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	defaultPersona, err := q.GetDefaultPersonaByUserId(ctx, user.ID)
-	if err != nil {
-		fmt.Println("Error fetching default persona:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user persona"})
-		return
-	}
-
-	token, err := GetLoginToken(UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress, PersonaId: defaultPersona.ID})
+	token, err := GetLoginToken(UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress})
 	if err != nil {
 		fmt.Println("Error generating token:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
 
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     "jwt",
-		Value:    token,
-		Path:     "/",
-		MaxAge:   86400,
-		HttpOnly: true,
-		Secure:   true,
-		Domain:   "flookaa.com",
-		SameSite: http.SameSiteNoneMode,
-	})
+	cookies.AddCookieToContext(c, "jwt", token)
+
 	c.JSON(http.StatusOK, gin.H{"login": "successful", "token": token})
 
 }
@@ -76,7 +62,6 @@ type UserMinimal struct {
 }
 
 func GetLoginToken(user UserMinimal) (string, error) {
-
 	// Generate JWT token
 	tokenStr, err := token.Generate(map[string]interface{}{
 		"user_id":       user.ID,

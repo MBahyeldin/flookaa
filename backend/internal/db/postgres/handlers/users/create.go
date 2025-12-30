@@ -2,6 +2,7 @@ package users
 
 import (
 	"app/internal/models"
+	"app/util/cookies"
 	"app/util/email"
 	"app/util/encryption"
 	"database/sql"
@@ -46,27 +47,12 @@ func Create(c *gin.Context) {
 		return
 	}
 
-	defaultPersona, err := q.GetDefaultPersonaByUserId(ctx, createUser.ID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user persona"})
-		return
-	}
-
-	jwt, err := GetLoginToken(UserMinimal{ID: createUser.ID, EmailAddress: createUser.EmailAddress, PersonaId: defaultPersona.ID})
+	jwt, err := GetLoginToken(UserMinimal{ID: createUser.ID, EmailAddress: createUser.EmailAddress})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     "jwt",
-		Value:    jwt,
-		Path:     "/",
-		MaxAge:   86400,
-		HttpOnly: true,
-		Secure:   true,
-		Domain:   "flookaa.com",
-		SameSite: http.SameSiteNoneMode,
-	})
+	cookies.AddCookieToContext(c, "jwt", jwt)
 
 	verificationCode, err := token.Generate(map[string]interface{}{
 		"email_address": createUser.EmailAddress,

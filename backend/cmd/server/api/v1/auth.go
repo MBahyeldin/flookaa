@@ -26,7 +26,6 @@ func AddAuthRoutes(r *gin.RouterGroup) {
 }
 
 func handleLogOut(c *gin.Context) {
-	// Invalidate the user's session or token here if applicable
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "jwt",
 		Value:    "-1",

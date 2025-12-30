@@ -28,21 +28,25 @@ func AuthMiddleware() gin.HandlerFunc {
 		claims := token.Claims.(jwt.MapClaims)
 		log.Println("JWT claims:", claims)
 		if _, ok := claims["email_address"]; !ok {
+			log.Println("No email_address fount in JWT claims")
 			c.Next()
 			return
 		}
 		c.Set("email_address", claims["email_address"].(string))
 
 		if _, ok := claims["user_id"]; !ok {
+			log.Println("No user fount in JWT claims")
 			c.Next()
 			return
 		}
 		c.Set("user_id", int64(claims["user_id"].(float64)))
-		if _, ok := claims["persona_id"]; ok {
-			c.Set("persona_id", int64(claims["persona_id"].(float64)))
-		} else {
-			c.Set("persona_id", int64(0))
+
+		if _, ok := claims["persona_id"]; !ok {
+			log.Println("No persona fount in JWT claims")
+			c.Next()
+			return
 		}
+		c.Set("persona_id", int64(claims["persona_id"].(float64)))
 		log.Println("Verified JWT for user_id:", int64(claims["user_id"].(float64)))
 		c.Next()
 	}

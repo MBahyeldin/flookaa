@@ -27,7 +27,7 @@ function App() {
     <Dialog>
       <Tooltip>
         <>
-          {isAuthenticated ? (
+          { isAuthenticated ? (
             <DashboardLayout>
               <AppRouter />
             </DashboardLayout>

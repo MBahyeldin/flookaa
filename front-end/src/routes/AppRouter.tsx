@@ -13,6 +13,7 @@ export default function AppRouter() {
     <Routes>
       <Route path="/" element={<HomePage />} />
 
+
       <Route path="/channels">
         {<Route index element={<ChannelsPage />} />}
         <Route path="create" element={<CreateChannelPage />} />

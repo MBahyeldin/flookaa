@@ -4,7 +4,9 @@ import { useAppStore, type AppState } from "./AppStore";
 
 export interface UserProfileState extends AppState {
   profileId: string | null;
+  personaId: string | null;
   setProfileId: (id: string) => void;
+  setPersonaId: (id: string) => void;
 }
 
 export const useUserProfileStore = create(
@@ -12,6 +14,12 @@ export const useUserProfileStore = create(
     ...useAppStore.getState(), // Inherit from AppStore
 
     profileId: null,
+    personaId: null,
+
+    setPersonaId: (id) =>
+      set((s) => {
+        s.personaId = id;
+      }),
 
     setProfileId: (id) =>
       set((s) => {

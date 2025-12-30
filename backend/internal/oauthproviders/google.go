@@ -2,6 +2,7 @@ package oauthproviders
 
 import (
 	"app/internal/db/postgres/handlers/users"
+	"app/util/cookies"
 	"app/util/image"
 	"context"
 	"database/sql"
@@ -112,27 +113,12 @@ func HandleGoogleOAuthCallback(c *gin.Context) {
 }
 
 func handleLogInRequest(c *gin.Context, user users.UserMinimal) {
-	defaultPersona, err := db.New(postgres.DbConn).GetDefaultPersonaByUserId(context.Background(), user.ID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user persona"})
-		return
-	}
-	user.PersonaId = defaultPersona.ID
-	token, err := users.GetLoginToken(users.UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress, PersonaId: user.PersonaId})
+	token, err := users.GetLoginToken(users.UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token plaese try again"})
 	}
+	cookies.AddCookieToContext(c, "jwt", token)
 
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     "jwt",
-		Value:    token,
-		Path:     "/",
-		MaxAge:   86400,
-		HttpOnly: true,
-		Secure:   true,
-		Domain:   "flookaa.com",
-		SameSite: http.SameSiteNoneMode,
-	})
 	c.Redirect(http.StatusFound, "https://flookaa.com")
 }
 

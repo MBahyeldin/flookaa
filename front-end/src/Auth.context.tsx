@@ -7,10 +7,12 @@ import {
 } from "react";
 import type { AuthContextType, Info } from "@/types/auth";
 import { fetchCurrentUser, logOut } from "@/services/auth";
+import { fetchCurrentPersona } from "./services/persona";
 import {
   hasRole as checkRole,
   hasPermission as checkPermission,
 } from "@/utils/permissions";
+import type { Persona } from "./types/persona";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -18,28 +20,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Info | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [revalidateCounter, setRevalidateCounter] = useState(0);
+  const [revalidatePersonaCounter, setRevalidatePersonaCounter] = useState(0);
+  const [isPersonaSelected, setIsPersonaSelected] = useState<boolean>(false);
+  const [persona, setPersona] = useState<Persona | null>(null);
 
   const revalidateUser = useCallback(() => {
     setRevalidateCounter((prev) => prev + 1);
   }, []);
 
   useEffect(() => {
-    let active = true;
 
     async function loadUser() {
       setIsLoading(true);
-      const data = await fetchCurrentUser();
-      if (active) {
+      try {
+        const data = await fetchCurrentUser();
         setUser(data);
-        setIsLoading(false);
+      } catch (error) {
+        setUser(null);
       }
+     
+      setIsLoading(false);
     }
 
     loadUser();
-    return () => {
-      active = false;
-    };
   }, [revalidateCounter]);
+
+  useEffect(() => {
+    if (!user) return;
+    const getCurrentPersona = async () => {
+      try {
+        const response = await fetchCurrentPersona();
+        if (response) {
+          setPersona(response);
+          setIsPersonaSelected(true);
+        } else {
+          setPersona(null);
+          setIsPersonaSelected(false);
+        }
+      } catch (error) {
+        setPersona(null);
+        setIsPersonaSelected(false);
+      }
+    };
+
+    getCurrentPersona();
+  }, [user, revalidatePersonaCounter]);
+
+  const revalidatePersona = useCallback(() => {
+    setRevalidatePersonaCounter((prev) => prev + 1);
+  }, []);
 
   const handleLogOut = useCallback(async () => {
     console.log("Logging out... Context");
@@ -55,6 +84,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isAuthenticated: !!user,
         isLoading,
+        isPersonaSelected,
+        persona,
+        revalidatePersona,
         setUser,
         revalidateUser,
         hasRole: (role) => checkRole(user, role),

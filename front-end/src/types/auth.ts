@@ -1,4 +1,5 @@
 import zod from "zod";
+import type { Persona } from "./persona";
 
 export type Info = {
   id: string;
@@ -8,13 +9,15 @@ export type Info = {
   roles: string[];
   permissions: string[];
   thumbnail?: string;
-  joined_channels: { id: string; name: string }[];
 };
 
 export type AuthContextType = {
   user: Info | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isPersonaSelected: boolean;
+  persona: Persona | null;
+  revalidatePersona: () => void;
   setUser: (user: Info | null) => void;
   revalidateUser: () => void;
   hasRole: (role: string) => boolean;

@@ -9,6 +9,8 @@ import (
 func AddPersonaRoutes(r *gin.RouterGroup) {
 	personaGroup := r.Group("/persona")
 	{
-		personaGroup.GET("/show", users.ShowPersona)
+		personaGroup.GET("/list", users.ListPersonas)
+		personaGroup.GET("/current", users.ReadCurrentPersona)
+		personaGroup.POST("/create", users.CreatePersona)
 	}
 }
