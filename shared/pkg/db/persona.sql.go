@@ -7,6 +7,9 @@ package db
 
 import (
 	"context"
+	"database/sql"
+
+	"github.com/sqlc-dev/pqtype"
 )
 
 const getDefaultPersonaByUserId = `-- name: GetDefaultPersonaByUserId :one
@@ -35,6 +38,183 @@ func (q *Queries) GetDefaultPersonaByUserId(ctx context.Context, userID int64) (
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getPersonaBasicInfo = `-- name: GetPersonaBasicInfo :one
+SELECT u.id, u.first_name, u.last_name, u.thumbnail, u.created_at, u.updated_at,
+      (SELECT COALESCE(json_agg(json_build_object(
+               'id', c.id,
+               'name', c.name,
+               'description', c.description,
+               'created_at', c.created_at
+           )), '[]'::json)
+           FROM channel_members cm
+           JOIN channels c ON c.id = cm.channel_id
+           WHERE cm.persona_id = u.id AND cm.left_at IS NULL
+       ) AS joined_channels,
+        (SELECT COALESCE(json_agg(json_build_object(
+               'id', c.id,
+               'name', c.name,
+               'description', c.description,
+               'created_at', c.created_at
+           )), '[]'::json)
+           FROM channel_followers cm
+           JOIN channels c ON c.id = cm.channel_id
+           WHERE cm.persona_id = u.id AND cm.unfollowed_at IS NULL
+       ) AS followed_channels
+FROM personas u
+WHERE u.id = $1
+  AND u.deleted_at IS NULL
+`
+
+type GetPersonaBasicInfoRow struct {
+	ID               int64
+	FirstName        string
+	LastName         string
+	Thumbnail        sql.NullString
+	CreatedAt        sql.NullTime
+	UpdatedAt        sql.NullTime
+	JoinedChannels   pqtype.NullRawMessage
+	FollowedChannels pqtype.NullRawMessage
+}
+
+// -------------------------------
+// 7. Get Persona Basic Info
+// -------------------------------
+func (q *Queries) GetPersonaBasicInfo(ctx context.Context, id int64) (GetPersonaBasicInfoRow, error) {
+	row := q.db.QueryRowContext(ctx, getPersonaBasicInfo, id)
+	var i GetPersonaBasicInfoRow
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Thumbnail,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.JoinedChannels,
+		&i.FollowedChannels,
+	)
+	return i, err
+}
+
+const getPersonaFollowedChannels = `-- name: GetPersonaFollowedChannels :many
+SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.created_at, c.updated_at, c.deleted_at
+FROM channel_followers cf
+JOIN channels c ON cf.channel_id = c.id
+WHERE cf.persona_id = $1
+  AND cf.unfollowed_at IS NULL
+`
+
+// -------------------------------
+// 10. Get channels a persona follows
+// -------------------------------
+func (q *Queries) GetPersonaFollowedChannels(ctx context.Context, personaID int64) ([]Channel, error) {
+	rows, err := q.db.QueryContext(ctx, getPersonaFollowedChannels, personaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Channel
+	for rows.Next() {
+		var i Channel
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Thumbnail,
+			&i.Banner,
+			&i.OwnerID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPersonaJoinedChannels = `-- name: GetPersonaJoinedChannels :many
+SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.created_at, c.updated_at, c.deleted_at
+FROM channel_members cm
+JOIN channels c ON cm.channel_id = c.id
+WHERE cm.persona_id = $1
+  AND cm.left_at IS NULL
+`
+
+// -------------------------------
+// 9. Get channels a persona has joined
+// -------------------------------
+func (q *Queries) GetPersonaJoinedChannels(ctx context.Context, personaID int64) ([]Channel, error) {
+	rows, err := q.db.QueryContext(ctx, getPersonaJoinedChannels, personaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Channel
+	for rows.Next() {
+		var i Channel
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Thumbnail,
+			&i.Banner,
+			&i.OwnerID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPersonaStats = `-- name: GetPersonaStats :one
+SELECT u.id,
+       (SELECT COUNT(*) FROM channel_members cm WHERE cm.persona_id = u.id AND cm.left_at IS NULL) AS channels_joined,
+       (SELECT COUNT(*) FROM channel_followers cf WHERE cf.persona_id = u.id AND cf.unfollowed_at IS NULL) AS channels_followed,
+       (SELECT COUNT(*) FROM post_references pr WHERE pr.owner_type = 'PERSONA' AND pr.owner_id = u.id) AS posts_count
+FROM personas u
+WHERE u.id = $1
+  AND u.deleted_at IS NULL
+`
+
+type GetPersonaStatsRow struct {
+	ID               int64
+	ChannelsJoined   int64
+	ChannelsFollowed int64
+	PostsCount       int64
+}
+
+// -------------------------------
+// 8. Get persona stats
+// -------------------------------
+func (q *Queries) GetPersonaStats(ctx context.Context, id int64) (GetPersonaStatsRow, error) {
+	row := q.db.QueryRowContext(ctx, getPersonaStats, id)
+	var i GetPersonaStatsRow
+	err := row.Scan(
+		&i.ID,
+		&i.ChannelsJoined,
+		&i.ChannelsFollowed,
+		&i.PostsCount,
 	)
 	return i, err
 }

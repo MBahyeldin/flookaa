@@ -9,5 +9,6 @@ func AddV1Group(r *gin.RouterGroup) *gin.RouterGroup {
 	AddHealthRoutes(v1Group)
 	AddGeoRoutes(v1Group)
 	AddChannelsGroups(v1Group)
+	AddPersonaRoutes(v1Group)
 	return v1Group
 }
