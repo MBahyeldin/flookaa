@@ -26,7 +26,6 @@ case "$choice" in
       -d '{
         "name": "Jane Doe",
         "email": "jane.doe+'$RANDOM'@example.com",
-        "phone": "123-456-7890",
         "address": "123 Main St, Anytown, USA",
         "password": "123456"
       }' | jq || true

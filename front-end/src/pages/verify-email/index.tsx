@@ -16,9 +16,9 @@ export default function VerifyEmailPage() {
   const [verificationStatus, setVerificationStatus] = React.useState<
     "pending" | "success" | "error"
   >("pending");
+  const navigate = useNavigate();
 
   React.useEffect(() => {
-    const navigate = useNavigate();
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
 

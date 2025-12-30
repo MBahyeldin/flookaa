@@ -46,11 +46,13 @@ func Create(c *gin.Context) {
 		return
 	}
 
-	jwt, err := token.Generate(map[string]interface{}{
-		"email_address": createUser.EmailAddress,
-		"user_id":       createUser.ID,
-		"persona_id":    0,
-	})
+	defaultPersona, err := q.GetDefaultPersonaByUserId(ctx, createUser.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user persona"})
+		return
+	}
+
+	jwt, err := GetLoginToken(UserMinimal{ID: createUser.ID, EmailAddress: createUser.EmailAddress, PersonaId: defaultPersona.ID})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

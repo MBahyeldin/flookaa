@@ -1,7 +1,7 @@
 import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField } from "@/models/Forms/FormField";
 import type { FormGroup } from "@/types/FormFields";
-import { Dock, Mail, Phone, User } from "lucide-react";
+import { Dock, Mail, User } from "lucide-react";
 
 const profilePicGroup: FormGroup = {
   id: "profile_picture",
@@ -75,17 +75,7 @@ const BasicInfoGroup: FormGroup = {
       interfaceType: "text",
       isRequired: true,
       icon: <Mail className="h-4 w-4" />,
-      width: "1/2",
-    }),
-    new FormField({
-      id: "phone",
-      label: "Phone Number",
-      type: "tel",
-      placeholder: "+1234567890",
-      interfaceType: "text",
-      isRequired: false,
-      icon: <Phone className="h-4 w-4" />,
-      width: "1/2",
+      width: "full",
     }),
     new FormField({
       id: "bio",

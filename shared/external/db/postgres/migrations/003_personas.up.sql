@@ -29,6 +29,7 @@ CREATE TABLE personas (
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     thumbnail VARCHAR(255),
+    bio TEXT,
 
     privacy persona_privacy_enum NOT NULL DEFAULT 'public',
     is_default BOOLEAN DEFAULT FALSE,

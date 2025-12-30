@@ -46,7 +46,9 @@ DROP INDEX IF EXISTS uniq_default_persona_per_user;
 COMMIT;
 
 BEGIN;
-DROP FUNCTION IF EXISTS create_default_persona();
 DROP TRIGGER IF EXISTS trg_create_default_persona ON users;
 END;
 
+BEGIN;
+DROP FUNCTION IF EXISTS create_default_persona();
+END;

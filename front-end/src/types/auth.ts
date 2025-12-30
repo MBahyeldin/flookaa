@@ -27,6 +27,5 @@ export const createUserSchema = zod.object({
   password: zod.string().min(6, "Minimum 6 characters").nonempty("Required"),
   first_name: zod.string().min(2, "Minimum 2 characters").nonempty("Required"),
   last_name: zod.string().min(2, "Minimum 2 characters").nonempty("Required"),
-  phone: zod.string().max(20, "Maximum 20 characters").nonempty("Required"),
   thumbnail: zod.string().url("Invalid URL").optional(),
 });

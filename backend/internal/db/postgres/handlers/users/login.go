@@ -41,7 +41,14 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	token, err := GetLoginToken(UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress})
+	defaultPersona, err := q.GetDefaultPersonaByUserId(ctx, user.ID)
+	if err != nil {
+		fmt.Println("Error fetching default persona:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user persona"})
+		return
+	}
+
+	token, err := GetLoginToken(UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress, PersonaId: defaultPersona.ID})
 	if err != nil {
 		fmt.Println("Error generating token:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
@@ -74,6 +81,7 @@ func GetLoginToken(user UserMinimal) (string, error) {
 	tokenStr, err := token.Generate(map[string]interface{}{
 		"user_id":       user.ID,
 		"email_address": user.EmailAddress,
+		"persona_id":    user.PersonaId,
 	})
 
 	if err != nil {

@@ -112,7 +112,13 @@ func HandleGoogleOAuthCallback(c *gin.Context) {
 }
 
 func handleLogInRequest(c *gin.Context, user users.UserMinimal) {
-	token, err := users.GetLoginToken(users.UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress})
+	defaultPersona, err := db.New(postgres.DbConn).GetDefaultPersonaByUserId(context.Background(), user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user persona"})
+		return
+	}
+	user.PersonaId = defaultPersona.ID
+	token, err := users.GetLoginToken(users.UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress, PersonaId: user.PersonaId})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token plaese try again"})
 	}
@@ -162,5 +168,11 @@ func handleSignUpRequest(c *gin.Context, user GoogleUser) {
 		return
 	}
 
-	handleLogInRequest(c, users.UserMinimal{ID: newUser.ID, EmailAddress: newUser.EmailAddress})
+	defaultPersona, err := q.GetDefaultPersonaByUserId(ctx, newUser.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user persona"})
+		return
+	}
+
+	handleLogInRequest(c, users.UserMinimal{ID: newUser.ID, EmailAddress: newUser.EmailAddress, PersonaId: defaultPersona.ID})
 }

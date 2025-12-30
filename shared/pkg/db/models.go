@@ -381,6 +381,7 @@ type Persona struct {
 	FirstName string
 	LastName  string
 	Thumbnail sql.NullString
+	Bio       sql.NullString
 	Privacy   PersonaPrivacyEnum
 	IsDefault sql.NullBool
 	CreatedAt sql.NullTime

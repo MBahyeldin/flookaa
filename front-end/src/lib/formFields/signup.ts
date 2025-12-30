@@ -27,16 +27,7 @@ const signupFormFields = [
     placeholder: "john@example.com",
     interfaceType: "text",
     isRequired: true,
-    width: "1/2",
-  }),
-  new FormField({
-    id: "phone",
-    label: "Phone",
-    type: "text",
-    placeholder: "+1234567890",
-    interfaceType: "text",
-    isRequired: true,
-    width: "1/2",
+    width: "full",
   }),
   new FormField({
     id: "password",
