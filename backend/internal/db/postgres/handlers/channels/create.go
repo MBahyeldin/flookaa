@@ -24,7 +24,7 @@ func CreateChannel(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	userId, exists := c.Get("user_id")
+	personaId, exists := c.Get("persona_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
 		return
@@ -37,7 +37,7 @@ func CreateChannel(c *gin.Context) {
 		Description: req.Description,
 		Thumbnail:   req.Thumbnail,
 		Banner:      req.Banner,
-		OwnerID:     userId.(int64),
+		OwnerID:     personaId.(int64),
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -46,7 +46,7 @@ func CreateChannel(c *gin.Context) {
 
 	_, err = q.AddUserToChannel(ctx, db.AddUserToChannelParams{
 		ChannelID: channel.ID,
-		UserID:    userId.(int64),
+		PersonaID: personaId.(int64),
 	})
 
 	if err != nil {
@@ -56,7 +56,7 @@ func CreateChannel(c *gin.Context) {
 
 	_, err = q.FollowChannel(ctx, db.FollowChannelParams{
 		ChannelID: channel.ID,
-		UserID:    userId.(int64),
+		PersonaID: personaId.(int64),
 	})
 
 	if err != nil {
@@ -71,9 +71,9 @@ func CreateChannel(c *gin.Context) {
 	}
 
 	// AssignUserRoleInChannel
-	_, err = q.AssignUserRoleInChannel(ctx, db.AssignUserRoleInChannelParams{
+	_, err = q.AssignPersonaRoleInChannel(ctx, db.AssignPersonaRoleInChannelParams{
 		ChannelID: channel.ID,
-		UserID:    userId.(int64),
+		PersonaID: personaId.(int64),
 		RoleID:    moderatorRole.ID,
 	})
 	if err != nil {

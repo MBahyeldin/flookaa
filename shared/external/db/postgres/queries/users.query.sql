@@ -2,8 +2,8 @@
 -- 1. Create a new user
 -- -------------------------------
 -- name: CreateUser :one
-INSERT INTO users (first_name, last_name, phone, email_address, hashed_password, oauth_provider, thumbnail, is_verified, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+INSERT INTO users (first_name, last_name, email_address, hashed_password, oauth_provider, thumbnail, is_verified, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
 RETURNING *;
 
 -- -------------------------------
@@ -26,29 +26,25 @@ UPDATE users
 SET 
     first_name = COALESCE($1, first_name),
     last_name = COALESCE($2, last_name),
-    phone = COALESCE($3, phone),
-    email_address = COALESCE($4, email_address),
-    hashed_password = COALESCE($5, hashed_password),
-    thumbnail = COALESCE($6, thumbnail),
-    is_verified = COALESCE($7, is_verified),
-    bio = COALESCE($8, bio),
-    city_id = COALESCE($9, city_id),
-    country_id = COALESCE($10, country_id),
-    state_id = COALESCE($11, state_id),
-    postal_code = COALESCE($12, postal_code),
-    other_platforms_accounts = COALESCE($13, other_platforms_accounts),
+    email_address = COALESCE($3, email_address),
+    hashed_password = COALESCE($4, hashed_password),
+    thumbnail = COALESCE($5, thumbnail),
+    is_verified = COALESCE($6, is_verified),
+    city_id = COALESCE($7, city_id),
+    country_id = COALESCE($8, country_id),
+    state_id = COALESCE($9, state_id),
+    postal_code = COALESCE($10, postal_code),
+    other_platforms_accounts = COALESCE($11, other_platforms_accounts),
     updated_at = now()
-WHERE id = $14
+WHERE id = $12
 RETURNING 
     id,
     first_name,
     last_name,
-    phone,
     email_address,
     updated_at,
     thumbnail,
     is_verified,
-    bio,
     city_id,
     state_id,
     country_id,
@@ -87,39 +83,21 @@ WHERE (first_name ILIKE '%' || $1 || '%'
 ORDER BY first_name, last_name
 LIMIT $2 OFFSET $3;
 
+
 -- -------------------------------
 -- 7. Get user profile
 -- -------------------------------
 -- name: GetUserProfile :one
-SELECT u.*,
-        (SELECT COALESCE(json_agg(json_build_object(
-               'id', c.id,
-               'name', c.name,
-               'description', c.description,
-               'created_at', c.created_at
-           )), '[]'::json)
-           FROM channel_members cm
-           JOIN channels c ON c.id = cm.channel_id
-           WHERE cm.user_id = u.id AND cm.left_at IS NULL
-       ) AS joined_channels,
-        (SELECT COALESCE(json_agg(json_build_object(
-               'id', c.id,
-               'name', c.name,
-               'description', c.description,
-               'created_at', c.created_at
-           )), '[]'::json)
-           FROM channel_followers cm
-           JOIN channels c ON c.id = cm.channel_id
-           WHERE cm.user_id = u.id AND cm.unfollowed_at IS NULL
-       ) AS followed_channels
+SELECT u.*
 FROM users u
 WHERE u.id = $1
   AND u.deleted_at IS NULL;
 
+
 -- -------------------------------
--- 7. Get user Basic Info
+-- 7. Get persona Basic Info
 -- -------------------------------
--- name: GetUserBasicInfo :one
+-- name: GetPersonaBasicInfo :one
 SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbnail,
         (SELECT COALESCE(json_agg(json_build_object(
                'id', c.id,
@@ -129,7 +107,7 @@ SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbn
            )), '[]'::json)
            FROM channel_members cm
            JOIN channels c ON c.id = cm.channel_id
-           WHERE cm.user_id = u.id AND cm.left_at IS NULL
+           WHERE cm.persona_id = u.id AND cm.left_at IS NULL
        ) AS joined_channels,
         (SELECT COALESCE(json_agg(json_build_object(
                'id', c.id,
@@ -139,42 +117,42 @@ SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbn
            )), '[]'::json)
            FROM channel_followers cm
            JOIN channels c ON c.id = cm.channel_id
-           WHERE cm.user_id = u.id AND cm.unfollowed_at IS NULL
+           WHERE cm.persona_id = u.id AND cm.unfollowed_at IS NULL
        ) AS followed_channels
 FROM users u
 WHERE u.id = $1
   AND u.deleted_at IS NULL;
 
 -- -------------------------------
--- 8. Get user stats
+-- 8. Get persona stats
 -- -------------------------------
 -- name: GetUserStats :one
 SELECT u.id,
-       (SELECT COUNT(*) FROM channel_members cm WHERE cm.user_id = u.id AND cm.left_at IS NULL) AS channels_joined,
-       (SELECT COUNT(*) FROM channel_followers cf WHERE cf.user_id = u.id AND cf.unfollowed_at IS NULL) AS channels_followed,
-       (SELECT COUNT(*) FROM post_references pr WHERE pr.owner_type = 'user' AND pr.owner_id = u.id) AS posts_count
+       (SELECT COUNT(*) FROM channel_members cm WHERE cm.persona_id = u.id AND cm.left_at IS NULL) AS channels_joined,
+       (SELECT COUNT(*) FROM channel_followers cf WHERE cf.persona_id = u.id AND cf.unfollowed_at IS NULL) AS channels_followed,
+       (SELECT COUNT(*) FROM post_references pr WHERE pr.owner_type = 'PERSONA' AND pr.owner_id = u.id) AS posts_count
 FROM users u
 WHERE u.id = $1
   AND u.deleted_at IS NULL;
 
 -- -------------------------------
--- 9. Get channels a user has joined
+-- 9. Get channels a persona has joined
 -- -------------------------------
--- name: GetUserJoinedChannels :many
+-- name: GetPersonaJoinedChannels :many
 SELECT c.*
 FROM channel_members cm
 JOIN channels c ON cm.channel_id = c.id
-WHERE cm.user_id = $1
+WHERE cm.persona_id = $1
   AND cm.left_at IS NULL;
 
 -- -------------------------------
--- 10. Get channels a user follows
+-- 10. Get channels a persona follows
 -- -------------------------------
--- name: GetUserFollowedChannels :many
+-- name: GetPersonaFollowedChannels :many
 SELECT c.*
 FROM channel_followers cf
 JOIN channels c ON cf.channel_id = c.id
-WHERE cf.user_id = $1
+WHERE cf.persona_id = $1
   AND cf.unfollowed_at IS NULL;
 
 

@@ -45,7 +45,7 @@ func (c *SubjectStore) AddDefaultSubjectsToUser(ctx context.Context, userID stri
 	for _, event := range events {
 		subjectHelper := subject.New(&StreamName, &models.Owner{
 			ID:   int64(userIdInt),
-			Type: models.OwnerTypeUser,
+			Type: models.OwnerTypePersona,
 		}, event, "*")
 		subject := subjectHelper.GetSubject()
 		if result, err := c.AddSubjectToUser(ctx, userID, subject, 0); err != nil {

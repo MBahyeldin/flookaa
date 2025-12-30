@@ -90,23 +90,23 @@ type ComplexityRoot struct {
 	}
 
 	Comment struct {
-		AllowedUserIds   func(childComplexity int) int
-		Author           func(childComplexity int) int
-		AuthorID         func(childComplexity int) int
-		Content          func(childComplexity int) int
-		CreatedAt        func(childComplexity int) int
-		DeletedAt        func(childComplexity int) int
-		DeniedUserIds    func(childComplexity int) int
-		Edited           func(childComplexity int) int
-		ID               func(childComplexity int) int
-		Meta             func(childComplexity int) int
-		ParentID         func(childComplexity int) int
-		PersonalizedMeta func(childComplexity int) int
-		Privacy          func(childComplexity int) int
-		RawContent       func(childComplexity int) int
-		Tags             func(childComplexity int) int
-		Type             func(childComplexity int) int
-		UpdatedAt        func(childComplexity int) int
+		AllowedPersonaIds func(childComplexity int) int
+		Author            func(childComplexity int) int
+		AuthorID          func(childComplexity int) int
+		Content           func(childComplexity int) int
+		CreatedAt         func(childComplexity int) int
+		DeletedAt         func(childComplexity int) int
+		DeniedPersonaIds  func(childComplexity int) int
+		Edited            func(childComplexity int) int
+		ID                func(childComplexity int) int
+		Meta              func(childComplexity int) int
+		ParentID          func(childComplexity int) int
+		PersonalizedMeta  func(childComplexity int) int
+		Privacy           func(childComplexity int) int
+		RawContent        func(childComplexity int) int
+		Tags              func(childComplexity int) int
+		Type              func(childComplexity int) int
+		UpdatedAt         func(childComplexity int) int
 	}
 
 	CommentMarkDef struct {
@@ -163,11 +163,18 @@ type ComplexityRoot struct {
 		Type func(childComplexity int) int
 	}
 
+	Persona struct {
+		FullName        func(childComplexity int) int
+		ID              func(childComplexity int) int
+		ProfileImageURL func(childComplexity int) int
+		Username        func(childComplexity int) int
+	}
+
 	PersonalizedMeta struct {
-		ACL          func(childComplexity int) int
-		LikedByUser  func(childComplexity int) int
-		SharedByUser func(childComplexity int) int
-		ViewedByUser func(childComplexity int) int
+		ACL             func(childComplexity int) int
+		LikedByPersona  func(childComplexity int) int
+		SharedByPersona func(childComplexity int) int
+		ViewedByPersona func(childComplexity int) int
 	}
 
 	PortableText struct {
@@ -175,41 +182,41 @@ type ComplexityRoot struct {
 	}
 
 	Post struct {
-		AllowedUserIds   func(childComplexity int) int
-		Author           func(childComplexity int) int
-		AuthorID         func(childComplexity int) int
-		Content          func(childComplexity int) int
-		CreatedAt        func(childComplexity int) int
-		DeletedAt        func(childComplexity int) int
-		DeniedUserIds    func(childComplexity int) int
-		Edited           func(childComplexity int) int
-		ID               func(childComplexity int) int
-		Meta             func(childComplexity int) int
-		Owner            func(childComplexity int) int
-		PersonalizedMeta func(childComplexity int) int
-		Privacy          func(childComplexity int) int
-		RawContent       func(childComplexity int) int
-		Tags             func(childComplexity int) int
-		Type             func(childComplexity int) int
-		UpdatedAt        func(childComplexity int) int
+		AllowedPersonaIds func(childComplexity int) int
+		Author            func(childComplexity int) int
+		AuthorID          func(childComplexity int) int
+		Content           func(childComplexity int) int
+		CreatedAt         func(childComplexity int) int
+		DeletedAt         func(childComplexity int) int
+		DeniedPersonaIds  func(childComplexity int) int
+		Edited            func(childComplexity int) int
+		ID                func(childComplexity int) int
+		Meta              func(childComplexity int) int
+		Owner             func(childComplexity int) int
+		PersonalizedMeta  func(childComplexity int) int
+		Privacy           func(childComplexity int) int
+		RawContent        func(childComplexity int) int
+		Tags              func(childComplexity int) int
+		Type              func(childComplexity int) int
+		UpdatedAt         func(childComplexity int) int
 	}
 
 	PostGenericDocument struct {
-		AllowedUserIds func(childComplexity int) int
-		AuthorID       func(childComplexity int) int
-		Content        func(childComplexity int) int
-		CreatedAt      func(childComplexity int) int
-		DeletedAt      func(childComplexity int) int
-		DeniedUserIds  func(childComplexity int) int
-		Edited         func(childComplexity int) int
-		ID             func(childComplexity int) int
-		Owner          func(childComplexity int) int
-		ParentID       func(childComplexity int) int
-		Privacy        func(childComplexity int) int
-		RawContent     func(childComplexity int) int
-		Tags           func(childComplexity int) int
-		Type           func(childComplexity int) int
-		UpdatedAt      func(childComplexity int) int
+		AllowedPersonaIds func(childComplexity int) int
+		AuthorID          func(childComplexity int) int
+		Content           func(childComplexity int) int
+		CreatedAt         func(childComplexity int) int
+		DeletedAt         func(childComplexity int) int
+		DeniedPersonaIds  func(childComplexity int) int
+		Edited            func(childComplexity int) int
+		ID                func(childComplexity int) int
+		Owner             func(childComplexity int) int
+		ParentID          func(childComplexity int) int
+		Privacy           func(childComplexity int) int
+		RawContent        func(childComplexity int) int
+		Tags              func(childComplexity int) int
+		Type              func(childComplexity int) int
+		UpdatedAt         func(childComplexity int) int
 	}
 
 	Query struct {
@@ -223,13 +230,6 @@ type ComplexityRoot struct {
 		Marks func(childComplexity int) int
 		Text  func(childComplexity int) int
 		Type  func(childComplexity int) int
-	}
-
-	User struct {
-		FullName        func(childComplexity int) int
-		ID              func(childComplexity int) int
-		ProfileImageURL func(childComplexity int) int
-		Username        func(childComplexity int) int
 	}
 }
 
@@ -476,12 +476,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Channel.UpdatedAt(childComplexity), true
 
-	case "Comment.allowedUserIds":
-		if e.complexity.Comment.AllowedUserIds == nil {
+	case "Comment.allowedPersonaIds":
+		if e.complexity.Comment.AllowedPersonaIds == nil {
 			break
 		}
 
-		return e.complexity.Comment.AllowedUserIds(childComplexity), true
+		return e.complexity.Comment.AllowedPersonaIds(childComplexity), true
 
 	case "Comment.author":
 		if e.complexity.Comment.Author == nil {
@@ -518,12 +518,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Comment.DeletedAt(childComplexity), true
 
-	case "Comment.deniedUserIds":
-		if e.complexity.Comment.DeniedUserIds == nil {
+	case "Comment.deniedPersonaIds":
+		if e.complexity.Comment.DeniedPersonaIds == nil {
 			break
 		}
 
-		return e.complexity.Comment.DeniedUserIds(childComplexity), true
+		return e.complexity.Comment.DeniedPersonaIds(childComplexity), true
 
 	case "Comment.edited":
 		if e.complexity.Comment.Edited == nil {
@@ -835,6 +835,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Owner.Type(childComplexity), true
 
+	case "Persona.fullName":
+		if e.complexity.Persona.FullName == nil {
+			break
+		}
+
+		return e.complexity.Persona.FullName(childComplexity), true
+
+	case "Persona.id":
+		if e.complexity.Persona.ID == nil {
+			break
+		}
+
+		return e.complexity.Persona.ID(childComplexity), true
+
+	case "Persona.profileImageUrl":
+		if e.complexity.Persona.ProfileImageURL == nil {
+			break
+		}
+
+		return e.complexity.Persona.ProfileImageURL(childComplexity), true
+
+	case "Persona.username":
+		if e.complexity.Persona.Username == nil {
+			break
+		}
+
+		return e.complexity.Persona.Username(childComplexity), true
+
 	case "PersonalizedMeta.acl":
 		if e.complexity.PersonalizedMeta.ACL == nil {
 			break
@@ -842,26 +870,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.PersonalizedMeta.ACL(childComplexity), true
 
-	case "PersonalizedMeta.likedByUser":
-		if e.complexity.PersonalizedMeta.LikedByUser == nil {
+	case "PersonalizedMeta.likedByPersona":
+		if e.complexity.PersonalizedMeta.LikedByPersona == nil {
 			break
 		}
 
-		return e.complexity.PersonalizedMeta.LikedByUser(childComplexity), true
+		return e.complexity.PersonalizedMeta.LikedByPersona(childComplexity), true
 
-	case "PersonalizedMeta.sharedByUser":
-		if e.complexity.PersonalizedMeta.SharedByUser == nil {
+	case "PersonalizedMeta.sharedByPersona":
+		if e.complexity.PersonalizedMeta.SharedByPersona == nil {
 			break
 		}
 
-		return e.complexity.PersonalizedMeta.SharedByUser(childComplexity), true
+		return e.complexity.PersonalizedMeta.SharedByPersona(childComplexity), true
 
-	case "PersonalizedMeta.viewedByUser":
-		if e.complexity.PersonalizedMeta.ViewedByUser == nil {
+	case "PersonalizedMeta.viewedByPersona":
+		if e.complexity.PersonalizedMeta.ViewedByPersona == nil {
 			break
 		}
 
-		return e.complexity.PersonalizedMeta.ViewedByUser(childComplexity), true
+		return e.complexity.PersonalizedMeta.ViewedByPersona(childComplexity), true
 
 	case "PortableText.blocks":
 		if e.complexity.PortableText.Blocks == nil {
@@ -870,12 +898,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.PortableText.Blocks(childComplexity), true
 
-	case "Post.allowedUserIds":
-		if e.complexity.Post.AllowedUserIds == nil {
+	case "Post.allowedPersonaIds":
+		if e.complexity.Post.AllowedPersonaIds == nil {
 			break
 		}
 
-		return e.complexity.Post.AllowedUserIds(childComplexity), true
+		return e.complexity.Post.AllowedPersonaIds(childComplexity), true
 
 	case "Post.author":
 		if e.complexity.Post.Author == nil {
@@ -912,12 +940,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Post.DeletedAt(childComplexity), true
 
-	case "Post.deniedUserIds":
-		if e.complexity.Post.DeniedUserIds == nil {
+	case "Post.deniedPersonaIds":
+		if e.complexity.Post.DeniedPersonaIds == nil {
 			break
 		}
 
-		return e.complexity.Post.DeniedUserIds(childComplexity), true
+		return e.complexity.Post.DeniedPersonaIds(childComplexity), true
 
 	case "Post.edited":
 		if e.complexity.Post.Edited == nil {
@@ -989,12 +1017,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Post.UpdatedAt(childComplexity), true
 
-	case "PostGenericDocument.allowedUserIds":
-		if e.complexity.PostGenericDocument.AllowedUserIds == nil {
+	case "PostGenericDocument.allowedPersonaIds":
+		if e.complexity.PostGenericDocument.AllowedPersonaIds == nil {
 			break
 		}
 
-		return e.complexity.PostGenericDocument.AllowedUserIds(childComplexity), true
+		return e.complexity.PostGenericDocument.AllowedPersonaIds(childComplexity), true
 
 	case "PostGenericDocument.authorId":
 		if e.complexity.PostGenericDocument.AuthorID == nil {
@@ -1024,12 +1052,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.PostGenericDocument.DeletedAt(childComplexity), true
 
-	case "PostGenericDocument.deniedUserIds":
-		if e.complexity.PostGenericDocument.DeniedUserIds == nil {
+	case "PostGenericDocument.deniedPersonaIds":
+		if e.complexity.PostGenericDocument.DeniedPersonaIds == nil {
 			break
 		}
 
-		return e.complexity.PostGenericDocument.DeniedUserIds(childComplexity), true
+		return e.complexity.PostGenericDocument.DeniedPersonaIds(childComplexity), true
 
 	case "PostGenericDocument.edited":
 		if e.complexity.PostGenericDocument.Edited == nil {
@@ -1157,34 +1185,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Span.Type(childComplexity), true
-
-	case "User.fullName":
-		if e.complexity.User.FullName == nil {
-			break
-		}
-
-		return e.complexity.User.FullName(childComplexity), true
-
-	case "User.id":
-		if e.complexity.User.ID == nil {
-			break
-		}
-
-		return e.complexity.User.ID(childComplexity), true
-
-	case "User.profileImageUrl":
-		if e.complexity.User.ProfileImageURL == nil {
-			break
-		}
-
-		return e.complexity.User.ProfileImageURL(childComplexity), true
-
-	case "User.username":
-		if e.complexity.User.Username == nil {
-			break
-		}
-
-		return e.complexity.User.Username(childComplexity), true
 
 	}
 	return 0, false
@@ -1531,7 +1531,7 @@ enum MediaType {
 }
 
 enum OwnerType {
-  USER
+  PERSONA
   CHANNEL
   PAGE
 }
@@ -1553,13 +1553,13 @@ type Meta {
   commentsCount: Int32 # only for posts
 }
 
-# Personalized meta information for the current user
-# e.g., whether the current user has liked/shared/viewed the post/comment/reply
-# will be fetched separately based on the current user context
+# Personalized meta information for the current persona
+# e.g., whether the current persona has liked/shared/viewed the post/comment/reply
+# will be fetched separately based on the current persona context
 type PersonalizedMeta {
-  likedByUser: Boolean!
-  sharedByUser: Boolean!
-  viewedByUser: Boolean!
+  likedByPersona: Boolean!
+  sharedByPersona: Boolean!
+  viewedByPersona: Boolean!
   acl: ACL!
 }
 
@@ -1573,15 +1573,15 @@ type ACL {
 
 type Owner {
   type: OwnerType!
-  id: Int64! # userId for USER, channelId for CHANNEL, pageId for PAGE
+  id: Int64! # personaId for PERSONA, channelId for CHANNEL, pageId for PAGE
 }
 
 input OwnerInput {
   id: Int64!
-  type: OwnerType! # e.g. USER, PAGE, GROUP, etc.
+  type: OwnerType! # e.g. PERSONA, PAGE, GROUP, etc.
 }
 
-type User {
+type Persona {
   id: Int64!
   username: String!
   fullName: String!
@@ -1603,15 +1603,15 @@ type PostGenericDocument {
   deletedAt: DateTime
   edited: Boolean!
   privacy: Privacy!
-  deniedUserIds: [Int64!]
-  allowedUserIds: [Int64!]
+  deniedPersonaIds: [Int64!]
+  allowedPersonaIds: [Int64!]
 }
 
 type Post {
   _id: ObjectId!
   type: PostType!
   authorId: Int64!
-  author: User! # author of the post will be fetched using authorId
+  author: Persona! # author of the post will be fetched using authorId
   owner: Owner!
   content: PortableText
   rawContent: JSON!
@@ -1621,8 +1621,8 @@ type Post {
   deletedAt: DateTime
   edited: Boolean!
   privacy: Privacy!
-  deniedUserIds: [Int64!]!
-  allowedUserIds: [Int64!]!
+  deniedPersonaIds: [Int64!]!
+  allowedPersonaIds: [Int64!]!
   meta: Meta!
   personalizedMeta: PersonalizedMeta!
 }
@@ -1632,7 +1632,7 @@ type Comment {
   type: PostType!
   parentId: ObjectId!
   authorId: Int64!
-  author: User! # author of the comment will be fetched using authorId
+  author: Persona! # author of the comment will be fetched using authorId
   content: PortableText
   rawContent: JSON!
   tags: [String!]!
@@ -1640,8 +1640,8 @@ type Comment {
   updatedAt: DateTime!
   deletedAt: DateTime
   edited: Boolean!
-  deniedUserIds: [Int64!]!
-  allowedUserIds: [Int64!]!
+  deniedPersonaIds: [Int64!]!
+  allowedPersonaIds: [Int64!]!
   privacy: Privacy!
   meta: Meta!
   personalizedMeta: PersonalizedMeta!
@@ -1653,8 +1653,8 @@ input PostInput {
   tags: [String!]
   owner: OwnerInput!
   privacy: Privacy!
-  deniedUserIds: [Int64!]!
-  allowedUserIds: [Int64!]!
+  deniedPersonaIds: [Int64!]!
+  allowedPersonaIds: [Int64!]!
 }
 
 enum SimpleInputType {
@@ -1676,8 +1676,8 @@ input CommentInput {
   tags: [String!]
   owner: OwnerInput!
   privacy: Privacy!
-  deniedUserIds: [Int64!]!
-  allowedUserIds: [Int64!]!
+  deniedPersonaIds: [Int64!]!
+  allowedPersonaIds: [Int64!]!
 }
 
 input LikeInput {
@@ -1719,7 +1719,7 @@ type Channel {
   updatedAt: DateTime!
   posts: [Post!]!
   totalPosts: Int!
-  owner: User!
+  owner: Persona!
   membersCount: Int
   followersCount: Int
   isMember: Boolean!

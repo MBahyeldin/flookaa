@@ -1,0 +1,9 @@
+
+BEGIN;
+DROP TABLE IF EXISTS user_roles;
+END;
+
+
+BEGIN;
+DROP TABLE IF EXISTS roles;
+END;

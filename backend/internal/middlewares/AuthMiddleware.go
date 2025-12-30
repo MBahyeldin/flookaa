@@ -28,6 +28,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		claims := token.Claims.(jwt.MapClaims)
 		log.Println("JWT claims:", claims)
 		c.Set("user_id", int64(claims["user_id"].(float64)))
+		c.Set("persona_id", int64(claims["persona_id"].(float64)))
 		c.Set("email_address", claims["email_address"].(string))
 		log.Println("Verified JWT for user_id:", int64(claims["user_id"].(float64)))
 		c.Next()

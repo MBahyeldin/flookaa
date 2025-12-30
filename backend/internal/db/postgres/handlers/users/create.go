@@ -33,7 +33,6 @@ func Create(c *gin.Context) {
 		FirstName:      userRequest.FirstName,
 		LastName:       userRequest.LastName,
 		EmailAddress:   userRequest.EmailAddress,
-		Phone:          userRequest.Phone,
 		HashedPassword: sql.NullString{String: hashedPassword, Valid: true},
 		Thumbnail:      sql.NullString(userRequest.Thumbnail),
 	}
@@ -50,6 +49,7 @@ func Create(c *gin.Context) {
 	jwt, err := token.Generate(map[string]interface{}{
 		"email_address": createUser.EmailAddress,
 		"user_id":       createUser.ID,
+		"persona_id":    0,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

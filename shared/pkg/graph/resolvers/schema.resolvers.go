@@ -24,7 +24,7 @@ import (
 func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInput) (*models.PostGenericDocument, error) {
 	// Create Object in Mongodb
 	Collection := mongo.Client.Database("app").Collection("objects")
-	userId, err := getUserIdFromContext(ctx)
+	personaId, err := getPersonaIdFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unauthenticated: %w", err)
 	}
@@ -33,25 +33,25 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 		return nil, fmt.Errorf("failed to marshal content: %w", err)
 	}
 
-	id := fmt.Sprintf("obj_%d_%d", userId, time.Now().Unix())
+	id := fmt.Sprintf("obj_%d_%d", personaId, time.Now().Unix())
 
 	object := &models.PostGenericDocument{
 		ID:       id,
 		Type:     models.PostTypePost,
 		ParentID: nil,
-		AuthorID: userId,
+		AuthorID: personaId,
 		Tags:     input.Tags,
 		Owner: &models.Owner{
 			ID:   input.Owner.ID,
 			Type: input.Owner.Type,
 		},
-		Content:        portabletext.ParseContent(*input.Content),
-		RawContent:     string(rawContent),
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
-		Privacy:        models.Privacy(input.Privacy.String()),
-		AllowedUserIds: input.AllowedUserIds,
-		DeniedUserIds:  input.DeniedUserIds,
+		Content:           portabletext.ParseContent(*input.Content),
+		RawContent:        string(rawContent),
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		Privacy:           models.Privacy(input.Privacy.String()),
+		AllowedPersonaIds: input.AllowedPersonaIds,
+		DeniedPersonaIds:  input.DeniedPersonaIds,
 	}
 
 	_, insertError := Collection.InsertOne(ctx, object)
@@ -62,19 +62,19 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 		"object_id":  object.ID,
 		"owner_id":   input.Owner.ID,
 		"owner_type": input.Owner.Type,
-		"author_id":  userId,
+		"author_id":  personaId,
 		"tags":       input.Tags,
 		"created_at": object.CreatedAt,
 	}
 
 	var ownerType db.OwnerEnum
 	switch input.Owner.Type {
-	case models.OwnerTypeUser:
-		ownerType = db.OwnerEnumUSER
+	case models.OwnerTypePersona:
+		ownerType = db.OwnerEnumPERSONA
 	case models.OwnerTypeChannel:
 		ownerType = db.OwnerEnumCHANNEL
 	default:
-		ownerType = db.OwnerEnumUSER
+		ownerType = db.OwnerEnumPERSONA
 	}
 
 	event := db.CreateEventParams{
@@ -84,7 +84,7 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 		TargetType: db.EventTargetTypeEnumCHANNEL,
 		Owner:      ownerType,
 		OwnerID:    int64(input.Owner.ID),
-		ActorID:    int64(userId),
+		ActorID:    int64(personaId),
 	}
 
 	_, err = db.New(r.Postgres).CreateEvent(ctx, event)
@@ -117,7 +117,7 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 // CreateComment is the resolver for the createComment field.
 func (r *mutationResolver) CreateComment(ctx context.Context, input models.CommentInput) (*models.PostGenericDocument, error) {
 	Collection := mongo.Client.Database("app").Collection("objects")
-	userId, err := getUserIdFromContext(ctx)
+	personaId, err := getPersonaIdFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unauthenticated: %w", err)
 	}
@@ -127,10 +127,10 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 	}
 
 	object := &models.PostGenericDocument{
-		ID:         fmt.Sprintf("obj_%d_%d", userId, time.Now().Unix()),
+		ID:         fmt.Sprintf("obj_%d_%d", personaId, time.Now().Unix()),
 		Type:       models.PostTypeComment,
 		ParentID:   &input.ParentID,
-		AuthorID:   userId,
+		AuthorID:   personaId,
 		Tags:       input.Tags,
 		RawContent: string(rawContent),
 		CreatedAt:  time.Now(),
@@ -139,9 +139,9 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 			ID:   input.Owner.ID,
 			Type: input.Owner.Type,
 		},
-		Privacy:        models.Privacy(input.Privacy.String()),
-		AllowedUserIds: input.AllowedUserIds,
-		DeniedUserIds:  input.DeniedUserIds,
+		Privacy:           models.Privacy(input.Privacy.String()),
+		AllowedPersonaIds: input.AllowedPersonaIds,
+		DeniedPersonaIds:  input.DeniedPersonaIds,
 	}
 
 	_, insertError := Collection.InsertOne(ctx, object)
@@ -149,7 +149,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 		return nil, fmt.Errorf("failed to insert object: %w", insertError)
 	}
 
-	author, err := resolveUserCached(ctx, userId, r.Postgres)
+	author, err := resolvePersonaCached(ctx, personaId, r.Postgres)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve author: %w", err)
 	}
@@ -172,9 +172,9 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 			ViewsCount:  0,
 		},
 		PersonalizedMeta: &models.PersonalizedMeta{
-			LikedByUser:  false,
-			SharedByUser: false,
-			ViewedByUser: false,
+			LikedByPersona:  false,
+			SharedByPersona: false,
+			ViewedByPersona: false,
 			ACL: &models.ACL{
 				CanView:    true,
 				CanComment: true,
@@ -200,7 +200,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 		TargetType: targetType,
 		Owner:      db.OwnerEnum(input.Owner.Type.String()),
 		OwnerID:    int64(input.Owner.ID),
-		ActorID:    int64(userId),
+		ActorID:    int64(personaId),
 	}
 
 	_, err = db.New(r.Postgres).CreateEvent(ctx, event)
@@ -232,7 +232,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 
 // CreateLike is the resolver for the createLike field.
 func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInput) (bool, error) {
-	userId, err := getUserIdFromContext(ctx)
+	personaId, err := getPersonaIdFromContext(ctx)
 	if err != nil {
 		return false, fmt.Errorf("unauthenticated: %w", err)
 	}
@@ -240,7 +240,7 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 	q := db.New(r.Postgres)
 	isLikedByUser, err := q.IsUserLikedTarget(ctx, db.IsUserLikedTargetParams{
 		TargetID: input.TargetID,
-		ActorID:  int64(userId),
+		ActorID:  int64(personaId),
 	})
 
 	if err != nil {
@@ -272,14 +272,14 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 		TargetType: db.EventTargetTypeEnum(input.TargetType.String()),
 		Owner:      db.OwnerEnum(input.Owner.Type),
 		OwnerID:    input.Owner.ID,
-		ActorID:    int64(userId),
+		ActorID:    int64(personaId),
 	}
 
 	switch action {
 	case db.EventActionEnumDelete:
 		err = q.UnlikeEvent(ctx, db.UnlikeEventParams{
 			TargetID: input.TargetID,
-			ActorID:  int64(userId),
+			ActorID:  int64(personaId),
 		})
 		if err != nil {
 			return false, fmt.Errorf("failed to unlike event: %w", err)
@@ -323,7 +323,7 @@ func (r *mutationResolver) DeleteReply(ctx context.Context, id string, owner mod
 
 // GetPosts is the resolver for the getPosts field.
 func (r *queryResolver) GetPosts(ctx context.Context, owner models.OwnerInput, ids []string, limit *int32, offset *int32) ([]*models.Post, error) {
-	_, err := getUserIdFromContext(ctx)
+	_, err := getPersonaIdFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unauthenticated: %w", err)
 	}
@@ -339,7 +339,7 @@ func (r *queryResolver) GetPosts(ctx context.Context, owner models.OwnerInput, i
 
 // GetComments is the resolver for the getComments field.
 func (r *queryResolver) GetComments(ctx context.Context, parentID string, limit *int32, offset *int32) ([]*models.Comment, error) {
-	_, err := getUserIdFromContext(ctx)
+	_, err := getPersonaIdFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unauthenticated: %w", err)
 	}
@@ -352,7 +352,7 @@ func (r *queryResolver) GetComments(ctx context.Context, parentID string, limit 
 
 // GetChannel is the resolver for the getChannel field.
 func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Channel, error) {
-	userId, err := getUserIdFromContext(ctx)
+	personaId, err := getPersonaIdFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unauthenticated: %w", err)
 	}
@@ -360,7 +360,7 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 	var channel db.GetChannelRow
 	var channelErr, postsErr error
 	var posts []*models.Post
-	var ownerUser models.User
+	var ownerPersona models.Persona
 	wg := sync.WaitGroup{}
 	wg.Add(3)
 
@@ -373,7 +373,7 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 
 		channelResult, err := q.GetChannel(ctxTimeout, db.GetChannelParams{
 			ID:      id,
-			OwnerID: userId,
+			OwnerID: personaId,
 		})
 		if err != nil {
 			channelErr = err
@@ -382,12 +382,12 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		channel = channelResult
 
 		// Owner lookup + cache
-		cachedUser, err := resolveUserCached(ctx, channel.OwnerID, r.Postgres)
+		cachedPersona, err := resolvePersonaCached(ctx, channel.OwnerID, r.Postgres)
 		if err != nil {
 			channelErr = err
 			return
 		}
-		ownerUser = *cachedUser
+		ownerPersona = *cachedPersona
 	}()
 
 	// --- Fetch Posts + Comments using $lookup ---
@@ -436,7 +436,7 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		UpdatedAt:      channel.UpdatedAt.Time,
 		Posts:          posts,
 		TotalPosts:     totalPostsCount,
-		Owner:          &ownerUser,
+		Owner:          &ownerPersona,
 		IsMember:       channel.IsMember,
 		IsFollower:     channel.IsFollower,
 	}, nil

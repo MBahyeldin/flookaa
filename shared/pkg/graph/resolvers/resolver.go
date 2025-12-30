@@ -44,25 +44,37 @@ func getUserIdFromContext(ctx context.Context) (int64, error) {
 	return userId, nil
 }
 
-func resolveUserCached(ctx context.Context, userID int64, pg *sql.DB) (*models.User, error) {
-	cachedUser, err := redis.Store.User.GetUserInfo(ctx, strconv.Itoa(int(userID)))
+func getPersonaIdFromContext(ctx context.Context) (int64, error) {
+	ginCtx, ok := ctx.Value(keys.GinContextKey).(*gin.Context)
+	if !ok {
+		return 0, fmt.Errorf("failed to get gin.Context from context: %w", ctx.Err())
+	}
+	personaId, ok := ginCtx.Value("persona_id").(int64)
+	if !ok {
+		return 0, fmt.Errorf("failed to get personaId from context: %w", ctx.Err())
+	}
+	return personaId, nil
+}
+
+func resolvePersonaCached(ctx context.Context, personaID int64, pg *sql.DB) (*models.Persona, error) {
+	cachedPersona, err := redis.Store.User.GetUserInfo(ctx, strconv.Itoa(int(personaID)))
 	if err != nil {
 		log.Println("redis get user error:", err)
 	}
-	if cachedUser == nil {
+	if cachedPersona == nil {
 		q := db.New(pg)
-		user, err := q.ResolveUserByID(ctx, userID)
+		persona, err := q.ResolveUserByID(ctx, personaID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user from postgres: %w", err)
 		}
-		cachedUser = &user
-		_ = redis.Store.User.SetUserInfo(ctx, &user)
+		cachedPersona = &persona
+		_ = redis.Store.User.SetUserInfo(ctx, &persona)
 	}
-	return &models.User{
-		ID:              cachedUser.ID,
-		Username:        cachedUser.FirstName + " " + cachedUser.LastName,
-		FullName:        cachedUser.FirstName + " " + cachedUser.LastName,
-		ProfileImageURL: &cachedUser.Thumbnail.String,
+	return &models.Persona{
+		ID:              cachedPersona.ID,
+		Username:        cachedPersona.FirstName + " " + cachedPersona.LastName,
+		FullName:        cachedPersona.FirstName + " " + cachedPersona.LastName,
+		ProfileImageURL: &cachedPersona.Thumbnail.String,
 	}, nil
 }
 
@@ -153,15 +165,15 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 	fmt.Print(resultsCount)
 
 	// Users Activity lookup (from Redis or Postgres)
-	userId, err := getUserIdFromContext(ctx)
-	if err != nil || userId == 0 {
-		return nil, fmt.Errorf("failed to get userId from context: %w", err)
+	personaId, err := getPersonaIdFromContext(ctx)
+	if err != nil || personaId == 0 {
+		return nil, fmt.Errorf("failed to get personaId from context: %w", err)
 	}
 
 	// this should not be here in production, should be done at login or some other place
 	// but for simplicity, we do it here
 	// ensure user activities are cached in Redis
-	err = redis.Store.User.InitUserActivityIfNotSet(ctx, userId, r.Postgres)
+	err = redis.Store.User.InitUserActivityIfNotSet(ctx, personaId, r.Postgres)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get init activities: %w", err)
 	}
@@ -175,7 +187,7 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 		post := models.PostMapper(&p)
 
 		// Author lookup (from Redis or Postgres)
-		author, err := resolveUserCached(ctx, p.AuthorID, r.Postgres)
+		author, err := resolvePersonaCached(ctx, p.AuthorID, r.Postgres)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve author: %w", err)
 		}
@@ -188,14 +200,14 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 		}
 		post.Meta = meta
 
-		isLikedByMe, err := redis.Store.User.IsUserActivity(ctx, userId, p.ID, db.EventEnumLike)
+		isLikedByMe, err := redis.Store.User.IsUserActivity(ctx, personaId, p.ID, db.EventEnumLike)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve if post is liked by me: %w", err)
 		}
 
 		// post Meta personalization (based on current user activities)
 		personalizedMeta := &models.PersonalizedMeta{
-			LikedByUser: isLikedByMe,
+			LikedByPersona: isLikedByMe,
 			ACL: &models.ACL{
 				CanComment: true,                 // Simplified for this example
 				CanShare:   true,                 // Simplified for this example
@@ -292,9 +304,9 @@ func resolveCommentMetaCached(ctx context.Context, commentId string, pg *sql.DB)
 }
 
 func getComments(ctx context.Context, postID string, r *queryResolver, limit int32, offset int32) ([]*models.Comment, error) {
-	userId, err := getUserIdFromContext(ctx)
-	if err != nil || userId == 0 {
-		return nil, fmt.Errorf("failed to get userId from context: %w", err)
+	personaId, err := getPersonaIdFromContext(ctx)
+	if err != nil || personaId == 0 {
+		return nil, fmt.Errorf("failed to get personaId from context: %w", err)
 	}
 	comments := []*models.Comment{}
 	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -338,7 +350,7 @@ func getComments(ctx context.Context, postID string, r *queryResolver, limit int
 		}
 
 		// Author lookup (from Redis or Postgres)
-		author, err := resolveUserCached(ctx, commentsWithReplies.AuthorID, r.Postgres)
+		author, err := resolvePersonaCached(ctx, commentsWithReplies.AuthorID, r.Postgres)
 		if err != nil {
 			return nil, err
 		}
@@ -352,14 +364,14 @@ func getComments(ctx context.Context, postID string, r *queryResolver, limit int
 		}
 		comment.Meta = meta
 
-		isLikedByMe, err := redis.Store.User.IsUserActivity(ctx, userId, comment.ID, db.EventEnumLike)
+		isLikedByMe, err := redis.Store.User.IsUserActivity(ctx, personaId, comment.ID, db.EventEnumLike)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve if post is liked by me: %w", err)
 		}
 
 		// post Meta personalization (based on current user activities)
 		personalizedMeta := &models.PersonalizedMeta{
-			LikedByUser: isLikedByMe,
+			LikedByPersona: isLikedByMe,
 			ACL: &models.ACL{
 				CanComment: true,                 // Simplified for this example
 				CanShare:   true,                 // Simplified for this example

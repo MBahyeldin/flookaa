@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/99designs/gqlgen v0.17.81
 	github.com/gin-gonic/gin v1.11.0
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
 	github.com/nats-io/nats.go v1.46.1

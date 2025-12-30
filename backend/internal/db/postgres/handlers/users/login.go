@@ -65,6 +65,7 @@ func Login(c *gin.Context) {
 type UserMinimal struct {
 	ID           int64
 	EmailAddress string
+	PersonaId    int64
 }
 
 func GetLoginToken(user UserMinimal) (string, error) {

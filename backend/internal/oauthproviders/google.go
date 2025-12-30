@@ -152,7 +152,6 @@ func handleSignUpRequest(c *gin.Context, user GoogleUser) {
 		EmailAddress:  user.Email,
 		FirstName:     firstName,
 		LastName:      lastName,
-		Phone:         "",
 		OauthProvider: db.NullOauthProvider{OauthProvider: db.OauthProviderGoogle, Valid: true},
 		Thumbnail:     sql.NullString{String: thunmbnail, Valid: true},
 		IsVerified:    sql.NullBool{Bool: true, Valid: true},

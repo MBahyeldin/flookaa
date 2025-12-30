@@ -23,7 +23,7 @@ enum MediaType {
 }
 
 enum OwnerType {
-  USER
+  PERSONA
   CHANNEL
   PAGE
 }
@@ -45,13 +45,13 @@ type Meta {
   commentsCount: Int32 # only for posts
 }
 
-# Personalized meta information for the current user
-# e.g., whether the current user has liked/shared/viewed the post/comment/reply
-# will be fetched separately based on the current user context
+# Personalized meta information for the current persona
+# e.g., whether the current persona has liked/shared/viewed the post/comment/reply
+# will be fetched separately based on the current persona context
 type PersonalizedMeta {
-  likedByUser: Boolean!
-  sharedByUser: Boolean!
-  viewedByUser: Boolean!
+  likedByPersona: Boolean!
+  sharedByPersona: Boolean!
+  viewedByPersona: Boolean!
   acl: ACL!
 }
 
@@ -65,15 +65,15 @@ type ACL {
 
 type Owner {
   type: OwnerType!
-  id: Int64! # userId for USER, channelId for CHANNEL, pageId for PAGE
+  id: Int64! # personaId for PERSONA, channelId for CHANNEL, pageId for PAGE
 }
 
 input OwnerInput {
   id: Int64!
-  type: OwnerType! # e.g. USER, PAGE, GROUP, etc.
+  type: OwnerType! # e.g. PERSONA, PAGE, GROUP, etc.
 }
 
-type User {
+type Persona {
   id: Int64!
   username: String!
   fullName: String!
@@ -95,15 +95,15 @@ type PostGenericDocument {
   deletedAt: DateTime
   edited: Boolean!
   privacy: Privacy!
-  deniedUserIds: [Int64!]
-  allowedUserIds: [Int64!]
+  deniedPersonaIds: [Int64!]
+  allowedPersonaIds: [Int64!]
 }
 
 type Post {
   _id: ObjectId!
   type: PostType!
   authorId: Int64!
-  author: User! # author of the post will be fetched using authorId
+  author: Persona! # author of the post will be fetched using authorId
   owner: Owner!
   content: PortableText
   rawContent: JSON!
@@ -113,8 +113,8 @@ type Post {
   deletedAt: DateTime
   edited: Boolean!
   privacy: Privacy!
-  deniedUserIds: [Int64!]!
-  allowedUserIds: [Int64!]!
+  deniedPersonaIds: [Int64!]!
+  allowedPersonaIds: [Int64!]!
   meta: Meta!
   personalizedMeta: PersonalizedMeta!
 }
@@ -124,7 +124,7 @@ type Comment {
   type: PostType!
   parentId: ObjectId!
   authorId: Int64!
-  author: User! # author of the comment will be fetched using authorId
+  author: Persona! # author of the comment will be fetched using authorId
   content: PortableText
   rawContent: JSON!
   tags: [String!]!
@@ -132,8 +132,8 @@ type Comment {
   updatedAt: DateTime!
   deletedAt: DateTime
   edited: Boolean!
-  deniedUserIds: [Int64!]!
-  allowedUserIds: [Int64!]!
+  deniedPersonaIds: [Int64!]!
+  allowedPersonaIds: [Int64!]!
   privacy: Privacy!
   meta: Meta!
   personalizedMeta: PersonalizedMeta!
@@ -145,8 +145,8 @@ input PostInput {
   tags: [String!]
   owner: OwnerInput!
   privacy: Privacy!
-  deniedUserIds: [Int64!]!
-  allowedUserIds: [Int64!]!
+  deniedPersonaIds: [Int64!]!
+  allowedPersonaIds: [Int64!]!
 }
 
 enum SimpleInputType {
@@ -168,8 +168,8 @@ input CommentInput {
   tags: [String!]
   owner: OwnerInput!
   privacy: Privacy!
-  deniedUserIds: [Int64!]!
-  allowedUserIds: [Int64!]!
+  deniedPersonaIds: [Int64!]!
+  allowedPersonaIds: [Int64!]!
 }
 
 input LikeInput {
@@ -211,7 +211,7 @@ type Channel {
   updatedAt: DateTime!
   posts: [Post!]!
   totalPosts: Int!
-  owner: User!
+  owner: Persona!
   membersCount: Int
   followersCount: Int
   isMember: Boolean!

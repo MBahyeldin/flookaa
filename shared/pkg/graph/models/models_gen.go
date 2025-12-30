@@ -95,7 +95,7 @@ type Channel struct {
 	UpdatedAt       time.Time `json:"updatedAt"`
 	Posts           []*Post   `json:"posts"`
 	TotalPosts      int32     `json:"totalPosts"`
-	Owner           *User     `json:"owner"`
+	Owner           *Persona  `json:"owner"`
 	MembersCount    *int32    `json:"membersCount,omitempty"`
 	FollowersCount  *int32    `json:"followersCount,omitempty"`
 	IsMember        bool      `json:"isMember"`
@@ -103,35 +103,35 @@ type Channel struct {
 }
 
 type Comment struct {
-	ID               string            `json:"_id"`
-	Type             PostType          `json:"type"`
-	ParentID         string            `json:"parentId"`
-	AuthorID         int64             `json:"authorId"`
-	Author           *User             `json:"author"`
-	Content          *PortableText     `json:"content,omitempty"`
-	RawContent       string            `json:"rawContent"`
-	Tags             []string          `json:"tags"`
-	CreatedAt        time.Time         `json:"createdAt"`
-	UpdatedAt        time.Time         `json:"updatedAt"`
-	DeletedAt        *time.Time        `json:"deletedAt,omitempty"`
-	Edited           bool              `json:"edited"`
-	DeniedUserIds    []int64           `json:"deniedUserIds"`
-	AllowedUserIds   []int64           `json:"allowedUserIds"`
-	Privacy          Privacy           `json:"privacy"`
-	Meta             *Meta             `json:"meta"`
-	PersonalizedMeta *PersonalizedMeta `json:"personalizedMeta"`
+	ID                string            `json:"_id"`
+	Type              PostType          `json:"type"`
+	ParentID          string            `json:"parentId"`
+	AuthorID          int64             `json:"authorId"`
+	Author            *Persona          `json:"author"`
+	Content           *PortableText     `json:"content,omitempty"`
+	RawContent        string            `json:"rawContent"`
+	Tags              []string          `json:"tags"`
+	CreatedAt         time.Time         `json:"createdAt"`
+	UpdatedAt         time.Time         `json:"updatedAt"`
+	DeletedAt         *time.Time        `json:"deletedAt,omitempty"`
+	Edited            bool              `json:"edited"`
+	DeniedPersonaIds  []int64           `json:"deniedPersonaIds"`
+	AllowedPersonaIds []int64           `json:"allowedPersonaIds"`
+	Privacy           Privacy           `json:"privacy"`
+	Meta              *Meta             `json:"meta"`
+	PersonalizedMeta  *PersonalizedMeta `json:"personalizedMeta"`
 }
 
 type CommentInput struct {
-	ParentID       string       `json:"parentId"`
-	Level          int32        `json:"level"`
-	AuthorID       int64        `json:"authorId"`
-	Content        *SimpleInput `json:"content"`
-	Tags           []string     `json:"tags,omitempty"`
-	Owner          *OwnerInput  `json:"owner"`
-	Privacy        Privacy      `json:"privacy"`
-	DeniedUserIds  []int64      `json:"deniedUserIds"`
-	AllowedUserIds []int64      `json:"allowedUserIds"`
+	ParentID          string       `json:"parentId"`
+	Level             int32        `json:"level"`
+	AuthorID          int64        `json:"authorId"`
+	Content           *SimpleInput `json:"content"`
+	Tags              []string     `json:"tags,omitempty"`
+	Owner             *OwnerInput  `json:"owner"`
+	Privacy           Privacy      `json:"privacy"`
+	DeniedPersonaIds  []int64      `json:"deniedPersonaIds"`
+	AllowedPersonaIds []int64      `json:"allowedPersonaIds"`
 }
 
 // MarkDef for comments
@@ -243,11 +243,18 @@ type OwnerInput struct {
 	Type OwnerType `json:"type"`
 }
 
+type Persona struct {
+	ID              int64   `json:"id"`
+	Username        string  `json:"username"`
+	FullName        string  `json:"fullName"`
+	ProfileImageURL *string `json:"profileImageUrl,omitempty"`
+}
+
 type PersonalizedMeta struct {
-	LikedByUser  bool `json:"likedByUser"`
-	SharedByUser bool `json:"sharedByUser"`
-	ViewedByUser bool `json:"viewedByUser"`
-	ACL          *ACL `json:"acl"`
+	LikedByPersona  bool `json:"likedByPersona"`
+	SharedByPersona bool `json:"sharedByPersona"`
+	ViewedByPersona bool `json:"viewedByPersona"`
+	ACL             *ACL `json:"acl"`
 }
 
 // Top-level PortableText document
@@ -260,51 +267,51 @@ type PortableTextInput struct {
 }
 
 type Post struct {
-	ID               string            `json:"_id"`
-	Type             PostType          `json:"type"`
-	AuthorID         int64             `json:"authorId"`
-	Author           *User             `json:"author"`
-	Owner            *Owner            `json:"owner"`
-	Content          *PortableText     `json:"content,omitempty"`
-	RawContent       string            `json:"rawContent"`
-	Tags             []string          `json:"tags"`
-	CreatedAt        time.Time         `json:"createdAt"`
-	UpdatedAt        time.Time         `json:"updatedAt"`
-	DeletedAt        *time.Time        `json:"deletedAt,omitempty"`
-	Edited           bool              `json:"edited"`
-	Privacy          Privacy           `json:"privacy"`
-	DeniedUserIds    []int64           `json:"deniedUserIds"`
-	AllowedUserIds   []int64           `json:"allowedUserIds"`
-	Meta             *Meta             `json:"meta"`
-	PersonalizedMeta *PersonalizedMeta `json:"personalizedMeta"`
+	ID                string            `json:"_id"`
+	Type              PostType          `json:"type"`
+	AuthorID          int64             `json:"authorId"`
+	Author            *Persona          `json:"author"`
+	Owner             *Owner            `json:"owner"`
+	Content           *PortableText     `json:"content,omitempty"`
+	RawContent        string            `json:"rawContent"`
+	Tags              []string          `json:"tags"`
+	CreatedAt         time.Time         `json:"createdAt"`
+	UpdatedAt         time.Time         `json:"updatedAt"`
+	DeletedAt         *time.Time        `json:"deletedAt,omitempty"`
+	Edited            bool              `json:"edited"`
+	Privacy           Privacy           `json:"privacy"`
+	DeniedPersonaIds  []int64           `json:"deniedPersonaIds"`
+	AllowedPersonaIds []int64           `json:"allowedPersonaIds"`
+	Meta              *Meta             `json:"meta"`
+	PersonalizedMeta  *PersonalizedMeta `json:"personalizedMeta"`
 }
 
 type PostGenericDocument struct {
-	ID             string        `json:"_id"`
-	Type           PostType      `json:"type"`
-	ParentID       *string       `json:"parentId,omitempty"`
-	AuthorID       int64         `json:"authorId"`
-	Owner          *Owner        `json:"owner,omitempty"`
-	Content        *PortableText `json:"content,omitempty"`
-	RawContent     string        `json:"rawContent"`
-	Tags           []string      `json:"tags"`
-	CreatedAt      time.Time     `json:"createdAt"`
-	UpdatedAt      time.Time     `json:"updatedAt"`
-	DeletedAt      *time.Time    `json:"deletedAt,omitempty"`
-	Edited         bool          `json:"edited"`
-	Privacy        Privacy       `json:"privacy"`
-	DeniedUserIds  []int64       `json:"deniedUserIds,omitempty"`
-	AllowedUserIds []int64       `json:"allowedUserIds,omitempty"`
+	ID                string        `json:"_id"`
+	Type              PostType      `json:"type"`
+	ParentID          *string       `json:"parentId,omitempty"`
+	AuthorID          int64         `json:"authorId"`
+	Owner             *Owner        `json:"owner,omitempty"`
+	Content           *PortableText `json:"content,omitempty"`
+	RawContent        string        `json:"rawContent"`
+	Tags              []string      `json:"tags"`
+	CreatedAt         time.Time     `json:"createdAt"`
+	UpdatedAt         time.Time     `json:"updatedAt"`
+	DeletedAt         *time.Time    `json:"deletedAt,omitempty"`
+	Edited            bool          `json:"edited"`
+	Privacy           Privacy       `json:"privacy"`
+	DeniedPersonaIds  []int64       `json:"deniedPersonaIds,omitempty"`
+	AllowedPersonaIds []int64       `json:"allowedPersonaIds,omitempty"`
 }
 
 type PostInput struct {
-	AuthorID       int64              `json:"authorId"`
-	Content        *PortableTextInput `json:"content"`
-	Tags           []string           `json:"tags,omitempty"`
-	Owner          *OwnerInput        `json:"owner"`
-	Privacy        Privacy            `json:"privacy"`
-	DeniedUserIds  []int64            `json:"deniedUserIds"`
-	AllowedUserIds []int64            `json:"allowedUserIds"`
+	AuthorID          int64              `json:"authorId"`
+	Content           *PortableTextInput `json:"content"`
+	Tags              []string           `json:"tags,omitempty"`
+	Owner             *OwnerInput        `json:"owner"`
+	Privacy           Privacy            `json:"privacy"`
+	DeniedPersonaIds  []int64            `json:"deniedPersonaIds"`
+	AllowedPersonaIds []int64            `json:"allowedPersonaIds"`
 }
 
 type Query struct {
@@ -327,13 +334,6 @@ type SpanInput struct {
 	Key   string   `json:"_key"`
 	Text  string   `json:"text"`
 	Marks []string `json:"marks"`
-}
-
-type User struct {
-	ID              int64   `json:"id"`
-	Username        string  `json:"username"`
-	FullName        string  `json:"fullName"`
-	ProfileImageURL *string `json:"profileImageUrl,omitempty"`
 }
 
 // A block of rich text
@@ -564,20 +564,20 @@ func (e MediaType) MarshalJSON() ([]byte, error) {
 type OwnerType string
 
 const (
-	OwnerTypeUser    OwnerType = "USER"
+	OwnerTypePersona OwnerType = "PERSONA"
 	OwnerTypeChannel OwnerType = "CHANNEL"
 	OwnerTypePage    OwnerType = "PAGE"
 )
 
 var AllOwnerType = []OwnerType{
-	OwnerTypeUser,
+	OwnerTypePersona,
 	OwnerTypeChannel,
 	OwnerTypePage,
 }
 
 func (e OwnerType) IsValid() bool {
 	switch e {
-	case OwnerTypeUser, OwnerTypeChannel, OwnerTypePage:
+	case OwnerTypePersona, OwnerTypeChannel, OwnerTypePage:
 		return true
 	}
 	return false

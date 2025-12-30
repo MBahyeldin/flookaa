@@ -10,6 +10,34 @@ import (
 	"database/sql"
 )
 
+const assignPersonaRoleInChannel = `-- name: AssignPersonaRoleInChannel :one
+INSERT INTO channel_roles (channel_id, persona_id, role_id)
+VALUES ($1, $2, $3)
+RETURNING channel_id, role_id, persona_id, deleted_at, updated_at
+`
+
+type AssignPersonaRoleInChannelParams struct {
+	ChannelID int64
+	PersonaID int64
+	RoleID    int32
+}
+
+// -------------------------------
+// 9. Assign role to persona in a channel
+// -------------------------------
+func (q *Queries) AssignPersonaRoleInChannel(ctx context.Context, arg AssignPersonaRoleInChannelParams) (ChannelRole, error) {
+	row := q.db.QueryRowContext(ctx, assignPersonaRoleInChannel, arg.ChannelID, arg.PersonaID, arg.RoleID)
+	var i ChannelRole
+	err := row.Scan(
+		&i.ChannelID,
+		&i.RoleID,
+		&i.PersonaID,
+		&i.DeletedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const assignUserRole = `-- name: AssignUserRole :one
 INSERT INTO user_roles (user_id, role_id)
 VALUES ($1, $2)
@@ -30,34 +58,6 @@ func (q *Queries) AssignUserRole(ctx context.Context, arg AssignUserRoleParams) 
 	err := row.Scan(
 		&i.UserID,
 		&i.RoleID,
-		&i.DeletedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const assignUserRoleInChannel = `-- name: AssignUserRoleInChannel :one
-INSERT INTO channel_roles (channel_id, user_id, role_id)
-VALUES ($1, $2, $3)
-RETURNING channel_id, role_id, user_id, deleted_at, updated_at
-`
-
-type AssignUserRoleInChannelParams struct {
-	ChannelID int64
-	UserID    int64
-	RoleID    int32
-}
-
-// -------------------------------
-// 9. Assign role to user in a channel
-// -------------------------------
-func (q *Queries) AssignUserRoleInChannel(ctx context.Context, arg AssignUserRoleInChannelParams) (ChannelRole, error) {
-	row := q.db.QueryRowContext(ctx, assignUserRoleInChannel, arg.ChannelID, arg.UserID, arg.RoleID)
-	var i ChannelRole
-	err := row.Scan(
-		&i.ChannelID,
-		&i.RoleID,
-		&i.UserID,
 		&i.DeletedAt,
 		&i.UpdatedAt,
 	)
@@ -102,25 +102,25 @@ func (q *Queries) DeleteRole(ctx context.Context, id int32) error {
 	return err
 }
 
-const getChannelRolesForUser = `-- name: GetChannelRolesForUser :many
+const getChannelRolesForPersona = `-- name: GetChannelRolesForPersona :many
 SELECT r.id, r.name, r.description, r.created_at, r.updated_at, r.deleted_at
 FROM channel_roles cr
 JOIN roles r ON cr.role_id = r.id
-JOIN channel_members cm ON cm.channel_id = cr.channel_id AND cm.user_id = $2
+JOIN channel_members cm ON cm.channel_id = cr.channel_id AND cm.persona_id = $2
 WHERE cr.channel_id = $1
   AND cr.deleted_at IS NULL
 `
 
-type GetChannelRolesForUserParams struct {
+type GetChannelRolesForPersonaParams struct {
 	ChannelID int64
-	UserID    int64
+	PersonaID int64
 }
 
 // -------------------------------
-// 11. Get user's role in a channel
+// 11. Get persona's role in a channel
 // -------------------------------
-func (q *Queries) GetChannelRolesForUser(ctx context.Context, arg GetChannelRolesForUserParams) ([]Role, error) {
-	rows, err := q.db.QueryContext(ctx, getChannelRolesForUser, arg.ChannelID, arg.UserID)
+func (q *Queries) GetChannelRolesForPersona(ctx context.Context, arg GetChannelRolesForPersonaParams) ([]Role, error) {
+	rows, err := q.db.QueryContext(ctx, getChannelRolesForPersona, arg.ChannelID, arg.PersonaID)
 	if err != nil {
 		return nil, err
 	}
@@ -249,6 +249,35 @@ func (q *Queries) ListRoles(ctx context.Context) ([]Role, error) {
 	return items, nil
 }
 
+const removePersonaRoleInChannel = `-- name: RemovePersonaRoleInChannel :one
+UPDATE channel_roles
+SET deleted_at = NOW()
+WHERE channel_id = $1 AND persona_id = $2 AND role_id = $3
+RETURNING channel_id, role_id, persona_id, deleted_at, updated_at
+`
+
+type RemovePersonaRoleInChannelParams struct {
+	ChannelID int64
+	PersonaID int64
+	RoleID    int32
+}
+
+// -------------------------------
+// 10. Remove role from persona in a channel (soft delete)
+// -------------------------------
+func (q *Queries) RemovePersonaRoleInChannel(ctx context.Context, arg RemovePersonaRoleInChannelParams) (ChannelRole, error) {
+	row := q.db.QueryRowContext(ctx, removePersonaRoleInChannel, arg.ChannelID, arg.PersonaID, arg.RoleID)
+	var i ChannelRole
+	err := row.Scan(
+		&i.ChannelID,
+		&i.RoleID,
+		&i.PersonaID,
+		&i.DeletedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const removeUserRole = `-- name: RemoveUserRole :one
 UPDATE user_roles
 SET deleted_at = NOW()
@@ -270,35 +299,6 @@ func (q *Queries) RemoveUserRole(ctx context.Context, arg RemoveUserRoleParams) 
 	err := row.Scan(
 		&i.UserID,
 		&i.RoleID,
-		&i.DeletedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const removeUserRoleInChannel = `-- name: RemoveUserRoleInChannel :one
-UPDATE channel_roles
-SET deleted_at = NOW()
-WHERE channel_id = $1 AND user_id = $2 AND role_id = $3
-RETURNING channel_id, role_id, user_id, deleted_at, updated_at
-`
-
-type RemoveUserRoleInChannelParams struct {
-	ChannelID int64
-	UserID    int64
-	RoleID    int32
-}
-
-// -------------------------------
-// 10. Remove role from user in a channel (soft delete)
-// -------------------------------
-func (q *Queries) RemoveUserRoleInChannel(ctx context.Context, arg RemoveUserRoleInChannelParams) (ChannelRole, error) {
-	row := q.db.QueryRowContext(ctx, removeUserRoleInChannel, arg.ChannelID, arg.UserID, arg.RoleID)
-	var i ChannelRole
-	err := row.Scan(
-		&i.ChannelID,
-		&i.RoleID,
-		&i.UserID,
 		&i.DeletedAt,
 		&i.UpdatedAt,
 	)

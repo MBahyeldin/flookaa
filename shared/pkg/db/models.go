@@ -102,7 +102,7 @@ func (ns NullEventEnum) Value() (driver.Value, error) {
 type EventTargetTypeEnum string
 
 const (
-	EventTargetTypeEnumUSER    EventTargetTypeEnum = "USER"
+	EventTargetTypeEnumPERSONA EventTargetTypeEnum = "PERSONA"
 	EventTargetTypeEnumCHANNEL EventTargetTypeEnum = "CHANNEL"
 	EventTargetTypeEnumPOST    EventTargetTypeEnum = "POST"
 	EventTargetTypeEnumCOMMENT EventTargetTypeEnum = "COMMENT"
@@ -189,7 +189,7 @@ func (ns NullOauthProvider) Value() (driver.Value, error) {
 type OwnerEnum string
 
 const (
-	OwnerEnumUSER    OwnerEnum = "USER"
+	OwnerEnumPERSONA OwnerEnum = "PERSONA"
 	OwnerEnumCHANNEL OwnerEnum = "CHANNEL"
 )
 
@@ -228,6 +228,93 @@ func (ns NullOwnerEnum) Value() (driver.Value, error) {
 	return string(ns.OwnerEnum), nil
 }
 
+type PersonaPrivacyEnum string
+
+const (
+	PersonaPrivacyEnumPublic         PersonaPrivacyEnum = "public"
+	PersonaPrivacyEnumFriendsOnly    PersonaPrivacyEnum = "friends_only"
+	PersonaPrivacyEnumGroupOfFriends PersonaPrivacyEnum = "group_of_friends"
+	PersonaPrivacyEnumOnlyMe         PersonaPrivacyEnum = "only_me"
+)
+
+func (e *PersonaPrivacyEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PersonaPrivacyEnum(s)
+	case string:
+		*e = PersonaPrivacyEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PersonaPrivacyEnum: %T", src)
+	}
+	return nil
+}
+
+type NullPersonaPrivacyEnum struct {
+	PersonaPrivacyEnum PersonaPrivacyEnum
+	Valid              bool // Valid is true if PersonaPrivacyEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPersonaPrivacyEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.PersonaPrivacyEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PersonaPrivacyEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPersonaPrivacyEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PersonaPrivacyEnum), nil
+}
+
+type RelationshipEnum string
+
+const (
+	RelationshipEnumFriend  RelationshipEnum = "friend"
+	RelationshipEnumBlocked RelationshipEnum = "blocked"
+	RelationshipEnumMuted   RelationshipEnum = "muted"
+)
+
+func (e *RelationshipEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = RelationshipEnum(s)
+	case string:
+		*e = RelationshipEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for RelationshipEnum: %T", src)
+	}
+	return nil
+}
+
+type NullRelationshipEnum struct {
+	RelationshipEnum RelationshipEnum
+	Valid            bool // Valid is true if RelationshipEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRelationshipEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.RelationshipEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.RelationshipEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRelationshipEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.RelationshipEnum), nil
+}
+
 type Channel struct {
 	ID          int64
 	Name        string
@@ -243,7 +330,7 @@ type Channel struct {
 type ChannelFollower struct {
 	ID           int32
 	ChannelID    int64
-	UserID       int64
+	PersonaID    int64
 	FollowedAt   sql.NullTime
 	UnfollowedAt sql.NullTime
 }
@@ -251,7 +338,7 @@ type ChannelFollower struct {
 type ChannelMember struct {
 	ID        int32
 	ChannelID int64
-	UserID    int64
+	PersonaID int64
 	JoinedAt  sql.NullTime
 	LeftAt    sql.NullTime
 }
@@ -259,7 +346,7 @@ type ChannelMember struct {
 type ChannelRole struct {
 	ChannelID int64
 	RoleID    int32
-	UserID    int64
+	PersonaID int64
 	DeletedAt sql.NullTime
 	UpdatedAt sql.NullTime
 }
@@ -276,6 +363,64 @@ type Event struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	DeletedAt  sql.NullTime
+}
+
+type Interest struct {
+	ID        int64
+	Name      string
+	PicUrl    sql.NullString
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+	DeletedAt sql.NullTime
+}
+
+type Persona struct {
+	ID        int64
+	UserID    int64
+	Slug      string
+	FirstName string
+	LastName  string
+	Thumbnail sql.NullString
+	Privacy   PersonaPrivacyEnum
+	IsDefault sql.NullBool
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+	DeletedAt sql.NullTime
+}
+
+type PersonaFollower struct {
+	PersonaID         int64
+	FollowerPersonaID int64
+	FollowedAt        sql.NullTime
+	UnfollowedAt      sql.NullTime
+}
+
+type PersonaFriendGroup struct {
+	ID             int64
+	OwnerPersonaID sql.NullInt64
+	Name           string
+	CreatedAt      sql.NullTime
+	UpdatedAt      sql.NullTime
+	DeletedAt      sql.NullTime
+}
+
+type PersonaFriendGroupMember struct {
+	GroupID         int64
+	MemberPersonaID int64
+}
+
+type PersonaInterest struct {
+	PersonaID  int64
+	InterestID int64
+}
+
+type PersonaRelationship struct {
+	SourcePersonaID int64
+	TargetPersonaID int64
+	Relationship    RelationshipEnum
+	CreatedAt       sql.NullTime
+	UpdatedAt       sql.NullTime
+	DeletedAt       sql.NullTime
 }
 
 type PostReference struct {
@@ -300,7 +445,6 @@ type User struct {
 	Uuid                   uuid.NullUUID
 	FirstName              string
 	LastName               string
-	Phone                  string
 	EmailAddress           string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
@@ -308,7 +452,6 @@ type User struct {
 	HashedPassword         sql.NullString
 	Thumbnail              sql.NullString
 	IsVerified             sql.NullBool
-	Bio                    sql.NullString
 	PostalCode             sql.NullString
 	OtherPlatformsAccounts []string
 	CountryID              sql.NullInt64

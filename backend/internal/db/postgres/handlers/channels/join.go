@@ -15,7 +15,7 @@ import (
 func JoinChannel(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userId, exists := c.Get("user_id")
+	personaId, exists := c.Get("persona_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
 		return
@@ -31,7 +31,7 @@ func JoinChannel(c *gin.Context) {
 
 	channel, err := q.GetChannel(ctx, db.GetChannelParams{
 		ID:      int64(channelId),
-		OwnerID: userId.(int64),
+		OwnerID: personaId.(int64),
 	})
 
 	if err != nil {
@@ -46,7 +46,7 @@ func JoinChannel(c *gin.Context) {
 
 	_, err = q.AddUserToChannel(ctx, db.AddUserToChannelParams{
 		ChannelID: int64(channelId),
-		UserID:    userId.(int64),
+		PersonaID: personaId.(int64),
 	})
 
 	if err != nil {
@@ -60,7 +60,7 @@ func JoinChannel(c *gin.Context) {
 func LeaveChannel(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userId, exists := c.Get("user_id")
+	personaId, exists := c.Get("persona_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
 		return
@@ -76,7 +76,7 @@ func LeaveChannel(c *gin.Context) {
 
 	channel, err := q.GetChannel(ctx, db.GetChannelParams{
 		ID:      int64(channelId),
-		OwnerID: userId.(int64),
+		OwnerID: personaId.(int64),
 	})
 
 	if err != nil {
@@ -96,7 +96,7 @@ func LeaveChannel(c *gin.Context) {
 
 	_, err = q.RemoveUserFromChannel(ctx, db.RemoveUserFromChannelParams{
 		ChannelID: int64(channelId),
-		UserID:    userId.(int64),
+		PersonaID: personaId.(int64),
 	})
 
 	if err != nil {

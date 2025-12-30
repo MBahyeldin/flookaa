@@ -19,7 +19,7 @@ func Info(c *gin.Context) {
 
 	q := db.New(postgres.DbConn)
 
-	userRow, err := q.GetUserBasicInfo(ctx, userId.(int64))
+	userRow, err := q.GetPersonaBasicInfo(ctx, userId.(int64))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No user found with this id"})
 		return

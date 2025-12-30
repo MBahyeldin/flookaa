@@ -43,7 +43,7 @@ LIMIT $1 OFFSET $2;
 SELECT c.*
 FROM channel_members cm
 JOIN channels c ON cm.channel_id = c.id
-WHERE cm.user_id = $1
+WHERE cm.persona_id = $1
   AND cm.left_at IS NULL;
 
 -- -------------------------------
@@ -53,14 +53,14 @@ WHERE cm.user_id = $1
 SELECT c.*
 FROM channel_followers cf
 JOIN channels c ON cf.channel_id = c.id
-WHERE cf.user_id = $1
+WHERE cf.persona_id = $1
   AND cf.unfollowed_at IS NULL;
 
 -- -------------------------------
 -- 7. Add user to channel
 -- -------------------------------
 -- name: AddUserToChannel :one
-INSERT INTO channel_members (channel_id, user_id)
+INSERT INTO channel_members (channel_id, persona_id)
 VALUES ($1, $2)
 RETURNING *;
 
@@ -70,14 +70,14 @@ RETURNING *;
 -- name: RemoveUserFromChannel :one
 UPDATE channel_members
 SET left_at = NOW()
-WHERE channel_id = $1 AND user_id = $2
+WHERE channel_id = $1 AND persona_id = $2
 RETURNING *;
 
 -- -------------------------------
 -- 9. Follow a channel
 -- -------------------------------
 -- name: FollowChannel :one
-INSERT INTO channel_followers (channel_id, user_id)
+INSERT INTO channel_followers (channel_id, persona_id)
 VALUES ($1, $2)
 RETURNING *;
 
@@ -87,7 +87,7 @@ RETURNING *;
 -- name: UnfollowChannel :one
 UPDATE channel_followers
 SET unfollowed_at = NOW()
-WHERE channel_id = $1 AND user_id = $2
+WHERE channel_id = $1 AND persona_id = $2
 RETURNING *;
 
 -- -------------------------------
@@ -101,14 +101,14 @@ SELECT
         SELECT 1 
         FROM channel_members cm 
         WHERE cm.channel_id = c.id 
-          AND cm.user_id = $1 
+          AND cm.persona_id = $1 
           AND cm.left_at IS NULL
     ) AS is_member,
     EXISTS (
         SELECT 1 
         FROM channel_followers cf 
         WHERE cf.channel_id = c.id 
-          AND cf.user_id = $1 
+          AND cf.persona_id = $1 
           AND cf.unfollowed_at IS NULL
     ) AS is_follower
 FROM channels c
@@ -126,14 +126,14 @@ SELECT
         SELECT 1 
         FROM channel_members cm 
         WHERE cm.channel_id = c.id 
-          AND cm.user_id = $1 
+          AND cm.persona_id = $1 
           AND cm.left_at IS NULL
     ) AS is_member,
     EXISTS (
         SELECT 1 
         FROM channel_followers cf 
         WHERE cf.channel_id = c.id 
-          AND cf.user_id = $1 
+          AND cf.persona_id = $1 
           AND cf.unfollowed_at IS NULL
     ) AS is_follower
 FROM channels c

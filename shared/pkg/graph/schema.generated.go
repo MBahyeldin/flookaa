@@ -621,10 +621,10 @@ func (ec *executionContext) fieldContext_Channel_posts(_ context.Context, field 
 				return ec.fieldContext_Post_edited(ctx, field)
 			case "privacy":
 				return ec.fieldContext_Post_privacy(ctx, field)
-			case "deniedUserIds":
-				return ec.fieldContext_Post_deniedUserIds(ctx, field)
-			case "allowedUserIds":
-				return ec.fieldContext_Post_allowedUserIds(ctx, field)
+			case "deniedPersonaIds":
+				return ec.fieldContext_Post_deniedPersonaIds(ctx, field)
+			case "allowedPersonaIds":
+				return ec.fieldContext_Post_allowedPersonaIds(ctx, field)
 			case "meta":
 				return ec.fieldContext_Post_meta(ctx, field)
 			case "personalizedMeta":
@@ -675,7 +675,7 @@ func (ec *executionContext) _Channel_owner(ctx context.Context, field graphql.Co
 			return obj.Owner, nil
 		},
 		nil,
-		ec.marshalNUser2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐUser,
+		ec.marshalNPersona2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐPersona,
 		true,
 		true,
 	)
@@ -690,15 +690,15 @@ func (ec *executionContext) fieldContext_Channel_owner(_ context.Context, field 
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_User_id(ctx, field)
+				return ec.fieldContext_Persona_id(ctx, field)
 			case "username":
-				return ec.fieldContext_User_username(ctx, field)
+				return ec.fieldContext_Persona_username(ctx, field)
 			case "fullName":
-				return ec.fieldContext_User_fullName(ctx, field)
+				return ec.fieldContext_Persona_fullName(ctx, field)
 			case "profileImageUrl":
-				return ec.fieldContext_User_profileImageUrl(ctx, field)
+				return ec.fieldContext_Persona_profileImageUrl(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Persona", field.Name)
 		},
 	}
 	return fc, nil
@@ -946,7 +946,7 @@ func (ec *executionContext) _Comment_author(ctx context.Context, field graphql.C
 			return obj.Author, nil
 		},
 		nil,
-		ec.marshalNUser2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐUser,
+		ec.marshalNPersona2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐPersona,
 		true,
 		true,
 	)
@@ -961,15 +961,15 @@ func (ec *executionContext) fieldContext_Comment_author(_ context.Context, field
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_User_id(ctx, field)
+				return ec.fieldContext_Persona_id(ctx, field)
 			case "username":
-				return ec.fieldContext_User_username(ctx, field)
+				return ec.fieldContext_Persona_username(ctx, field)
 			case "fullName":
-				return ec.fieldContext_User_fullName(ctx, field)
+				return ec.fieldContext_Persona_fullName(ctx, field)
 			case "profileImageUrl":
-				return ec.fieldContext_User_profileImageUrl(ctx, field)
+				return ec.fieldContext_Persona_profileImageUrl(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Persona", field.Name)
 		},
 	}
 	return fc, nil
@@ -1182,14 +1182,14 @@ func (ec *executionContext) fieldContext_Comment_edited(_ context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Comment_deniedUserIds(ctx context.Context, field graphql.CollectedField, obj *models.Comment) (ret graphql.Marshaler) {
+func (ec *executionContext) _Comment_deniedPersonaIds(ctx context.Context, field graphql.CollectedField, obj *models.Comment) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Comment_deniedUserIds,
+		ec.fieldContext_Comment_deniedPersonaIds,
 		func(ctx context.Context) (any, error) {
-			return obj.DeniedUserIds, nil
+			return obj.DeniedPersonaIds, nil
 		},
 		nil,
 		ec.marshalNInt642ᚕint64ᚄ,
@@ -1198,7 +1198,7 @@ func (ec *executionContext) _Comment_deniedUserIds(ctx context.Context, field gr
 	)
 }
 
-func (ec *executionContext) fieldContext_Comment_deniedUserIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Comment_deniedPersonaIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Comment",
 		Field:      field,
@@ -1211,14 +1211,14 @@ func (ec *executionContext) fieldContext_Comment_deniedUserIds(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _Comment_allowedUserIds(ctx context.Context, field graphql.CollectedField, obj *models.Comment) (ret graphql.Marshaler) {
+func (ec *executionContext) _Comment_allowedPersonaIds(ctx context.Context, field graphql.CollectedField, obj *models.Comment) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Comment_allowedUserIds,
+		ec.fieldContext_Comment_allowedPersonaIds,
 		func(ctx context.Context) (any, error) {
-			return obj.AllowedUserIds, nil
+			return obj.AllowedPersonaIds, nil
 		},
 		nil,
 		ec.marshalNInt642ᚕint64ᚄ,
@@ -1227,7 +1227,7 @@ func (ec *executionContext) _Comment_allowedUserIds(ctx context.Context, field g
 	)
 }
 
-func (ec *executionContext) fieldContext_Comment_allowedUserIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Comment_allowedPersonaIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Comment",
 		Field:      field,
@@ -1332,12 +1332,12 @@ func (ec *executionContext) fieldContext_Comment_personalizedMeta(_ context.Cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "likedByUser":
-				return ec.fieldContext_PersonalizedMeta_likedByUser(ctx, field)
-			case "sharedByUser":
-				return ec.fieldContext_PersonalizedMeta_sharedByUser(ctx, field)
-			case "viewedByUser":
-				return ec.fieldContext_PersonalizedMeta_viewedByUser(ctx, field)
+			case "likedByPersona":
+				return ec.fieldContext_PersonalizedMeta_likedByPersona(ctx, field)
+			case "sharedByPersona":
+				return ec.fieldContext_PersonalizedMeta_sharedByPersona(ctx, field)
+			case "viewedByPersona":
+				return ec.fieldContext_PersonalizedMeta_viewedByPersona(ctx, field)
 			case "acl":
 				return ec.fieldContext_PersonalizedMeta_acl(ctx, field)
 			}
@@ -1572,10 +1572,10 @@ func (ec *executionContext) fieldContext_Mutation_createPost(ctx context.Context
 				return ec.fieldContext_PostGenericDocument_edited(ctx, field)
 			case "privacy":
 				return ec.fieldContext_PostGenericDocument_privacy(ctx, field)
-			case "deniedUserIds":
-				return ec.fieldContext_PostGenericDocument_deniedUserIds(ctx, field)
-			case "allowedUserIds":
-				return ec.fieldContext_PostGenericDocument_allowedUserIds(ctx, field)
+			case "deniedPersonaIds":
+				return ec.fieldContext_PostGenericDocument_deniedPersonaIds(ctx, field)
+			case "allowedPersonaIds":
+				return ec.fieldContext_PostGenericDocument_allowedPersonaIds(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type PostGenericDocument", field.Name)
 		},
@@ -1645,10 +1645,10 @@ func (ec *executionContext) fieldContext_Mutation_createComment(ctx context.Cont
 				return ec.fieldContext_PostGenericDocument_edited(ctx, field)
 			case "privacy":
 				return ec.fieldContext_PostGenericDocument_privacy(ctx, field)
-			case "deniedUserIds":
-				return ec.fieldContext_PostGenericDocument_deniedUserIds(ctx, field)
-			case "allowedUserIds":
-				return ec.fieldContext_PostGenericDocument_allowedUserIds(ctx, field)
+			case "deniedPersonaIds":
+				return ec.fieldContext_PostGenericDocument_deniedPersonaIds(ctx, field)
+			case "allowedPersonaIds":
+				return ec.fieldContext_PostGenericDocument_allowedPersonaIds(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type PostGenericDocument", field.Name)
 		},
@@ -1889,14 +1889,130 @@ func (ec *executionContext) fieldContext_Owner_id(_ context.Context, field graph
 	return fc, nil
 }
 
-func (ec *executionContext) _PersonalizedMeta_likedByUser(ctx context.Context, field graphql.CollectedField, obj *models.PersonalizedMeta) (ret graphql.Marshaler) {
+func (ec *executionContext) _Persona_id(ctx context.Context, field graphql.CollectedField, obj *models.Persona) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_PersonalizedMeta_likedByUser,
+		ec.fieldContext_Persona_id,
 		func(ctx context.Context) (any, error) {
-			return obj.LikedByUser, nil
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Persona_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Persona",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Persona_username(ctx context.Context, field graphql.CollectedField, obj *models.Persona) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Persona_username,
+		func(ctx context.Context) (any, error) {
+			return obj.Username, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Persona_username(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Persona",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Persona_fullName(ctx context.Context, field graphql.CollectedField, obj *models.Persona) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Persona_fullName,
+		func(ctx context.Context) (any, error) {
+			return obj.FullName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Persona_fullName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Persona",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Persona_profileImageUrl(ctx context.Context, field graphql.CollectedField, obj *models.Persona) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Persona_profileImageUrl,
+		func(ctx context.Context) (any, error) {
+			return obj.ProfileImageURL, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Persona_profileImageUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Persona",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PersonalizedMeta_likedByPersona(ctx context.Context, field graphql.CollectedField, obj *models.PersonalizedMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PersonalizedMeta_likedByPersona,
+		func(ctx context.Context) (any, error) {
+			return obj.LikedByPersona, nil
 		},
 		nil,
 		ec.marshalNBoolean2bool,
@@ -1905,7 +2021,7 @@ func (ec *executionContext) _PersonalizedMeta_likedByUser(ctx context.Context, f
 	)
 }
 
-func (ec *executionContext) fieldContext_PersonalizedMeta_likedByUser(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PersonalizedMeta_likedByPersona(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PersonalizedMeta",
 		Field:      field,
@@ -1918,14 +2034,14 @@ func (ec *executionContext) fieldContext_PersonalizedMeta_likedByUser(_ context.
 	return fc, nil
 }
 
-func (ec *executionContext) _PersonalizedMeta_sharedByUser(ctx context.Context, field graphql.CollectedField, obj *models.PersonalizedMeta) (ret graphql.Marshaler) {
+func (ec *executionContext) _PersonalizedMeta_sharedByPersona(ctx context.Context, field graphql.CollectedField, obj *models.PersonalizedMeta) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_PersonalizedMeta_sharedByUser,
+		ec.fieldContext_PersonalizedMeta_sharedByPersona,
 		func(ctx context.Context) (any, error) {
-			return obj.SharedByUser, nil
+			return obj.SharedByPersona, nil
 		},
 		nil,
 		ec.marshalNBoolean2bool,
@@ -1934,7 +2050,7 @@ func (ec *executionContext) _PersonalizedMeta_sharedByUser(ctx context.Context, 
 	)
 }
 
-func (ec *executionContext) fieldContext_PersonalizedMeta_sharedByUser(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PersonalizedMeta_sharedByPersona(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PersonalizedMeta",
 		Field:      field,
@@ -1947,14 +2063,14 @@ func (ec *executionContext) fieldContext_PersonalizedMeta_sharedByUser(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _PersonalizedMeta_viewedByUser(ctx context.Context, field graphql.CollectedField, obj *models.PersonalizedMeta) (ret graphql.Marshaler) {
+func (ec *executionContext) _PersonalizedMeta_viewedByPersona(ctx context.Context, field graphql.CollectedField, obj *models.PersonalizedMeta) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_PersonalizedMeta_viewedByUser,
+		ec.fieldContext_PersonalizedMeta_viewedByPersona,
 		func(ctx context.Context) (any, error) {
-			return obj.ViewedByUser, nil
+			return obj.ViewedByPersona, nil
 		},
 		nil,
 		ec.marshalNBoolean2bool,
@@ -1963,7 +2079,7 @@ func (ec *executionContext) _PersonalizedMeta_viewedByUser(ctx context.Context, 
 	)
 }
 
-func (ec *executionContext) fieldContext_PersonalizedMeta_viewedByUser(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PersonalizedMeta_viewedByPersona(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PersonalizedMeta",
 		Field:      field,
@@ -2114,7 +2230,7 @@ func (ec *executionContext) _Post_author(ctx context.Context, field graphql.Coll
 			return obj.Author, nil
 		},
 		nil,
-		ec.marshalNUser2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐUser,
+		ec.marshalNPersona2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐPersona,
 		true,
 		true,
 	)
@@ -2129,15 +2245,15 @@ func (ec *executionContext) fieldContext_Post_author(_ context.Context, field gr
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_User_id(ctx, field)
+				return ec.fieldContext_Persona_id(ctx, field)
 			case "username":
-				return ec.fieldContext_User_username(ctx, field)
+				return ec.fieldContext_Persona_username(ctx, field)
 			case "fullName":
-				return ec.fieldContext_User_fullName(ctx, field)
+				return ec.fieldContext_Persona_fullName(ctx, field)
 			case "profileImageUrl":
-				return ec.fieldContext_User_profileImageUrl(ctx, field)
+				return ec.fieldContext_Persona_profileImageUrl(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Persona", field.Name)
 		},
 	}
 	return fc, nil
@@ -2414,14 +2530,14 @@ func (ec *executionContext) fieldContext_Post_privacy(_ context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Post_deniedUserIds(ctx context.Context, field graphql.CollectedField, obj *models.Post) (ret graphql.Marshaler) {
+func (ec *executionContext) _Post_deniedPersonaIds(ctx context.Context, field graphql.CollectedField, obj *models.Post) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Post_deniedUserIds,
+		ec.fieldContext_Post_deniedPersonaIds,
 		func(ctx context.Context) (any, error) {
-			return obj.DeniedUserIds, nil
+			return obj.DeniedPersonaIds, nil
 		},
 		nil,
 		ec.marshalNInt642ᚕint64ᚄ,
@@ -2430,7 +2546,7 @@ func (ec *executionContext) _Post_deniedUserIds(ctx context.Context, field graph
 	)
 }
 
-func (ec *executionContext) fieldContext_Post_deniedUserIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Post_deniedPersonaIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Post",
 		Field:      field,
@@ -2443,14 +2559,14 @@ func (ec *executionContext) fieldContext_Post_deniedUserIds(_ context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _Post_allowedUserIds(ctx context.Context, field graphql.CollectedField, obj *models.Post) (ret graphql.Marshaler) {
+func (ec *executionContext) _Post_allowedPersonaIds(ctx context.Context, field graphql.CollectedField, obj *models.Post) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Post_allowedUserIds,
+		ec.fieldContext_Post_allowedPersonaIds,
 		func(ctx context.Context) (any, error) {
-			return obj.AllowedUserIds, nil
+			return obj.AllowedPersonaIds, nil
 		},
 		nil,
 		ec.marshalNInt642ᚕint64ᚄ,
@@ -2459,7 +2575,7 @@ func (ec *executionContext) _Post_allowedUserIds(ctx context.Context, field grap
 	)
 }
 
-func (ec *executionContext) fieldContext_Post_allowedUserIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Post_allowedPersonaIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Post",
 		Field:      field,
@@ -2535,12 +2651,12 @@ func (ec *executionContext) fieldContext_Post_personalizedMeta(_ context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "likedByUser":
-				return ec.fieldContext_PersonalizedMeta_likedByUser(ctx, field)
-			case "sharedByUser":
-				return ec.fieldContext_PersonalizedMeta_sharedByUser(ctx, field)
-			case "viewedByUser":
-				return ec.fieldContext_PersonalizedMeta_viewedByUser(ctx, field)
+			case "likedByPersona":
+				return ec.fieldContext_PersonalizedMeta_likedByPersona(ctx, field)
+			case "sharedByPersona":
+				return ec.fieldContext_PersonalizedMeta_sharedByPersona(ctx, field)
+			case "viewedByPersona":
+				return ec.fieldContext_PersonalizedMeta_viewedByPersona(ctx, field)
 			case "acl":
 				return ec.fieldContext_PersonalizedMeta_acl(ctx, field)
 			}
@@ -2937,14 +3053,14 @@ func (ec *executionContext) fieldContext_PostGenericDocument_privacy(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _PostGenericDocument_deniedUserIds(ctx context.Context, field graphql.CollectedField, obj *models.PostGenericDocument) (ret graphql.Marshaler) {
+func (ec *executionContext) _PostGenericDocument_deniedPersonaIds(ctx context.Context, field graphql.CollectedField, obj *models.PostGenericDocument) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_PostGenericDocument_deniedUserIds,
+		ec.fieldContext_PostGenericDocument_deniedPersonaIds,
 		func(ctx context.Context) (any, error) {
-			return obj.DeniedUserIds, nil
+			return obj.DeniedPersonaIds, nil
 		},
 		nil,
 		ec.marshalOInt642ᚕint64ᚄ,
@@ -2953,7 +3069,7 @@ func (ec *executionContext) _PostGenericDocument_deniedUserIds(ctx context.Conte
 	)
 }
 
-func (ec *executionContext) fieldContext_PostGenericDocument_deniedUserIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PostGenericDocument_deniedPersonaIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PostGenericDocument",
 		Field:      field,
@@ -2966,14 +3082,14 @@ func (ec *executionContext) fieldContext_PostGenericDocument_deniedUserIds(_ con
 	return fc, nil
 }
 
-func (ec *executionContext) _PostGenericDocument_allowedUserIds(ctx context.Context, field graphql.CollectedField, obj *models.PostGenericDocument) (ret graphql.Marshaler) {
+func (ec *executionContext) _PostGenericDocument_allowedPersonaIds(ctx context.Context, field graphql.CollectedField, obj *models.PostGenericDocument) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_PostGenericDocument_allowedUserIds,
+		ec.fieldContext_PostGenericDocument_allowedPersonaIds,
 		func(ctx context.Context) (any, error) {
-			return obj.AllowedUserIds, nil
+			return obj.AllowedPersonaIds, nil
 		},
 		nil,
 		ec.marshalOInt642ᚕint64ᚄ,
@@ -2982,7 +3098,7 @@ func (ec *executionContext) _PostGenericDocument_allowedUserIds(ctx context.Cont
 	)
 }
 
-func (ec *executionContext) fieldContext_PostGenericDocument_allowedUserIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PostGenericDocument_allowedPersonaIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PostGenericDocument",
 		Field:      field,
@@ -3046,10 +3162,10 @@ func (ec *executionContext) fieldContext_Query_getPosts(ctx context.Context, fie
 				return ec.fieldContext_Post_edited(ctx, field)
 			case "privacy":
 				return ec.fieldContext_Post_privacy(ctx, field)
-			case "deniedUserIds":
-				return ec.fieldContext_Post_deniedUserIds(ctx, field)
-			case "allowedUserIds":
-				return ec.fieldContext_Post_allowedUserIds(ctx, field)
+			case "deniedPersonaIds":
+				return ec.fieldContext_Post_deniedPersonaIds(ctx, field)
+			case "allowedPersonaIds":
+				return ec.fieldContext_Post_allowedPersonaIds(ctx, field)
 			case "meta":
 				return ec.fieldContext_Post_meta(ctx, field)
 			case "personalizedMeta":
@@ -3121,10 +3237,10 @@ func (ec *executionContext) fieldContext_Query_getComments(ctx context.Context, 
 				return ec.fieldContext_Comment_deletedAt(ctx, field)
 			case "edited":
 				return ec.fieldContext_Comment_edited(ctx, field)
-			case "deniedUserIds":
-				return ec.fieldContext_Comment_deniedUserIds(ctx, field)
-			case "allowedUserIds":
-				return ec.fieldContext_Comment_allowedUserIds(ctx, field)
+			case "deniedPersonaIds":
+				return ec.fieldContext_Comment_deniedPersonaIds(ctx, field)
+			case "allowedPersonaIds":
+				return ec.fieldContext_Comment_allowedPersonaIds(ctx, field)
 			case "privacy":
 				return ec.fieldContext_Comment_privacy(ctx, field)
 			case "meta":
@@ -3330,122 +3446,6 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_User_id,
-		func(ctx context.Context) (any, error) {
-			return obj.ID, nil
-		},
-		nil,
-		ec.marshalNInt642int64,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_User_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int64 does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _User_username(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_User_username,
-		func(ctx context.Context) (any, error) {
-			return obj.Username, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_User_username(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _User_fullName(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_User_fullName,
-		func(ctx context.Context) (any, error) {
-			return obj.FullName, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_User_fullName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _User_profileImageUrl(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_User_profileImageUrl,
-		func(ctx context.Context) (any, error) {
-			return obj.ProfileImageURL, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_User_profileImageUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 // endregion **************************** field.gotpl *****************************
 
 // region    **************************** input.gotpl *****************************
@@ -3457,7 +3457,7 @@ func (ec *executionContext) unmarshalInputCommentInput(ctx context.Context, obj 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"parentId", "level", "authorId", "content", "tags", "owner", "privacy", "deniedUserIds", "allowedUserIds"}
+	fieldsInOrder := [...]string{"parentId", "level", "authorId", "content", "tags", "owner", "privacy", "deniedPersonaIds", "allowedPersonaIds"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -3513,20 +3513,20 @@ func (ec *executionContext) unmarshalInputCommentInput(ctx context.Context, obj 
 				return it, err
 			}
 			it.Privacy = data
-		case "deniedUserIds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deniedUserIds"))
+		case "deniedPersonaIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deniedPersonaIds"))
 			data, err := ec.unmarshalNInt642ᚕint64ᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.DeniedUserIds = data
-		case "allowedUserIds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowedUserIds"))
+			it.DeniedPersonaIds = data
+		case "allowedPersonaIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowedPersonaIds"))
 			data, err := ec.unmarshalNInt642ᚕint64ᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.AllowedUserIds = data
+			it.AllowedPersonaIds = data
 		}
 	}
 
@@ -3656,7 +3656,7 @@ func (ec *executionContext) unmarshalInputPostInput(ctx context.Context, obj any
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"authorId", "content", "tags", "owner", "privacy", "deniedUserIds", "allowedUserIds"}
+	fieldsInOrder := [...]string{"authorId", "content", "tags", "owner", "privacy", "deniedPersonaIds", "allowedPersonaIds"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -3698,20 +3698,20 @@ func (ec *executionContext) unmarshalInputPostInput(ctx context.Context, obj any
 				return it, err
 			}
 			it.Privacy = data
-		case "deniedUserIds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deniedUserIds"))
+		case "deniedPersonaIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deniedPersonaIds"))
 			data, err := ec.unmarshalNInt642ᚕint64ᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.DeniedUserIds = data
-		case "allowedUserIds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowedUserIds"))
+			it.DeniedPersonaIds = data
+		case "allowedPersonaIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowedPersonaIds"))
 			data, err := ec.unmarshalNInt642ᚕint64ᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.AllowedUserIds = data
+			it.AllowedPersonaIds = data
 		}
 	}
 
@@ -3975,13 +3975,13 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "deniedUserIds":
-			out.Values[i] = ec._Comment_deniedUserIds(ctx, field, obj)
+		case "deniedPersonaIds":
+			out.Values[i] = ec._Comment_deniedPersonaIds(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "allowedUserIds":
-			out.Values[i] = ec._Comment_allowedUserIds(ctx, field, obj)
+		case "allowedPersonaIds":
+			out.Values[i] = ec._Comment_allowedPersonaIds(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4246,6 +4246,57 @@ func (ec *executionContext) _Owner(ctx context.Context, sel ast.SelectionSet, ob
 	return out
 }
 
+var personaImplementors = []string{"Persona"}
+
+func (ec *executionContext) _Persona(ctx context.Context, sel ast.SelectionSet, obj *models.Persona) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, personaImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Persona")
+		case "id":
+			out.Values[i] = ec._Persona_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "username":
+			out.Values[i] = ec._Persona_username(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fullName":
+			out.Values[i] = ec._Persona_fullName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "profileImageUrl":
+			out.Values[i] = ec._Persona_profileImageUrl(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var personalizedMetaImplementors = []string{"PersonalizedMeta"}
 
 func (ec *executionContext) _PersonalizedMeta(ctx context.Context, sel ast.SelectionSet, obj *models.PersonalizedMeta) graphql.Marshaler {
@@ -4257,18 +4308,18 @@ func (ec *executionContext) _PersonalizedMeta(ctx context.Context, sel ast.Selec
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("PersonalizedMeta")
-		case "likedByUser":
-			out.Values[i] = ec._PersonalizedMeta_likedByUser(ctx, field, obj)
+		case "likedByPersona":
+			out.Values[i] = ec._PersonalizedMeta_likedByPersona(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "sharedByUser":
-			out.Values[i] = ec._PersonalizedMeta_sharedByUser(ctx, field, obj)
+		case "sharedByPersona":
+			out.Values[i] = ec._PersonalizedMeta_sharedByPersona(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "viewedByUser":
-			out.Values[i] = ec._PersonalizedMeta_viewedByUser(ctx, field, obj)
+		case "viewedByPersona":
+			out.Values[i] = ec._PersonalizedMeta_viewedByPersona(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4370,13 +4421,13 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "deniedUserIds":
-			out.Values[i] = ec._Post_deniedUserIds(ctx, field, obj)
+		case "deniedPersonaIds":
+			out.Values[i] = ec._Post_deniedPersonaIds(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "allowedUserIds":
-			out.Values[i] = ec._Post_allowedUserIds(ctx, field, obj)
+		case "allowedPersonaIds":
+			out.Values[i] = ec._Post_allowedPersonaIds(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4477,10 +4528,10 @@ func (ec *executionContext) _PostGenericDocument(ctx context.Context, sel ast.Se
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "deniedUserIds":
-			out.Values[i] = ec._PostGenericDocument_deniedUserIds(ctx, field, obj)
-		case "allowedUserIds":
-			out.Values[i] = ec._PostGenericDocument_allowedUserIds(ctx, field, obj)
+		case "deniedPersonaIds":
+			out.Values[i] = ec._PostGenericDocument_deniedPersonaIds(ctx, field, obj)
+		case "allowedPersonaIds":
+			out.Values[i] = ec._PostGenericDocument_allowedPersonaIds(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4594,57 +4645,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var userImplementors = []string{"User"}
-
-func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *models.User) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, userImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("User")
-		case "id":
-			out.Values[i] = ec._User_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "username":
-			out.Values[i] = ec._User_username(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "fullName":
-			out.Values[i] = ec._User_fullName(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "profileImageUrl":
-			out.Values[i] = ec._User_profileImageUrl(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4906,6 +4906,16 @@ func (ec *executionContext) marshalNOwnerType2sharedᚋpkgᚋgraphᚋmodelsᚐOw
 	return v
 }
 
+func (ec *executionContext) marshalNPersona2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐPersona(ctx context.Context, sel ast.SelectionSet, v *models.Persona) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Persona(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNPersonalizedMeta2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐPersonalizedMeta(ctx context.Context, sel ast.SelectionSet, v *models.PersonalizedMeta) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -5022,16 +5032,6 @@ func (ec *executionContext) unmarshalNSimpleInputType2sharedᚋpkgᚋgraphᚋmod
 
 func (ec *executionContext) marshalNSimpleInputType2sharedᚋpkgᚋgraphᚋmodelsᚐSimpleInputType(ctx context.Context, sel ast.SelectionSet, v models.SimpleInputType) graphql.Marshaler {
 	return v
-}
-
-func (ec *executionContext) marshalNUser2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v *models.User) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._User(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOChannel2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐChannel(ctx context.Context, sel ast.SelectionSet, v *models.Channel) graphql.Marshaler {

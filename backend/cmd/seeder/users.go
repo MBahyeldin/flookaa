@@ -13,11 +13,10 @@ import (
 
 var users = []db.CreateUserParams{
 	{
-		FirstName:      "John",
-		LastName:       "Doe",
+		FirstName:      "Mohamed",
+		LastName:       "Bahyeldin",
 		EmailAddress:   os.Getenv("ADMIN_EMAIL"),
-		Phone:          "+1234567890",
-		HashedPassword: sql.NullString{String: os.Getenv("ADMIN_PASSWORD"), Valid: true}, // In a real scenario, ensure this is hashed
+		HashedPassword: sql.NullString{String: os.Getenv("ADMIN_PASSWORD"), Valid: true},
 		Thumbnail:      sql.NullString{String: "/files/thumbnail.jpg", Valid: true},
 	},
 }

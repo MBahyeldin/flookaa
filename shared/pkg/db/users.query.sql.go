@@ -10,21 +10,19 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/sqlc-dev/pqtype"
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (first_name, last_name, phone, email_address, hashed_password, oauth_provider, thumbnail, is_verified, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
-RETURNING id, uuid, first_name, last_name, phone, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, bio, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider
+INSERT INTO users (first_name, last_name, email_address, hashed_password, oauth_provider, thumbnail, is_verified, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+RETURNING id, uuid, first_name, last_name, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider
 `
 
 type CreateUserParams struct {
 	FirstName      string
 	LastName       string
-	Phone          string
 	EmailAddress   string
 	HashedPassword sql.NullString
 	OauthProvider  NullOauthProvider
@@ -39,7 +37,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	row := q.db.QueryRowContext(ctx, createUser,
 		arg.FirstName,
 		arg.LastName,
-		arg.Phone,
 		arg.EmailAddress,
 		arg.HashedPassword,
 		arg.OauthProvider,
@@ -52,7 +49,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Uuid,
 		&i.FirstName,
 		&i.LastName,
-		&i.Phone,
 		&i.EmailAddress,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -60,7 +56,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.HashedPassword,
 		&i.Thumbnail,
 		&i.IsVerified,
-		&i.Bio,
 		&i.PostalCode,
 		pq.Array(&i.OtherPlatformsAccounts),
 		&i.CountryID,
@@ -71,7 +66,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
-const getUserBasicInfo = `-- name: GetUserBasicInfo :one
+const getPersonaBasicInfo = `-- name: GetPersonaBasicInfo :one
 SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbnail,
         (SELECT COALESCE(json_agg(json_build_object(
                'id', c.id,
@@ -81,7 +76,7 @@ SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbn
            )), '[]'::json)
            FROM channel_members cm
            JOIN channels c ON c.id = cm.channel_id
-           WHERE cm.user_id = u.id AND cm.left_at IS NULL
+           WHERE cm.persona_id = u.id AND cm.left_at IS NULL
        ) AS joined_channels,
         (SELECT COALESCE(json_agg(json_build_object(
                'id', c.id,
@@ -91,14 +86,14 @@ SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbn
            )), '[]'::json)
            FROM channel_followers cm
            JOIN channels c ON c.id = cm.channel_id
-           WHERE cm.user_id = u.id AND cm.unfollowed_at IS NULL
+           WHERE cm.persona_id = u.id AND cm.unfollowed_at IS NULL
        ) AS followed_channels
 FROM users u
 WHERE u.id = $1
   AND u.deleted_at IS NULL
 `
 
-type GetUserBasicInfoRow struct {
+type GetPersonaBasicInfoRow struct {
 	ID               int64
 	FirstName        string
 	LastName         string
@@ -110,11 +105,11 @@ type GetUserBasicInfoRow struct {
 }
 
 // -------------------------------
-// 7. Get user Basic Info
+// 7. Get persona Basic Info
 // -------------------------------
-func (q *Queries) GetUserBasicInfo(ctx context.Context, id int64) (GetUserBasicInfoRow, error) {
-	row := q.db.QueryRowContext(ctx, getUserBasicInfo, id)
-	var i GetUserBasicInfoRow
+func (q *Queries) GetPersonaBasicInfo(ctx context.Context, id int64) (GetPersonaBasicInfoRow, error) {
+	row := q.db.QueryRowContext(ctx, getPersonaBasicInfo, id)
+	var i GetPersonaBasicInfoRow
 	err := row.Scan(
 		&i.ID,
 		&i.FirstName,
@@ -128,53 +123,19 @@ func (q *Queries) GetUserBasicInfo(ctx context.Context, id int64) (GetUserBasicI
 	return i, err
 }
 
-const getUserByEmailAddress = `-- name: GetUserByEmailAddress :one
-SELECT id, uuid, first_name, last_name, phone, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, bio, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider FROM users WHERE email_address = $1 AND deleted_at IS NULL LIMIT 1
-`
-
-// -------------------------------
-// 2.1 Get User by email and provider
-// -------------------------------
-func (q *Queries) GetUserByEmailAddress(ctx context.Context, emailAddress string) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByEmailAddress, emailAddress)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.Uuid,
-		&i.FirstName,
-		&i.LastName,
-		&i.Phone,
-		&i.EmailAddress,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedAt,
-		&i.HashedPassword,
-		&i.Thumbnail,
-		&i.IsVerified,
-		&i.Bio,
-		&i.PostalCode,
-		pq.Array(&i.OtherPlatformsAccounts),
-		&i.CountryID,
-		&i.StateID,
-		&i.CityID,
-		&i.OauthProvider,
-	)
-	return i, err
-}
-
-const getUserFollowedChannels = `-- name: GetUserFollowedChannels :many
+const getPersonaFollowedChannels = `-- name: GetPersonaFollowedChannels :many
 SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.created_at, c.updated_at, c.deleted_at
 FROM channel_followers cf
 JOIN channels c ON cf.channel_id = c.id
-WHERE cf.user_id = $1
+WHERE cf.persona_id = $1
   AND cf.unfollowed_at IS NULL
 `
 
 // -------------------------------
-// 10. Get channels a user follows
+// 10. Get channels a persona follows
 // -------------------------------
-func (q *Queries) GetUserFollowedChannels(ctx context.Context, userID int64) ([]Channel, error) {
-	rows, err := q.db.QueryContext(ctx, getUserFollowedChannels, userID)
+func (q *Queries) GetPersonaFollowedChannels(ctx context.Context, personaID int64) ([]Channel, error) {
+	rows, err := q.db.QueryContext(ctx, getPersonaFollowedChannels, personaID)
 	if err != nil {
 		return nil, err
 	}
@@ -204,6 +165,82 @@ func (q *Queries) GetUserFollowedChannels(ctx context.Context, userID int64) ([]
 		return nil, err
 	}
 	return items, nil
+}
+
+const getPersonaJoinedChannels = `-- name: GetPersonaJoinedChannels :many
+SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.created_at, c.updated_at, c.deleted_at
+FROM channel_members cm
+JOIN channels c ON cm.channel_id = c.id
+WHERE cm.persona_id = $1
+  AND cm.left_at IS NULL
+`
+
+// -------------------------------
+// 9. Get channels a persona has joined
+// -------------------------------
+func (q *Queries) GetPersonaJoinedChannels(ctx context.Context, personaID int64) ([]Channel, error) {
+	rows, err := q.db.QueryContext(ctx, getPersonaJoinedChannels, personaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Channel
+	for rows.Next() {
+		var i Channel
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Thumbnail,
+			&i.Banner,
+			&i.OwnerID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUserByEmailAddress = `-- name: GetUserByEmailAddress :one
+SELECT id, uuid, first_name, last_name, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider FROM users WHERE email_address = $1 AND deleted_at IS NULL LIMIT 1
+`
+
+// -------------------------------
+// 2.1 Get User by email and provider
+// -------------------------------
+func (q *Queries) GetUserByEmailAddress(ctx context.Context, emailAddress string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmailAddress, emailAddress)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.FirstName,
+		&i.LastName,
+		&i.EmailAddress,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.HashedPassword,
+		&i.Thumbnail,
+		&i.IsVerified,
+		&i.PostalCode,
+		pq.Array(&i.OtherPlatformsAccounts),
+		&i.CountryID,
+		&i.StateID,
+		&i.CityID,
+		&i.OauthProvider,
+	)
+	return i, err
 }
 
 const getUserHashedPasswordByEmail = `-- name: GetUserHashedPasswordByEmail :one
@@ -226,113 +263,24 @@ func (q *Queries) GetUserHashedPasswordByEmail(ctx context.Context, emailAddress
 	return i, err
 }
 
-const getUserJoinedChannels = `-- name: GetUserJoinedChannels :many
-SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.created_at, c.updated_at, c.deleted_at
-FROM channel_members cm
-JOIN channels c ON cm.channel_id = c.id
-WHERE cm.user_id = $1
-  AND cm.left_at IS NULL
-`
-
-// -------------------------------
-// 9. Get channels a user has joined
-// -------------------------------
-func (q *Queries) GetUserJoinedChannels(ctx context.Context, userID int64) ([]Channel, error) {
-	rows, err := q.db.QueryContext(ctx, getUserJoinedChannels, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Channel
-	for rows.Next() {
-		var i Channel
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Description,
-			&i.Thumbnail,
-			&i.Banner,
-			&i.OwnerID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getUserProfile = `-- name: GetUserProfile :one
-SELECT u.id, u.uuid, u.first_name, u.last_name, u.phone, u.email_address, u.created_at, u.updated_at, u.deleted_at, u.hashed_password, u.thumbnail, u.is_verified, u.bio, u.postal_code, u.other_platforms_accounts, u.country_id, u.state_id, u.city_id, u.oauth_provider,
-        (SELECT COALESCE(json_agg(json_build_object(
-               'id', c.id,
-               'name', c.name,
-               'description', c.description,
-               'created_at', c.created_at
-           )), '[]'::json)
-           FROM channel_members cm
-           JOIN channels c ON c.id = cm.channel_id
-           WHERE cm.user_id = u.id AND cm.left_at IS NULL
-       ) AS joined_channels,
-        (SELECT COALESCE(json_agg(json_build_object(
-               'id', c.id,
-               'name', c.name,
-               'description', c.description,
-               'created_at', c.created_at
-           )), '[]'::json)
-           FROM channel_followers cm
-           JOIN channels c ON c.id = cm.channel_id
-           WHERE cm.user_id = u.id AND cm.unfollowed_at IS NULL
-       ) AS followed_channels
+SELECT u.id, u.uuid, u.first_name, u.last_name, u.email_address, u.created_at, u.updated_at, u.deleted_at, u.hashed_password, u.thumbnail, u.is_verified, u.postal_code, u.other_platforms_accounts, u.country_id, u.state_id, u.city_id, u.oauth_provider
 FROM users u
 WHERE u.id = $1
   AND u.deleted_at IS NULL
 `
 
-type GetUserProfileRow struct {
-	ID                     int64
-	Uuid                   uuid.NullUUID
-	FirstName              string
-	LastName               string
-	Phone                  string
-	EmailAddress           string
-	CreatedAt              time.Time
-	UpdatedAt              time.Time
-	DeletedAt              sql.NullTime
-	HashedPassword         sql.NullString
-	Thumbnail              sql.NullString
-	IsVerified             sql.NullBool
-	Bio                    sql.NullString
-	PostalCode             sql.NullString
-	OtherPlatformsAccounts []string
-	CountryID              sql.NullInt64
-	StateID                sql.NullInt64
-	CityID                 sql.NullInt64
-	OauthProvider          NullOauthProvider
-	JoinedChannels         pqtype.NullRawMessage
-	FollowedChannels       pqtype.NullRawMessage
-}
-
 // -------------------------------
 // 7. Get user profile
 // -------------------------------
-func (q *Queries) GetUserProfile(ctx context.Context, id int64) (GetUserProfileRow, error) {
+func (q *Queries) GetUserProfile(ctx context.Context, id int64) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUserProfile, id)
-	var i GetUserProfileRow
+	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Uuid,
 		&i.FirstName,
 		&i.LastName,
-		&i.Phone,
 		&i.EmailAddress,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -340,24 +288,21 @@ func (q *Queries) GetUserProfile(ctx context.Context, id int64) (GetUserProfileR
 		&i.HashedPassword,
 		&i.Thumbnail,
 		&i.IsVerified,
-		&i.Bio,
 		&i.PostalCode,
 		pq.Array(&i.OtherPlatformsAccounts),
 		&i.CountryID,
 		&i.StateID,
 		&i.CityID,
 		&i.OauthProvider,
-		&i.JoinedChannels,
-		&i.FollowedChannels,
 	)
 	return i, err
 }
 
 const getUserStats = `-- name: GetUserStats :one
 SELECT u.id,
-       (SELECT COUNT(*) FROM channel_members cm WHERE cm.user_id = u.id AND cm.left_at IS NULL) AS channels_joined,
-       (SELECT COUNT(*) FROM channel_followers cf WHERE cf.user_id = u.id AND cf.unfollowed_at IS NULL) AS channels_followed,
-       (SELECT COUNT(*) FROM post_references pr WHERE pr.owner_type = 'user' AND pr.owner_id = u.id) AS posts_count
+       (SELECT COUNT(*) FROM channel_members cm WHERE cm.persona_id = u.id AND cm.left_at IS NULL) AS channels_joined,
+       (SELECT COUNT(*) FROM channel_followers cf WHERE cf.persona_id = u.id AND cf.unfollowed_at IS NULL) AS channels_followed,
+       (SELECT COUNT(*) FROM post_references pr WHERE pr.owner_type = 'PERSONA' AND pr.owner_id = u.id) AS posts_count
 FROM users u
 WHERE u.id = $1
   AND u.deleted_at IS NULL
@@ -371,7 +316,7 @@ type GetUserStatsRow struct {
 }
 
 // -------------------------------
-// 8. Get user stats
+// 8. Get persona stats
 // -------------------------------
 func (q *Queries) GetUserStats(ctx context.Context, id int64) (GetUserStatsRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserStats, id)
@@ -390,7 +335,7 @@ UPDATE users
 SET hashed_password = $1,
     updated_at = NOW()
 WHERE id = $2
-RETURNING id, uuid, first_name, last_name, phone, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, bio, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider
+RETURNING id, uuid, first_name, last_name, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider
 `
 
 type ResetUserPasswordParams struct {
@@ -409,7 +354,6 @@ func (q *Queries) ResetUserPassword(ctx context.Context, arg ResetUserPasswordPa
 		&i.Uuid,
 		&i.FirstName,
 		&i.LastName,
-		&i.Phone,
 		&i.EmailAddress,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -417,7 +361,6 @@ func (q *Queries) ResetUserPassword(ctx context.Context, arg ResetUserPasswordPa
 		&i.HashedPassword,
 		&i.Thumbnail,
 		&i.IsVerified,
-		&i.Bio,
 		&i.PostalCode,
 		pq.Array(&i.OtherPlatformsAccounts),
 		&i.CountryID,
@@ -460,7 +403,7 @@ func (q *Queries) ResolveUserByID(ctx context.Context, id int64) (ResolveUserByI
 }
 
 const searchUsersByName = `-- name: SearchUsersByName :many
-SELECT id, uuid, first_name, last_name, phone, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, bio, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider
+SELECT id, uuid, first_name, last_name, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider
 FROM users
 WHERE (first_name ILIKE '%' || $1 || '%'
        OR last_name ILIKE '%' || $1 || '%')
@@ -492,7 +435,6 @@ func (q *Queries) SearchUsersByName(ctx context.Context, arg SearchUsersByNamePa
 			&i.Uuid,
 			&i.FirstName,
 			&i.LastName,
-			&i.Phone,
 			&i.EmailAddress,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -500,7 +442,6 @@ func (q *Queries) SearchUsersByName(ctx context.Context, arg SearchUsersByNamePa
 			&i.HashedPassword,
 			&i.Thumbnail,
 			&i.IsVerified,
-			&i.Bio,
 			&i.PostalCode,
 			pq.Array(&i.OtherPlatformsAccounts),
 			&i.CountryID,
@@ -526,29 +467,25 @@ UPDATE users
 SET 
     first_name = COALESCE($1, first_name),
     last_name = COALESCE($2, last_name),
-    phone = COALESCE($3, phone),
-    email_address = COALESCE($4, email_address),
-    hashed_password = COALESCE($5, hashed_password),
-    thumbnail = COALESCE($6, thumbnail),
-    is_verified = COALESCE($7, is_verified),
-    bio = COALESCE($8, bio),
-    city_id = COALESCE($9, city_id),
-    country_id = COALESCE($10, country_id),
-    state_id = COALESCE($11, state_id),
-    postal_code = COALESCE($12, postal_code),
-    other_platforms_accounts = COALESCE($13, other_platforms_accounts),
+    email_address = COALESCE($3, email_address),
+    hashed_password = COALESCE($4, hashed_password),
+    thumbnail = COALESCE($5, thumbnail),
+    is_verified = COALESCE($6, is_verified),
+    city_id = COALESCE($7, city_id),
+    country_id = COALESCE($8, country_id),
+    state_id = COALESCE($9, state_id),
+    postal_code = COALESCE($10, postal_code),
+    other_platforms_accounts = COALESCE($11, other_platforms_accounts),
     updated_at = now()
-WHERE id = $14
+WHERE id = $12
 RETURNING 
     id,
     first_name,
     last_name,
-    phone,
     email_address,
     updated_at,
     thumbnail,
     is_verified,
-    bio,
     city_id,
     state_id,
     country_id,
@@ -559,12 +496,10 @@ RETURNING
 type UpdateUserParams struct {
 	FirstName              string
 	LastName               string
-	Phone                  string
 	EmailAddress           string
 	HashedPassword         sql.NullString
 	Thumbnail              sql.NullString
 	IsVerified             sql.NullBool
-	Bio                    sql.NullString
 	CityID                 sql.NullInt64
 	CountryID              sql.NullInt64
 	StateID                sql.NullInt64
@@ -577,12 +512,10 @@ type UpdateUserRow struct {
 	ID                     int64
 	FirstName              string
 	LastName               string
-	Phone                  string
 	EmailAddress           string
 	UpdatedAt              time.Time
 	Thumbnail              sql.NullString
 	IsVerified             sql.NullBool
-	Bio                    sql.NullString
 	CityID                 sql.NullInt64
 	StateID                sql.NullInt64
 	CountryID              sql.NullInt64
@@ -597,12 +530,10 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateU
 	row := q.db.QueryRowContext(ctx, updateUser,
 		arg.FirstName,
 		arg.LastName,
-		arg.Phone,
 		arg.EmailAddress,
 		arg.HashedPassword,
 		arg.Thumbnail,
 		arg.IsVerified,
-		arg.Bio,
 		arg.CityID,
 		arg.CountryID,
 		arg.StateID,
@@ -615,12 +546,10 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateU
 		&i.ID,
 		&i.FirstName,
 		&i.LastName,
-		&i.Phone,
 		&i.EmailAddress,
 		&i.UpdatedAt,
 		&i.Thumbnail,
 		&i.IsVerified,
-		&i.Bio,
 		&i.CityID,
 		&i.StateID,
 		&i.CountryID,
@@ -635,7 +564,7 @@ UPDATE users
 SET is_verified = TRUE,
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, uuid, first_name, last_name, phone, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, bio, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider
+RETURNING id, uuid, first_name, last_name, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider
 `
 
 // -------------------------------
@@ -649,7 +578,6 @@ func (q *Queries) VerifyUserEmail(ctx context.Context, id int64) (User, error) {
 		&i.Uuid,
 		&i.FirstName,
 		&i.LastName,
-		&i.Phone,
 		&i.EmailAddress,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -657,7 +585,6 @@ func (q *Queries) VerifyUserEmail(ctx context.Context, id int64) (User, error) {
 		&i.HashedPassword,
 		&i.Thumbnail,
 		&i.IsVerified,
-		&i.Bio,
 		&i.PostalCode,
 		pq.Array(&i.OtherPlatformsAccounts),
 		&i.CountryID,
