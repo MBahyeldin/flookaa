@@ -109,7 +109,7 @@ func (q *Queries) GetMetaFromEvents(ctx context.Context, targetID string) ([]Get
 	return items, nil
 }
 
-const getUserActivities = `-- name: GetUserActivities :many
+const getPersonaActivities = `-- name: GetPersonaActivities :many
 SELECT
   actor_id,
   ARRAY(
@@ -138,7 +138,7 @@ WHERE e.actor_id = $1
 GROUP BY actor_id
 `
 
-type GetUserActivitiesRow struct {
+type GetPersonaActivitiesRow struct {
 	ActorID        int64
 	CommentTargets []string
 	PostTargets    []string
@@ -148,15 +148,15 @@ type GetUserActivitiesRow struct {
 // -------------------------------
 // 3. Get user activities (events)
 // -------------------------------
-func (q *Queries) GetUserActivities(ctx context.Context, actorID int64) ([]GetUserActivitiesRow, error) {
-	rows, err := q.db.QueryContext(ctx, getUserActivities, actorID)
+func (q *Queries) GetPersonaActivities(ctx context.Context, actorID int64) ([]GetPersonaActivitiesRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPersonaActivities, actorID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetUserActivitiesRow
+	var items []GetPersonaActivitiesRow
 	for rows.Next() {
-		var i GetUserActivitiesRow
+		var i GetPersonaActivitiesRow
 		if err := rows.Scan(
 			&i.ActorID,
 			pq.Array(&i.CommentTargets),

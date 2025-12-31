@@ -1,7 +1,7 @@
 fragment PersonalizedMetaFields on PersonalizedMeta {
-    likedByUser
-    viewedByUser
-    sharedByUser
+    likedByPersona
+    viewedByPersona
+    sharedByPersona
     acl {
       canView
       canLike

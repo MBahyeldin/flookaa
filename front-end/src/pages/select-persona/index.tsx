@@ -1,21 +1,24 @@
-import { fetchUserPersonas } from "@/services/persona";
-import type { Persona } from "@/types/persona";
-import React from "react";
+import { useAuth } from "@/Auth.context";
+import FormComponent from "@/components/form";
+import { Button } from "@/components/ui/button";
+import { DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useDialog } from "@/Dialog.context";
+import { Form } from "@/models/Forms/Form";
+import { fetchUserPersonas, setCurrentPersona } from "@/services/persona";
+import { useUserProfileStore } from "@/stores/UserProfileStore";
 
 export default function SelectPersonaPage() {
-    const [personas, setPersonas] = React.useState<Persona[]>([]);
+    const { personas, setPersonas } = useUserProfileStore();
+    const { revalidatePersona} = useAuth();
+    const { setOpen } = useDialog();
 
-    React.useEffect(() => {
-        const fetchPersonas = async () => {
-            try {
-                const resp = await fetchUserPersonas();
-                setPersonas(resp);
-            } catch (error) {
-                console.error("Error fetching personas:", error);
-            }
-        };
-        fetchPersonas();
-    }, []);
+    const onStatusChange = async (status: { success: boolean; error: string | null; result: unknown; }) => {
+        if (status.success) {
+            setOpen(false);
+            await fetchUserPersonas().then(setPersonas);
+            revalidatePersona();
+        }
+    };
 
     return (
         <main className="min-h-screen flex flex-col items-center justify-center">
@@ -27,7 +30,7 @@ export default function SelectPersonaPage() {
                 {personas.map((persona) => (
                     <button
                         key={persona.id}
-                        onClick={() => console.log("Selected persona:", persona)}
+                        onClick={async () => { await setCurrentPersona(persona.id); revalidatePersona(); }}
                         className="group flex flex-col items-center focus:outline-none cursor-pointer"
                     >
                         <div className="w-28 h-28 rounded-lg bg-gray-400 overflow-hidden 
@@ -48,11 +51,14 @@ export default function SelectPersonaPage() {
                         <span className="mt-3 group-hover:text-black">
                             {persona.name}
                         </span>
+                        <span className="text-sm text-gray-500 group-hover:text-gray-700">
+                            {persona.first_name} {persona.last_name}
+                        </span>
                     </button>
                 ))}
 
+                <DialogTrigger asChild>
                 <button
-                    onClick={() => console.log("Add new persona")}
                     className="group flex flex-col items-center focus:outline-none"
                 >
                     <div className="w-28 h-28 rounded-lg border-2 border-gray-500 
@@ -67,6 +73,8 @@ export default function SelectPersonaPage() {
                         Add Persona
                     </span>
                 </button>
+                </DialogTrigger>
+                
             </div>
 
             {personas.length === 0 && (
@@ -74,6 +82,22 @@ export default function SelectPersonaPage() {
                     No personas found. Create one to continue.
                 </p>
             )}
+
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Have another persona in mind?</DialogTitle>
+                    <DialogDescription>
+                         Create it now to get started!
+                    </DialogDescription>
+                    <FormComponent className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto" form={Form.persona} onStatusChange={onStatusChange}>
+                        <div className="md:col-span-12">
+                            <Button type="submit" className="w-full">
+                            {Form.persona.submitText}
+                            </Button>
+                        </div>
+                    </FormComponent>
+                </DialogHeader>  
+            </DialogContent>
         </main>
     );
 }

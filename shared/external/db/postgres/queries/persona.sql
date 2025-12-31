@@ -21,8 +21,8 @@ ORDER BY created_at DESC;
 -- 3. CreatePersona
 -- ------------------------------
 -- name: CreatePersona :one
-INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, is_default, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, NOW(), NOW())
+INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, NOW(), NOW())
 RETURNING *;
 
 -- ------------------------------
@@ -38,7 +38,7 @@ WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL;
 -- 7. Get Persona Basic Info
 -- -------------------------------
 -- name: GetPersonaBasicInfo :one
-SELECT u.id, u.first_name, u.last_name, u.thumbnail, u.created_at, u.updated_at,
+SELECT u.id, u.name, u.slug, u.first_name, u.last_name, u.thumbnail, u.created_at, u.updated_at, u.privacy,
       (SELECT COALESCE(json_agg(json_build_object(
                'id', c.id,
                'name', c.name,
@@ -96,3 +96,12 @@ JOIN channels c ON cf.channel_id = c.id
 WHERE cf.persona_id = $1
   AND cf.unfollowed_at IS NULL;
 
+
+-- -------------------------------
+-- 12. Resolve Persona By ID
+-- -------------------------------
+-- name: ResolvePersonaByID :one
+SELECT id, first_name, last_name, thumbnail 
+FROM personas 
+WHERE id = $1 
+AND deleted_at IS NULL LIMIT 1;

@@ -102,7 +102,7 @@ export type Channel = {
   isMember: Scalars['Boolean']['output'];
   membersCount?: Maybe<Scalars['Int']['output']>;
   name: Scalars['String']['output'];
-  owner: User;
+  owner: Persona;
   posts: Array<Post>;
   profileImageUrl?: Maybe<Scalars['String']['output']>;
   thumbnailUrl?: Maybe<Scalars['String']['output']>;
@@ -113,13 +113,13 @@ export type Channel = {
 export type Comment = {
   __typename?: 'Comment';
   _id: Scalars['ObjectId']['output'];
-  allowedUserIds: Array<Scalars['Int64']['output']>;
-  author: User;
+  allowedPersonaIds: Array<Scalars['Int64']['output']>;
+  author: Persona;
   authorId: Scalars['Int64']['output'];
   content?: Maybe<PortableText>;
   createdAt: Scalars['DateTime']['output'];
   deletedAt?: Maybe<Scalars['DateTime']['output']>;
-  deniedUserIds: Array<Scalars['Int64']['output']>;
+  deniedPersonaIds: Array<Scalars['Int64']['output']>;
   edited: Scalars['Boolean']['output'];
   meta: Meta;
   parentId: Scalars['ObjectId']['output'];
@@ -132,10 +132,10 @@ export type Comment = {
 };
 
 export type CommentInput = {
-  allowedUserIds: Array<Scalars['Int64']['input']>;
+  allowedPersonaIds: Array<Scalars['Int64']['input']>;
   authorId: Scalars['Int64']['input'];
   content: SimpleInput;
-  deniedUserIds: Array<Scalars['Int64']['input']>;
+  deniedPersonaIds: Array<Scalars['Int64']['input']>;
   level: Scalars['Int32']['input'];
   owner: OwnerInput;
   parentId: Scalars['ObjectId']['input'];
@@ -309,14 +309,22 @@ export type OwnerInput = {
 export type OwnerType =
   | 'CHANNEL'
   | 'PAGE'
-  | 'USER';
+  | 'PERSONA';
+
+export type Persona = {
+  __typename?: 'Persona';
+  fullName: Scalars['String']['output'];
+  id: Scalars['Int64']['output'];
+  profileImageUrl?: Maybe<Scalars['String']['output']>;
+  username: Scalars['String']['output'];
+};
 
 export type PersonalizedMeta = {
   __typename?: 'PersonalizedMeta';
   acl: Acl;
-  likedByUser: Scalars['Boolean']['output'];
-  sharedByUser: Scalars['Boolean']['output'];
-  viewedByUser: Scalars['Boolean']['output'];
+  likedByPersona: Scalars['Boolean']['output'];
+  sharedByPersona: Scalars['Boolean']['output'];
+  viewedByPersona: Scalars['Boolean']['output'];
 };
 
 /** Top-level PortableText document */
@@ -332,13 +340,13 @@ export type PortableTextInput = {
 export type Post = {
   __typename?: 'Post';
   _id: Scalars['ObjectId']['output'];
-  allowedUserIds: Array<Scalars['Int64']['output']>;
-  author: User;
+  allowedPersonaIds: Array<Scalars['Int64']['output']>;
+  author: Persona;
   authorId: Scalars['Int64']['output'];
   content?: Maybe<PortableText>;
   createdAt: Scalars['DateTime']['output'];
   deletedAt?: Maybe<Scalars['DateTime']['output']>;
-  deniedUserIds: Array<Scalars['Int64']['output']>;
+  deniedPersonaIds: Array<Scalars['Int64']['output']>;
   edited: Scalars['Boolean']['output'];
   meta: Meta;
   owner: Owner;
@@ -353,12 +361,12 @@ export type Post = {
 export type PostGenericDocument = {
   __typename?: 'PostGenericDocument';
   _id: Scalars['ObjectId']['output'];
-  allowedUserIds?: Maybe<Array<Scalars['Int64']['output']>>;
+  allowedPersonaIds?: Maybe<Array<Scalars['Int64']['output']>>;
   authorId: Scalars['Int64']['output'];
   content?: Maybe<PortableText>;
   createdAt: Scalars['DateTime']['output'];
   deletedAt?: Maybe<Scalars['DateTime']['output']>;
-  deniedUserIds?: Maybe<Array<Scalars['Int64']['output']>>;
+  deniedPersonaIds?: Maybe<Array<Scalars['Int64']['output']>>;
   edited: Scalars['Boolean']['output'];
   owner?: Maybe<Owner>;
   parentId?: Maybe<Scalars['ObjectId']['output']>;
@@ -370,10 +378,10 @@ export type PostGenericDocument = {
 };
 
 export type PostInput = {
-  allowedUserIds: Array<Scalars['Int64']['input']>;
+  allowedPersonaIds: Array<Scalars['Int64']['input']>;
   authorId: Scalars['Int64']['input'];
   content: PortableTextInput;
-  deniedUserIds: Array<Scalars['Int64']['input']>;
+  deniedPersonaIds: Array<Scalars['Int64']['input']>;
   owner: OwnerInput;
   privacy: Privacy;
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
@@ -455,14 +463,6 @@ export type StyleType =
   | 'h6'
   | 'normal';
 
-export type User = {
-  __typename?: 'User';
-  fullName: Scalars['String']['output'];
-  id: Scalars['Int64']['output'];
-  profileImageUrl?: Maybe<Scalars['String']['output']>;
-  username: Scalars['String']['output'];
-};
-
 export type CreateCommentMutationVariables = Exact<{
   parentId: Scalars['ObjectId']['input'];
   level: Scalars['Int32']['input'];
@@ -471,8 +471,8 @@ export type CreateCommentMutationVariables = Exact<{
   tags?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
   privacy: Privacy;
   owner: OwnerInput;
-  allowedUserIds: Array<Scalars['Int64']['input']> | Scalars['Int64']['input'];
-  deniedUserIds: Array<Scalars['Int64']['input']> | Scalars['Int64']['input'];
+  allowedPersonaIds: Array<Scalars['Int64']['input']> | Scalars['Int64']['input'];
+  deniedPersonaIds: Array<Scalars['Int64']['input']> | Scalars['Int64']['input'];
 }>;
 
 
@@ -484,8 +484,8 @@ export type CreatePostMutationVariables = Exact<{
   tags?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
   privacy: Privacy;
   owner: OwnerInput;
-  allowedUserIds: Array<Scalars['Int64']['input']> | Scalars['Int64']['input'];
-  deniedUserIds: Array<Scalars['Int64']['input']> | Scalars['Int64']['input'];
+  allowedPersonaIds: Array<Scalars['Int64']['input']> | Scalars['Int64']['input'];
+  deniedPersonaIds: Array<Scalars['Int64']['input']> | Scalars['Int64']['input'];
 }>;
 
 
@@ -506,7 +506,7 @@ export type GetChannelQueryVariables = Exact<{
 }>;
 
 
-export type GetChannelQuery = { __typename?: 'Query', getChannel?: { __typename?: 'Channel', id: any, name: string, description?: string | null, bannerImageUrl?: string | null, thumbnailUrl?: string | null, createdAt: string, totalPosts: number, isMember: boolean, isFollower: boolean, membersCount?: number | null, followersCount?: number | null, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedUserIds: Array<any>, deniedUserIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'User', id: any, username: string, fullName: string, profileImageUrl?: string | null }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByUser: boolean, viewedByUser: boolean, sharedByUser: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, owner: { __typename?: 'User', id: any, username: string, fullName: string, profileImageUrl?: string | null } } | null };
+export type GetChannelQuery = { __typename?: 'Query', getChannel?: { __typename?: 'Channel', id: any, name: string, description?: string | null, bannerImageUrl?: string | null, thumbnailUrl?: string | null, createdAt: string, totalPosts: number, isMember: boolean, isFollower: boolean, membersCount?: number | null, followersCount?: number | null, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, owner: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null } } | null };
 
 export type GetCommentsQueryVariables = Exact<{
   parentId: Scalars['ObjectId']['input'];
@@ -515,7 +515,7 @@ export type GetCommentsQueryVariables = Exact<{
 }>;
 
 
-export type GetCommentsQuery = { __typename?: 'Query', getComments: Array<{ __typename?: 'Comment', _id: any, type: PostType, parentId: any, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedUserIds: Array<any>, deniedUserIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'User', id: any, username: string, fullName: string, profileImageUrl?: string | null }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByUser: boolean, viewedByUser: boolean, sharedByUser: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }> };
+export type GetCommentsQuery = { __typename?: 'Query', getComments: Array<{ __typename?: 'Comment', _id: any, type: PostType, parentId: any, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }> };
 
 export type GetPostsQueryVariables = Exact<{
   owner: OwnerInput;
@@ -525,15 +525,15 @@ export type GetPostsQueryVariables = Exact<{
 }>;
 
 
-export type GetPostsQuery = { __typename?: 'Query', getPosts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedUserIds: Array<any>, deniedUserIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'User', id: any, username: string, fullName: string, profileImageUrl?: string | null }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByUser: boolean, viewedByUser: boolean, sharedByUser: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }> };
+export type GetPostsQuery = { __typename?: 'Query', getPosts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }> };
 
-export type CommentFieldsFragment = { __typename?: 'Comment', _id: any, type: PostType, parentId: any, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedUserIds: Array<any>, deniedUserIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'User', id: any, username: string, fullName: string, profileImageUrl?: string | null }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByUser: boolean, viewedByUser: boolean, sharedByUser: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } };
+export type CommentFieldsFragment = { __typename?: 'Comment', _id: any, type: PostType, parentId: any, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } };
 
 export type MetaFieldsFragment = { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any };
 
-export type PersonalizedMetaFieldsFragment = { __typename?: 'PersonalizedMeta', likedByUser: boolean, viewedByUser: boolean, sharedByUser: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } };
+export type PersonalizedMetaFieldsFragment = { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } };
 
-export type PostFieldsFragment = { __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedUserIds: Array<any>, deniedUserIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'User', id: any, username: string, fullName: string, profileImageUrl?: string | null }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByUser: boolean, viewedByUser: boolean, sharedByUser: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } };
+export type PostFieldsFragment = { __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } };
 
 export const MetaFieldsFragmentDoc = gql`
     fragment MetaFields on Meta {
@@ -545,9 +545,9 @@ export const MetaFieldsFragmentDoc = gql`
     `;
 export const PersonalizedMetaFieldsFragmentDoc = gql`
     fragment PersonalizedMetaFields on PersonalizedMeta {
-  likedByUser
-  viewedByUser
-  sharedByUser
+  likedByPersona
+  viewedByPersona
+  sharedByPersona
   acl {
     canView
     canLike
@@ -578,8 +578,8 @@ export const CommentFieldsFragmentDoc = gql`
   personalizedMeta {
     ...PersonalizedMetaFields
   }
-  allowedUserIds
-  deniedUserIds
+  allowedPersonaIds
+  deniedPersonaIds
   edited
   tags
   updatedAt
@@ -610,8 +610,8 @@ export const PostFieldsFragmentDoc = gql`
   personalizedMeta {
     ...PersonalizedMetaFields
   }
-  allowedUserIds
-  deniedUserIds
+  allowedPersonaIds
+  deniedPersonaIds
   edited
   tags
   updatedAt
@@ -619,9 +619,9 @@ export const PostFieldsFragmentDoc = gql`
     ${MetaFieldsFragmentDoc}
 ${PersonalizedMetaFieldsFragmentDoc}`;
 export const CreateCommentDocument = gql`
-    mutation CreateComment($parentId: ObjectId!, $level: Int32!, $authorId: Int64!, $content: SimpleInput!, $tags: [String!], $privacy: Privacy!, $owner: OwnerInput!, $allowedUserIds: [Int64!]!, $deniedUserIds: [Int64!]!) {
+    mutation CreateComment($parentId: ObjectId!, $level: Int32!, $authorId: Int64!, $content: SimpleInput!, $tags: [String!], $privacy: Privacy!, $owner: OwnerInput!, $allowedPersonaIds: [Int64!]!, $deniedPersonaIds: [Int64!]!) {
   createComment(
-    input: {owner: $owner, parentId: $parentId, level: $level, authorId: $authorId, tags: $tags, privacy: $privacy, content: $content, allowedUserIds: $allowedUserIds, deniedUserIds: $deniedUserIds}
+    input: {owner: $owner, parentId: $parentId, level: $level, authorId: $authorId, tags: $tags, privacy: $privacy, content: $content, allowedPersonaIds: $allowedPersonaIds, deniedPersonaIds: $deniedPersonaIds}
   ) {
     _id
     authorId
@@ -654,8 +654,8 @@ export type CreateCommentMutationFn = Apollo.MutationFunction<CreateCommentMutat
  *      tags: // value for 'tags'
  *      privacy: // value for 'privacy'
  *      owner: // value for 'owner'
- *      allowedUserIds: // value for 'allowedUserIds'
- *      deniedUserIds: // value for 'deniedUserIds'
+ *      allowedPersonaIds: // value for 'allowedPersonaIds'
+ *      deniedPersonaIds: // value for 'deniedPersonaIds'
  *   },
  * });
  */
@@ -667,9 +667,9 @@ export type CreateCommentMutationHookResult = ReturnType<typeof useCreateComment
 export type CreateCommentMutationResult = Apollo.MutationResult<CreateCommentMutation>;
 export type CreateCommentMutationOptions = Apollo.BaseMutationOptions<CreateCommentMutation, CreateCommentMutationVariables>;
 export const CreatePostDocument = gql`
-    mutation CreatePost($authorId: Int64!, $content: PortableTextInput!, $tags: [String!], $privacy: Privacy!, $owner: OwnerInput!, $allowedUserIds: [Int64!]!, $deniedUserIds: [Int64!]!) {
+    mutation CreatePost($authorId: Int64!, $content: PortableTextInput!, $tags: [String!], $privacy: Privacy!, $owner: OwnerInput!, $allowedPersonaIds: [Int64!]!, $deniedPersonaIds: [Int64!]!) {
   createPost(
-    input: {authorId: $authorId, tags: $tags, privacy: $privacy, owner: $owner, content: $content, deniedUserIds: $deniedUserIds, allowedUserIds: $allowedUserIds}
+    input: {authorId: $authorId, tags: $tags, privacy: $privacy, owner: $owner, content: $content, deniedPersonaIds: $deniedPersonaIds, allowedPersonaIds: $allowedPersonaIds}
   ) {
     _id
     authorId
@@ -703,8 +703,8 @@ export type CreatePostMutationFn = Apollo.MutationFunction<CreatePostMutation, C
  *      tags: // value for 'tags'
  *      privacy: // value for 'privacy'
  *      owner: // value for 'owner'
- *      allowedUserIds: // value for 'allowedUserIds'
- *      deniedUserIds: // value for 'deniedUserIds'
+ *      allowedPersonaIds: // value for 'allowedPersonaIds'
+ *      deniedPersonaIds: // value for 'deniedPersonaIds'
  *   },
  * });
  */

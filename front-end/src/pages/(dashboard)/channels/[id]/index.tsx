@@ -137,7 +137,7 @@ export default function ChannelPage() {
     } else {
       setShowLoadMore(false);
     }
-  }, [channelData, addPosts]);
+  }, [channelData, addPosts]);  
 
 
   if (!channelData?.getChannel) {

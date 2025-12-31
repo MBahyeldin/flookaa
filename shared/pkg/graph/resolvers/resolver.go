@@ -57,18 +57,18 @@ func getPersonaIdFromContext(ctx context.Context) (int64, error) {
 }
 
 func resolvePersonaCached(ctx context.Context, personaID int64, pg *sql.DB) (*models.Persona, error) {
-	cachedPersona, err := redis.Store.User.GetUserInfo(ctx, strconv.Itoa(int(personaID)))
+	cachedPersona, err := redis.Store.Persona.GetPersonaInfo(ctx, strconv.Itoa(int(personaID)))
 	if err != nil {
 		log.Println("redis get user error:", err)
 	}
 	if cachedPersona == nil {
 		q := db.New(pg)
-		persona, err := q.ResolveUserByID(ctx, personaID)
+		persona, err := q.ResolvePersonaByID(ctx, personaID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get user from postgres: %w", err)
+			return nil, fmt.Errorf("failed to get persona from postgres: %w", err)
 		}
 		cachedPersona = &persona
-		_ = redis.Store.User.SetUserInfo(ctx, &persona)
+		_ = redis.Store.Persona.SetPersonaInfo(ctx, &persona)
 	}
 	return &models.Persona{
 		ID:              cachedPersona.ID,
@@ -173,7 +173,7 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 	// this should not be here in production, should be done at login or some other place
 	// but for simplicity, we do it here
 	// ensure user activities are cached in Redis
-	err = redis.Store.User.InitUserActivityIfNotSet(ctx, personaId, r.Postgres)
+	err = redis.Store.Persona.InitPersonaActivityIfNotSet(ctx, personaId, r.Postgres)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get init activities: %w", err)
 	}
@@ -200,7 +200,7 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 		}
 		post.Meta = meta
 
-		isLikedByMe, err := redis.Store.User.IsUserActivity(ctx, personaId, p.ID, db.EventEnumLike)
+		isLikedByMe, err := redis.Store.Persona.IsPersonaActivity(ctx, personaId, p.ID, db.EventEnumLike)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve if post is liked by me: %w", err)
 		}
@@ -364,7 +364,7 @@ func getComments(ctx context.Context, postID string, r *queryResolver, limit int
 		}
 		comment.Meta = meta
 
-		isLikedByMe, err := redis.Store.User.IsUserActivity(ctx, personaId, comment.ID, db.EventEnumLike)
+		isLikedByMe, err := redis.Store.Persona.IsPersonaActivity(ctx, personaId, comment.ID, db.EventEnumLike)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve if post is liked by me: %w", err)
 		}

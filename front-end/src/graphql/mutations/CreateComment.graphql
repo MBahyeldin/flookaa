@@ -6,8 +6,8 @@ mutation CreateComment(
   $tags: [String!]
   $privacy: Privacy!
   $owner: OwnerInput!
-  $allowedUserIds: [Int64!]!
-  $deniedUserIds: [Int64!]!
+  $allowedPersonaIds: [Int64!]!
+  $deniedPersonaIds: [Int64!]!
 ) {
   createComment(
     input: {
@@ -18,8 +18,8 @@ mutation CreateComment(
       tags: $tags
       privacy: $privacy
       content: $content
-      allowedUserIds: $allowedUserIds
-      deniedUserIds: $deniedUserIds
+      allowedPersonaIds: $allowedPersonaIds
+      deniedPersonaIds: $deniedPersonaIds
     }
   ) {
     _id

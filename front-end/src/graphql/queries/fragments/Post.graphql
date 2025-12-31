@@ -21,8 +21,8 @@ fragment PostFields on Post {
   personalizedMeta {
     ...PersonalizedMetaFields
   }
-  allowedUserIds
-  deniedUserIds
+  allowedPersonaIds
+  deniedPersonaIds
   edited
   tags
   updatedAt

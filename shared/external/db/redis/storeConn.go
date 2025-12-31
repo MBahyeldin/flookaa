@@ -22,7 +22,7 @@ func init() {
 
 // Store struct for Redis
 type RedisStores struct {
-	User    *UserStore
+	Persona *PersonaStore
 	Session *SessionStore
 	Channel *SubjectStore
 	Content *ContentStore
@@ -31,7 +31,7 @@ type RedisStores struct {
 // NewStore creates a new Redis store
 func newStore(ttl time.Duration) *RedisStores {
 	return &RedisStores{
-		User:    newUserStore(redisClient, ttl),
+		Persona: newPersonaStore(redisClient, ttl),
 		Session: newSessionStore(redisClient, ttl),
 		Channel: newSubjectStore(redisClient, ttl),
 		Content: newContentStore(redisClient, ttl),
@@ -39,5 +39,5 @@ func newStore(ttl time.Duration) *RedisStores {
 }
 
 func (s *RedisStores) Close() error {
-	return s.User.client.Close()
+	return s.Persona.client.Close()
 }

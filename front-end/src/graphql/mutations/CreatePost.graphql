@@ -4,8 +4,8 @@ mutation CreatePost(
   $tags: [String!]
   $privacy: Privacy!
   $owner: OwnerInput!
-  $allowedUserIds: [Int64!]!
-  $deniedUserIds: [Int64!]!
+  $allowedPersonaIds: [Int64!]!
+  $deniedPersonaIds: [Int64!]!
 ) {
   createPost(
     input: {
@@ -14,8 +14,8 @@ mutation CreatePost(
       privacy: $privacy
       owner: $owner
       content: $content
-      deniedUserIds: $deniedUserIds
-      allowedUserIds: $allowedUserIds
+      deniedPersonaIds: $deniedPersonaIds
+      allowedPersonaIds: $allowedPersonaIds
     }
   ) {
     _id

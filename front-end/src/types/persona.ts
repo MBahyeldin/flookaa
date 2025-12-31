@@ -1,6 +1,6 @@
 export type Persona = {
     id: string;
-    user_id: string;
+    userId: string;
 
     slug: string;
     name: string;
@@ -10,4 +10,11 @@ export type Persona = {
     last_name: string;
     thumbnail?: string;
     bio?: string;
+
+    created_at: string;
+
+    joined_channels: Array<{
+        id: string;
+        name: string;
+    }>;
 }

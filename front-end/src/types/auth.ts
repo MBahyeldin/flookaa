@@ -14,7 +14,6 @@ export type Info = {
 export type AuthContextType = {
   user: Info | null;
   isAuthenticated: boolean;
-  isLoading: boolean;
   isPersonaSelected: boolean;
   persona: Persona | null;
   revalidatePersona: () => void;

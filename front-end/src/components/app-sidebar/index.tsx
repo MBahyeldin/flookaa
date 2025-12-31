@@ -63,18 +63,7 @@ export function AppSidebar({
   const { user } = useAuth();
   const sidebarItems = React.useMemo(() => {
     if (user?.is_verified) {
-      return items.map((item) => {
-        if (item.title === "My Channels") {
-          return {
-            ...item,
-            items: user.joined_channels.map((channel) => ({
-              title: channel.name,
-              url: `/${channel.id}`,
-            })),
-          };
-        }
-        return item;
-      });
+      return items;
     }
     return [
       {

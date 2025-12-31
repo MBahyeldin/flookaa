@@ -1,12 +1,15 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useAppStore, type AppState } from "./AppStore";
+import type { Persona } from "@/types/persona";
 
 export interface UserProfileState extends AppState {
   profileId: string | null;
   personaId: string | null;
+  personas: Persona[];
   setProfileId: (id: string) => void;
   setPersonaId: (id: string) => void;
+  setPersonas: (personas: Persona[]) => void;
 }
 
 export const useUserProfileStore = create(
@@ -24,6 +27,13 @@ export const useUserProfileStore = create(
     setProfileId: (id) =>
       set((s) => {
         s.profileId = id;
+      }),
+
+    personas: [],
+
+    setPersonas: (personas) =>
+      set((s) => {
+        s.personas = personas;
       }),
   }))
 );

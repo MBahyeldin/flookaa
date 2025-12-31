@@ -18,8 +18,8 @@ fragment CommentFields on Comment {
   personalizedMeta {
     ...PersonalizedMetaFields
   }
-  allowedUserIds
-  deniedUserIds
+  allowedPersonaIds
+  deniedPersonaIds
   edited
   tags
   updatedAt

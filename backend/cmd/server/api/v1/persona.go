@@ -12,5 +12,6 @@ func AddPersonaRoutes(r *gin.RouterGroup) {
 		personaGroup.GET("/list", users.ListPersonas)
 		personaGroup.GET("/current", users.ReadCurrentPersona)
 		personaGroup.POST("/create", users.CreatePersona)
+		personaGroup.POST("/set-current-persona", users.SetCurrentPersona)
 	}
 }

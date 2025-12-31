@@ -13,16 +13,17 @@ import {
   hasPermission as checkPermission,
 } from "@/utils/permissions";
 import type { Persona } from "./types/persona";
+import { useLoading } from "./Loading.context";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Info | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [revalidateCounter, setRevalidateCounter] = useState(0);
   const [revalidatePersonaCounter, setRevalidatePersonaCounter] = useState(0);
   const [isPersonaSelected, setIsPersonaSelected] = useState<boolean>(false);
   const [persona, setPersona] = useState<Persona | null>(null);
+  const { setIsFetchUserLoading, setIsFetchCurrentPersonaLoading } = useLoading();
 
   const revalidateUser = useCallback(() => {
     setRevalidateCounter((prev) => prev + 1);
@@ -31,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
 
     async function loadUser() {
-      setIsLoading(true);
+      setIsFetchUserLoading(true);
       try {
         const data = await fetchCurrentUser();
         setUser(data);
@@ -39,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
       }
      
-      setIsLoading(false);
+      setIsFetchUserLoading(false);
     }
 
     loadUser();
@@ -60,6 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         setPersona(null);
         setIsPersonaSelected(false);
+      } finally {
+        setIsFetchCurrentPersonaLoading(false);
       }
     };
 
@@ -83,7 +86,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         isAuthenticated: !!user,
-        isLoading,
         isPersonaSelected,
         persona,
         revalidatePersona,

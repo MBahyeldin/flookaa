@@ -4,9 +4,11 @@ import (
 	"app/util/cookies"
 	"database/sql"
 	"fmt"
+	"hash/fnv"
 	"net/http"
 	"shared/external/db/postgres"
 	"shared/pkg/db"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,17 +29,20 @@ func ReadCurrentPersona(c *gin.Context) {
 
 	q := db.New(postgres.DbConn)
 
-	userRow, err := q.GetPersonaBasicInfo(ctx, personaId.(int64))
+	personaRow, err := q.GetPersonaBasicInfo(ctx, personaId.(int64))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("No Persona found with this id: %v", personaId)})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"id":              userRow.ID,
-		"name":            userRow.FirstName + " " + userRow.LastName,
-		"thumbnail":       userRow.Thumbnail.String,
-		"joined_channels": userRow.JoinedChannels.RawMessage,
+		"id":              personaRow.ID,
+		"name":            personaRow.Name,
+		"first_name":      personaRow.FirstName,
+		"last_name":       personaRow.LastName,
+		"slug":            personaRow.Slug,
+		"thumbnail":       personaRow.Thumbnail.String,
+		"joined_channels": personaRow.JoinedChannels.RawMessage,
 	})
 }
 
@@ -65,10 +70,11 @@ func ListPersonas(c *gin.Context) {
 			"name":        persona.Name,
 			"description": persona.Description,
 			"bio":         persona.Bio.String,
-			"firstName":   persona.FirstName,
-			"lastName":    persona.LastName,
+			"first_name":  persona.FirstName,
+			"last_name":   persona.LastName,
 			"thumbnail":   persona.Thumbnail.String,
-			"isDefault":   persona.IsDefault.Bool,
+			"is_default":  persona.IsDefault.Bool,
+			"created_at":  persona.CreatedAt.Time,
 		})
 	}
 
@@ -94,11 +100,13 @@ func CreatePersona(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("%v", err.Error())})
 		return
 	}
 
 	q := db.New(postgres.DbConn)
+
+	slug := generateSlug(req.FirstName, req.LastName)
 
 	personaId, err := q.CreatePersona(ctx, db.CreatePersonaParams{
 		UserID:      userId.(int64),
@@ -107,9 +115,11 @@ func CreatePersona(c *gin.Context) {
 		Bio:         sql.NullString{String: req.Bio, Valid: req.Bio != ""},
 		FirstName:   req.FirstName,
 		LastName:    req.LastName,
+		Slug:        slug,
 		Thumbnail:   sql.NullString{String: req.Thumbnail, Valid: req.Thumbnail != ""},
 	})
 	if err != nil {
+		fmt.Println("Error creating persona:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create persona"})
 		return
 	}
@@ -131,7 +141,7 @@ func SetCurrentPersona(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("%v", err.Error())})
 		return
 	}
 
@@ -156,4 +166,13 @@ func SetCurrentPersona(c *gin.Context) {
 	cookies.AddCookieToContext(c, "jwt", jwt)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Current persona set successfully"})
+}
+
+func generateSlug(firstName, lastName string) string {
+	// hash firstName and lastName to create a unique slug
+	dateNow := fmt.Sprintf("%v", time.Now().UnixNano())
+	valueToHash := fmt.Sprintf("%s-%s-%v", firstName, lastName, dateNow)
+	h := fnv.New32a()
+	h.Write([]byte(valueToHash))
+	return fmt.Sprintf("%x", h.Sum32())
 }

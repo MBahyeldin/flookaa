@@ -1,4 +1,4 @@
-schema: https://lxd-development-app/query
+schema: https://api.flookaa.com/query
 documents: "src/graphql/**/*.graphql"
 generates:
   src/generated/graphql.ts:

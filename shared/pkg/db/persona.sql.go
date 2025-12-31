@@ -13,8 +13,8 @@ import (
 )
 
 const createPersona = `-- name: CreatePersona :one
-INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, is_default, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, NOW(), NOW())
+INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, NOW(), NOW())
 RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, created_at, updated_at, deleted_at
 `
 
@@ -26,6 +26,7 @@ type CreatePersonaParams struct {
 	LastName    string
 	Thumbnail   sql.NullString
 	Bio         sql.NullString
+	Slug        string
 }
 
 // ------------------------------
@@ -40,6 +41,7 @@ func (q *Queries) CreatePersona(ctx context.Context, arg CreatePersonaParams) (P
 		arg.LastName,
 		arg.Thumbnail,
 		arg.Bio,
+		arg.Slug,
 	)
 	var i Persona
 	err := row.Scan(
@@ -94,7 +96,7 @@ func (q *Queries) GetDefaultPersonaByUserId(ctx context.Context, userID int64) (
 }
 
 const getPersonaBasicInfo = `-- name: GetPersonaBasicInfo :one
-SELECT u.id, u.first_name, u.last_name, u.thumbnail, u.created_at, u.updated_at,
+SELECT u.id, u.name, u.slug, u.first_name, u.last_name, u.thumbnail, u.created_at, u.updated_at, u.privacy,
       (SELECT COALESCE(json_agg(json_build_object(
                'id', c.id,
                'name', c.name,
@@ -122,11 +124,14 @@ WHERE u.id = $1
 
 type GetPersonaBasicInfoRow struct {
 	ID               int64
+	Name             string
+	Slug             string
 	FirstName        string
 	LastName         string
 	Thumbnail        sql.NullString
 	CreatedAt        sql.NullTime
 	UpdatedAt        sql.NullTime
+	Privacy          PersonaPrivacyEnum
 	JoinedChannels   pqtype.NullRawMessage
 	FollowedChannels pqtype.NullRawMessage
 }
@@ -139,11 +144,14 @@ func (q *Queries) GetPersonaBasicInfo(ctx context.Context, id int64) (GetPersona
 	var i GetPersonaBasicInfoRow
 	err := row.Scan(
 		&i.ID,
+		&i.Name,
+		&i.Slug,
 		&i.FirstName,
 		&i.LastName,
 		&i.Thumbnail,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Privacy,
 		&i.JoinedChannels,
 		&i.FollowedChannels,
 	)
@@ -352,4 +360,33 @@ func (q *Queries) GetUserPersonasByUserId(ctx context.Context, userID int64) ([]
 		return nil, err
 	}
 	return items, nil
+}
+
+const resolvePersonaByID = `-- name: ResolvePersonaByID :one
+SELECT id, first_name, last_name, thumbnail 
+FROM personas 
+WHERE id = $1 
+AND deleted_at IS NULL LIMIT 1
+`
+
+type ResolvePersonaByIDRow struct {
+	ID        int64
+	FirstName string
+	LastName  string
+	Thumbnail sql.NullString
+}
+
+// -------------------------------
+// 12. Resolve Persona By ID
+// -------------------------------
+func (q *Queries) ResolvePersonaByID(ctx context.Context, id int64) (ResolvePersonaByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, resolvePersonaByID, id)
+	var i ResolvePersonaByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Thumbnail,
+	)
+	return i, err
 }

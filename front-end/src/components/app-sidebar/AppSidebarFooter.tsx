@@ -14,13 +14,16 @@ import {
 } from "../ui/dropdown-menu";
 import { useAuth } from "@/Auth.context";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
-import { Link } from "react-router-dom";
 import clsx from "clsx";
+import { useUserProfileStore } from "@/stores/UserProfileStore";
+import { setCurrentPersona } from "@/services/persona";
 
 export default function AppSidebarFooter({ open }: { open: boolean }) {
-  const { user, handleLogOut } = useAuth();
+  const { user, persona, handleLogOut } = useAuth();
+  const { personas } = useUserProfileStore();
 
-  console.log("user in sidebar footer", user);
+
+  console.log("user in sidebar footer", user, persona);
 
   return (
     <SidebarFooter>
@@ -33,8 +36,8 @@ export default function AppSidebarFooter({ open }: { open: boolean }) {
                   {" "}
                   <Avatar className="w-8 h-8 cursor-pointer block">
                     <AvatarImage
-                      src={user?.thumbnail}
-                      alt={user?.name || "User avatar"}
+                      src={persona?.thumbnail}
+                      alt={persona?.name}
                       className="w-8 h-8 object-cover rounded-full"
                     />
                     <AvatarFallback className="flex items-center justify-center bg-muted rounded-full w-8 h-8">
@@ -44,9 +47,9 @@ export default function AppSidebarFooter({ open }: { open: boolean }) {
                 </div>
               </DropdownMenuTrigger>
               <div className="flex-1 min-w-0 ml-8 text-left">
-                <p className="truncate font-medium text-sm">{user?.name}</p>
+                <p className="truncate font-medium text-sm">{persona?.first_name} {persona?.last_name}</p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {user?.email}
+                  {persona?.name}
                 </p>
               </div>
               <DropdownMenuTrigger asChild>
@@ -65,11 +68,33 @@ export default function AppSidebarFooter({ open }: { open: boolean }) {
               side="right"
               className="w-[--radix-popper-anchor-width] min-w-[150px] mb-2 ml-1"
             >
-              <DropdownMenuItem>
-                <Link to="/settings/profile" className="w-full">
-                  <span>Profile</span>
-                </Link>
-              </DropdownMenuItem>
+                {
+                  personas.filter(p => p.id !== persona?.id).map((p) => (
+                    <DropdownMenuItem  onClick={async () => {
+                          await setCurrentPersona(p.id);
+                          window.location.reload();
+                        }}
+                        className="cursor-pointer"  
+                      >
+                      <div
+                        key={p.id}
+                        className="cursor-pointer flex items-center gap-2 flex-row"
+                      >
+                        <Avatar className="w-8 h-8 cursor-pointer block">
+                          <AvatarImage
+                            src={p?.thumbnail}
+                            alt={p?.name}
+                            className="w-8 h-8 object-cover rounded-full"
+                          />
+                          <AvatarFallback className="flex items-center justify-center bg-muted rounded-full w-8 h-8">
+                            <User2 className="w-5 h-5" />
+                          </AvatarFallback>
+                        </Avatar>
+                        {p.first_name} {p.last_name} ({p.name})
+                      </div>
+                    </DropdownMenuItem>
+                  ))
+                }
               <DropdownMenuItem onClick={handleLogOut}>
                 <span>Log out</span>
               </DropdownMenuItem>

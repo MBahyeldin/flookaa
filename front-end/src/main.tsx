@@ -11,6 +11,7 @@ import BlockObjectsProvider from "./components/portable-text/blockObjects/BlockO
 import WebSocketService from "./ws";
 import { WebsocketServiceProvider } from "./Websocket.context";
 import { ThemeProvider } from "./Theme.context";
+import { LoadingProvider } from "./Loading.context";
 
 const blockObjectsProvider = new BlockObjectsProvider();
 blockObjectsProvider.registerAll();
@@ -20,19 +21,21 @@ const wsService = WebSocketService.getInstance();
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <ThemeProvider>
-        <WebsocketServiceProvider websocketService={wsService}>
-          <ApolloProvider client={client}>
-            <BlockObjectsProviderProvider
-              blockObjectsProvider={blockObjectsProvider}
-            >
-              <App />
-            </BlockObjectsProviderProvider>
-          </ApolloProvider>
-        </WebsocketServiceProvider>
-        </ThemeProvider>
-      </AuthProvider>
+      <LoadingProvider>
+        <AuthProvider>
+          <ThemeProvider>
+          <WebsocketServiceProvider websocketService={wsService}>
+            <ApolloProvider client={client}>
+              <BlockObjectsProviderProvider
+                blockObjectsProvider={blockObjectsProvider}
+              >
+                <App />
+              </BlockObjectsProviderProvider>
+            </ApolloProvider>
+          </WebsocketServiceProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      </LoadingProvider>
     </BrowserRouter>
   </StrictMode>
 );

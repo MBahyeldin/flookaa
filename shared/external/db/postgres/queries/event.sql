@@ -32,7 +32,7 @@ GROUP BY name, target_id;
 -- -------------------------------
 -- 3. Get user activities (events)
 -- -------------------------------
--- name: GetUserActivities :many
+-- name: GetPersonaActivities :many
 SELECT
   actor_id,
   ARRAY(

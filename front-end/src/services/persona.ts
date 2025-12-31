@@ -26,10 +26,27 @@ export async function fetchUserPersonas(): Promise<Persona[]> {
     const resp = await fetch(`${API_BASE_URL}/api/v1/persona/list`, { credentials: "include" });
     if (!resp.ok) return [];
     const data = (await resp.json()) as Persona[];
-    return data;
+    return data.sort((a, b) => a.created_at.localeCompare(b.created_at));
   } catch (err) {
     console.log("Error fetching personas:", err);
     return [];
+  }
+}
+
+export async function setCurrentPersona(personaId: string): Promise<boolean> {
+  try {
+    const resp = await fetch(`${API_BASE_URL}/api/v1/persona/set-current-persona`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ persona_id: personaId }),
+    });
+    return resp.ok;
+  } catch (err) {
+    console.log("Error setting current persona:", err);
+    return false;
   }
 }
 
