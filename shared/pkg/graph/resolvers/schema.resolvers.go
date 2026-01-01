@@ -381,6 +381,9 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		}
 		channel = channelResult
 
+		fmt.Println("Fetched channel:", channel.ID)
+		fmt.Println("Fetching owner persona for channel owner ID:", channel.OwnerID)
+
 		// Owner lookup + cache
 		cachedPersona, err := resolvePersonaCached(ctx, channel.OwnerID, r.Postgres)
 		if err != nil {
@@ -415,9 +418,10 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 	}()
 
 	fmt.Printf("Fetching channel %d details and posts concurrently...\n", id)
-	fmt.Println("Found posts:", len(posts))
 
 	wg.Wait()
+
+	fmt.Println("Found posts:", len(posts))
 
 	if channelErr != nil {
 		return nil, channelErr

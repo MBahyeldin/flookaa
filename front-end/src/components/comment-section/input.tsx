@@ -11,25 +11,25 @@ export default function CommentInput({
     parentId: string;
     level: number;
 }) {
-    const { user } = useAuth();
+    const { persona } = useAuth();
     const owner = useAppStore((state) => state.owner);
 
     const [CreateComment] = useCreateCommentMutation();
 
     const handleSend = async (content: SimpleInput) => {
-        if (!user?.id || !parentId || !owner) return;
+        if (!persona?.id || !parentId || !owner) return;
 
         await CreateComment({
             variables: {
                 level,
                 parentId,
-                authorId: user.id,
+                authorId: persona.id,
                 content: content,
                 tags: [],
                 owner,
                 privacy: "PUBLIC",
-                allowedUserIds: [],
-                deniedUserIds: [],
+                allowedPersonaIds: [],
+                deniedPersonaIds: [],
             },
         });
 
@@ -41,8 +41,8 @@ export default function CommentInput({
     return (
         <div className="flex space-x-3 items-start">
             <Avatar className="h-9 w-9">
-                <AvatarImage src={user?.thumbnail || ""} />
-                <AvatarFallback>{user?.name?.[0] || "U"}</AvatarFallback>
+                <AvatarImage src={persona?.thumbnail || ""} />
+                <AvatarFallback>{persona?.name?.[0] || "U"}</AvatarFallback>
             </Avatar>
 
             <SimpleInputComponent onSend={handleSend} />

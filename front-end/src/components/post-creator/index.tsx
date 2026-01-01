@@ -19,7 +19,7 @@ import { useAppStore } from "@/stores/AppStore";
 
 export function PostCreator() {
   const [blocks, setBlocks] = useState<PortableTextBlock[]>([]);
-  const { user } = useAuth();
+  const { persona } = useAuth();
   const [createPost] = useCreatePostMutation();
   const [syncPortableTextEditor, setSyncPortableTextEditor] =
     useState<boolean>(false);
@@ -35,7 +35,7 @@ export function PostCreator() {
   }, [blockObjectsProvider]);
 
   const handleSubmit = async () => {
-    if (!user) return;
+    if (!persona) return;
     
     if (!owner) {
       console.error("Owner is not set in AppStore");
@@ -46,15 +46,15 @@ export function PostCreator() {
 
     await createPost({
       variables: {
-        authorId: user.id!,
+        authorId: persona.id!,
         owner: owner,
         content: {
           blocks: normalizedBlocks,
         },
         tags: [],
         privacy: "PUBLIC",
-        allowedUserIds: [],
-        deniedUserIds: [],
+        allowedPersonaIds: [],
+        deniedPersonaIds: [],
       },
     });
     setBlocks(() => []);
@@ -67,7 +67,7 @@ export function PostCreator() {
     <Card className="p-4 mb-6 bg-card border-border">
       <div className="flex gap-3">
         <Avatar className="h-10 w-10 mt-1">
-          <AvatarImage src={user?.thumbnail} />
+          <AvatarImage src={persona?.thumbnail} />
           <AvatarFallback className="bg-muted text-muted-foreground">
             <User2 className="h-5 w-5" />
           </AvatarFallback>

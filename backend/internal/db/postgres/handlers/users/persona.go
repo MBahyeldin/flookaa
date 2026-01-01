@@ -75,6 +75,7 @@ func ListPersonas(c *gin.Context) {
 			"thumbnail":   persona.Thumbnail.String,
 			"is_default":  persona.IsDefault.Bool,
 			"created_at":  persona.CreatedAt.Time,
+			"slug":        persona.Slug,
 		})
 	}
 
@@ -175,4 +176,66 @@ func generateSlug(firstName, lastName string) string {
 	h := fnv.New32a()
 	h.Write([]byte(valueToHash))
 	return fmt.Sprintf("%x", h.Sum32())
+}
+
+func UpdatePersona(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	userId, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No user is set in the context"})
+		return
+	}
+
+	personaIdParam := c.Param("persona_id")
+	var personaId int64
+	_, err := fmt.Sscan(personaIdParam, &personaId)
+	if err != nil || personaId == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid persona_id parameter"})
+		return
+	}
+
+	var req struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		FirstName   string `json:"first_name"`
+		LastName    string `json:"last_name"`
+		Thumbnail   string `json:"thumbnail"`
+		Bio         string `json:"bio"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("%v", err.Error())})
+		return
+	}
+
+	q := db.New(postgres.DbConn)
+
+	persona, err := q.GetPersonaByIdAndUserId(ctx, db.GetPersonaByIdAndUserIdParams{
+		ID:     personaId,
+		UserID: userId.(int64),
+	})
+	if err != nil || persona.ID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Persona not found or does not belong to the user"})
+		return
+	}
+
+	_, err = q.UpdatePersonaByIdAndUserId(ctx, db.UpdatePersonaByIdAndUserIdParams{
+		ID:          personaId,
+		UserID:      userId.(int64),
+		Name:        getStringOrDefault(req.Name, persona.Name),
+		Description: getStringOrDefault(req.Description, persona.Description),
+		Bio:         sql.NullString{String: getStringOrDefault(req.Bio, persona.Bio.String), Valid: req.Bio != ""},
+		FirstName:   getStringOrDefault(req.FirstName, persona.FirstName),
+		LastName:    getStringOrDefault(req.LastName, persona.LastName),
+		Thumbnail:   sql.NullString{String: getStringOrDefault(req.Thumbnail, persona.Thumbnail.String), Valid: req.Thumbnail != ""},
+		Slug:        persona.Slug,
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update persona"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Persona updated successfully"})
 }

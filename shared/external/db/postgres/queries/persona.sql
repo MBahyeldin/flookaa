@@ -105,3 +105,19 @@ SELECT id, first_name, last_name, thumbnail
 FROM personas 
 WHERE id = $1 
 AND deleted_at IS NULL LIMIT 1;
+
+-- -------------------------------
+-- 13. UpdatePersonaByIdAndUserId
+-- -------------------------------
+-- name: UpdatePersonaByIdAndUserId :one
+UPDATE personas
+SET name = COALESCE($3, name),
+    description = COALESCE($4, description),
+    first_name = COALESCE($5, first_name),
+    last_name = COALESCE($6, last_name),
+    thumbnail = COALESCE($7, thumbnail),
+    bio = COALESCE($8, bio),
+    slug = COALESCE($9, slug),
+    updated_at = NOW()
+WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+RETURNING *;

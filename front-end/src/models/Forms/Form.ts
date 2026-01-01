@@ -4,6 +4,7 @@ import profileFieldsGroups from "@/lib/formFields/profile";
 import loginFormFieldsGroups from "@/lib/formFields/login";
 import channelFormFieldsGroups from "@/lib/formFields/channel";
 import personaFormFieldsGroups from "@/lib/formFields/persona";
+import managePersonaFormFieldsGroups from "@/lib/formFields/managePersona";
 
 export class Form {
   id: string;
@@ -67,6 +68,17 @@ export class Form {
     submitText: "Create Persona",
     groups: personaFormFieldsGroups,
     relativeApiPath: "/api/v1/persona/create",
+    method: "POST",
+  });
+
+  static ManagePersona = new Form({
+    id: "manage_persona_form",
+    name: "Manage Persona Form",
+    title: "Manage Your Persona",
+    description: "Form for managing an existing persona",
+    submitText: "Save Changes",
+    groups: managePersonaFormFieldsGroups,
+    relativeApiPath: "/api/v1/persona/update",
     method: "POST",
   });
 

@@ -390,3 +390,64 @@ func (q *Queries) ResolvePersonaByID(ctx context.Context, id int64) (ResolvePers
 	)
 	return i, err
 }
+
+const updatePersonaByIdAndUserId = `-- name: UpdatePersonaByIdAndUserId :one
+UPDATE personas
+SET name = COALESCE($3, name),
+    description = COALESCE($4, description),
+    first_name = COALESCE($5, first_name),
+    last_name = COALESCE($6, last_name),
+    thumbnail = COALESCE($7, thumbnail),
+    bio = COALESCE($8, bio),
+    slug = COALESCE($9, slug),
+    updated_at = NOW()
+WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, created_at, updated_at, deleted_at
+`
+
+type UpdatePersonaByIdAndUserIdParams struct {
+	ID          int64
+	UserID      int64
+	Name        string
+	Description string
+	FirstName   string
+	LastName    string
+	Thumbnail   sql.NullString
+	Bio         sql.NullString
+	Slug        string
+}
+
+// -------------------------------
+// 13. UpdatePersonaByIdAndUserId
+// -------------------------------
+func (q *Queries) UpdatePersonaByIdAndUserId(ctx context.Context, arg UpdatePersonaByIdAndUserIdParams) (Persona, error) {
+	row := q.db.QueryRowContext(ctx, updatePersonaByIdAndUserId,
+		arg.ID,
+		arg.UserID,
+		arg.Name,
+		arg.Description,
+		arg.FirstName,
+		arg.LastName,
+		arg.Thumbnail,
+		arg.Bio,
+		arg.Slug,
+	)
+	var i Persona
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Description,
+		&i.Slug,
+		&i.FirstName,
+		&i.LastName,
+		&i.Thumbnail,
+		&i.Bio,
+		&i.Privacy,
+		&i.IsDefault,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}

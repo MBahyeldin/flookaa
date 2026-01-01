@@ -7,6 +7,7 @@ import DashboardSettingsProfile from "@/pages/(dashboard)/settings/profile";
 import ChannelsPage from "@/pages/(dashboard)/channels";
 import CreateChannelPage from "@/pages/(dashboard)/channels/create";
 import VerifyEmailPage from "@/pages/verify-email";
+import PersonaManagerPage from "@/pages/(dashboard)/persona-manager/[slug]";
 
 export default function AppRouter() {
   return (
@@ -28,6 +29,8 @@ export default function AppRouter() {
       <Route path="/login" element={<Login />} />
 
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+
+      <Route path="/persona-manager/:slug" element={<PersonaManagerPage />} />
     </Routes>
   );
 }

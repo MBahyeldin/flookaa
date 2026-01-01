@@ -1,4 +1,4 @@
-import { Calendar, Home, Inbox, Rss, Search, Settings } from "lucide-react";
+import { Calendar, Home, Inbox, Rss, Search, Settings, PersonStanding } from "lucide-react";
 
 import {
   Sidebar,
@@ -14,6 +14,7 @@ import AppSidebarFooter from "./AppSidebarFooter";
 import MainMenuItem from "./MainMenuItem";
 import { useAuth } from "@/Auth.context";
 import React from "react";
+import { useUserProfileStore } from "@/stores/UserProfileStore";
 
 // Menu items.
 const items = [
@@ -34,6 +35,14 @@ const items = [
     items: [
       { title: "Profile", url: "/profile" },
       { title: "Billing", url: "/billing" },
+    ],
+  },
+  {
+    title: "Persona Manager",
+    url: "/persona-manager",
+    icon: PersonStanding,
+    items: [
+      
     ],
   },
   {
@@ -61,9 +70,22 @@ export function AppSidebar({
   open: boolean;
 }) {
   const { user } = useAuth();
+  const { personas } = useUserProfileStore();
   const sidebarItems = React.useMemo(() => {
     if (user?.is_verified) {
-      return items;
+      const updatedItems = items.map((item) => {
+        if (item.url === "/persona-manager") {
+          return {
+            ...item,
+            items: personas.map((persona) => ({
+              title: persona.name,
+              url: `/${persona.slug}`,
+            })),
+          };
+        }
+        return item;
+      });
+      return updatedItems;
     }
     return [
       {

@@ -37,20 +37,20 @@ export function Post({
   post: Post;
 }) {
   const [showComments, setShowComments] = useState(false);
-  const { user } = useAuth();
+  const { persona } = useAuth();
   const { blockObjectsProvider } = useBlockObjectsProvider();
   const owner = useAppStore((state) => state.owner);
   const [createLike] = useCreateLikeMutation();
 
-  const [liked, setLiked] = useState(post.personalizedMeta?.likedByUser || false);
+  const [liked, setLiked] = useState(post.personalizedMeta?.likedByPersona || false);
   const [localLikes, setLocalLikes] = useState(post.meta?.likesCount || 0);
   const [triggerHeartAnimation, setTriggerHeartAnimation] = useState(false);
   
 
 
   const toggleLike = () => {
-    if (!user?.id || !owner) return;
-    setLiked((prev) => !prev);
+    if (!persona?.id || !owner) return;
+    setLiked((prev: boolean) => !prev);
     createLike({
       variables: {
         targetId: post._id,
@@ -109,7 +109,7 @@ export function Post({
             </div>
           </div>
 
-          {post.authorId === user?.id && (
+          {post.authorId === persona?.id && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm">
