@@ -85,7 +85,7 @@ export function PostCreator() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-primary hover:text-primary/80"
+                className="text-foreground hover:text-foreground/80"
               >
                 <ImageIcon className="h-4 w-4 mr-1" />
                 Photo
@@ -93,7 +93,7 @@ export function PostCreator() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-primary hover:text-primary/80"
+                className="text-foreground hover:text-foreground/80"
               >
                 <Smile className="h-4 w-4 mr-1" />
                 Emoji
@@ -101,7 +101,7 @@ export function PostCreator() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-primary hover:text-primary/80"
+                className="text-foreground hover:text-foreground/80"
               >
                 <Calendar className="h-4 w-4 mr-1" />
                 Schedule

@@ -13,8 +13,8 @@ import (
 )
 
 const createPersona = `-- name: CreatePersona :one
-INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, NOW(), NOW())
+INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, privacy, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, NOW(), NOW())
 RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, created_at, updated_at, deleted_at
 `
 
@@ -27,6 +27,7 @@ type CreatePersonaParams struct {
 	Thumbnail   sql.NullString
 	Bio         sql.NullString
 	Slug        string
+	Privacy     PersonaPrivacyEnum
 }
 
 // ------------------------------
@@ -42,6 +43,7 @@ func (q *Queries) CreatePersona(ctx context.Context, arg CreatePersonaParams) (P
 		arg.Thumbnail,
 		arg.Bio,
 		arg.Slug,
+		arg.Privacy,
 	)
 	var i Persona
 	err := row.Scan(
@@ -363,7 +365,7 @@ func (q *Queries) GetUserPersonasByUserId(ctx context.Context, userID int64) ([]
 }
 
 const resolvePersonaByID = `-- name: ResolvePersonaByID :one
-SELECT id, first_name, last_name, thumbnail 
+SELECT id, first_name, last_name, thumbnail, bio, slug, privacy 
 FROM personas 
 WHERE id = $1 
 AND deleted_at IS NULL LIMIT 1
@@ -374,6 +376,9 @@ type ResolvePersonaByIDRow struct {
 	FirstName string
 	LastName  string
 	Thumbnail sql.NullString
+	Bio       sql.NullString
+	Slug      string
+	Privacy   PersonaPrivacyEnum
 }
 
 // -------------------------------
@@ -387,6 +392,9 @@ func (q *Queries) ResolvePersonaByID(ctx context.Context, id int64) (ResolvePers
 		&i.FirstName,
 		&i.LastName,
 		&i.Thumbnail,
+		&i.Bio,
+		&i.Slug,
+		&i.Privacy,
 	)
 	return i, err
 }
@@ -400,6 +408,7 @@ SET name = COALESCE($3, name),
     thumbnail = COALESCE($7, thumbnail),
     bio = COALESCE($8, bio),
     slug = COALESCE($9, slug),
+    privacy = COALESCE($10, privacy),
     updated_at = NOW()
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, created_at, updated_at, deleted_at
@@ -415,6 +424,7 @@ type UpdatePersonaByIdAndUserIdParams struct {
 	Thumbnail   sql.NullString
 	Bio         sql.NullString
 	Slug        string
+	Privacy     PersonaPrivacyEnum
 }
 
 // -------------------------------
@@ -431,6 +441,7 @@ func (q *Queries) UpdatePersonaByIdAndUserId(ctx context.Context, arg UpdatePers
 		arg.Thumbnail,
 		arg.Bio,
 		arg.Slug,
+		arg.Privacy,
 	)
 	var i Persona
 	err := row.Scan(

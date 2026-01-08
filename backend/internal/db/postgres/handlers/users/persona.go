@@ -76,6 +76,7 @@ func ListPersonas(c *gin.Context) {
 			"is_default":  persona.IsDefault.Bool,
 			"created_at":  persona.CreatedAt.Time,
 			"slug":        persona.Slug,
+			"privacy":     persona.Privacy,
 		})
 	}
 
@@ -96,6 +97,7 @@ func CreatePersona(c *gin.Context) {
 		Description string `json:"description" binding:"required"`
 		FirstName   string `json:"first_name" binding:"required"`
 		LastName    string `json:"last_name" binding:"required"`
+		Privacy     string `json:"privacy" binding:"required"`
 		Thumbnail   string `json:"thumbnail"`
 		Bio         string `json:"bio"`
 	}
@@ -118,6 +120,7 @@ func CreatePersona(c *gin.Context) {
 		LastName:    req.LastName,
 		Slug:        slug,
 		Thumbnail:   sql.NullString{String: req.Thumbnail, Valid: req.Thumbnail != ""},
+		Privacy:     getPersonaFromString(req.Privacy, db.PersonaPrivacyEnumPublic),
 	})
 	if err != nil {
 		fmt.Println("Error creating persona:", err)
@@ -202,6 +205,7 @@ func UpdatePersona(c *gin.Context) {
 		LastName    string `json:"last_name"`
 		Thumbnail   string `json:"thumbnail"`
 		Bio         string `json:"bio"`
+		Privacy     string `json:"privacy"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -220,7 +224,7 @@ func UpdatePersona(c *gin.Context) {
 		return
 	}
 
-	_, err = q.UpdatePersonaByIdAndUserId(ctx, db.UpdatePersonaByIdAndUserIdParams{
+	updatedPersona, err := q.UpdatePersonaByIdAndUserId(ctx, db.UpdatePersonaByIdAndUserIdParams{
 		ID:          personaId,
 		UserID:      userId.(int64),
 		Name:        getStringOrDefault(req.Name, persona.Name),
@@ -230,6 +234,7 @@ func UpdatePersona(c *gin.Context) {
 		LastName:    getStringOrDefault(req.LastName, persona.LastName),
 		Thumbnail:   sql.NullString{String: getStringOrDefault(req.Thumbnail, persona.Thumbnail.String), Valid: req.Thumbnail != ""},
 		Slug:        persona.Slug,
+		Privacy:     getPersonaFromString(req.Privacy, persona.Privacy),
 	})
 
 	if err != nil {
@@ -237,5 +242,30 @@ func UpdatePersona(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Persona updated successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"id":          updatedPersona.ID,
+		"name":        updatedPersona.Name,
+		"description": updatedPersona.Description,
+		"bio":         updatedPersona.Bio.String,
+		"first_name":  updatedPersona.FirstName,
+		"last_name":   updatedPersona.LastName,
+		"thumbnail":   updatedPersona.Thumbnail.String,
+		"is_default":  updatedPersona.IsDefault.Bool,
+		"created_at":  updatedPersona.CreatedAt.Time,
+		"slug":        updatedPersona.Slug,
+		"privacy":     updatedPersona.Privacy,
+	})
+}
+
+func getPersonaFromString(input string, defaultValue db.PersonaPrivacyEnum) db.PersonaPrivacyEnum {
+	switch input {
+	case "public":
+		return db.PersonaPrivacyEnumPublic
+	case "private":
+		return db.PersonaPrivacyEnumPrivate
+	case "only_me":
+		return db.PersonaPrivacyEnumOnlyMe
+	default:
+		return defaultValue
+	}
 }

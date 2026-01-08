@@ -25,11 +25,11 @@ export default function PicInput({
       {field.icon}
       <Label htmlFor="thumbnail">
         {field.label}{" "}
-        {field.isRequired && <span className="text-red-500">*</span>}
+        {field.isRequired && <span className="text-destructive">*</span>}
       </Label>
 
       <div
-        className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:border-primary"
+        className="mt-2 border-2 border-dashed border-muted rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:border-primary"
         onClick={() => thumbnailInputField.current?.click()}
       >
         {url && (
@@ -51,10 +51,10 @@ export default function PicInput({
           className="hidden"
           onChange={handleInputChange}
         />
-        <p className="text-gray-500">Drag & drop an image or click to select</p>
+        <p className="text-foreground">Drag & drop an image or click to select</p>
       </div>
 
-      {error && touched && <p className="text-sm text-red-600 mt-1">{error}</p>}
+      {error && touched && <p className="text-sm text-destructive mt-1">{error}</p>}
     </div>
   );
 }

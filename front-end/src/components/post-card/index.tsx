@@ -153,7 +153,7 @@ export function Post({
               variant="ghost"
               size="sm"
               onClick={toggleLike}
-              className={`relative flex items-center space-x-2 transition-all ${liked ? "text-red-500" : "text-muted-foreground hover:text-foreground"
+              className={`relative flex items-center space-x-2 transition-all ${liked ? "text-destructive" : "text-muted-foreground hover:text-foreground"
                 }`}
             >
               {/* Heart Icon */}
@@ -175,7 +175,7 @@ export function Post({
                 }}
               >
                 <Heart
-                  className={`h-4 w-4 ${liked ? "fill-red-500 stroke-red-500" : "stroke-current"
+                  className={`h-4 w-4 ${liked ? "fill-destructive stroke-destructive" : "stroke-current"
                     }`}
                 />
               </motion.div>
@@ -210,9 +210,9 @@ export function Post({
                               setTriggerHeartAnimation(false)
                             }
                           }}
-                          className="absolute text-red-500"
+                          className="absolute text-destructive"
                         >
-                          <Heart className="h-5 w-5 fill-red-500 stroke-red-500" />
+                          <Heart className="h-5 w-5 fill-destructive stroke-destructive" />
                         </motion.div>
                       )
                     })}

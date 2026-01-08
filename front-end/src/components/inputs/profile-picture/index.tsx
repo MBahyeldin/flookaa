@@ -6,7 +6,7 @@ import type { FormFieldProps } from "@/types/FormFields";
 import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
 import { DialogTrigger } from "@radix-ui/react-dialog";
 import { Camera, User } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 type ProfilePictureInputProps = FormFieldProps & {
   first_name?: string;
@@ -23,6 +23,7 @@ export default function ProfilePictureInput({
   field,
 }: ProfilePictureInputProps) {
   const thumbnailInputField = useRef<HTMLInputElement | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   const { url, handleInputChange } = useInputImage({
     initValue: initValue || "",
@@ -45,7 +46,7 @@ export default function ProfilePictureInput({
           </DialogTrigger>
 
           <AvatarFallback className="text-lg">
-            <User className="h-12 w-12 text-gray-400" />
+            <User className="h-12 w-12 text-foreground" />
           </AvatarFallback>
         </Avatar>
         <input
@@ -83,7 +84,7 @@ export default function ProfilePictureInput({
           Change Avatar
         </Button>
       </div>
-      {url && (
+      {url && showPreview && (
         <DialogContent className="sm:max-w-[425px]">
           <DialogTitle asChild>
             <h2 className="text-sm font-medium">Preview</h2>

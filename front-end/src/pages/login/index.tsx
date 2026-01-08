@@ -36,10 +36,10 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 welcome-bg-bottom bg-no-repeat bg-bottom bg-cover" >
       <Card className={"w-full max-w-md shadow-xl"}>
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-gray-900">
+          <CardTitle className="text-2xl font-bold text-foreground">
             {Form.login.title}
           </CardTitle>
           <CardDescription>{Form.login.description}</CardDescription>
@@ -67,6 +67,8 @@ export default function SignupPage() {
         <OAuthProviders state="login" />
         </CardContent>
       </Card>
+
     </div>
   );
 }
+

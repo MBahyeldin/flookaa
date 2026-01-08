@@ -296,7 +296,7 @@ export default function ChannelPage() {
           </div>
 
           {newPosts.length ? (
-            <div className="p-4 bg-green-100 text-green-800 rounded-lg text-center cursor-pointer" onClick={handleLoadNewPosts}>
+            <div className="p-4 bg-success/10 text-success rounded-lg text-center cursor-pointer" onClick={handleLoadNewPosts}>
               {newPosts.length} new post{newPosts.length > 1 ? "s" : ""} available
             </div>
           ) : null}

@@ -45,8 +45,8 @@ export default function VerifyEmailPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center from-slate-950 via-slate-900 to-slate-950 px-4">
-      <Card className="w-full max-w-md rounded-2xl shadow-2xl border border-slate-300 backdrop-blur">
+    <div className="min-h-screen flex items-center justify-center from-foreground to-foreground/70 via-foreground px-4">
+      <Card className="w-full max-w-md rounded-2xl shadow-2xl border border-muted backdrop-blur">
         <CardHeader className="text-center space-y-2">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
             <MailCheck className="h-7 w-7 text-primary" />
@@ -68,11 +68,11 @@ export default function VerifyEmailPage() {
 
           {verificationStatus === "success" && (
             <div className="flex flex-col items-center gap-3">
-              <CheckCircle2 className="h-10 w-10 text-green-500" />
+              <CheckCircle2 className="h-10 w-10 text-success" />
               <p className="text-lg font-medium">
                 Email verified successfully 🎉
               </p>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-foreground/70">
                 Redirecting you to your dashboard…
               </p>
             </div>
@@ -80,11 +80,11 @@ export default function VerifyEmailPage() {
 
           {verificationStatus === "error" && (
             <div className="flex flex-col items-center gap-4">
-              <XCircle className="h-10 w-10 text-red-500" />
-              <p className="text-lg font-medium text-red-500">
+              <XCircle className="h-10 w-10 text-destructive" />
+              <p className="text-lg font-medium text-destructive">
                 Verification failed
               </p>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-foreground/70">
                 This link is invalid or has expired.
               </p>
               <Button

@@ -1,12 +1,11 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import React, { useEffect } from "react";
+import React from "react";
 import { useAuth } from "@/Auth.context";
 import SelectPersonaPage from "@/pages/select-persona";
-import { fetchUserPersonas } from "@/services/persona";
-import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { useLoading } from "@/Loading.context";
 import AppLoader from "@/components/app-loader";
+import { ToggleTheme } from "@/components/toggle-theme";
 
 export default function DashboardLayout({
   children,
@@ -14,25 +13,9 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = React.useState(false);
-  const { setPersonas } = useUserProfileStore();
 
   const { isPersonaSelected } = useAuth();
-  const { isFetchCurrentPersonaLoading, isFetchAllPersonasLoading, setIsFetchAllPersonasLoading } = useLoading();
-
-  useEffect(() => {
-    const fetchPersonas = async () => {
-      try{
-        const personas = await fetchUserPersonas();
-        setPersonas(personas);
-      } catch (error) {
-        setPersonas([]);
-      } finally {
-        setIsFetchAllPersonasLoading(false);
-      }
-    };
-
-    fetchPersonas();
-  }, [setPersonas]);
+  const { isFetchCurrentPersonaLoading, isFetchAllPersonasLoading } = useLoading();
 
   if (isFetchCurrentPersonaLoading || isFetchAllPersonasLoading) {
     return <AppLoader />;
@@ -45,9 +28,14 @@ export default function DashboardLayout({
   return (
     <SidebarProvider open={open} onOpenChange={setOpen}>
       <AppSidebar setOpen={setOpen} open={open} />
-      <main className="w-full bg-gray-50">
+      <main className="w-full">
         {children}
       </main>
+
+      {/* Fixed top-right ToggleTheme */}
+      <div className="fixed top-4 right-4 z-50">
+        <ToggleTheme />
+      </div>
     </SidebarProvider>
   );
 }

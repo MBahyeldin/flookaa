@@ -231,10 +231,9 @@ func (ns NullOwnerEnum) Value() (driver.Value, error) {
 type PersonaPrivacyEnum string
 
 const (
-	PersonaPrivacyEnumPublic         PersonaPrivacyEnum = "public"
-	PersonaPrivacyEnumFriendsOnly    PersonaPrivacyEnum = "friends_only"
-	PersonaPrivacyEnumGroupOfFriends PersonaPrivacyEnum = "group_of_friends"
-	PersonaPrivacyEnumOnlyMe         PersonaPrivacyEnum = "only_me"
+	PersonaPrivacyEnumPublic  PersonaPrivacyEnum = "public"
+	PersonaPrivacyEnumPrivate PersonaPrivacyEnum = "private"
+	PersonaPrivacyEnumOnlyMe  PersonaPrivacyEnum = "only_me"
 )
 
 func (e *PersonaPrivacyEnum) Scan(src interface{}) error {
@@ -275,9 +274,9 @@ func (ns NullPersonaPrivacyEnum) Value() (driver.Value, error) {
 type RelationshipEnum string
 
 const (
-	RelationshipEnumFriend  RelationshipEnum = "friend"
-	RelationshipEnumBlocked RelationshipEnum = "blocked"
-	RelationshipEnumMuted   RelationshipEnum = "muted"
+	RelationshipEnumFollower RelationshipEnum = "follower"
+	RelationshipEnumBlocked  RelationshipEnum = "blocked"
+	RelationshipEnumMuted    RelationshipEnum = "muted"
 )
 
 func (e *RelationshipEnum) Scan(src interface{}) error {

@@ -21,8 +21,8 @@ ORDER BY created_at DESC;
 -- 3. CreatePersona
 -- ------------------------------
 -- name: CreatePersona :one
-INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, NOW(), NOW())
+INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, privacy, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, NOW(), NOW())
 RETURNING *;
 
 -- ------------------------------
@@ -101,7 +101,7 @@ WHERE cf.persona_id = $1
 -- 12. Resolve Persona By ID
 -- -------------------------------
 -- name: ResolvePersonaByID :one
-SELECT id, first_name, last_name, thumbnail 
+SELECT id, first_name, last_name, thumbnail, bio, slug, privacy 
 FROM personas 
 WHERE id = $1 
 AND deleted_at IS NULL LIMIT 1;
@@ -118,6 +118,7 @@ SET name = COALESCE($3, name),
     thumbnail = COALESCE($7, thumbnail),
     bio = COALESCE($8, bio),
     slug = COALESCE($9, slug),
+    privacy = COALESCE($10, privacy),
     updated_at = NOW()
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 RETURNING *;

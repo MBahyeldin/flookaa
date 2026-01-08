@@ -7,13 +7,13 @@ import {
 } from "react";
 import type { AuthContextType, Info } from "@/types/auth";
 import { fetchCurrentUser, logOut } from "@/services/auth";
-import { fetchCurrentPersona } from "./services/persona";
+import { fetchCurrentPersona, fetchUserPersonas } from "./services/persona";
 import {
   hasRole as checkRole,
   hasPermission as checkPermission,
 } from "@/utils/permissions";
-import type { Persona } from "./types/persona";
 import { useLoading } from "./Loading.context";
+import { useUserProfileStore } from "./stores/UserProfileStore";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -22,8 +22,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [revalidateCounter, setRevalidateCounter] = useState(0);
   const [revalidatePersonaCounter, setRevalidatePersonaCounter] = useState(0);
   const [isPersonaSelected, setIsPersonaSelected] = useState<boolean>(false);
-  const [persona, setPersona] = useState<Persona | null>(null);
-  const { setIsFetchUserLoading, setIsFetchCurrentPersonaLoading } = useLoading();
+  const [personaId, setPersonaId] = useState<string | null>(null);
+  const { setIsFetchUserLoading, setIsFetchCurrentPersonaLoading, setIsFetchAllPersonasLoading } = useLoading();
+  const { setPersonas } = useUserProfileStore();
+  const persona = useUserProfileStore((state) => {
+    return state.personas.find((p) => p.id === personaId) || null;
+  });
 
   const revalidateUser = useCallback(() => {
     setRevalidateCounter((prev) => prev + 1);
@@ -52,14 +56,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const response = await fetchCurrentPersona();
         if (response) {
-          setPersona(response);
+          setPersonaId(response.id);
           setIsPersonaSelected(true);
         } else {
-          setPersona(null);
+          setPersonaId(null);
           setIsPersonaSelected(false);
         }
       } catch (error) {
-        setPersona(null);
+        setPersonaId(null);
         setIsPersonaSelected(false);
       } finally {
         setIsFetchCurrentPersonaLoading(false);
@@ -80,6 +84,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem("loginSuccess");
   }, []);
+
+    useEffect(() => {
+      console.log('fetchPersonas');
+      
+    const fetchPersonas = async () => {
+      try{
+        const personas = await fetchUserPersonas();
+        setPersonas(personas);
+      } catch (error) {
+        setPersonas([]);
+      } finally {
+        setIsFetchAllPersonasLoading(false);
+      }
+    };
+
+    fetchPersonas();
+  }, []);
+
 
   return (
     <AuthContext.Provider

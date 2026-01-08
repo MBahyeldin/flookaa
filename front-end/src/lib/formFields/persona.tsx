@@ -14,13 +14,27 @@ const personaFormFields = [
     width: "1/2",
   }),
   new FormField({
+    id: "privacy",
+    label: "Privacy Setting",
+    type: "select",
+    placeholder: "Select privacy setting",
+    interfaceType: "select",
+    options: [
+      { label: "Public", value: "public" },
+      { label: "Private", value: "private" },
+      { label: "Only Me", value: "only_me" },
+    ],
+    isRequired: true,
+    width: "1/2",
+  }),
+  new FormField({
     id: "description",
     label: "Description",
     type: "text",
     placeholder: "Describe your persona",
     interfaceType: "text",
     isRequired: true,
-    width: "1/2",
+    width: "full",
   }),
 ];
 
@@ -103,9 +117,9 @@ const groupTwo: FormGroup = {
     },
 };
 
-const managePersonaFormFieldsGroups: FormGroup[] = [
+const personaFormFieldsGroups: FormGroup[] = [
     groupOne,
     groupTwo,
 ];
 
-export default managePersonaFormFieldsGroups;
+export default personaFormFieldsGroups;

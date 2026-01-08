@@ -269,21 +269,21 @@ function EditorEventListener(props: {
 
 const renderAnnotation: RenderAnnotationFunction = (props: any) => {
   if (CommentAnnotationSchema.safeParse(props).success) {
-    return <span className="bg-yellow-300">{props.children}</span>;
+    return <span className="bg-warning">{props.children}</span>;
   }
 
   if (LinkAnnotationSchema.safeParse(props).success) {
-    return <span className="text-blue-800 underline">{props.children}</span>;
+    return <span className="text-foreground underline">{props.children}</span>;
   }
 
   return props.children;
 };
 
 const breakStyle = tv({
-  base: "my-1 p-1 flex items-center justify-center gap-1 border-2 border-gray-300 rounded",
+  base: "my-1 p-1 flex items-center justify-center gap-1 border-2 border-muted rounded",
   variants: {
     selected: {
-      true: "border-blue-300",
+      true: "border-",
     },
     focused: {
       true: "bg-blue-50",
@@ -331,7 +331,7 @@ const RenderBlock = (props: BlockRenderProps) => {
         <div
           contentEditable={false}
           draggable={!readOnly}
-          className={`absolute top-0 -left-3 bottom-0 w-1.5 bg-slate-300 rounded cursor-grab`}
+          className={`absolute top-0 -left-3 bottom-0 w-1.5 bg-muted rounded cursor-grab`}
         >
           <span />
         </div>
@@ -350,25 +350,25 @@ const renderDecorator: RenderDecoratorFunction = (
 };
 
 const stockTickerStyle = tv({
-  base: "max-w-30 inline-flex items-center gap-1 border-2 border-gray-300 rounded px-1 font-mono text-xs",
+  base: "max-w-30 inline-flex items-center gap-1 border-2 border-muted rounded px-1 font-mono text-xs",
   variants: {
     selected: {
-      true: "border-blue-300",
+      true: "border-primary",
     },
     focused: {
-      true: "bg-blue-50",
+      true: "bg-primary/10",
     },
   },
 });
 
 const inlineImageStyle = tv({
-  base: "max-w-35 grid grid-cols-[auto_1fr] items-start gap-1 border-2 border-gray-300 rounded text-sm",
+  base: "max-w-35 grid grid-cols-[auto_1fr] items-start gap-1 border-2 border-muted rounded text-sm",
   variants: {
     selected: {
-      true: "border-blue-300",
+      true: "border-primary",
     },
     focused: {
-      true: "bg-blue-50",
+      true: "bg-primary/10",
     },
   },
 });
@@ -400,7 +400,7 @@ const renderChild: RenderChildFunction = (props: any) => {
           focused: props.focused,
         })}
       >
-        <span className="bg-gray-200 size-5 overflow-clip flex items-center justify-center">
+        <span className="bg-muted size-5 overflow-clip flex items-center justify-center">
           <img
             className="object-scale-down max-w-full"
             src={image.value.src}
@@ -422,7 +422,7 @@ const renderListItem: RenderListItemFunction = (props: any) => {
 };
 
 const renderPlaceholder: RenderPlaceholderFunction = () => (
-  <span className="text-slate-400 px-2">Type something</span>
+  <span className="text-foreground px-2">Type something</span>
 );
 
 const renderStyle: RenderStyleFunction = (props: any) => {
@@ -484,7 +484,7 @@ const styleMap: Map<string, (props: BlockStyleRenderProps) => JSX.Element> =
     [
       "blockquote",
       (props) => (
-        <blockquote className="my-1 pl-2 py-1 border-slate-300 border-l-4">
+        <blockquote className="my-1 pl-2 py-1 border-muted border-l-4">
           {props.children}
         </blockquote>
       ),

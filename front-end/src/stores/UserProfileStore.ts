@@ -10,6 +10,7 @@ export interface UserProfileState extends AppState {
   setProfileId: (id: string) => void;
   setPersonaId: (id: string) => void;
   setPersonas: (personas: Persona[]) => void;
+  updatePersonaInStore: (updatedPersona: Persona) => void;
 }
 
 export const useUserProfileStore = create(
@@ -34,6 +35,16 @@ export const useUserProfileStore = create(
     setPersonas: (personas) =>
       set((s) => {
         s.personas = personas;
+      }),
+
+    updatePersonaInStore: (updatedPersona) =>
+      set((s) => {
+        const index = s.personas.findIndex(
+          (p) => p.id === updatedPersona.id
+        );
+        if (index !== -1) {
+          s.personas[index] = updatedPersona;
+        }
       }),
   }))
 );

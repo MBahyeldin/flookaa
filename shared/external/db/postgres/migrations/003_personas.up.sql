@@ -6,13 +6,12 @@ BEGIN;
 
 CREATE TYPE persona_privacy_enum AS ENUM (
     'public',
-    'friends_only',
-    'group_of_friends',
+    'private',
     'only_me'
 );
 
 CREATE TYPE relationship_enum AS ENUM (
-    'friend',
+    'follower',
     'blocked',
     'muted'
 );

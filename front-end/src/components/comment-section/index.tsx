@@ -75,7 +75,7 @@ export default function CommentSection({
                     <div className="flex justify-center">
                         <button
                             onClick={loadMore}
-                            className="text-sm text-blue-600 hover:underline"
+                            className="text-sm text-primary hover:underline"
                         >
                             Load more comments
                         </button>

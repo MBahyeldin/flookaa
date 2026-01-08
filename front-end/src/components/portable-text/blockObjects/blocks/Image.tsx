@@ -88,13 +88,13 @@ const ImageBlockObject = new BlockObject<ImageValue>({
 });
 
 const imageStyle = tv({
-  base: "grid grid-cols-[auto_1fr] my-1 items-start gap-1 border-2 border-gray-300 rounded text-sm",
+  base: "grid grid-cols-[auto_1fr] my-1 items-start gap-1 border-2 border-muted rounded text-sm",
   variants: {
     selected: {
-      true: "border-blue-300",
+      true: "border-primary",
     },
     focused: {
-      true: "bg-blue-50",
+      true: "bg-primary/10",
     },
   },
 });

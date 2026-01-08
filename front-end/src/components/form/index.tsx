@@ -120,7 +120,7 @@ export default function Form({
         </div>
 
         {status && status.error && (
-          <p className="text-sm text-red-600 mt-1">{status.error}</p>
+          <p className="text-sm text-destructive mt-1">{status.error}</p>
         )}
       </>
     </form>

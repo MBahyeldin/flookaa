@@ -9,8 +9,8 @@ type EditorPatch = ReturnType<
 const patchVariants = tv({
   variants: {
     age: {
-      new: "text-emerald-600",
-      old: "text-slate-600",
+      new: "text-success",
+      old: "text-destructive",
     },
     origin: {
       local: "opacity-50",

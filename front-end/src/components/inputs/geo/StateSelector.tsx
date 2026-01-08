@@ -75,7 +75,7 @@ export default function StateSelector({
             ))}
         </SelectContent>
       </Select>
-      {error && touched && <p className="text-sm text-red-600 mt-1">{error}</p>}
+      {error && touched && <p className="text-sm text-destructive mt-1">{error}</p>}
     </div>
   );
 }

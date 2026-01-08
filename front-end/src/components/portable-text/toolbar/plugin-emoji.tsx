@@ -793,7 +793,7 @@ export function EmojiListBox(props: {
   }
 
   return (
-    <div className="border border-gray-300 rounded bg-white shadow">
+    <div className="border border-muted rounded bg-white shadow">
       {props.matches.length === 0 ? (
         <div className="p-2 flex align-middle gap-2">
           No results found{" "}

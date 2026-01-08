@@ -157,7 +157,7 @@
 //                     onClick={() => handleLikeComment(comment.id)}
 //                     className={cn(
 //                       "flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground h-6 px-2",
-//                       comment.isLiked && "text-red-500 hover:text-red-600",
+//                       comment.isLiked && "text-destructive hover:text-destructive",
 //                     )}
 //                   >
 //                     <Heart className={cn("h-3 w-3", comment.isLiked && "fill-current")} />
@@ -238,7 +238,7 @@
 //                             onClick={() => handleLikeReply(comment.id, reply.id)}
 //                             className={cn(
 //                               "flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground h-5 px-1",
-//                               reply.isLiked && "text-red-500 hover:text-red-600",
+//                               reply.isLiked && "text-destructive hover:text-destructive",
 //                             )}
 //                           >
 //                             <Heart className={cn("h-2.5 w-2.5", reply.isLiked && "fill-current")} />

@@ -43,9 +43,9 @@ export default function VoiceIndicator({
     }, [analyzer, dataBuffer, forceUpdate]);
 
     return (
-        <div className="w-64 h-4 bg-gray-200 rounded-full overflow-hidden">
+        <div className="w-64 h-4 bg-muted rounded-full overflow-hidden">
             <div
-                className="h-full bg-green-500 transition-all duration-100"
+                className="h-full bg-success transition-all duration-100"
                 style={{ width: `${Math.min(peakLevel * 100, 100)}%` }}
             />
         </div>

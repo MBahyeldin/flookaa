@@ -16,7 +16,7 @@ export function ImageWithFallback(
 
   return didError ? (
     <div
-      className={`inline-block bg-gray-100 text-center align-middle ${
+      className={`inline-block bg-muted text-center align-middle ${
         className ?? ""
       }`}
       style={style}

@@ -1,10 +1,11 @@
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { FormFieldProps } from "@/types/FormFields";
 import { useState } from "react";
 
-export default function TextareaInput({
+export default function SelectInput({
   setFieldValue,
   error,
   touched,
@@ -13,11 +14,11 @@ export default function TextareaInput({
   field,
 }: FormFieldProps) {
   const [value, setValue] = useState(initValue || "");
-  const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setValue(e.target.value);
+  const onChange = (value: string) => {
+    setValue(value);
     setFieldValue(
       field.id,
-      e.target.value,
+      value,
       field.isRequired || field.validate !== undefined
     );
   };
@@ -31,13 +32,25 @@ export default function TextareaInput({
           {field.isRequired && <span className="text-destructive">*</span>}
         </Label>
       </div>
-      <Textarea
-        id={field.id}
+      <Select
         value={value}
-        placeholder={field.placeholder}
-        onChange={onChange}
-        className="mt-2"
-      />
+        onValueChange={onChange}
+      >
+        <SelectTrigger className="w-full mt-2">
+          <SelectValue placeholder={field.placeholder || "Select an option"} />
+        </SelectTrigger>
+        <SelectContent>
+          {field.options?.map((option, index) => (
+            <SelectItem
+              key={index}
+              value={option.value as string}
+              className="cursor-pointer"
+            >
+              {option.label as string}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       {error && touched && <p className="text-sm text-destructive mt-1">{error}</p>}
     </div>
   );

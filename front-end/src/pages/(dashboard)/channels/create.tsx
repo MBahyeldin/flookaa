@@ -37,7 +37,7 @@ export default function CreateChannelPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className={"w-full max-w-4xl shadow-xl"}>
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-gray-900">
+          <CardTitle className="text-2xl font-bold text-foreground">
             {Form.channel.title}
           </CardTitle>
           <CardDescription className="mb-4">

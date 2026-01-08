@@ -29,7 +29,7 @@ export default function TextInput({
         <Label htmlFor={field.id}>
           {" "}
           {field.label}{" "}
-          {field.isRequired && <span className="text-red-500">*</span>}
+          {field.isRequired && <span className="text-destructive">*</span>}
         </Label>
       </div>
       <Input
@@ -41,7 +41,7 @@ export default function TextInput({
         className="mt-2"
         onBlur={handleBlur}
       />
-      {error && touched && <p className="text-sm text-red-600 mt-1">{error}</p>}
+      {error && touched && <p className="text-sm text-destructive mt-1">{error}</p>}
     </div>
   );
 }

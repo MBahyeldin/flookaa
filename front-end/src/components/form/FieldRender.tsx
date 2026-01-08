@@ -7,6 +7,7 @@ import TextareaInput from "../inputs/textarea";
 import CountrySelector from "../inputs/geo/CountrySelector";
 import StateSelector from "../inputs/geo/StateSelector";
 import CitySelector from "../inputs/geo/CitySelector";
+import SelectInput from "../inputs/select";
 
 export default function FieldRender({
   field,
@@ -121,6 +122,18 @@ export default function FieldRender({
           handleBlur={handleBlur}
         />
       )}
+      {
+        field.interfaceType === "select" && (
+          <SelectInput
+            field={field}
+            error={error}
+            touched={touched}
+            initValue={value as string}
+            setFieldValue={setFieldValue}
+            handleBlur={handleBlur}
+          />
+        )
+      }
     </>
   );
 }

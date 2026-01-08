@@ -19,7 +19,7 @@ import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { setCurrentPersona } from "@/services/persona";
 
 export default function AppSidebarFooter({ open }: { open: boolean }) {
-  const { user, persona, handleLogOut } = useAuth();
+  const { user, handleLogOut, persona } = useAuth();
   const { personas } = useUserProfileStore();
 
 
