@@ -1,7 +1,6 @@
 package geo
 
 import (
-	"database/sql"
 	"net/http"
 	"shared/external/db/postgres"
 	"shared/pkg/db"
@@ -26,8 +25,8 @@ func SearchCitiesByStateId(c *gin.Context) {
 	// get optional search query parameter
 	searchQuery := c.Query("search")
 	listCititesByStateParams := db.ListCitiesByStateParams{
-		StateID: sql.NullInt64{Int64: stateId, Valid: true},
-		Name:    sql.NullString{String: searchQuery, Valid: searchQuery != ""},
+		StateID: stateId,
+		Name:    searchQuery,
 	}
 
 	ctx := c.Request.Context()

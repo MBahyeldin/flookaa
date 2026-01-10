@@ -350,6 +350,52 @@ type ChannelRole struct {
 	UpdatedAt sql.NullTime
 }
 
+type City struct {
+	ID          int64
+	Name        string
+	StateID     int64
+	StateCode   string
+	CountryID   int64
+	CountryCode string
+	Latitude    string
+	Longitude   string
+	Timezone    sql.NullString
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	Flag        int16
+	WikiDataId  sql.NullString
+}
+
+type Country struct {
+	ID             int64
+	Name           string
+	Iso3           sql.NullString
+	NumericCode    sql.NullString
+	Iso2           sql.NullString
+	Phonecode      sql.NullString
+	Capital        sql.NullString
+	Currency       sql.NullString
+	CurrencyName   sql.NullString
+	CurrencySymbol sql.NullString
+	Tld            sql.NullString
+	Native         sql.NullString
+	Region         sql.NullString
+	RegionID       sql.NullInt64
+	Subregion      sql.NullString
+	SubregionID    sql.NullInt64
+	Nationality    sql.NullString
+	Timezones      sql.NullString
+	Translations   sql.NullString
+	Latitude       sql.NullString
+	Longitude      sql.NullString
+	Emoji          sql.NullString
+	EmojiU         sql.NullString
+	CreatedAt      sql.NullTime
+	UpdatedAt      time.Time
+	Flag           int16
+	WikiDataId     sql.NullString
+}
+
 type Event struct {
 	ID         int64
 	Name       EventEnum
@@ -433,6 +479,16 @@ type PostReference struct {
 	CreatedAt sql.NullTime
 }
 
+type Region struct {
+	ID           int64
+	Name         string
+	Translations sql.NullString
+	CreatedAt    sql.NullTime
+	UpdatedAt    time.Time
+	Flag         int16
+	WikiDataId   sql.NullString
+}
+
 type Role struct {
 	ID          int32
 	Name        string
@@ -440,6 +496,38 @@ type Role struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   sql.NullTime
+}
+
+type State struct {
+	ID          int64
+	Name        string
+	CountryID   int64
+	CountryCode string
+	FipsCode    sql.NullString
+	Iso2        sql.NullString
+	Iso31662    sql.NullString
+	Type        sql.NullString
+	Level       sql.NullInt32
+	ParentID    sql.NullInt64
+	Native      sql.NullString
+	Latitude    sql.NullString
+	Longitude   sql.NullString
+	Timezone    sql.NullString
+	CreatedAt   sql.NullTime
+	UpdatedAt   time.Time
+	Flag        int16
+	WikiDataId  sql.NullString
+}
+
+type Subregion struct {
+	ID           int64
+	Name         string
+	Translations sql.NullString
+	RegionID     int64
+	CreatedAt    sql.NullTime
+	UpdatedAt    time.Time
+	Flag         int16
+	WikiDataId   sql.NullString
 }
 
 type User struct {
@@ -467,4 +555,17 @@ type UserRole struct {
 	RoleID    int32
 	DeletedAt sql.NullTime
 	UpdatedAt sql.NullTime
+}
+
+type UserVerification struct {
+	ID               int64
+	UserID           sql.NullInt64
+	VerificationCode string
+	ExpiresAt        sql.NullTime
+	CreatedAt        time.Time
+	FailedAttempts   int32
+	MaxAttempts      int32
+	LastSentAt       sql.NullTime
+	VerifiedAt       sql.NullTime
+	IsExpired        sql.NullBool
 }

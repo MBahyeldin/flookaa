@@ -1,6 +1,6 @@
 version: "2"
 sql:
-  - schema: "external/db/postgres/migrations"
+  - schema: "external/db/postgres/schemas/"
     queries: "external/db/postgres/queries/"
     engine: "postgresql"
     database:

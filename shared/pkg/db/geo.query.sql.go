@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 )
 
 const listCitiesByState = `-- name: ListCitiesByState :many
@@ -22,8 +21,8 @@ ORDER BY c.name ASC
 `
 
 type ListCitiesByStateParams struct {
-	StateID sql.NullInt64
-	Name    sql.NullString
+	StateID int64
+	Name    string
 }
 
 type ListCitiesByStateRow struct {
@@ -68,7 +67,7 @@ type ListCountriesRow struct {
 	Name string
 }
 
-func (q *Queries) ListCountries(ctx context.Context, name sql.NullString) ([]ListCountriesRow, error) {
+func (q *Queries) ListCountries(ctx context.Context, name string) ([]ListCountriesRow, error) {
 	rows, err := q.db.QueryContext(ctx, listCountries, name)
 	if err != nil {
 		return nil, err
@@ -103,8 +102,8 @@ ORDER BY s.name ASC
 `
 
 type ListStatesByCountryParams struct {
-	CountryID sql.NullInt64
-	Name      sql.NullString
+	CountryID int64
+	Name      string
 }
 
 type ListStatesByCountryRow struct {

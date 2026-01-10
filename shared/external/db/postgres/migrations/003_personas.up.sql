@@ -4,23 +4,39 @@ BEGIN;
 -- 1. ENUM TYPES
 -- =========================
 
-CREATE TYPE persona_privacy_enum AS ENUM (
-    'public',
-    'private',
-    'only_me'
-);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_type
+        WHERE typname = 'persona_privacy_enum'
+    ) THEN 
+    CREATE TYPE persona_privacy_enum AS ENUM (
+        'public',
+        'private',
+        'only_me'
+    );
+    END IF;
 
-CREATE TYPE relationship_enum AS ENUM (
-    'follower',
-    'blocked',
-    'muted'
-);
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_type
+        WHERE typname = 'relationship_enum'
+    ) THEN
+    CREATE TYPE relationship_enum AS ENUM (
+        'follower',
+        'blocked',
+        'muted'
+    );
+    END IF;
+END $$;
+
 
 -- =========================
 -- 2. PERSONAS
 -- =========================
 
-CREATE TABLE personas (
+CREATE TABLE IF NOT EXISTS personas (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
@@ -43,13 +59,13 @@ CREATE TABLE personas (
     UNIQUE (user_id, slug)
 );
 
-CREATE INDEX idx_personas_user_id ON personas(user_id);
+CREATE INDEX IF NOT EXISTS idx_personas_user_id ON personas(user_id);
 
 -- =========================
 -- 3. INTERESTS
 -- =========================
 
-CREATE TABLE interests (
+CREATE TABLE IF NOT EXISTS interests (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) UNIQUE NOT NULL,
     pic_url VARCHAR(255),
@@ -58,7 +74,7 @@ CREATE TABLE interests (
     deleted_at TIMESTAMP WITHOUT TIME ZONE
 );
 
-CREATE TABLE persona_interests (
+CREATE TABLE IF NOT EXISTS persona_interests (
     persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
     interest_id BIGINT REFERENCES interests(id) ON DELETE CASCADE,
     PRIMARY KEY (persona_id, interest_id)
@@ -68,7 +84,7 @@ CREATE TABLE persona_interests (
 -- 4. PERSONA RELATIONSHIPS
 -- =========================
 
-CREATE TABLE persona_relationships (
+CREATE TABLE IF NOT EXISTS persona_relationships (
     source_persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
     target_persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
 
@@ -80,14 +96,14 @@ CREATE TABLE persona_relationships (
     PRIMARY KEY (source_persona_id, target_persona_id)
 );
 
-CREATE INDEX idx_persona_relationships_target
+CREATE INDEX IF NOT EXISTS idx_persona_relationships_target
 ON persona_relationships(target_persona_id, relationship);
 
 -- =========================
 -- 5. FRIEND GROUPS
 -- =========================
 
-CREATE TABLE persona_friend_groups (
+CREATE TABLE IF NOT EXISTS  persona_friend_groups (
     id BIGSERIAL PRIMARY KEY,
     owner_persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -96,7 +112,7 @@ CREATE TABLE persona_friend_groups (
     deleted_at TIMESTAMP WITHOUT TIME ZONE 
 );
 
-CREATE TABLE persona_friend_group_members (
+CREATE TABLE IF NOT EXISTS persona_friend_group_members (
     group_id BIGINT REFERENCES persona_friend_groups(id) ON DELETE CASCADE,
     member_persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
     PRIMARY KEY (group_id, member_persona_id)
@@ -106,7 +122,7 @@ CREATE TABLE persona_friend_group_members (
 -- 6. FOLLOWERS
 -- =========================
 
-CREATE TABLE persona_followers (
+CREATE TABLE IF NOT EXISTS persona_followers (
     persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
     follower_persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
 
@@ -116,7 +132,7 @@ CREATE TABLE persona_followers (
     PRIMARY KEY (persona_id, follower_persona_id)
 );
 
-CREATE INDEX idx_persona_followers_persona_id
+CREATE INDEX IF NOT EXISTS idx_persona_followers_persona_id
 ON persona_followers(persona_id);
 
 
@@ -183,16 +199,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_create_default_persona
-AFTER INSERT ON users
-FOR EACH ROW
-EXECUTE FUNCTION create_default_persona();
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'trg_create_default_persona'
+    ) THEN
+    CREATE TRIGGER trg_create_default_persona
+    AFTER INSERT ON users
+    FOR EACH ROW
+    EXECUTE FUNCTION create_default_persona();
+    END IF;
+END $$;
 
 
 -- =========================
 -- 8. UNIQUE DEFAULT PERSONA PER USER
 -- =========================
-CREATE UNIQUE INDEX uniq_default_persona_per_user
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_default_persona_per_user
 ON personas(user_id)
 WHERE is_default = TRUE;
 

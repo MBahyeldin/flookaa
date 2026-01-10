@@ -5,11 +5,11 @@ import (
 	"app/util/cookies"
 	"app/util/email"
 	"app/util/encryption"
+	"app/util/verification"
 	"database/sql"
 	"net/http"
 	"shared/external/db/postgres"
 	"shared/pkg/db"
-	"shared/util/token"
 
 	"github.com/gin-gonic/gin"
 )
@@ -54,20 +54,9 @@ func Create(c *gin.Context) {
 	}
 	cookies.AddCookieToContext(c, "jwt", jwt)
 
-	verificationCode, err := token.Generate(map[string]interface{}{
-		"email_address": createUser.EmailAddress,
-		"user_id":       createUser.ID,
-		"verify":        true,
-	})
+	verificationCode, err := verification.CreateVerificationCode(createUser.ID)
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	verificationLink := "https://flookaa.com/verify-email?code=" + verificationCode
-
-	err = email.SendEmail(createUser.EmailAddress, verificationLink)
+	err = email.SendEmail(createUser.EmailAddress, verificationCode)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send verification email"})
 		return

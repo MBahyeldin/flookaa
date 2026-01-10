@@ -1,6 +1,6 @@
 package email
 
-func getEmailBody(verificationLink string) string {
+func getEmailBody(verificationCode string) string {
 	return `
 	<!DOCTYPE html>
 		<html lang="en">
@@ -49,15 +49,23 @@ func getEmailBody(verificationLink string) string {
 				color: #999999;
 				text-align: center;
 			}
+			.verification-code {
+				display: inline-block;
+				margin-top: 15px;
+				padding: 10px 20px;
+				font-size: 20px;
+				color: #1a73e8;
+				background-color: #f0f0f0;
+				border-radius: 5px;
+				letter-spacing: 4px;
+			}
 		</style>
 		</head>
 		<body>
 			<div class="container">
 				<h1>Welcome to Flookaa 👋</h1>
-				<p>Thank you for signing up! Please verify your email address by clicking the button below:</p>
-				<p>
-					<a href="` + verificationLink + `" class="button">Verify Email</a>
-				</p>
+				<p>Thank you for signing up! Your verification code is:</p>
+				<span class="verification-code">` + verificationCode + `</span>
 				<div class="footer">
 				&copy; 2025 Flookaa. All rights reserved.
 				</div>

@@ -1,7 +1,6 @@
 package geo
 
 import (
-	"database/sql"
 	"net/http"
 	"shared/external/db/postgres"
 	"shared/pkg/db"
@@ -27,7 +26,7 @@ func GetStatesByCountry(c *gin.Context) {
 		return
 	}
 
-	states, err := q.ListStatesByCountry(ctx, db.ListStatesByCountryParams{CountryID: sql.NullInt64{Int64: countryId, Valid: true}, Name: sql.NullString{Valid: false}})
+	states, err := q.ListStatesByCountry(ctx, db.ListStatesByCountryParams{CountryID: countryId, Name: ""})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch states"})
 		return

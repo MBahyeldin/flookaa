@@ -1,7 +1,6 @@
 package geo
 
 import (
-	"database/sql"
 	"net/http"
 	"shared/external/db/postgres"
 	"shared/pkg/db"
@@ -17,7 +16,7 @@ type Country struct {
 func ListCountries(c *gin.Context) {
 	ctx := c.Request.Context()
 	q := db.New(postgres.DbConn)
-	countries, err := q.ListCountries(ctx, sql.NullString{Valid: false})
+	countries, err := q.ListCountries(ctx, "")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch countries"})
 		return

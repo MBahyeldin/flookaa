@@ -1,17 +1,7 @@
--- -------------------------------
--- 1. OAuth Provider Enum Type
--- -------------------------------
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_type
-        WHERE typname = 'oauth_provider'
-    ) THEN
-        CREATE TYPE oauth_provider
-        AS ENUM ('google', 'github', 'linkedin');
-    END IF;
-END $$;
+
+CREATE TYPE oauth_provider
+AS ENUM ('google', 'github', 'linkedin');
+
 
 -- -------------------------------
 -- 2. Users Table
@@ -35,21 +25,3 @@ CREATE TABLE IF NOT EXISTS users (
     city_id BIGINT REFERENCES cities(id),
     oauth_provider oauth_provider
 );
-
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_constraint
-        WHERE conname = 'users_auth_method_check'
-    ) THEN
-        ALTER TABLE users
-        ADD CONSTRAINT users_auth_method_check
-        CHECK (
-            (hashed_password IS NOT NULL AND oauth_provider IS NULL)
-         OR (hashed_password IS NULL AND oauth_provider IS NOT NULL)
-        );
-    END IF;
-END $$;
-
-
