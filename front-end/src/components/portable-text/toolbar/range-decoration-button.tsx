@@ -35,10 +35,10 @@ export function RangeDecorationButton(props: {
     <TooltipTrigger>
       <Button
         aria-label="Decorate"
-        isDisabled={disabled}
+        disabled={disabled}
         variant="secondary"
         size="sm"
-        onPress={onPress}
+        onClick={onPress}
       >
         <TextCursorIcon className="size-4" />
       </Button>

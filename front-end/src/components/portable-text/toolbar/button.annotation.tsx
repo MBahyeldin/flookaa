@@ -4,6 +4,7 @@ import type { ToolbarAnnotationSchemaType } from "@portabletext/toolbar";
 import { useAnnotationButton } from "@portabletext/toolbar";
 import { ObjectForm } from "./object-form";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Component } from "react";
 
 export function AnnotationButton(props: {
   schemaType: ToolbarAnnotationSchemaType;
@@ -23,13 +24,13 @@ export function AnnotationButton(props: {
         <TooltipTrigger>
           <Toggle
             size="sm"
-            isSelected={true}
-            isDisabled={annotationButton.snapshot.matches("disabled")}
+            // isSelected={true}
+            disabled={annotationButton.snapshot.matches("disabled")}
             onClick={() => {
               annotationButton.send({ type: "remove" });
             }}
           >
-            <props.schemaType.icon />
+            <Component as={props.schemaType.icon} />
           </Toggle>
           <TooltipContent side="top">
             Remove {props.schemaType.title ?? props.schemaType.name}
@@ -55,13 +56,13 @@ export function AnnotationButton(props: {
           <TooltipTrigger asChild>
             <Toggle
               size="sm"
-              isSelected={false}
-              isDisabled={annotationButton.snapshot.matches("disabled")}
+              // isSelected={false}
+              disabled={annotationButton.snapshot.matches("disabled")}
               onClick={() => {
                 annotationButton.send({ type: "open dialog" });
               }}
             >
-              <props.schemaType.icon />
+              <Component as={props.schemaType.icon} />
             </Toggle>
           </TooltipTrigger>
 

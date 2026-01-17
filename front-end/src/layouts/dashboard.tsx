@@ -1,7 +1,6 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import React from "react";
-import { useAuth } from "@/Auth.context";
 import SelectPersonaPage from "@/pages/select-persona";
 import { useLoading } from "@/Loading.context";
 import AppLoader from "@/components/app-loader";

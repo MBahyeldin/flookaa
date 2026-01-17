@@ -5,9 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageIcon, Smile, Calendar, User2 } from "lucide-react";
-import { useAuth } from "@/Auth.context";
 import { useCreatePostMutation } from "@/generated/graphql";
-import { type PortableTextBlock } from "@portabletext/editor";
+import { type PortableTextObject, type PortableTextSpan, type PortableTextTextBlock } from "@portabletext/editor";
 import { useActorRef } from "@xstate/react";
 import { playgroundMachine } from "../portable-text/toolbar/machine";
 import { editorIdGenerator } from "../portable-text/editor-id-generator";
@@ -15,11 +14,12 @@ import PortableText from "../portable-text";
 import { useBlockObjectsProvider } from "@/BlockObjectsProvider.context";
 import normalizeBlocks from "@/utils/normalizeBlocks";
 import { useAppStore } from "@/stores/AppStore";
+import { useUserProfileStore } from "@/stores/UserProfileStore";
 
 
 export function PostCreator() {
-  const [blocks, setBlocks] = useState<PortableTextBlock[]>([]);
-  const { persona } = useAuth();
+  const [blocks, setBlocks] = useState<PortableTextTextBlock<PortableTextSpan | PortableTextObject>[]>([]);
+  const { persona } = useUserProfileStore();
   const [createPost] = useCreatePostMutation();
   const [syncPortableTextEditor, setSyncPortableTextEditor] =
     useState<boolean>(false);

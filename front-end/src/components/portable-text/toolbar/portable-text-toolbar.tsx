@@ -273,7 +273,9 @@ const extendInlineObject: ExtendInlineObjectSchemaType = (inlineObject) => {
   return inlineObject;
 };
 
-export function PortableTextToolbar(props: { children?: React.ReactNode }) {
+export function PortableTextToolbar(props: {
+  children?: React.ReactNode;
+}) {
   const toolbarSchema = useToolbarSchema({
     extendDecorator,
     extendAnnotation,
@@ -341,6 +343,8 @@ export function PortableTextToolbar(props: { children?: React.ReactNode }) {
       {/* {toolbarSchema.inlineObjects ? (
         <InlineObjectPopover schemaTypes={toolbarSchema.inlineObjects} />
       ) : null} */}
+
+      {props.children}
     </div>
   );
 }

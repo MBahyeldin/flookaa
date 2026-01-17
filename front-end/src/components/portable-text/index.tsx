@@ -3,12 +3,12 @@ import type { PlaygroundActorRef } from "./toolbar/machine";
 import { PlaygroundFeatureFlagsContext } from "./toolbar/feature-flags";
 import Editor from "./editor";
 import { useMemo } from "react";
-import type { PortableTextBlock } from "@portabletext/block-tools";
+import type { PortableTextObject, PortableTextSpan, PortableTextTextBlock } from "@portabletext/block-tools";
 
 export default function PortableText(props: {
   playgroundRef: PlaygroundActorRef;
-  value: PortableTextBlock[];
-  setValue: (blocks: PortableTextBlock[]) => void;
+  value: PortableTextTextBlock<PortableTextSpan | PortableTextObject>[];
+  setValue: (blocks: PortableTextTextBlock<PortableTextSpan | PortableTextObject>[]) => void;
 }) {
   const playgroundFeatureFlags = useSelector(
     props.playgroundRef,

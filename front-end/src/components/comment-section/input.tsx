@@ -1,8 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useCreateCommentMutation, type SimpleInput } from "@/generated/graphql";
-import { useAuth } from "@/Auth.context";
 import SimpleInputComponent from "../simple-input";
 import { useAppStore } from "@/stores/AppStore";
+import { useUserProfileStore } from "@/stores/UserProfileStore";
 
 export default function CommentInput({
     parentId,
@@ -11,7 +11,7 @@ export default function CommentInput({
     parentId: string;
     level: number;
 }) {
-    const { persona } = useAuth();
+    const { persona } = useUserProfileStore();
     const owner = useAppStore((state) => state.owner);
 
     const [CreateComment] = useCreateCommentMutation();

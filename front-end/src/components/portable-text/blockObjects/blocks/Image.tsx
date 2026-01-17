@@ -1,7 +1,6 @@
-import { Image, LinkIcon, PencilIcon } from "lucide-react";
+import { Image } from "lucide-react";
 import BlockObject from "../BlockObject";
 import { FormField } from "@/models/Forms/FormField";
-import { tv } from "tailwind-variants";
 import { cn } from "@/lib/utils";
 
 export type ImageValue = {
@@ -87,17 +86,6 @@ const ImageBlockObject = new BlockObject<ImageValue>({
   renderBlock: renderBlock,
 });
 
-const imageStyle = tv({
-  base: "grid grid-cols-[auto_1fr] my-1 items-start gap-1 border-2 border-muted rounded text-sm",
-  variants: {
-    selected: {
-      true: "border-primary",
-    },
-    focused: {
-      true: "bg-primary/10",
-    },
-  },
-});
 
 function renderBlock(props: {
   value: ImageValue;

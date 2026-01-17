@@ -1,12 +1,10 @@
 import type { RenderBlockFunction } from "@portabletext/editor";
-import type { ReactNode } from "react";
 
 // Block objects
 const renderBlock: RenderBlockFunction = (props: {
-  name: string;
   value: unknown;
   schemaType: { name: string };
-  children: ReactNode;
+  children: React.JSX.Element;
 }) => {
     console.log("renderBlock", props);
     

@@ -1,7 +1,7 @@
 "use client";
 
 import verifyEmail from "@/services/verifyEmail";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CheckCircle2,
   Mail,

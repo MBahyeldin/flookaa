@@ -23,7 +23,7 @@ export default function ProfilePictureInput({
   field,
 }: ProfilePictureInputProps) {
   const thumbnailInputField = useRef<HTMLInputElement | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview] = useState(false);
 
   const { url, handleInputChange } = useInputImage({
     initValue: initValue || "",

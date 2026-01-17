@@ -20,7 +20,6 @@ import {
 } from "../ui/dropdown-menu";
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { useCreateLikeMutation, type Post } from "@/generated/graphql";
-import { useAuth } from "@/Auth.context";
 import { PortableText as PortableTextReact } from "@portabletext/react";
 import deNormalizeBlocks from "@/utils/deNormalizeBlocks";
 import { useBlockObjectsProvider } from "@/BlockObjectsProvider.context";
@@ -28,6 +27,7 @@ import CommentSection from "../comment-section";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAppStore } from "@/stores/AppStore";
 import useAudioContext from "@/hooks/useAudioContext";
+import { useUserProfileStore } from "@/stores/UserProfileStore";
 
 
 
@@ -37,7 +37,7 @@ export function Post({
   post: Post;
 }) {
   const [showComments, setShowComments] = useState(false);
-  const { persona } = useAuth();
+  const { persona } = useUserProfileStore();
   const { blockObjectsProvider } = useBlockObjectsProvider();
   const owner = useAppStore((state) => state.owner);
   const [createLike] = useCreateLikeMutation();

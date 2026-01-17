@@ -9,6 +9,9 @@ import {
   type BlockStyleRenderProps,
   type EditorEmittedEvent,
   type PortableTextBlock,
+  type PortableTextObject,
+  type PortableTextSpan,
+  type PortableTextTextBlock,
   type RangeDecoration,
   type RenderAnnotationFunction,
   type RenderChildFunction,
@@ -71,7 +74,7 @@ const editorStyle = tv({
 export default function Editor(props: {
   editorRef: EditorActorRef;
   rangeDecorations: RangeDecoration[];
-  setValue: (blocks: PortableTextBlock[]) => void;
+  setValue: (blocks: PortableTextTextBlock<PortableTextSpan | PortableTextObject>[]) => void;
 }) {
   const value = useSelector(props.editorRef, (s) => s?.context?.value);
   const keyGenerator = useSelector(
@@ -114,7 +117,7 @@ export default function Editor(props: {
             initialValue: value,
             keyGenerator,
             readOnly,
-            schemaDefinition: playgroundSchemaDefinition(blockObjects),
+            schemaDefinition: playgroundSchemaDefinition(blockObjects as any),
           }}
         >
           <EditorEventListener

@@ -194,9 +194,9 @@ export function DebugMenu(props: {
             <Button
               size="sm"
               variant="destructive"
-              onPress={() => {
-                props.editorRef.send({ type: "clear stored patches" });
-              }}
+              // onPress={() => {
+              //   props.editorRef.send({ type: "clear stored patches" });
+              // }}
             >
               <TrashIcon className="size-3" />
             </Button>
@@ -208,9 +208,9 @@ export function DebugMenu(props: {
             <Button
               size="sm"
               variant="secondary"
-              onPress={() => {
-                props.editorRef.send({ type: "copy patches" });
-              }}
+              // onPress={() => {
+              //   props.editorRef.send({ type: "copy patches" });
+              // }}
             >
               <CopyIcon className="size-3" />
             </Button>
@@ -254,9 +254,9 @@ export function DebugMenu(props: {
             <Button
               variant="destructive"
               size="sm"
-              onPress={() => {
-                props.editorRef.send({ type: "remove" });
-              }}
+              // onPress={() => {
+              //   props.editorRef.send({ type: "remove" });
+              // }}
             >
               <TrashIcon className="size-3" />
               {props.editorRef.id}
