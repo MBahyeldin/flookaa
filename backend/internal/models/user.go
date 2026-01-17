@@ -20,7 +20,9 @@ type PatchUserRequest struct {
 	CountryID              string   `json:"country_id"`
 	StateID                string   `json:"state_id"`
 	PostalCode             string   `json:"postal_code"`
-	OtherPlatformsAccounts []string `json:"other_platforms_accounts" gorm:"type:text"`
+	OtherPlatformsAccounts []string `json:"other_platforms_accounts"`
+	OnboardingCompleted    bool     `json:"onboarding_completed"`
+	OnboardingStep         int32    `json:"onboarding_step"`
 }
 
 type VerifyRequest struct {

@@ -2,13 +2,14 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useAppStore, type AppState } from "./AppStore";
 import type { Persona } from "@/types/persona";
+import type { Info } from "@/types/auth";
 
 export interface UserProfileState extends AppState {
-  profileId: string | null;
-  personaId: string | null;
+  user: Info | null;
+  persona: Persona | null;
   personas: Persona[];
-  setProfileId: (id: string) => void;
-  setPersonaId: (id: string) => void;
+  setUser: (user: Info | null) => void;
+  setPersona: (persona: Persona | null) => void;
   setPersonas: (personas: Persona[]) => void;
   updatePersonaInStore: (updatedPersona: Persona) => void;
 }
@@ -17,19 +18,19 @@ export const useUserProfileStore = create(
   immer<UserProfileState>((set) => ({
     ...useAppStore.getState(), // Inherit from AppStore
 
-    profileId: null,
-    personaId: null,
+    user: null,
 
-    setPersonaId: (id) =>
+    setUser: (user) =>
       set((s) => {
-        s.personaId = id;
+        s.user = user;
       }),
 
-    setProfileId: (id) =>
-      set((s) => {
-        s.profileId = id;
-      }),
+    persona: null,
 
+    setPersona: (persona) =>
+      set((s) => {
+        s.persona = persona;
+      }),
     personas: [],
 
     setPersonas: (personas) =>
@@ -50,4 +51,4 @@ export const useUserProfileStore = create(
 );
 
 export const useIsUserLoggedIn = () =>
-  useUserProfileStore((s) => s.profileId !== null);
+  useUserProfileStore((s) => s.user !== null);

@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS personas (
     bio TEXT,
 
     privacy persona_privacy_enum NOT NULL DEFAULT 'public',
-    is_default BOOLEAN DEFAULT FALSE,
+    is_default BOOLEAN DEFAULT false,
 
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),

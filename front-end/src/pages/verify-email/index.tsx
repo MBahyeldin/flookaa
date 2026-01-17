@@ -1,72 +1,90 @@
 "use client";
 
 import verifyEmail from "@/services/verifyEmail";
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React, { useEffect, useState } from "react";
 import {
   CheckCircle2,
-  XCircle,
-  Loader2,
-  MailCheck,
+  Mail,
+  XCircle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/Auth.context";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+} from "@/components/ui/input-otp"
+import { Button } from "@/components/ui/button";
+import Header from "@/navbar/header";
+import { useUserProfileStore } from "@/stores/UserProfileStore";
 
 export default function VerifyEmailPage() {
-  const [verificationStatus, setVerificationStatus] = React.useState<
+  const { revalidateUser } = useAuth();
+  const { user } = useUserProfileStore();
+  const [code, setCode] = useState("")
+  const [isVerifyBtnDisabled, setIsVerifyBtnDisabled] = useState(true)
+  const [verificationStatus, setVerificationStatus] = useState<
     "pending" | "success" | "error"
   >("pending");
   const navigate = useNavigate();
 
-  React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-
-    if (!code) {
-      setVerificationStatus("error");
-      return;
+  useEffect(() => {
+    if(code && code.length == 6) {
+      return setIsVerifyBtnDisabled(false)
     }
+    setIsVerifyBtnDisabled(true)
+  }, [code]);
 
-    const verify = async () => {
-      try {
-        const response = await verifyEmail(code);
-        if (response?.error) throw new Error();
-        setVerificationStatus("success");
+  const handleVerifyClick = async () => {
+    console.log("Verifying code:", code);
+    try {
+      const response = await verifyEmail(code);
+      if (response?.error) throw new Error();
+      setVerificationStatus("success");
 
-        setTimeout(() => {
-              navigate("/");
-        }, 2000);
-      } catch {
-        setVerificationStatus("error");
-      }
-    };
-
-    verify();
-  }, []);
+      setTimeout(() => {
+            revalidateUser();
+            navigate("/");
+      }, 2000);
+    } catch {
+      setVerificationStatus("error");
+    }
+  };
+  
 
   return (
-    <div className="min-h-screen flex items-center justify-center from-foreground to-foreground/70 via-foreground px-4">
-      <Card className="w-full max-w-md rounded-2xl shadow-2xl border border-muted backdrop-blur">
-        <CardHeader className="text-center space-y-2">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <MailCheck className="h-7 w-7 text-primary" />
-          </div>
-          <CardTitle className="text-2xl font-semibold">
-            Email Verification
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent className="text-center space-y-4">
-          {verificationStatus === "pending" && (
-            <div className="flex flex-col items-center gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="">
-                Verifying your email address…
-              </p>
-            </div>
-          )}
-
-          {verificationStatus === "success" && (
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <Header onlyLogo={true} />
+      <div className="flex flex-col items-center gap-6">
+      {verificationStatus === "pending" && (
+        <>
+        <div className="bg-primary w-24 h-24 rounded-full flex items-center justify-center">
+          <Mail className="text-primary-foreground w-14 h-14" />
+        </div>
+        <h1 className="text-foregrund">Verify Your Email</h1>
+        <span className="text-muted-foreground text-center max-w-sm">
+          We have sent a verification link to "{user?.email}"
+        </span>
+        <InputOTP maxLength={6} value={code} onChange={(val) => setCode(val)}>
+          <InputOTPGroup>
+            <InputOTPSlot index={0} />
+            <InputOTPSlot index={1} />
+            <InputOTPSlot index={2} />
+          </InputOTPGroup>
+          <InputOTPSeparator />
+          <InputOTPGroup>
+            <InputOTPSlot index={3} />
+            <InputOTPSlot index={4} />
+            <InputOTPSlot index={5} />
+          </InputOTPGroup>
+        </InputOTP>
+        <Button variant={"default"} disabled={isVerifyBtnDisabled} onClick={handleVerifyClick}>
+          Verify
+        </Button>
+        </>
+      )}
+       {verificationStatus === "success" && (
             <div className="flex flex-col items-center gap-3">
               <CheckCircle2 className="h-10 w-10 text-success" />
               <p className="text-lg font-medium">
@@ -85,18 +103,25 @@ export default function VerifyEmailPage() {
                 Verification failed
               </p>
               <p className="text-sm text-foreground/70">
-                This link is invalid or has expired.
+                This code is invalid or has expired.
               </p>
+              <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => setVerificationStatus("pending")}
+              >
+                Try Again
+              </Button>
               <Button
                 variant="default"
-                onClick={() => (window.location.href = "/resend-verification")}
+                onClick={() => setVerificationStatus("pending")}
               >
-                Request a new link
+                Request a new code
               </Button>
+              </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }

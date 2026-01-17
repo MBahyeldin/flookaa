@@ -23,8 +23,9 @@ export default function SignupPage() {
     error: string | null;
   }) => {
     if (status && status.success) {
-      localStorage.setItem("loginSuccess", "true");
+      localStorage.setItem("loginSuccess", "true");   
       revalidateUser();
+      navigate("/");
     }
   };
 

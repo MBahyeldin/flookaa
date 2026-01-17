@@ -32,6 +32,7 @@ export default function SignupPage() {
     if (status && status.success) {
       localStorage.setItem("loginSuccess", "true");
       revalidateUser();
+      navigate("/");
     }
   };
 

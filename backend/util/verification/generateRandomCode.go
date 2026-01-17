@@ -4,7 +4,7 @@ import "crypto/rand"
 
 func generateRandomCode() string {
 	// return a randomly generated verification code 6 digits long
-	randBytes := make([]byte, 3)
+	randBytes := make([]byte, 6)
 	_, err := rand.Read(randBytes)
 	if err != nil {
 		return ""

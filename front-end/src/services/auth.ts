@@ -11,9 +11,7 @@ export async function fetchCurrentUser(): Promise<Info | null> {
   try {
     const resp = await fetch(`${API_BASE_URL}/api/v1/auth/info`, { credentials: "include" });
     if (!resp.ok) return null;
-    const setProfileId = useUserProfileStore.getState().setProfileId;
     const data = (await resp.json()) as Info;
-    setProfileId(data.id);
     return (data);
   } catch (err) {
     console.log("Can't wait to see you log in again!");

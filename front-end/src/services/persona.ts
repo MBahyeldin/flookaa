@@ -1,4 +1,3 @@
-import { useUserProfileStore } from "@/stores/UserProfileStore";
 import type { Persona } from "@/types/persona";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -11,9 +10,7 @@ export async function fetchCurrentPersona(): Promise<Persona | null> {
   try {
     const resp = await fetch(`${API_BASE_URL}/api/v1/persona/current`, { credentials: "include" });
     if (!resp.ok) return null;
-    const setPersonaId = useUserProfileStore.getState().setPersonaId;
     const data = (await resp.json()) as Persona;
-    setPersonaId(data.id);
     return (data);
   } catch (err) {
     console.log("Error fetching current persona:", err);

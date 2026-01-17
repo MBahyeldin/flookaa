@@ -7,7 +7,7 @@ import CreatePersona from "./CreatePersona";
 
 export default function SelectPersonaPage() {
     const { personas } = useUserProfileStore();
-    const { revalidatePersona} = useAuth();
+    const { revalidatePersona } = useAuth();
 
     return (
         <main className="min-h-screen flex flex-col items-center justify-center">

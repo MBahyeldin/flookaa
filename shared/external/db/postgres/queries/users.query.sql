@@ -35,8 +35,10 @@ SET
     state_id = COALESCE($9, state_id),
     postal_code = COALESCE($10, postal_code),
     other_platforms_accounts = COALESCE($11, other_platforms_accounts),
+    onboarding_completed = COALESCE($12, onboarding_completed),
+    onboarding_step = COALESCE($13, onboarding_step),
     updated_at = now()
-WHERE id = $12
+WHERE id = $14
 RETURNING 
     id,
     first_name,
@@ -49,7 +51,9 @@ RETURNING
     state_id,
     country_id,
     postal_code,
-    other_platforms_accounts;
+    other_platforms_accounts,
+    onboarding_completed,
+    onboarding_step;
 
 -- -------------------------------
 -- 4. Verify user email

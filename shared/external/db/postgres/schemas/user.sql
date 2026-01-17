@@ -17,11 +17,13 @@ CREATE TABLE IF NOT EXISTS users (
     deleted_at TIMESTAMP WITHOUT TIME ZONE,
     hashed_password VARCHAR(255),
     thumbnail VARCHAR(255),
-    is_verified BOOLEAN DEFAULT FALSE,
+    is_verified BOOLEAN DEFAULT false,
     postal_code VARCHAR(50),
     other_platforms_accounts TEXT[],
     country_id BIGINT REFERENCES countries(id),
     state_id BIGINT REFERENCES states(id),
     city_id BIGINT REFERENCES cities(id),
-    oauth_provider oauth_provider
+    oauth_provider oauth_provider,
+    onboarding_completed BOOLEAN DEFAULT false,
+    onboarding_step INTEGER DEFAULT 0
 );

@@ -14,7 +14,11 @@ import { Button } from "@/components/ui/button";
 import { ToggleTheme } from "@/components/toggle-theme";
 import { useTheme } from "@/Theme.context";
 
-export default function Header() {
+export default function Header({
+  onlyLogo = false,
+}: {
+  onlyLogo?: boolean;
+}) {
   const { isDarkMode } = useTheme();
 
   const items = [
@@ -31,21 +35,23 @@ export default function Header() {
       </Link>
       {/* Navigation Menu */}
       <div className="flex items-center gap-4">
+      {onlyLogo ? null : (
         <NavigationMenu viewport={false} className="hidden sm:block">
-          <NavigationMenuList>
-            {items.map((item) => (
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link to={item.to}>
-                    <Button variant={item.variant} borderRadius={item.borderRadius}>
-                      {item.label}
-                    </Button>
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            ))}
-          </NavigationMenuList>
-        </NavigationMenu>
+            <NavigationMenuList>
+              {items.map((item) => (
+                <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <Link to={item.to}>
+                      <Button variant={item.variant as "outline" | "default"} borderRadius={item.borderRadius as "full" | "md" | "sm"}>
+                        {item.label}
+                      </Button>
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              ))}
+            </NavigationMenuList>
+          </NavigationMenu>
+        )}
         <ToggleTheme />
       </div>
     </header>

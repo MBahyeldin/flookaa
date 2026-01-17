@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS user_verifications (
     max_attempts INT DEFAULT 5 NOT NULL,
     last_sent_at TIMESTAMP WITHOUT TIME ZONE,
     verified_at TIMESTAMP WITHOUT TIME ZONE,
-    is_expired BOOLEAN DEFAULT FALSE
+    is_expired BOOLEAN DEFAULT false
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_verifications_user_id

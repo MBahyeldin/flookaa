@@ -14,11 +14,8 @@ export type Info = {
 export type AuthContextType = {
   user: Info | null;
   isAuthenticated: boolean;
-  isPersonaSelected: boolean;
-  persona: Persona | null;
-  revalidatePersona: () => void;
-  setUser: (user: Info | null) => void;
   revalidateUser: () => void;
+  revalidatePersona: () => void;
   hasRole: (role: string) => boolean;
   hasPermission: (permission: string) => boolean;
   handleLogOut: () => Promise<void>;

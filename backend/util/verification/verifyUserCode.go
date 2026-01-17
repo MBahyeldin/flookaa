@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func verifyUserCode(userId int64, inputCode string) error {
+func VerifyUserCode(userId int64, inputCode string) error {
 	ctx, cancle := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancle()
 
@@ -21,7 +21,18 @@ func verifyUserCode(userId int64, inputCode string) error {
 		return err
 	}
 	if userVerification.VerificationCode != inputCode {
+		// increase the attempt count
+		_, err := q.IncrementFailedAttemptsAndExpireIfMaxReached(ctx, sql.NullInt64{Int64: userId, Valid: true})
+		if err != nil {
+			return err
+		}
 		return fmt.Errorf("invalid verification code")
+	}
+
+	_, err = q.VerifyUserEmail(ctx, int64(userId))
+
+	if err != nil {
+		return err
 	}
 
 	return nil

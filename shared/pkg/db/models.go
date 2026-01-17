@@ -548,6 +548,8 @@ type User struct {
 	StateID                sql.NullInt64
 	CityID                 sql.NullInt64
 	OauthProvider          NullOauthProvider
+	OnboardingCompleted    sql.NullBool
+	OnboardingStep         sql.NullInt32
 }
 
 type UserRole struct {

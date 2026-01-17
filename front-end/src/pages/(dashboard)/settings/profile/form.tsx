@@ -1,6 +1,5 @@
 import { toast } from "sonner";
 
-import { useAuth } from "@/Auth.context";
 import type { Profile } from "@/types/user";
 import FormComponent from "@/components/form";
 import { Form } from "@/models/Forms/Form";
@@ -8,15 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Save, X } from "lucide-react";
 
 export function ProfileForm({ data }: { data: Profile }) {
-  const { revalidateUser } = useAuth();
-
   const onStatusChange = (status: {
     success: boolean;
     error: string | null;
   }) => {
     if (status && status.success) {
       toast.success("Profile updated successfully!");
-      revalidateUser();
     }
     if (status && status.error) {
       toast.error("Failed to update profile: " + status.error);

@@ -6,6 +6,8 @@ import SelectPersonaPage from "@/pages/select-persona";
 import { useLoading } from "@/Loading.context";
 import AppLoader from "@/components/app-loader";
 import { ToggleTheme } from "@/components/toggle-theme";
+import VerifyEmailPage from "@/pages/verify-email";
+import { useUserProfileStore } from "@/stores/UserProfileStore";
 
 export default function DashboardLayout({
   children,
@@ -14,14 +16,18 @@ export default function DashboardLayout({
 }) {
   const [open, setOpen] = React.useState(false);
 
-  const { isPersonaSelected } = useAuth();
+  const { persona, user } = useUserProfileStore();
   const { isFetchCurrentPersonaLoading, isFetchAllPersonasLoading } = useLoading();
 
   if (isFetchCurrentPersonaLoading || isFetchAllPersonasLoading) {
     return <AppLoader />;
   }
 
-  if (!isPersonaSelected) {
+  if (!user?.is_verified) {
+    return <VerifyEmailPage />;
+  }
+
+  if (!persona) {
     return <SelectPersonaPage />;
   }
 
