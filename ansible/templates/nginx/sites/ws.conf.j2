@@ -1,11 +1,6 @@
 server {
-    listen 443 ssl;
+    listen 80;
     server_name ws.flookaa.com;
-
-
-    # SSL certificate
-    ssl_certificate /etc/letsencrypt/live/ws.flookaa.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/ws.flookaa.com/privkey.pem;
 
     set $nats_host "{{ containers.nats.ip }}:{{ containers.nats.ports.http }}";
 

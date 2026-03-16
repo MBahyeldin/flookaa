@@ -10,7 +10,8 @@
       "@/*": ["./src/*"]
     },
     "skipLibCheck": true,
-    "maxNodeModuleJsDepth": 0
+    "maxNodeModuleJsDepth": 0,
+    "noImplicitAny": true,
   },
   "exclude": ["node_modules", "dist", "test", "**/*spec.ts", "src/generated"]
 }

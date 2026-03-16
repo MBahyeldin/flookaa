@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import {
   EditorProvider,
   PortableTextEditable,
@@ -204,7 +204,7 @@ export default function Editor(props: {
                     }`}
                     rangeDecorations={props.rangeDecorations}
                     renderAnnotation={renderAnnotation}
-                    renderBlock={RenderBlock}
+                    renderBlock={RenderBlock as any}
                     renderChild={renderChild}
                     renderDecorator={renderDecorator}
                     renderListItem={renderListItem}
@@ -323,7 +323,7 @@ const RenderBlock = (props: BlockRenderProps) => {
   );
 
   if (blockObject) {
-    return blockObject.renderBlock ? blockObject.renderBlock(props) : null;
+    return blockObject.renderBlock ? blockObject.renderBlock(props as any) : null;
     // return props.schemaType
   }
 

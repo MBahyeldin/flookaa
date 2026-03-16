@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { tv, type ClassProp } from "tailwind-variants";
 import {
   PopoverContent,

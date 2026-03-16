@@ -19,7 +19,7 @@ function App() {
         await initAudio();
       };
       init();
-  }, []);
+  }, [initAudio]);
 
   if (isFetchUserLoading) {
     return <AppLoader />;

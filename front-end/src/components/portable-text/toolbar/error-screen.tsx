@@ -18,7 +18,7 @@ export function ErrorScreen(props: {
         variant="destructive"
         className="self-start"
         size="sm"
-        onPress={props.dismiss}
+        onClick={props.dismiss}
       >
         Try again
       </Button>

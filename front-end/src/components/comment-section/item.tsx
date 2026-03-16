@@ -77,7 +77,7 @@ const CommentItem = React.memo(({
         if (!collapsed && comment?.meta.commentsCount && comment.meta.commentsCount > 0 && result.length === 0) {
             loadMore();
         }
-    }, [collapsed]);
+    }, [collapsed, comment.meta.commentsCount, loadMore, result.length]);
 
 
 

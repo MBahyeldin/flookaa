@@ -8,7 +8,9 @@ export function looksLikeUrl(text: string) {
     }
 
     looksLikeUrl = true
-  } catch {}
+  } catch(err) {
+    console.log(err)
+  }
   return looksLikeUrl
 }
 

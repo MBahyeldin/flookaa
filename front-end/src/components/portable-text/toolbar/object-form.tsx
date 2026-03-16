@@ -29,12 +29,12 @@ export function ObjectForm(
   };
   return (
     <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-      {props.fields?.map((field: FormField) => (
+      {(props.fields as any[])?.map((field: FormField) => (
         <FieldRender
           key={field.id}
           field={field}
           setFieldValue={setFieldValue}
-          value={props.defaultValues[field.name]}
+          value={props.defaultValues ? props.defaultValues[field.name!] : null}
         />
       ))}
       <Button className="self-end" type="submit" size="sm">

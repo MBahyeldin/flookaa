@@ -1,4 +1,3 @@
-import { useUserProfileStore } from "@/stores/UserProfileStore";
 import type { Info } from "@/types/auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -14,7 +13,7 @@ export async function fetchCurrentUser(): Promise<Info | null> {
     const data = (await resp.json()) as Info;
     return (data);
   } catch (err) {
-    console.log("Can't wait to see you log in again!");
+    console.log("Can't wait to see you log in again!, ", err);
     return null;
   }
 }

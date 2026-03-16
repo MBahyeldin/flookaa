@@ -1,11 +1,6 @@
 server {
-    listen 443 ssl;
+    listen 80;
     server_name api.flookaa.com;
-
-
-    # SSL certificate
-    ssl_certificate /etc/letsencrypt/live/api.flookaa.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.flookaa.com/privkey.pem;
 
     set $app_host "{{ containers.app.ip }}:{{ containers.app.ports.http }}";
 

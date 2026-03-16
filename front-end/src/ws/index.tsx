@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import type { SubscribeChannelPayload, SubscribeDefaultPayload, WsEventMessage, WsMessage } from "@/types/Ws";
 
 const WEBSOCKET_BASE_URL = import.meta.env.VITE_WEBSOCKET_BASE_URL;

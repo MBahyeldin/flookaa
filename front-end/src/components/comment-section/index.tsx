@@ -49,6 +49,7 @@ export default function CommentSection({
     useEffect(() => {
         if (!showComments) return;
         loadMore();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showComments]);
 
     if (!showComments) {

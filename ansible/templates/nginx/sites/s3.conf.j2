@@ -1,11 +1,6 @@
 server {
-    listen 443 ssl;
+    listen 80;
     server_name s3.flookaa.com;
-
-
-    # SSL certificate
-    ssl_certificate /etc/letsencrypt/live/s3.flookaa.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/s3.flookaa.com/privkey.pem;
 
     set $s3_host "{{ containers.s3.ip }}:{{ containers.s3.ports.http }}";
 

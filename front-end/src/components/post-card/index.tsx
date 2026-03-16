@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { useEffect, useMemo, useState } from "react";
 import {
   Heart,
@@ -73,7 +73,7 @@ export function Post({
       setTriggerHeartAnimation(true);
     }
     setLocalLikes(post.meta?.likesCount || 0);
-  }, [localLikes, post.meta?.likesCount]);
+  }, [localLikes, playSound, post.meta?.likesCount]);
 
 
   const types = useMemo(() => {

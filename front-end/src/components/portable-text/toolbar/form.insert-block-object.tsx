@@ -33,7 +33,7 @@ export function InsertBlockObjectForm(
       console.log("values", values);
       
       const { placement, ...value } = values;
-      props.onSubmit({ value, placement });
+      props.onSubmit({ value, placement: placement as "auto" | "before" | "after" | undefined });
     },
   });
 
@@ -44,7 +44,7 @@ export function InsertBlockObjectForm(
   };
   return (
     <form className="flex flex-col gap-2" onSubmit={onSubmit}>
-      {props.fields?.map((field: FormField) => (
+      {(props.fields as any[])?.map((field: FormField) => (
         <FieldRender
           key={field.id}
           field={field}

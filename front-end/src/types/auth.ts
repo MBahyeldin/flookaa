@@ -1,5 +1,4 @@
 import zod from "zod";
-import type { Persona } from "./persona";
 
 export type Info = {
   id: string;

@@ -15,13 +15,12 @@ export function ListButton(props: { schemaType: ToolbarListSchemaType }) {
         <Toggle
           aria-label={props.schemaType.title ?? props.schemaType.name}
           size="sm"
-          isDisabled={listButton.snapshot.matches("disabled")}
-          isSelected={listButton.snapshot.matches({ enabled: "active" })}
+          disabled={listButton.snapshot.matches("disabled")}
           onClick={() => {
             listButton.send({ type: "toggle" });
           }}
         >
-          <props.schemaType.icon />
+         { props.schemaType.icon ? <props.schemaType.icon /> : null }
         </Toggle>
         <TooltipContent>{props.schemaType.title}</TooltipContent>
       </TooltipTrigger>

@@ -33,15 +33,13 @@ export function BlockObjectButton(props: {
           <TooltipTrigger asChild>
             <Toggle
               size="sm"
-              isSelected={false}
-              isDisabled={snapshot.matches("disabled")}
               onClick={() => {
                 send({ type: "open dialog" });
               }}
               aria-label={props.schemaType.title ?? props.schemaType.name}
             >
               {props.schemaType.icon ? (
-                <props.schemaType.icon className="h-4 w-4" />
+                <props.schemaType.icon/>
               ) : (
                 <span className="h-4 w-4" />
               )}

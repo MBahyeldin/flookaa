@@ -79,6 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setPersonas([]);
     setPersona(null);
     localStorage.removeItem("loginSuccess");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
     useEffect(() => {
