@@ -43,7 +43,7 @@ discovery.relabel "logs_integrations_integrations_node_exporter_journal_scrape" 
 
 
 
-{% if lxc_container == 'ngix' %}
+{% if lxc_container == 'nginx' %}
 loki.source.file "nginx_logs" {
   targets = [
     {
