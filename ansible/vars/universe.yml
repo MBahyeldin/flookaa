@@ -27,7 +27,6 @@ containers:
     ports:
       ssh: 2230
       grpc: 5030
-      http: 8080
   postgres:
     ip: "10.0.0.20"
     ports:
@@ -38,7 +37,6 @@ containers:
     ports:
       ssh: 2240
       grpc: 5040
-      http: 8080
   mongodb:
     ip: "10.0.0.50"
     ports:
