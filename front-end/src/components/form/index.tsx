@@ -58,7 +58,6 @@ export default function Form({
   };
 
   useEffect(() => {
-    console.log({ errors, touched });
   }, [errors, touched]);
 
   return (

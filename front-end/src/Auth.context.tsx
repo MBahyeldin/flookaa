@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await fetchCurrentUser();
         setUser(data);
       } catch (error) {
-        console.log(error);
+        console.error(error);
         setUser(null);
       }
      
@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setPersona(null);
         }
       } catch (error) {
-        console.log(error);
+        console.error(error);
         setPersona(null);
       } finally {
         setIsFetchCurrentPersonaLoading(false);
@@ -72,7 +72,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, revalidatePersonaCounter, setPersona, setIsFetchCurrentPersonaLoading]);
 
   const handleLogOut = useCallback(async () => {
-    console.log("Logging out... Context");
 
     await logOut();
     setUser(null);
@@ -83,14 +82,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
     useEffect(() => {
-      console.log('fetchPersonas');
       
     const fetchPersonas = async () => {
       try{
         const personas = await fetchUserPersonas();
         setPersonas(personas);
       } catch (error) {
-        console.log(error);
+        console.error(error);
         setPersonas([]);
       } finally {
         setIsFetchAllPersonasLoading(false);

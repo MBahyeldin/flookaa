@@ -1,16 +1,15 @@
 import clsx from "clsx";
 import { PanelLeft, TvIcon } from "lucide-react";
 
-export default function MainMenuItem({
-  setOpen,
-}: {
-  setOpen: (open: boolean) => void;
-  open: boolean;
-}) {
+/**
+ * Presentational only. The enclosing SidebarMenuButton owns the click handler
+ * and the accessible name — these icons used to carry their own onClick, which
+ * put two different actions inside a single <button>.
+ */
+export default function MainMenuItem({ open }: { open: boolean }) {
   return (
     <>
       <TvIcon
-        onClick={() => setOpen(true)}
         className={clsx({
           "cursor-pointer": open,
           "cursor-w-resize ltr:cursor-e-resize": !open,
@@ -19,8 +18,8 @@ export default function MainMenuItem({
         width={18}
       />
       <PanelLeft
-        onClick={() => setOpen(false)}
         className={clsx("no-draggable cursor-w-resize rtl:cursor-e-resize")}
+        aria-hidden="true"
       />
     </>
   );

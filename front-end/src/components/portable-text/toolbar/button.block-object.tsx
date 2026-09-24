@@ -13,7 +13,6 @@ import { InsertBlockObjectForm } from "./form.insert-block-object";
 export function BlockObjectButton(props: {
   schemaType: ToolbarBlockObjectSchemaType;
 }) {
-  console.log("props", props);
 
   const { snapshot, send } = useBlockObjectButton(props);
 

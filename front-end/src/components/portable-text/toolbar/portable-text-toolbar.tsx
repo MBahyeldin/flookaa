@@ -40,6 +40,7 @@ import {
   ListOrderedIcon,
   MessageSquareTextIcon,
   PilcrowIcon,
+  MoreHorizontalIcon,
   SeparatorHorizontalIcon,
   StrikethroughIcon,
   SubscriptIcon,
@@ -49,6 +50,13 @@ import {
 } from "lucide-react";
 import { StyleButton } from "./button.style";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useIsMobile } from "@/hooks/useMobile";
 import { DecoratorButton } from "./button.decorator";
 import { AnnotationButton } from "./button.annotation";
 import { ListButton } from "./button.list";
@@ -285,64 +293,138 @@ export function PortableTextToolbar(props: {
     extendInlineObject,
   });
 
-  console.log("toolbarSchema", toolbarSchema);
+  const isMobile = useIsMobile();
+
+  /*
+   * On a phone the full tool set needs ~480px, so it used to be a horizontal
+   * scroll strip — tools you couldn't see and wouldn't think to swipe for.
+   * Instead: keep the styles picker and the first few decorators inline, and
+   * move the rest behind a "…" menu.
+   *
+   * Each group is rendered in exactly one place (inline OR in the menu), never
+   * both: these buttons are backed by per-button xstate machines, and mounting
+   * two instances of the same tool would give it two competing state actors.
+   */
+  const PRIMARY_DECORATOR_COUNT = 3;
+  const decorators = toolbarSchema.decorators ?? [];
+  const primaryDecorators = isMobile
+    ? decorators.slice(0, PRIMARY_DECORATOR_COUNT)
+    : decorators;
+  const overflowDecorators = isMobile
+    ? decorators.slice(PRIMARY_DECORATOR_COUNT)
+    : [];
+
+  const annotations = toolbarSchema.annotations ?? [];
+  const lists = toolbarSchema.lists ?? [];
+  const blockObjects = toolbarSchema.blockObjects ?? [];
+
+  const secondaryGroups = (
+    <>
+      {annotations.length ? (
+        <>
+          <Separator
+            orientation="vertical"
+            className="mx-0.5 self-center data-[orientation=vertical]:h-5"
+          />
+          {annotations.map((annotation) => (
+            <AnnotationButton key={annotation.name} schemaType={annotation} />
+          ))}
+        </>
+      ) : null}
+      {lists.length ? (
+        <>
+          <Separator
+            orientation="vertical"
+            className="mx-0.5 self-center data-[orientation=vertical]:h-5"
+          />
+          {lists.map((list) => (
+            <ListButton key={list.name} schemaType={list} />
+          ))}
+        </>
+      ) : null}
+      {blockObjects.length ? (
+        <>
+          <Separator
+            orientation="vertical"
+            className="mx-0.5 self-center data-[orientation=vertical]:h-5"
+          />
+          {blockObjects.map((blockObject) => (
+            <BlockObjectButton
+              key={blockObject.name}
+              schemaType={blockObject}
+            />
+          ))}
+        </>
+      ) : null}
+      {blockObjects.length ? (
+        <BlockObjectPopover schemaTypes={blockObjects} />
+      ) : null}
+    </>
+  );
+
+  const hasOverflow =
+    isMobile &&
+    (overflowDecorators.length > 0 ||
+      annotations.length > 0 ||
+      lists.length > 0 ||
+      blockObjects.length > 0);
 
   return (
-    <div className="flex items-center gap-1 border border-border rounded-t-md bg-background px-2">
-      <>
-        {toolbarSchema.styles ? (
-          <>
-            <Separator orientation="vertical" />
-            <StyleButton schemaTypes={toolbarSchema.styles} />
-          </>
-        ) : null}
-        {toolbarSchema.decorators ? (
-          <>
-            <Separator orientation="vertical" />
-            {toolbarSchema.decorators.map((decorator) => (
-              <DecoratorButton key={decorator.name} schemaType={decorator} />
-            ))}
-          </>
-        ) : null}
-      </>
-      <>
-        {toolbarSchema.annotations ? (
-          <>
-            <Separator orientation="vertical" />
-            {toolbarSchema.annotations.map((annotation) => (
-              <AnnotationButton key={annotation.name} schemaType={annotation} />
-            ))}
-          </>
-        ) : null}
-        {toolbarSchema.lists ? (
-          <>
-            <Separator orientation="vertical" />
-            {toolbarSchema.lists.map((list) => (
-              <ListButton key={list.name} schemaType={list} />
-            ))}
-          </>
-        ) : null}
-        {toolbarSchema.blockObjects ? (
-          <>
-            <Separator orientation="vertical" />
-            {toolbarSchema.blockObjects.map((blockObject) => (
-              <BlockObjectButton
-                key={blockObject.name}
-                schemaType={blockObject}
-              />
-            ))}
-          </>
-        ) : null}
-      </>
-      {/* {toolbarSchema.annotations ? (
-        <AnnotationPopover schemaTypes={toolbarSchema.annotations} />
-      ) : null} */}
-      {toolbarSchema.blockObjects ? (
-        <BlockObjectPopover schemaTypes={toolbarSchema.blockObjects} />
+    // No border/rounding of its own: the parent is the bordered surface, and
+    // this only needs a divider under it. overflow-x-auto stays as a safety
+    // net for very narrow screens even with the overflow menu in place.
+    <div className="flex min-w-0 items-center gap-1 overflow-x-auto border-b border-border bg-background px-2 py-1">
+      {/*
+        The paragraph-style picker is block-scoped: it restyles the whole line,
+        while everything to its right applies to the highlighted characters
+        only. They used to sit flush together with identical separators, which
+        implied they worked the same way. The margin + full-height rule marks
+        the boundary between the two kinds of control.
+      */}
+      {toolbarSchema.styles ? (
+        <>
+          <StyleButton schemaTypes={toolbarSchema.styles} />
+          <Separator
+            orientation="vertical"
+            className="mx-1 self-center data-[orientation=vertical]:h-6"
+          />
+        </>
       ) : null}
-      {/* {toolbarSchema.inlineObjects ? (
-        <InlineObjectPopover schemaTypes={toolbarSchema.inlineObjects} />
-      ) : null} */}
+
+      {primaryDecorators.length ? (
+        <>
+          {primaryDecorators.map((decorator) => (
+            <DecoratorButton key={decorator.name} schemaType={decorator} />
+          ))}
+        </>
+      ) : null}
+
+      {isMobile ? (
+        hasOverflow ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-auto shrink-0"
+                aria-label="More formatting tools"
+              >
+                <MoreHorizontalIcon className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-auto p-2">
+              <div className="flex flex-wrap items-center gap-1">
+                {overflowDecorators.map((decorator) => (
+                  <DecoratorButton key={decorator.name} schemaType={decorator} />
+                ))}
+                {secondaryGroups}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null
+      ) : (
+        secondaryGroups
+      )}
 
       {props.children}
     </div>

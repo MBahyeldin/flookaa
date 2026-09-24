@@ -30,11 +30,9 @@ export default function useForm({
     validate: form.validate.bind(form),
     initialStatus: { success: false, error: null, result: unknown },
     onSubmit: async (values, { setStatus }) => {
-      console.log({ submittingValues: values });
 
       try {
         setStatus({ success: false, error: null });
-        console.log("submitting", values);
 
         // await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -57,10 +55,8 @@ export default function useForm({
           }, {} as Record<string, unknown>);
         }
 
-        console.log("data to submit", data);
 
         if (Object.keys(data).length === 0) {
-          console.log("no changes to submit");
 
           setStatus({ success: true });
           return;
@@ -80,7 +76,7 @@ export default function useForm({
         }
         setStatus({ success: true, error: null, result: await resp.json() });
       } catch (error) {
-        console.log("u", error);
+        console.error("Form submission failed:", error);
 
         setStatus({
           error: error instanceof Error ? error.message : String(error),

@@ -58,7 +58,8 @@ export default function OAuthProviders({
               variant="outline"
               className="w-full flex items-center gap-2"
               type="button"
-              onClick={() => console.log("GitHub login")}
+              disabled
+              title="GitHub sign-in isn’t available yet"
             >
               <Github className="h-4 w-4" />
               Continue with GitHub
@@ -69,7 +70,8 @@ export default function OAuthProviders({
               variant="outline"
               className="w-full flex items-center gap-2"
               type="button"
-              onClick={() => console.log("LinkedIn login")}
+              disabled
+              title="LinkedIn sign-in isn’t available yet"
             >
               <Linkedin className="h-4 w-4" />
               Continue with LinkedIn

@@ -483,8 +483,10 @@ const sidebarMenuButtonVariants = cva(
           "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
       },
       size: {
-        default: "h-8 text-sm",
-        sm: "h-7 text-xs",
+        // max-md: the sidebar renders as a Sheet below 768px, where 32px rows
+        // are under the 44px touch-target minimum. Desktop sizing unchanged.
+        default: "h-8 text-sm max-md:h-11",
+        sm: "h-7 text-xs max-md:h-11",
         lg: "h-12 text-sm group-data-[collapsible=icon]:p-0!",
       },
     },

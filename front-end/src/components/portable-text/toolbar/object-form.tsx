@@ -16,7 +16,6 @@ export function ObjectForm(
       ...props.defaultValues,
     },
     onSubmit: (values) => {
-      console.log("values", values);
 
       const { ...value } = values;
       props.onSubmit({ value });

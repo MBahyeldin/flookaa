@@ -4,7 +4,6 @@ const renderDecorator: RenderDecoratorFunction = (props: {
   schemaType: { value: string };
   children: React.ReactNode;
 }) => {
-    console.log("renderDecorator", props);
 
   if (props.schemaType.value === "strong") {
     return <strong>{props.children}</strong>;

@@ -23,14 +23,20 @@ export function StyleButton(props: {
       >
         <SelectTrigger
           className="w-full"
+          /* Named explicitly: this control is block-scoped (it restyles the
+             whole paragraph), unlike the span-scoped decorators beside it. */
+          aria-label="Paragraph style"
+          title="Paragraph style — applies to the whole line"
           disabled={styleSelector.snapshot.matches("disabled")}
         >
-          <SelectValue placeholder="Styles" />
+          <SelectValue placeholder="Paragraph" />
         </SelectTrigger>
         <SelectContent>
           {props.schemaTypes.map((style) => (
             <SelectItem key={style.name} value={style.value}>
-              {style.name}
+              {/* The schema defines proper titles ("Normal", "Heading 1", …);
+                  this was rendering the raw lowercase `name` instead. */}
+              {style.title ?? style.name}
             </SelectItem>
           ))}
         </SelectContent>

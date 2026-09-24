@@ -30,6 +30,11 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  /* --success/--warning existed as raw variables but were never mapped here,
+     so Tailwind emitted no bg-success/text-success/border-success/bg-warning
+     utilities and every use of them across the app silently did nothing. */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -51,29 +56,47 @@
 :root {
   --radius: 0.625rem;
 
+  /*
+   * "Deep Tide" light theme — navy text on a sea-tinted page.
+   *
+   * The rule that makes this work: every light surface carries the same
+   * --sea-h hue. The previous theme paired a blue-tinted background with
+   * pure-neutral grey cards (chroma 0), so the surfaces disagreed and the
+   * page read cold and unfinished. Keep chroma low but never zero.
+   */
+  /*
+   * Hues are OKLCH degrees. Worth knowing: ~210 is cyan and reads petrol/teal,
+   * not navy — blue only arrives around 240-265. These sit deliberately in the
+   * blue end so the palette reads "navy and sea" rather than "mint".
+   */
+  --sea-h: 237;   /* page, cards, borders — the "sea" */
+  --navy-h: 258;  /* text — the "navy" */
+
   /* Primary color components (user-editable) */
-  --primary-l: 0.6906;
-  --primary-c: 0.1695;
-  --primary-h: 247.84;
+  --primary-l: 0.6906; /* base lightness that --secondary/--muted/--accent derive from */
+  --primary-c: 0.130;
+  --primary-h: 252;
+  --primary-fill-l: 0.42; /* the primary fill itself; capped for AA on white text */
 }
 
 :root {
-  --background: oklch(0.966 0.018 237.762);
-  --foreground: oklch(0.25 0 0);
+  --background: oklch(0.945 0.020 var(--sea-h));
+  --foreground: oklch(0.26 0.045 var(--navy-h));
 
-  --card: oklch(0.975 0 0);
+  /* Lighter than the page and sharing its hue, so cards lift rather than clash */
+  --card: oklch(0.985 0.008 var(--sea-h));
   --card-foreground: var(--foreground);
 
-  --popover: oklch(0.985 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --popover: oklch(0.99 0.006 var(--sea-h));
+  --popover-foreground: var(--foreground);
 
-  --border: oklch(0.922 0 0);
+  --border: oklch(0.90 0.018 var(--sea-h));
   --input: var(--border);
 }
 
 :root {
   --primary: oklch(
-    var(--primary-l)
+    var(--primary-fill-l)
     var(--primary-c)
     var(--primary-h)
   );
@@ -88,17 +111,17 @@
     var(--primary-h)
   );
 
-  --secondary-foreground: oklch(0.25 0 0);
+  --secondary-foreground: var(--foreground);
 }
 
 :root {
-  --muted: oklch(
-    calc(var(--primary-l) + 0.35)
-    0
-    0
-  );
+  /* Sea-tinted rather than the old `0 0` neutral, which was the main source
+     of the surface-hue mismatch. */
+  --muted: oklch(0.955 0.012 var(--sea-h));
 
-  --muted-foreground: oklch(0.556 0 0);
+  /* Navy-tinted low-emphasis text (timestamps, @usernames, counters).
+     Lightness is held at/below 0.50 to clear 4.5:1 on --card AND --background. */
+  --muted-foreground: oklch(0.50 0.030 var(--navy-h));
 }
 
 :root {
@@ -108,7 +131,7 @@
     var(--primary-h)
   );
 
-  --accent-foreground: oklch(0.25 0 0);
+  --accent-foreground: var(--foreground);
 }
 
 :root {
@@ -134,14 +157,15 @@
 
 
 :root {
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
+  /* Translucent like the cards, so the page gradient carries into the rail. */
+  --sidebar: oklch(1 0.006 var(--sea-h) / 0.7);
+  --sidebar-foreground: var(--foreground);
 
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
 
   --sidebar-accent: var(--muted);
-  --sidebar-accent-foreground: oklch(0.25 0 0);
+  --sidebar-accent-foreground: var(--foreground);
 
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
@@ -171,6 +195,7 @@
   --primary-l: 0.277;
   --primary-c: 0.062;
   --primary-h: 247.961;
+  --primary-fill-l: 0.277;
 
   --accent-foreground: var(--foreground);
 
@@ -199,7 +224,59 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    /* leading-relaxed (1.625) gives long-form post copy room to breathe.
+       Buttons/inputs set their own fixed heights, so they're unaffected. */
+    @apply bg-background text-foreground leading-relaxed;
+
+    /*
+     * Layered "sea" gradient. Two soft radial light sources (top-left sun,
+     * top-right aqua shallow) over a vertical deep-to-shallow wash, so the
+     * page gets depth without any hard edges.
+     *
+     * background-attachment: fixed keeps the gradient anchored to the viewport
+     * rather than repeating down a long feed. --background stays as the solid
+     * fallback underneath.
+     */
+    background-image:
+      radial-gradient(
+        1200px 700px at 8% -14%,
+        oklch(0.99 0.025 var(--sea-h) / 0.95),
+        transparent 60%
+      ),
+      radial-gradient(
+        1000px 620px at 104% -4%,
+        oklch(0.90 0.095 196 / 0.75),
+        transparent 56%
+      ),
+      radial-gradient(
+        900px 700px at 50% 115%,
+        oklch(0.80 0.080 255 / 0.45),
+        transparent 62%
+      ),
+      linear-gradient(
+        180deg,
+        oklch(0.970 0.022 var(--sea-h)),
+        oklch(0.885 0.055 var(--sea-h))
+      );
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+
+  /* Dark mode keeps its near-black base; the gradient is only a faint navy
+     glow off the top so the page reads deep rather than flat grey. */
+  .dark body {
+    background-image:
+      radial-gradient(
+        1100px 620px at 18% -14%,
+        oklch(0.32 0.055 258 / 0.55),
+        transparent 60%
+      ),
+      radial-gradient(
+        900px 520px at 100% -8%,
+        oklch(0.28 0.045 215 / 0.40),
+        transparent 58%
+      ),
+      linear-gradient(180deg, oklch(0.165 0.012 258), oklch(0.135 0.006 258));
   }
 }
 
@@ -207,20 +284,131 @@
   background-image: url('/welcon-bg.jpg');
 }
 
-:root {
+/*
+ * Entrance for a post that arrives after the feed has already rendered.
+ *
+ * Native CSS keyframes rather than framer-motion: the feed can hold many
+ * cards, and this needs no JS on the main thread. It only animates transform
+ * and opacity, so it stays on the compositor.
+ *
+ * The overshoot at 60% is the "jump" — it rises slightly past its resting
+ * position before settling, so a new post catches the eye without the whole
+ * list shifting.
+ */
+@keyframes post-drop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.985);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(3px) scale(1.006);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes post-highlight-fade {
+  from {
+    box-shadow: 0 0 0 2px var(--primary);
+  }
+  to {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+
+.post-enter {
+  animation:
+    post-drop-in 420ms cubic-bezier(0.22, 1.2, 0.36, 1) both,
+    post-highlight-fade 1600ms ease-out 320ms both;
+  /* Contain the ring so the overshoot can't nudge neighbouring cards. */
+  will-change: transform, opacity;
+}
+
+/* Honour the OS setting: land the card in place with no motion. */
+@media (prefers-reduced-motion: reduce) {
+  .post-enter {
+    animation: post-highlight-fade 1200ms ease-out both;
+  }
+}
+
+/*
+ * Gradient surfaces.
+ *
+ * These live in `@layer components` so any explicit `bg-*` utility still wins
+ * (utilities are a later layer) — a caller can always opt out.
+ */
+@layer components {
+  /* Primary fills: navy -> deep sea, diagonal. Both stops are dark enough that
+     the near-white --primary-foreground clears AA across the whole sweep. */
+  .bg-primary {
+    background-image: linear-gradient(
+      135deg,
+      oklch(0.40 0.145 268),
+      oklch(0.50 0.115 212)
+    );
+  }
+
+  /*
+   * Cards are translucent so the page gradient reads through them — otherwise
+   * the wash is only visible in the narrow page margins. Deliberately no
+   * backdrop-filter: a long feed renders many of these, and blurring each one
+   * costs real scroll performance. Plain alpha is effectively free.
+   *
+   * Alpha stays high enough (0.82) that navy body text keeps its AA margin
+   * over the lightest and darkest points of the gradient.
+   */
+  [data-slot="card"] {
+    background-color: oklch(1 0.004 var(--sea-h) / 0.82);
+    background-image: linear-gradient(
+      180deg,
+      oklch(1 0.008 var(--sea-h) / 0.75),
+      transparent 45%
+    );
+    border-color: oklch(1 0 0 / 0.6);
+  }
+
+  .dark [data-slot="card"] {
+    background-color: oklch(0.20 0.010 258 / 0.78);
+    background-image: linear-gradient(
+      180deg,
+      oklch(0.32 0.022 258 / 0.40),
+      transparent 45%
+    );
+    border-color: oklch(1 0 0 / 0.08);
+  }
+}
+
+/*
+ * Default heading sizes.
+ *
+ * These MUST live in `@layer base`: Tailwind emits utilities in a later layer,
+ * so a `text-xl` on an element still wins. Nesting these under `:root` instead
+ * produces `:root h1` (specificity 0,1,1) which silently beat every `text-*`
+ * utility (0,1,0) and broke the type scale app-wide.
+ */
+@layer base {
+  /*
+   * Softened scale: the previous ramp topped out at 48px/700-900, which
+   * shouted on a page whose body copy is 16px. Sizes drop roughly one step,
+   * weights settle at 600, and negative tracking keeps the larger sizes from
+   * looking loose. Explicit `text-*` utilities still override all of this.
+   */
   h1 {
-    @apply text-4xl md:text-5xl font-bold;
+    @apply text-2xl md:text-3xl font-semibold tracking-tight;
   }
   h2 {
-    @apply text-3xl md:text-4xl font-semibold;
+    @apply text-xl md:text-2xl font-semibold tracking-tight;
   }
   h3 {
-    @apply text-2xl md:text-3xl font-semibold;
+    @apply text-lg md:text-xl font-semibold;
   }
   h4 {
-    @apply text-xl md:text-2xl font-medium;
+    @apply text-base md:text-lg font-medium;
   }
   h5 {
-    @apply text-lg md:text-xl font-medium;
+    @apply text-sm md:text-base font-medium;
   }
 }

@@ -9,7 +9,7 @@ export function looksLikeUrl(text: string) {
 
     looksLikeUrl = true
   } catch(err) {
-    console.log(err)
+    console.error(err)
   }
   return looksLikeUrl
 }

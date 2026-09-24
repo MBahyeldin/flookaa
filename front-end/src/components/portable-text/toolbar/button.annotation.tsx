@@ -9,20 +9,16 @@ export function AnnotationButton(props: {
   schemaType: ToolbarAnnotationSchemaType;
 }) {
   const annotationButton = useAnnotationButton(props);
-  console.log(
-    annotationButton.snapshot.matches({ disabled: "active" }) ||
-      annotationButton.snapshot.matches({ enabled: "active" })
-  );
-
   if (
     annotationButton.snapshot.matches({ disabled: "active" }) ||
     annotationButton.snapshot.matches({ enabled: "active" })
   ) {
     return (
       <Tooltip>
-        <TooltipTrigger>
+        <TooltipTrigger asChild>
           <Toggle
             size="sm"
+            aria-label={`Remove ${props.schemaType.title ?? props.schemaType.name}`}
             disabled={annotationButton.snapshot.matches("disabled")}
             onClick={() => {
               annotationButton.send({ type: "remove" });
@@ -30,10 +26,11 @@ export function AnnotationButton(props: {
           >
             { props.schemaType.icon ? <props.schemaType.icon /> : null}
           </Toggle>
-          <TooltipContent side="top">
-            Remove {props.schemaType.title ?? props.schemaType.name}
-          </TooltipContent>
         </TooltipTrigger>
+        {/* TooltipContent is a sibling of the trigger, not a child of it. */}
+        <TooltipContent side="top">
+          Remove {props.schemaType.title ?? props.schemaType.name}
+        </TooltipContent>
       </Tooltip>
     );
   }
@@ -54,6 +51,7 @@ export function AnnotationButton(props: {
           <TooltipTrigger asChild>
             <Toggle
               size="sm"
+              aria-label={`Add ${props.schemaType.title ?? props.schemaType.name}`}
               disabled={annotationButton.snapshot.matches("disabled")}
               onClick={() => {
                 annotationButton.send({ type: "open dialog" });

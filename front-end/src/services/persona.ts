@@ -13,7 +13,7 @@ export async function fetchCurrentPersona(): Promise<Persona | null> {
     const data = (await resp.json()) as Persona;
     return (data);
   } catch (err) {
-    console.log("Error fetching current persona:", err);
+    console.error("Error fetching current persona:", err);
     return null;
   }
 }
@@ -25,7 +25,7 @@ export async function fetchUserPersonas(): Promise<Persona[]> {
     const data = (await resp.json()) as Persona[];
     return data.sort((a, b) => a.created_at.localeCompare(b.created_at));
   } catch (err) {
-    console.log("Error fetching personas:", err);
+    console.error("Error fetching personas:", err);
     return [];
   }
 }
@@ -42,7 +42,7 @@ export async function setCurrentPersona(personaId: string): Promise<boolean> {
     });
     return resp.ok;
   } catch (err) {
-    console.log("Error setting current persona:", err);
+    console.error("Error setting current persona:", err);
     return false;
   }
 }

@@ -9,6 +9,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "../ui/sidebar";
 import { ChevronDown } from "lucide-react";
 import React, { useEffect, type JSX } from "react";
@@ -30,6 +31,15 @@ export default function CollapsibleItem({
 }) {
   const hasSubItems = item.items && item.items.length > 0;
   const [isOpenItem, setIsOpenItem] = React.useState(false);
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  // On mobile the sidebar is a Sheet overlaying the page; navigating without
+  // dismissing it leaves the destination hidden behind the overlay.
+  const handleNavigate = React.useCallback(() => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }, [isMobile, setOpenMobile]);
 
   const handleItemClick = React.useCallback(
     (e: React.MouseEvent) => {
@@ -77,7 +87,7 @@ export default function CollapsibleItem({
                 {item.items?.map((subItem) => (
                   <SidebarMenuSubItem key={subItem.title}>
                     <SidebarMenuSubButton asChild>
-                      <Link to={item.url + subItem.url} className="h-8"><div className="flex flex-row px-2 py-1 align-center items-center gap-2">{subItem.icon} {subItem.title}</div></Link>
+                      <Link to={item.url + subItem.url} className="h-8" onClick={handleNavigate}><div className="flex flex-row px-2 py-1 align-center items-center gap-2">{subItem.icon} {subItem.title}</div></Link>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
                 ))}
@@ -86,7 +96,11 @@ export default function CollapsibleItem({
           </>
         ) : (
           <SidebarMenuButton asChild tooltip={item.title}>
-            <Link to={item.url} className="flex items-center w-full">
+            <Link
+              to={item.url}
+              className="flex items-center w-full"
+              onClick={handleNavigate}
+            >
               <item.icon />
               <span>{item.title}</span>
               {hasSubItems && (

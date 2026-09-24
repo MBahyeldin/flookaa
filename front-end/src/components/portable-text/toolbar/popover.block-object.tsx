@@ -129,7 +129,7 @@ export function BlockObjectPopover(props: {
           </Dialog>
         ) : null}
         <Tooltip>
-          <TooltipTrigger>
+          <TooltipTrigger asChild>
             <Button
               aria-label="Remove"
               variant="destructive"

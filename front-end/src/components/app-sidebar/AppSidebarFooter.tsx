@@ -29,14 +29,22 @@ export default function AppSidebarFooter({ open }: { open: boolean }) {
       <SidebarMenu>
         <SidebarMenuItem>
           <DropdownMenu>
-            <SidebarMenuButton className="flex items-center gap-3 px-2 py-1.5">
-              <DropdownMenuTrigger asChild>
+            {/*
+              One trigger on the row itself. There used to be two
+              DropdownMenuTriggers inside this button — both received the same
+              generated id (duplicate DOM ids) and both targeted a plain div /
+              svg, so neither was keyboard reachable.
+            */}
+            <DropdownMenuTrigger asChild>
+              <SidebarMenuButton
+                aria-label="Switch persona or sign out"
+                className="flex items-center gap-3 px-2 py-1.5"
+              >
                 <div className="absolute left-2 top-1/2 -translate-y-1/2 -ml-2 z-2 bg-sidebar">
-                  {" "}
                   <Avatar className="w-8 h-8 cursor-pointer block">
                     <AvatarImage
                       src={persona?.thumbnail}
-                      alt={persona?.name}
+                      alt=""
                       className="w-8 h-8 object-cover rounded-full"
                     />
                     <AvatarFallback className="flex items-center justify-center bg-muted rounded-full w-8 h-8">
@@ -44,24 +52,23 @@ export default function AppSidebarFooter({ open }: { open: boolean }) {
                     </AvatarFallback>
                   </Avatar>
                 </div>
-              </DropdownMenuTrigger>
-              <div className="flex-1 min-w-0 ml-8 text-left">
-                <p className="truncate font-medium text-sm">{persona?.first_name} {persona?.last_name}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {persona?.name}
-                </p>
-              </div>
-              <DropdownMenuTrigger asChild>
+                <div className="flex-1 min-w-0 ml-8 text-left">
+                  <p className="truncate font-medium text-sm">{persona?.first_name} {persona?.last_name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {persona?.name}
+                  </p>
+                </div>
                 <ChevronsUpDown
+                  aria-hidden="true"
                   className={clsx(
-                    "w-4 h-4 ml-2 text-muted-foreground shrink-0 cursor-pointer",
+                    "w-4 h-4 ml-2 text-muted-foreground shrink-0",
                     {
                       "absolute left-2 top-1/2 ": !open,
                     }
                   )}
                 />
-              </DropdownMenuTrigger>
-            </SidebarMenuButton>
+              </SidebarMenuButton>
+            </DropdownMenuTrigger>
 
             <DropdownMenuContent
               side="right"
@@ -69,14 +76,15 @@ export default function AppSidebarFooter({ open }: { open: boolean }) {
             >
                 {
                   personas.filter(p => p.id !== persona?.id).map((p) => (
-                    <DropdownMenuItem  onClick={async () => {
+                    <DropdownMenuItem
+                        key={p.id}
+                        onClick={async () => {
                           await setCurrentPersona(p.id);
                           window.location.reload();
                         }}
-                        className="cursor-pointer"  
+                        className="cursor-pointer"
                       >
                       <div
-                        key={p.id}
                         className="cursor-pointer flex items-center gap-2 flex-row"
                       >
                         <Avatar className="w-8 h-8 cursor-pointer block">

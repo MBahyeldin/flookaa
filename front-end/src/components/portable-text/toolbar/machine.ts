@@ -307,16 +307,34 @@ export const playgroundMachine = setup({
         return event.value;
       },
     }),
-    "broadcast value": ({ context }) => {
+    /*
+     * Broadcast the new value to the OTHER editors, never back to the one that
+     * just produced it.
+     *
+     * This action only runs on "editor.mutation" — i.e. right after a
+     * keystroke. Echoing the value to its own source made the editor replace
+     * its document mid-edit, which reset the selection: the first character
+     * came back selected and the second character overwrote it, and applying a
+     * decorator dragged the pre-edit text along with it.
+     *
+     * "broadcast patches" above already makes this local/remote distinction;
+     * this action was simply missing it. The multi-editor sync it exists for
+     * still works, because every other editor is still sent the value.
+     */
+    "broadcast value": ({ context, event }) => {
       const value = context.value;
-      if (value !== null) {
-        context.editors.forEach((editor) => {
-          editor.send({
-            type: "value",
-            value,
-          });
+      if (value === null) return;
+
+      const originEditorId =
+        event.type === "editor.mutation" ? event.editorId : undefined;
+
+      context.editors.forEach((editor) => {
+        if (editor.id === originEditorId) return;
+        editor.send({
+          type: "value",
+          value,
         });
-      }
+      });
     },
     "add editor to context": assign({
       editors: ({ context, event, spawn }) => {

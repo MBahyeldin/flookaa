@@ -28,13 +28,18 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useAppStore } from "@/stores/AppStore";
 import useAudioContext from "@/hooks/useAudioContext";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
+import formatDate, { formatRelativeDate } from "@/utils/formateDate";
+import displayBlockComponents from "../portable-text/displayBlocks";
 
 
 
 export function Post({
   post,
+  isNew = false,
 }: {
   post: Post;
+  /** Arrived after the feed rendered — plays the entrance animation once. */
+  isNew?: boolean;
 }) {
   const [showComments, setShowComments] = useState(false);
   const { persona } = useUserProfileStore();
@@ -50,7 +55,24 @@ export function Post({
 
   const toggleLike = () => {
     if (!persona?.id || !owner) return;
-    setLiked((prev: boolean) => !prev);
+    const nextLiked = !liked;
+    setLiked(nextLiked);
+
+    /*
+     * The sound belongs here, not in the likesCount effect below.
+     *
+     * That effect only sees the number go up, so it fired for *everyone's*
+     * likes arriving over the websocket — a busy post would chirp repeatedly
+     * at a reader who did nothing. Here we know the like is the current user's.
+     *
+     * Playing inside the click handler also satisfies the browser's autoplay
+     * policy, which requires a user gesture; the effect had no gesture behind
+     * it and logged "AudioContext was not allowed to start".
+     */
+    if (nextLiked) {
+      playSound("HEART_REACT");
+    }
+
     createLike({
       variables: {
         targetId: post._id,
@@ -68,12 +90,13 @@ export function Post({
 
 
   useEffect(() => {
+    // Visual only. Any like — mine or anyone else's — is worth showing, but
+    // the sound is reserved for the current user's own like (see toggleLike).
     if (post.meta?.likesCount > localLikes) {
-      playSound("HEART_REACT");
       setTriggerHeartAnimation(true);
     }
     setLocalLikes(post.meta?.likesCount || 0);
-  }, [localLikes, playSound, post.meta?.likesCount]);
+  }, [localLikes, post.meta?.likesCount]);
 
 
   const types = useMemo(() => {
@@ -87,8 +110,15 @@ export function Post({
 
 
   return (
-    <Card className="border-0 shadow-sm">
-      <CardContent className="p-6">
+    // A real 1px border reads cleaner than border-0 + shadow alone: against a
+    // gradient page the shadow-only edge was vague. rounded-xl matches the
+    // hero card so the column shares one silhouette.
+    <Card
+      className={`rounded-xl border border-border/70 shadow-sm ${
+        isNew ? "post-enter" : ""
+      }`}
+    >
+      <CardContent className="p-4 sm:p-6">
         {/* Post Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
@@ -99,20 +129,28 @@ export function Post({
               </AvatarFallback>
             </Avatar>
             <div>
-              <div className="flex items-center space-x-2">
-                <h4 className="font-medium">{post.author?.fullName}</h4>
+              <div className="flex flex-wrap items-center gap-x-2">                <h4 className="text-base font-medium">{post.author?.fullName}</h4>
                 <span className="text-sm text-muted-foreground">
                   @{post.author?.username}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">{post.createdAt}</p>
+              {post.createdAt && (
+                <p className="text-sm text-muted-foreground">
+                  <time
+                    dateTime={post.createdAt}
+                    title={formatDate(post.createdAt)}
+                  >
+                    {formatRelativeDate(post.createdAt)}
+                  </time>
+                </p>
+              )}
             </div>
           </div>
 
           {post.authorId === persona?.id && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" aria-label="Post options">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -138,6 +176,7 @@ export function Post({
               types
             )}
             components={{
+              ...displayBlockComponents,
               types: blockObjects.reduce((acc, blockObject) => {
                 acc[blockObject.name] = blockObject.renderBlock;
                 return acc;
@@ -153,6 +192,8 @@ export function Post({
               variant="ghost"
               size="sm"
               onClick={toggleLike}
+              aria-pressed={liked}
+              aria-label={`${liked ? "Unlike" : "Like"} — ${localLikes} ${localLikes === 1 ? "like" : "likes"}`}
               className={`relative flex items-center space-x-2 transition-all ${liked ? "text-destructive" : "text-muted-foreground hover:text-foreground"
                 }`}
             >
@@ -224,15 +265,20 @@ export function Post({
               variant="ghost"
               size="sm"
               onClick={() => setShowComments(true)}
+              aria-label={`Show comments — ${post.meta.commentsCount} ${post.meta.commentsCount === 1 ? "comment" : "comments"}`}
               className="flex items-center space-x-2"
             >
               <MessageCircle className="h-4 w-4" />
               <span>{post.meta.commentsCount}</span>
             </Button>
 
+            {/* Not wired up yet — disabled so it doesn't read as clickable. */}
             <Button
               variant="ghost"
               size="sm"
+              disabled
+              aria-label="Share post"
+              title="Sharing isn’t available yet"
               className="flex items-center space-x-2"
             >
               <Share2 className="h-4 w-4" />
@@ -244,6 +290,8 @@ export function Post({
             variant="ghost"
             size="sm"
             onClick={() => setShowComments(prev => !prev)}
+            aria-expanded={showComments}
+            aria-label={showComments ? "Collapse comments" : "Expand comments"}
           >
             {showComments ? (
               <ChevronUp className="h-4 w-4" />

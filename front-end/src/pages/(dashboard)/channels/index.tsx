@@ -25,7 +25,6 @@ export default function ChannelsPage() {
     const fetchChannels = async () => {
       try {
         const response = await getChannels();
-        console.log("Fetched channels:", response);
 
         if (response) {
           setChannels(response.channels);
@@ -49,7 +48,7 @@ export default function ChannelsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">

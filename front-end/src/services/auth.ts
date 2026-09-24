@@ -13,13 +13,12 @@ export async function fetchCurrentUser(): Promise<Info | null> {
     const data = (await resp.json()) as Info;
     return (data);
   } catch (err) {
-    console.log("Can't wait to see you log in again!, ", err);
+    console.error("Logout failed:", err);
     return null;
   }
 }
 
 export async function logOut(): Promise<void> {
-  console.log("Logging out...");
 
   try {
     await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {

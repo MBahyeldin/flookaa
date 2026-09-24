@@ -37,7 +37,6 @@ export default function VerifyEmailPage() {
   }, [code]);
 
   const handleVerifyClick = async () => {
-    console.log("Verifying code:", code);
     try {
       const response = await verifyEmail(code);
       if (response?.error) throw new Error();

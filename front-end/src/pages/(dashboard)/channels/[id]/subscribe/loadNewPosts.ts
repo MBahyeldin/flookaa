@@ -10,10 +10,6 @@ async function loadNewPosts({
   const newPostsIds = newPosts.map((post) => post.object_id);
   const owner = useAppStore.getState().owner;
   const addPosts = useAppStore.getState().addPosts;
-  console.log({
-    owner,
-  });
-
   const channelId = owner?.id;
   if (newPostsIds.length === 0 || !channelId) return;
   const channelIdNum = parseInt(channelId, 10);

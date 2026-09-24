@@ -6,7 +6,6 @@ const renderBlock: RenderBlockFunction = (props: {
   schemaType: { name: string };
   children: React.JSX.Element;
 }) => {
-    console.log("renderBlock", props);
     
   if (props.schemaType.name === "image" && isImage(props.value)) {
     return props.children;

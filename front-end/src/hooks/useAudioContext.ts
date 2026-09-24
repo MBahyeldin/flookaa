@@ -16,7 +16,6 @@ let isInit = false
 const initAudio = async () => {
     if (isInit) return
     if (!audioCtx) audioCtx = new AudioContext()
-    console.log("audio context is init"); 
     systemSoundName.forEach(async(item: SystemSoundName) => {
             if (!audioCtx) throw new Error("AudioContext not initialized")
             const urlToFetch = soundUrls[item]
@@ -36,16 +35,30 @@ const initAudio = async () => {
 export default function useAudioContext() {
     
 
+    /*
+     * Fails soft. This is called from the like handler, and a sound that isn't
+     * ready — the fetch/decode is async, the context may still be suspended,
+     * or the device may have no audio output — must never stop a like from
+     * registering. Previously it threw, which would take the action with it.
+     */
     const playSound = (name: SystemSoundName, volume = 0.4) => {
-        if (!audioCtx) throw new Error("AudioContext not initialized")
-        if (!buffers.has(name)) throw new Error(`Sound ${name} not loaded`)
-        const source = audioCtx.createBufferSource()
-        const gain = audioCtx.createGain()
+        if (!audioCtx || !buffers.has(name)) return
 
-        gain.gain.value = volume
-        source.buffer = buffers.get(name)!
-        source.connect(gain).connect(audioCtx!.destination)
-        source.start()
+        try {
+            // Browsers suspend the context until a user gesture; this call site
+            // is inside a click, so resuming here is allowed.
+            if (audioCtx.state === "suspended") void audioCtx.resume()
+
+            const source = audioCtx.createBufferSource()
+            const gain = audioCtx.createGain()
+
+            gain.gain.value = volume
+            source.buffer = buffers.get(name)!
+            source.connect(gain).connect(audioCtx.destination)
+            source.start()
+        } catch (error) {
+            console.error(`Failed to play sound ${name}:`, error)
+        }
     }
 
     return {

@@ -4,6 +4,11 @@ server {
 
     set $s3_host "{{ containers.s3.ip }}:{{ containers.s3.ports.http }}";
 
+    client_max_body_size 8m;
+
+    proxy_read_timeout 120s;
+    proxy_send_timeout 120s;
+
     ## api proxy pass
     location / {
         proxy_pass http://$s3_host;

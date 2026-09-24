@@ -33,7 +33,9 @@ export function ImageWithFallback(
   ) : (
     <img
       src={src}
-      alt={alt}
+      // Default to "" rather than omitting the attribute: a missing alt makes
+      // screen readers fall back to announcing the file URL.
+      alt={alt ?? ""}
       className={className}
       style={style}
       {...rest}

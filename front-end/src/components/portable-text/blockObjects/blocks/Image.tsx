@@ -93,18 +93,35 @@ function renderBlock(props: {
   focused?: boolean;
 }) {
   const { value } = props;
-  console.log("value in image block:", value);
 
   if (!value || !value.src) {
     return null;
   }
   return (
-    <div>
-      <div className={cn("")}>
-        <img className="max-w-full" src={value.src} alt={value.alt ?? ""} />
-      </div>
-      <span className="">{value.caption}</span>
-    </div>
+    <figure className="my-3">
+      {/*
+        max-h-[70vh] + object-contain: with only `max-w-full`, a tall image
+        rendered at full intrinsic height and dwarfed the rest of the feed.
+        width/height are forwarded so the browser can reserve space and avoid
+        layout shift while loading.
+      */}
+      <img
+        className={cn(
+          "max-w-full max-h-[70vh] w-auto h-auto rounded-md object-contain"
+        )}
+        src={value.src}
+        alt={value.alt ?? ""}
+        width={value.width}
+        height={value.height}
+        loading="lazy"
+        decoding="async"
+      />
+      {value.caption ? (
+        <figcaption className="mt-1 text-sm text-muted-foreground">
+          {value.caption}
+        </figcaption>
+      ) : null}
+    </figure>
   );
 }
 

@@ -39,13 +39,19 @@ export default function CommentInput({
 
 
     return (
-        <div className="flex space-x-3 items-start">
-            <Avatar className="h-9 w-9">
-                <AvatarImage src={persona?.thumbnail || ""} />
-                <AvatarFallback>{persona?.name?.[0] || "U"}</AvatarFallback>
-            </Avatar>
-
-            <SimpleInputComponent onSend={handleSend} />
-        </div >
+        // The avatar is handed to SimpleInputComponent so it can render inside
+        // the composer card, matching how comment items carry their avatar
+        // inside the bubble. Persona lookup stays here; layout stays there.
+        <div className="min-w-0">
+            <SimpleInputComponent
+                onSend={handleSend}
+                avatar={
+                    <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
+                        <AvatarImage src={persona?.thumbnail || ""} />
+                        <AvatarFallback>{persona?.name?.[0] || "U"}</AvatarFallback>
+                    </Avatar>
+                }
+            />
+        </div>
     );
 }

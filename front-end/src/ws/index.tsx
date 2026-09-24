@@ -27,7 +27,6 @@ export default class WebSocketService {
 
     // 🔹 Initialize WebSocket once
     private async initWebSocket() {
-        console.log("Initializing WebSocketService");
         await this.waitForWebSocketOpen();
         this.subscribeToDefaultChannel();
         this.flushQueuedMessages();
@@ -40,7 +39,6 @@ export default class WebSocketService {
         return new Promise((resolve, reject) => {
             if (!this.ws) return reject(new Error("WebSocket is not initialized"));
             this.ws.onopen = () => {
-                console.log("WebSocket connected");
                 this.initListeners();
                 resolve();
             };
@@ -58,7 +56,10 @@ export default class WebSocketService {
 
     private setHeartbeat() {
         setInterval(() => {
-            this.ws?.send(JSON.stringify({ type: "HEARTBEAT" }));
+            // send() throws if the socket isn't OPEN (e.g. closing/closed).
+            if (this.ws?.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({ type: "HEARTBEAT" }));
+            }
         }, 5000);
     }
 
@@ -69,9 +70,8 @@ export default class WebSocketService {
         this.ws.onmessage = (event) => {
             try {
                 const message = JSON.parse(event.data);
-                const { subject, payload, id } = message;
+                const { payload, id } = message;
 
-                console.log("Incoming:", subject, payload);
 
                 // 🔹 Notify all listeners for this subject
                 this.listeners.get(id)?.forEach((cb) => cb(JSON.parse(payload)));
@@ -92,7 +92,6 @@ export default class WebSocketService {
     closeConnection() {
         this.ws?.close();
         this.ws = null;
-        console.log("WebSocket closed manually");
     }
 
     // 🔹 Send message
@@ -100,8 +99,11 @@ export default class WebSocketService {
         if (this.ws?.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify(message));
         } else {
+            // Queueing before the socket opens is the normal path (getInstance
+            // returns while initWebSocket is still awaiting), so this isn't a
+            // warning — flushQueuedMessages drains it on open.
             this.queuedMessages.push(message);
-            console.warn("WebSocket not open. Message queued.");
+            console.debug("WebSocket not open yet. Message queued.");
         }
     }
 
@@ -109,9 +111,9 @@ export default class WebSocketService {
     subscribeToDefaultChannel() {
         const id = crypto.randomUUID();
 
-        const cb = (payload: unknown) => {
-            console.log("Direct message payload:", payload);
-        };
+        // No-op: this subscription exists to register the default channel with
+        // the server. Feature-specific handlers subscribe separately.
+        const cb = () => {};
         this.subscribe(id, cb);
 
         this.sendMessage<SubscribeDefaultPayload>({
@@ -126,7 +128,6 @@ export default class WebSocketService {
         if (!this.listeners.has(id)) {
             this.listeners.set(id, new Set());
         }
-        console.log("Subscribing to", id, callback);
 
         this.listeners.get(id)!.add(callback);
 

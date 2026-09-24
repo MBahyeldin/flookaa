@@ -2,7 +2,6 @@ import { useAppStore } from "@/stores/AppStore";
 import type { WsEventMessage } from "@/types/Ws";
 
 async function handleLikeEvents({ payload }: { payload: WsEventMessage }) {
-  console.log(payload);
 
   const { target_id, target_type, action } = payload.event;
 

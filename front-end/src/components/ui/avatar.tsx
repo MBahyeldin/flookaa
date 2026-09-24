@@ -21,11 +21,15 @@ function Avatar({
 
 function AvatarImage({
   className,
+  alt = "",
   ...props
 }: React.ComponentProps<typeof AvatarPrimitive.Image>) {
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
+      // Avatars sit beside a visible name, so they're decorative by default.
+      // Without an alt attribute at all, screen readers announce the file URL.
+      alt={alt}
       className={cn("aspect-square size-full", className)}
       {...props}
     />

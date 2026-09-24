@@ -30,7 +30,6 @@ export function InsertBlockObjectForm(
       ...props.defaultValues,
     },
     onSubmit: (values) => {
-      console.log("values", values);
       
       const { placement, ...value } = values;
       props.onSubmit({ value, placement: placement as "auto" | "before" | "after" | undefined });

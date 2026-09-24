@@ -12,7 +12,6 @@ export function ImageDeserializerPlugin() {
   const editor = useEditor()
 
   useEffect(() => {
-    console.log('ImageDeserializerPlugin: registering behaviors');
     
     const unregisterBehaviors = [
       editor.registerBehavior({

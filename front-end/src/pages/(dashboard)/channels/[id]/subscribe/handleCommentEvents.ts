@@ -17,7 +17,6 @@ async function handleCommentEvents({
     return;
   }
   const addComment = useAppStore.getState().addCommentToPost;
-  console.log("Handling new comment event:", eventMetadata);
   addComment(eventMetadata);
 }
 

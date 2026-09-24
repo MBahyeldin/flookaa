@@ -22,7 +22,6 @@ import {
 } from "@portabletext/editor";
 import {
   ActivityIcon,
-  BugIcon,
   Loader,
   SeparatorHorizontalIcon,
 } from "lucide-react";
@@ -45,10 +44,6 @@ import {
   StockTickerSchema,
 } from "./schema";
 import { PortableTextToolbar } from "./toolbar/portable-text-toolbar";
-import { RangeDecorationButton } from "./toolbar/range-decoration-button";
-import { Separator } from "../ui/separator";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import { Switch } from "../ui/switch";
 import { EmojiPickerPlugin } from "./toolbar/plugin-emoji";
 import { CodeEditorPlugin } from "./toolbar/plugin.code-editor";
 import { LinkPlugin } from "./toolbar/plugin.link";
@@ -62,7 +57,9 @@ import { useSelector } from "@xstate/react";
 import { useBlockObjectsProvider } from "@/BlockObjectsProvider.context";
 
 const editorStyle = tv({
-  base: "grid gap-2 items-start",
+  // min-w-0: grid items also default to min-width:auto, so without this the
+  // toolbar's intrinsic width propagates up and widens the whole page.
+  base: "grid gap-2 items-start min-w-0 [&>*]:min-w-0",
   variants: {
     debugModeEnabled: {
       true: "grid-cols-1 md:grid-cols-2",
@@ -94,11 +91,19 @@ export default function Editor(props: {
   const { blockObjectsProvider } = useBlockObjectsProvider();
   const blockObjects = blockObjectsProvider?.BlockObjects ?? [];
 
+  /*
+   * Deps are [value, setValue], NOT [value, props].
+   *
+   * `props` is a fresh object on every render, so depending on it made this
+   * effect run after every render — and since it calls setState in the parent,
+   * each run scheduled the next render, which re-ran the effect. That's the
+   * "Maximum update depth exceeded" crash when publishing a post: submitting
+   * resets the value, which kicked off the cycle.
+   */
+  const { setValue } = props;
   useEffect(() => {
-    console.log("value changed", value);
-    
-    props.setValue(value as any);
-  }, [value, props]);
+    setValue(value as any);
+  }, [value, setValue]);
 
   return (
     <div
@@ -126,6 +131,19 @@ export default function Editor(props: {
             on={(event) => {
               if (event.type === "mutation") {
                 props.editorRef.send(event);
+                /*
+                 * Lift the new value straight off the mutation event.
+                 *
+                 * It used to reach React the long way round: mutation → parent
+                 * machine → "broadcast value" back into this same editor →
+                 * context.value changes → the effect below calls setValue. That
+                 * echo is what reset the caret mid-edit, so it no longer fires
+                 * for the originating editor — which would otherwise leave the
+                 * parent's state empty and the Post button permanently
+                 * disabled. The event already carries the value, so take it
+                 * from here and leave the editor's own document untouched.
+                 */
+                setValue(event.value as any);
               }
               if (event.type === "loading") {
                 setLoading(true);
@@ -141,39 +159,18 @@ export default function Editor(props: {
               }
             }}
           />
-          <div className="container flex flex-col gap-4 overflow-clip">
-            {playgroundFeatureFlags.toolbar ? (
-              <PortableTextToolbar>
-                <RangeDecorationButton
-                  onAddRangeDecoration={(rangeDecoration) => {
-                    props.editorRef.send({
-                      type: "add range decoration",
-                      rangeDecoration,
-                    });
-                  }}
-                  onRangeDecorationMoved={(details) => {
-                    props.editorRef.send({
-                      type: "move range decoration",
-                      details,
-                    });
-                  }}
-                />
-                <Separator orientation="vertical" />
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Switch
-                      checked={debugModeEnabled as unknown as boolean}
-                      onCheckedChange={() => {
-                        props.editorRef.send({ type: "toggle debug mode" });
-                      }}
-                    >
-                      <BugIcon className="size-4" />
-                    </Switch>
-                  </TooltipTrigger>
-                  <TooltipContent>Toggle debug mode</TooltipContent>
-                </Tooltip>
-              </PortableTextToolbar>
-            ) : null}
+          {/*
+            One bordered surface for toolbar + editable, instead of the toolbar
+            carrying its own full border with rounded-top corners while sitting
+            gap-4 away from an editable with rounded-bottom corners. The two
+            were clearly meant to join up; the gap and the toolbar's closed
+            bottom edge were what made the seam look unfinished.
+          */}
+          {/* No `container` here: that Tailwind utility applies a breakpoint
+              max-width plus auto margins, which inset the editor ~18px inside
+              its card instead of letting it fill the available width. */}
+          <div className="flex w-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-background">
+            {playgroundFeatureFlags.toolbar ? <PortableTextToolbar /> : null}
 
             {featureFlags.emojiPickerPlugin ? <EmojiPickerPlugin /> : null}
             {featureFlags.codeEditorPlugin ? <CodeEditorPlugin /> : null}
@@ -199,7 +196,14 @@ export default function Editor(props: {
               >
                 <EditorFeatureFlagsContext.Provider value={featureFlags}>
                   <PortableTextEditable
-                    className={`rounded-b-md outline-none data-[read-only=true]:opacity-50 px-2 h-75 -mx-2 -mb-2 overflow-auto flex-1 ${
+                    // The "Type something" placeholder is a rendered node, not
+                    // an accessible name — without this the editor announces as
+                    // an unlabeled textbox.
+                    aria-label="Post content"
+                    /* The parent owns the border and radius now, so no
+                       rounded-b-md here and no negative margins bleeding out
+                       past it. */
+                    className={`outline-none data-[read-only=true]:opacity-50 px-3 py-2 h-75 overflow-auto flex-1 ${
                       featureFlags.dragHandles ? "ps-5" : ""
                     }`}
                     rangeDecorations={props.rangeDecorations}

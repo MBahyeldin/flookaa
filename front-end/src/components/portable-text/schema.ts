@@ -48,7 +48,6 @@ import { z } from "zod";
 export const playgroundSchemaDefinition = (
   blockObjects: BlockObjectSchemaType[]
 ) => {
-  console.log("blockObjects in schema", blockObjects);
 
   return defineSchema({
     decorators: [

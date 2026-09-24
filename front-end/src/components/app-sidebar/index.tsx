@@ -78,9 +78,15 @@ export function AppSidebar({
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
+            <nav aria-label="Main">
             <SidebarMenu>
-              <SidebarMenuButton className="flex items-center space-x-2 border-b border-muted no-draggable justify-between">
-                <MainMenuItem setOpen={setOpen} open={open} />
+              <SidebarMenuButton
+                onClick={() => setOpen(!open)}
+                aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
+                aria-expanded={open}
+                className="flex items-center space-x-2 border-b border-muted no-draggable justify-between"
+              >
+                <MainMenuItem open={open} />
               </SidebarMenuButton>
               {sidebarItems.map((item) => {
                 return (
@@ -93,6 +99,7 @@ export function AppSidebar({
                 );
               })}
             </SidebarMenu>
+            </nav>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

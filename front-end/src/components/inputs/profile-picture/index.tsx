@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import type { FormFieldProps } from "@/types/FormFields";
 import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
 import { DialogTrigger } from "@radix-ui/react-dialog";
-import { Camera, User } from "lucide-react";
+import { Camera, Loader2, User } from "lucide-react";
 import { useRef, useState } from "react";
 
 type ProfilePictureInputProps = FormFieldProps & {
@@ -25,7 +25,7 @@ export default function ProfilePictureInput({
   const thumbnailInputField = useRef<HTMLInputElement | null>(null);
   const [showPreview] = useState(false);
 
-  const { url, handleInputChange } = useInputImage({
+  const { url, handleInputChange, isUploading } = useInputImage({
     initValue: initValue || "",
     setFieldValue,
     id: "thumbnail",
@@ -49,6 +49,19 @@ export default function ProfilePictureInput({
             <User className="h-12 w-12 text-foreground" />
           </AvatarFallback>
         </Avatar>
+
+        {/* Overlays the avatar itself, so progress appears exactly where the
+            result will — the old flow gave no feedback at all between
+            picking a file and the picture changing. */}
+        {isUploading && (
+          <div
+            role="status"
+            aria-label="Uploading image"
+            className="absolute inset-0 flex h-24 w-24 items-center justify-center rounded-full bg-background/70 backdrop-blur-[1px]"
+          >
+            <Loader2 className="h-6 w-6 animate-spin text-foreground" />
+          </div>
+        )}
         <input
           type="file"
           id="avatar"
@@ -64,6 +77,8 @@ export default function ProfilePictureInput({
           onClick={() => {
             thumbnailInputField.current?.click();
           }}
+          disabled={isUploading}
+          aria-label={isUploading ? "Uploading image…" : "Change profile picture"}
           type="button"
         >
           <Camera className="h-4 w-4" />
@@ -79,9 +94,18 @@ export default function ProfilePictureInput({
           size="sm"
           className="mt-2 bg-transparent"
           onClick={() => thumbnailInputField.current?.click()}
+          disabled={isUploading}
+          aria-busy={isUploading}
           type="button"
         >
-          Change Avatar
+          {isUploading ? (
+            <>
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              Uploading…
+            </>
+          ) : (
+            "Change Avatar"
+          )}
         </Button>
       </div>
       {url && showPreview && (

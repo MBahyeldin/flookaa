@@ -11,7 +11,7 @@ export function ListButton(props: { schemaType: ToolbarListSchemaType }) {
 
   return (
     <Tooltip>
-      <TooltipTrigger>
+      <TooltipTrigger asChild>
         <Toggle
           aria-label={props.schemaType.title ?? props.schemaType.name}
           size="sm"
@@ -22,8 +22,9 @@ export function ListButton(props: { schemaType: ToolbarListSchemaType }) {
         >
          { props.schemaType.icon ? <props.schemaType.icon /> : null }
         </Toggle>
-        <TooltipContent>{props.schemaType.title}</TooltipContent>
       </TooltipTrigger>
+      {/* TooltipContent is a sibling of the trigger, not a child of it. */}
+      <TooltipContent>{props.schemaType.title}</TooltipContent>
     </Tooltip>
   );
 }

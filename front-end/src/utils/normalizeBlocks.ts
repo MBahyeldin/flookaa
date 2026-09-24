@@ -5,7 +5,6 @@ export default function normalizeBlocks(
   blocks: PortableTextTextBlock[],
   types: string[]
 ): any[] {
-  console.log("blocks", blocks);
 
   return blocks.map((block) => {
     const blockType = block._type;

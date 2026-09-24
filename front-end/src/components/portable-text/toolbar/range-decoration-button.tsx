@@ -32,18 +32,22 @@ export function RangeDecorationButton(props: {
   }, [editor, props]);
 
   return (
-    <TooltipTrigger>
-      <Button
-        aria-label="Decorate"
-        disabled={disabled}
-        variant="secondary"
-        size="sm"
-        onClick={onPress}
-      >
-        <TextCursorIcon className="size-4" />
-      </Button>
+    // TooltipContent is a sibling of the trigger, not a child of it. The
+    // enclosing <Tooltip> is provided by the caller.
+    <>
+      <TooltipTrigger asChild>
+        <Button
+          aria-label="Decorate"
+          disabled={disabled}
+          variant="secondary"
+          size="sm"
+          onClick={onPress}
+        >
+          <TextCursorIcon className="size-4" />
+        </Button>
+      </TooltipTrigger>
       <TooltipContent>Add Range Decoration</TooltipContent>
-    </TooltipTrigger>
+    </>
   );
 }
 

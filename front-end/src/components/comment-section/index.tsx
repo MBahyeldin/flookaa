@@ -1,5 +1,8 @@
 import CommentItem from "./item"
 import CommentInput from "./input";
+import { Button } from "../ui/button";
+import { Loader2 } from "lucide-react";
+import useNewlyAdded from "@/hooks/useNewlyAdded";
 import { useGetCommentsLazyQuery, type Comment, type GetCommentsQuery, type GetCommentsQueryVariables } from "@/generated/graphql";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/AppStore";
@@ -52,6 +55,10 @@ export default function CommentSection({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showComments]);
 
+    // Comments that arrived after this thread was first rendered — these get
+    // the entrance animation and are scrolled into view.
+    const newCommentIds = useNewlyAdded(result.map((comment) => comment._id));
+
     if (!showComments) {
         return null;
     }
@@ -65,21 +72,32 @@ export default function CommentSection({
             {/* Comments List */}
             <div className="space-y-4">
                 {result.map((comment) => (
-                    <CommentItem key={comment._id} commentId={comment._id} level={2} />
+                    <CommentItem
+                        key={comment._id}
+                        commentId={comment._id}
+                        level={2}
+                        isNew={newCommentIds.has(comment._id)}
+                    />
                 ))}
+                {/* Same inline spinner idiom as the nested reply loader */}
                 {isLoading && (
-                    <div className="flex justify-center">
-                        <span className="text-sm text-muted-foreground">Loading comments...</span>
+                    <div
+                        role="status"
+                        className="flex items-center justify-center gap-2 text-sm text-muted-foreground"
+                    >
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>
+                            {result.length ? "Loading more comments…" : "Loading comments…"}
+                        </span>
                     </div>
                 )}
-                {showLoadMoreComments && (
+                {showLoadMoreComments && !isLoading && (
                     <div className="flex justify-center">
-                        <button
-                            onClick={loadMore}
-                            className="text-sm text-primary hover:underline"
-                        >
+                        {/* Uses the shared outline Button so it matches
+                            "Load More Posts" on the channel page. */}
+                        <Button variant="outline" size="sm" onClick={loadMore}>
                             Load more comments
-                        </button>
+                        </Button>
                     </div>
                 )}
             </div>
