@@ -65,15 +65,139 @@
       ansible.builtin.debug:
         msg: "Rust version installed: {{ rust_version.stdout }}"
 
-    - name: Install Golang programming language
+    # The distro golang package is removed rather than upgraded: it installs
+    # /usr/bin/go, which would shadow the upstream toolchain depending on PATH
+    # order and silently build with the wrong version.
+    - name: Remove distro golang package
       ansible.builtin.apt:
         name: golang
-        state: present
+        state: absent
+        purge: true
+        autoremove: true
+
+    - name: Check currently installed Go version
+      ansible.builtin.command: /usr/local/go/bin/go version
+      register: installed_go
+      changed_when: false
+      failed_when: false
+
+    - name: Determine whether Go needs installing
+      ansible.builtin.set_fact:
+        golang_needs_install: "{{ ('go' ~ golang_version) not in (installed_go.stdout | default('')) }}"
+
+    - name: Download Go {{ golang_version }}
+      ansible.builtin.get_url:
+        url: "https://go.dev/dl/go{{ golang_version }}.linux-{{ golang_arch }}.tar.gz"
+        dest: "/tmp/go{{ golang_version }}.linux-{{ golang_arch }}.tar.gz"
+        checksum: "sha256:{{ golang_sha256[golang_arch] }}"
+        mode: '0644'
+      when: golang_needs_install | bool
+
+    # Upstream requires removing the old tree before extracting; extracting
+    # over it leaves stale files from the previous version behind.
+    - name: Remove previous Go installation
+      ansible.builtin.file:
+        path: /usr/local/go
+        state: absent
+      when: golang_needs_install | bool
+
+    - name: Extract Go to /usr/local
+      ansible.builtin.unarchive:
+        src: "/tmp/go{{ golang_version }}.linux-{{ golang_arch }}.tar.gz"
+        dest: /usr/local
+        remote_src: true
+        owner: root
+        group: root
+      when: golang_needs_install | bool
+
+    - name: Remove the downloaded Go tarball
+      ansible.builtin.file:
+        path: "/tmp/go{{ golang_version }}.linux-{{ golang_arch }}.tar.gz"
+        state: absent
+      when: golang_needs_install | bool
+
+    - name: Ensure Go is on PATH for login shells
+      ansible.builtin.copy:
+        dest: /etc/profile.d/golang.sh
+        content: |
+          export PATH="$PATH:/usr/local/go/bin:{{ build_home }}/go/bin"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Link the Go toolchain into /usr/local/bin
+      ansible.builtin.file:
+        src: "/usr/local/go/bin/{{ item }}"
+        dest: "/usr/local/bin/{{ item }}"
+        state: link
+        force: true
+      loop:
+        - go
+        - gofmt
+
+    - name: Ensure Go module cache and GOPATH exist for the build user
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ build_user }}"
+        group: "{{ build_group }}"
+        mode: '0755'
+      loop:
+        - "{{ build_home }}/go"
+        - "{{ build_home }}/go/bin"
+        - "{{ build_home }}/go/pkg"
+        - "{{ build_home }}/.cache"
+        - "{{ build_home }}/.cache/go-build"
 
     - name: Verify Golang installation
-      ansible.builtin.command: go version
+      ansible.builtin.command: /usr/local/go/bin/go version
       register: go_version
       changed_when: false
+
+    - name: Assert the expected Go version is installed
+      ansible.builtin.assert:
+        that:
+          - "('go' ~ golang_version) in go_version.stdout"
+        fail_msg: "Expected Go {{ golang_version }}, got: {{ go_version.stdout }}"
+
+    # Proves the build user can actually run go, using the bare PATH a
+    # non-interactive ssh command gets rather than a login shell's.
+    - name: Verify the build user can run Go
+      ansible.builtin.command: go version
+      become: true
+      become_user: "{{ build_user }}"
+      environment:
+        PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      register: build_user_go
+      changed_when: false
+
+    # HOME is set explicitly because the su become method does not reliably
+    # reset it; without that, this would report root's cache paths and pass
+    # even when the build user's environment is wrong.
+    - name: Verify the build user can write the Go caches
+      ansible.builtin.command: go env GOPATH GOCACHE GOMODCACHE
+      become: true
+      become_user: "{{ build_user }}"
+      environment:
+        PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        HOME: "{{ build_home }}"
+      register: build_user_go_env
+      changed_when: false
+
+    - name: Assert the Go caches belong to the build user
+      ansible.builtin.assert:
+        that:
+          - build_user_go_env.stdout_lines | select('search', '^' ~ build_home ~ '/') | list | length == 3
+        fail_msg: >-
+          Expected GOPATH, GOCACHE and GOMODCACHE under {{ build_home }},
+          got: {{ build_user_go_env.stdout_lines | join(' ') }}
+
+    - name: Print Go version
+      ansible.builtin.debug:
+        msg:
+          - "Go version installed: {{ go_version.stdout }}"
+          - "Build user ({{ build_user }}) sees: {{ build_user_go.stdout }}"
+          - "Build user Go env: {{ build_user_go_env.stdout_lines | join(' ') }}"
 
 
     - name: Make sure internal-build directory exists

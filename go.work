@@ -1,4 +1,4 @@
-go 1.25.0
+go 1.26.0
 
 use (
 	./backend
@@ -7,4 +7,5 @@ use (
 	./gRCP/client
 	./gRCP/server
 	./s3
+	./whatsapp
 )

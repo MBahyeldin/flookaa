@@ -1,0 +1,6 @@
+# The whatsmeow session store holds live credentials for the linked WhatsApp
+# account. Committing it would hand anyone with repo access the ability to send
+# messages as that number. WAL mode adds the -wal/-shm sidecars.
+session.db
+session.db-wal
+session.db-shm

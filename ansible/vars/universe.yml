@@ -68,3 +68,10 @@ containers:
     ports:
       ssh: 22100
       http: 57017
+
+  whatsapp:
+    ip: "10.0.0.120"
+    ports:
+      ssh: 22120
+      grpc: 50120
+      http: 8080

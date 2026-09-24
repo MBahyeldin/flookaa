@@ -21,5 +21,15 @@ all:
     build_shell: "/bin/bash"
     build_workspace: "{{ build_home }}/workspace"
 
+    # Go is installed from upstream, not apt: Ubuntu 24.04 ships Go 1.22 and
+    # go.work requires go >= 1.26.0 (whatsmeow's minimum). Bump the version and
+    # the matching checksum together — they are published at
+    # https://go.dev/dl/?mode=json
+    golang_version: "1.26.0"
+    golang_arch: "amd64"
+    golang_sha256:
+      amd64: "aac1b08a0fb0c4e0a7c1555beb7b59180b05dfc5a3d62e40e9de90cd42f88235"
+      arm64: "bd03b743eb6eb4193ea3c3fd3956546bf0e3ca5b7076c8226334afe6b75704cd"
+
 
 

@@ -241,11 +241,6 @@ all:
         container_root_disk_size: "50GB"
         ipv4_address: "{{ containers.internal_build.ip }}"
         devices:
-          root:
-            path: /
-            pool: default
-            size: {{ containers.internal_build.container_root_disk_size }}
-            type: disk
           sshport:
             connect: tcp:127.0.0.1:22
             listen: "tcp:0.0.0.0:{{ containers.internal_build.ports.ssh }}"
@@ -253,4 +248,27 @@ all:
           httpport:
             connect: "tcp:127.0.0.1:{{ containers.internal_build.ports.http }}"
             listen: "tcp:0.0.0.0:{{ containers.internal_build.ports.http }}"
+            type: proxy
+
+      - name: "whatsapp"
+        source_alias: "24.04"
+        source_type: "image"
+        profiles:
+          - "default"
+        state: "started"
+        container_user: "ubuntu"
+        container_ssh_key: "~/ssh-keys/lxd_dev.pem"
+        container_memory_limit: "2GB"
+        container_cpu_limit: "1"
+        container_root_disk_size: "10GB"
+        ipv4_address: "{{ containers.whatsapp.ip }}"
+
+        devices:
+          sshport:
+            connect: tcp:127.0.0.1:22
+            listen: "tcp:0.0.0.0:{{ containers.whatsapp.ports.ssh }}"
+            type: proxy
+          gRPCport:
+            connect: "tcp:127.0.0.1:{{ containers.whatsapp.ports.grpc }}"
+            listen: "tcp:0.0.0.0:{{ containers.whatsapp.ports.grpc }}"
             type: proxy

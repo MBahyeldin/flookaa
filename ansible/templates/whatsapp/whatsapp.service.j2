@@ -1,0 +1,25 @@
+[Unit]
+Description=WhatsApp Service
+After=network.target
+
+[Service]
+Environment='WHATSAPP_API_TOKEN={{ vault_WHATSAPP_API_TOKEN }}'
+Environment='WHATSAPP_SESSION_DB={{ whatsapp_data_dir }}/session.db'
+Environment='WHATSAPP_SEND_RATE={{ whatsapp_send_rate | default(1) }}'
+Environment='WHATSAPP_SEND_BURST={{ whatsapp_send_burst | default(5) }}'
+Environment='WHATSAPP_PORT={{ containers.whatsapp.ports.http }}'
+WorkingDirectory={{ service_working_dir }}
+ExecStart={{ service_working_dir }}/{{ service_binary_name }}
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+# Resource limits
+LimitNOFILE=65535
+
+User={{ app_user }}
+Group={{ app_group }}
+
+[Install]
+WantedBy=multi-user.target
