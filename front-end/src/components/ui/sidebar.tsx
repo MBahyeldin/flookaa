@@ -6,6 +6,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { PanelLeftIcon } from "lucide-react";
 
 import { useIsMobile } from "@/hooks/useMobile";
+import { useSidebarSwipe } from "@/hooks/useSidebarSwipe";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -164,6 +165,12 @@ function Sidebar({
   collapsible?: "offcanvas" | "icon" | "none";
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const swipe = useSidebarSwipe({
+    enabled: isMobile && collapsible !== "none",
+    side,
+    open: openMobile,
+    setOpen: setOpenMobile,
+  });
 
   if (collapsible === "none") {
     return (
@@ -184,13 +191,15 @@ function Sidebar({
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
         <SheetContent
+          ref={swipe.contentRef}
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+          className="bg-(--sidebar-solid) text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+              ...(swipe.suppressAnimation && { animation: "none" }),
             } as React.CSSProperties
           }
           side={side}

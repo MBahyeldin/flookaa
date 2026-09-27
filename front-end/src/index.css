@@ -159,6 +159,8 @@
 :root {
   /* Translucent like the cards, so the page gradient carries into the rail. */
   --sidebar: oklch(1 0.006 var(--sea-h) / 0.7);
+  /* Mobile sheet overlays page content, so it must be fully opaque. */
+  --sidebar-solid: oklch(1 0.006 var(--sea-h));
   --sidebar-foreground: var(--foreground);
 
   --sidebar-primary: var(--primary);
@@ -208,6 +210,7 @@
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: var(--background);
+  --sidebar-solid: var(--background);
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
