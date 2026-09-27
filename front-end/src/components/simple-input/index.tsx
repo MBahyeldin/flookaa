@@ -28,6 +28,12 @@ export default function SimpleInputComponent({ onSend, avatar }: {
 }) {
     const [newComment, setNewComment] = useState("");
     const [blob, setBlob] = useState<Blob | null>(null);
+    // Server-processed (ffmpeg) version of the recording, uploaded on stop.
+    const [audioUrl, setAudioUrl] = useState("");
+    const [isProcessingAudio, setIsProcessingAudio] = useState(false);
+    // Bumped per recording and on discard, so a slow upload for a draft the
+    // user already threw away can't land on the current one.
+    const recordingIdRef = useRef(0);
     const [mediaUrl, setMediaUrl] = useState<string>("");
     const uploadImageInputRef = useRef<HTMLInputElement>(null);
     const [commentType, setCommentType] = useState<"TEXT" | "VOICE" | "MEDIA" | null>(null);
@@ -97,6 +103,36 @@ export default function SimpleInputComponent({ onSend, avatar }: {
 
     const canRecord = !unsupportedReason;
 
+    const uploadRecording = (recording: Blob) =>
+        // Extension follows the codec actually chosen — it was hardcoded to
+        // .webm even when recording m4a on iOS.
+        uploadAudio({
+            blob: recording,
+            fileName: `comment-audio.${fileExtension}`,
+            fileSize: recording.size,
+            mimeType,
+        });
+
+    /*
+     * Upload as soon as recording stops so the server's ffmpeg pass runs
+     * before posting, and the preview plays what everyone else will hear.
+     * On failure the raw recording stays previewable and handleSend retries.
+     */
+    const processRecording = async (recording: Blob) => {
+        const id = ++recordingIdRef.current;
+        setIsProcessingAudio(true);
+        try {
+            const url = await uploadRecording(recording);
+            if (id === recordingIdRef.current) setAudioUrl(url);
+        } catch (error) {
+            if (id !== recordingIdRef.current) return;
+            console.error("Voice note processing failed:", error);
+            toast.error("Couldn’t process your voice note — it will retry when you post.");
+        } finally {
+            if (id === recordingIdRef.current) setIsProcessingAudio(false);
+        }
+    };
+
     const { status, startRecording, stopRecording, mediaBlobUrl, clearBlobUrl, previewAudioStream } =
         useReactMediaRecorder({
             audio: {
@@ -121,6 +157,7 @@ export default function SimpleInputComponent({ onSend, avatar }: {
                     return;
                 }
                 setBlob(blob);
+                void processRecording(blob);
             },
 
         });
@@ -174,16 +211,10 @@ export default function SimpleInputComponent({ onSend, avatar }: {
         setIsSending(true);
 
         try {
-            let audioUrl = "";
-            if (blob) {
-                // Extension follows the codec actually chosen — it was
-                // hardcoded to .webm even when recording m4a on iOS.
-                audioUrl = await uploadAudio({
-                    blob,
-                    fileName: `comment-audio.${fileExtension}`,
-                    fileSize: blob.size,
-                    mimeType,
-                });
+            let voiceUrl = audioUrl;
+            if (blob && !voiceUrl) {
+                // The on-stop upload failed; try once more before posting.
+                voiceUrl = await uploadRecording(blob);
             }
 
             let content = "";
@@ -192,7 +223,7 @@ export default function SimpleInputComponent({ onSend, avatar }: {
                     content = newComment.trim();
                     break;
                 case "VOICE":
-                    content = audioUrl;
+                    content = voiceUrl;
                     break;
                 case "MEDIA":
                     content = mediaUrl;
@@ -212,6 +243,7 @@ export default function SimpleInputComponent({ onSend, avatar }: {
             setNewComment("");
             clearBlobUrl();
             setBlob(null);
+            setAudioUrl("");
             setMediaUrl("");
             setCommentType(null);
             setRecordedSeconds(0);
@@ -230,8 +262,11 @@ export default function SimpleInputComponent({ onSend, avatar }: {
     };
 
     const handleDeleteRecording = () => {
+        recordingIdRef.current++; // drop any upload still in flight
         clearBlobUrl();
         setBlob(null);
+        setAudioUrl("");
+        setIsProcessingAudio(false);
         setCommentType(null);
         setRecordedSeconds(0);
         setElapsedSeconds(0);
@@ -358,6 +393,11 @@ export default function SimpleInputComponent({ onSend, avatar }: {
                                                 </span>
                                             </span>
                                         </>
+                                    ) : isProcessingAudio ? (
+                                        <span role="status" className="flex min-w-0 items-center gap-2">
+                                            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                                            <span className="truncate">Processing voice note…</span>
+                                        </span>
                                     ) : (
                                         <>
                                             <span className="truncate">Voice note ready</span>
@@ -457,6 +497,7 @@ export default function SimpleInputComponent({ onSend, avatar }: {
                             onClick={handleSend}
                             disabled={
                                 isSending ||
+                                isProcessingAudio ||
                                 (!newComment.trim() && !mediaBlobUrl && !mediaUrl)
                             }
                             aria-busy={isSending}
@@ -476,7 +517,18 @@ export default function SimpleInputComponent({ onSend, avatar }: {
 
                     {mediaBlobUrl && (
                         <div className="flex min-w-0 items-center gap-2">
-                            <AudioPlayer src={mediaBlobUrl} className="min-w-0 flex-1" />
+                            {isProcessingAudio ? (
+                                <div className="flex min-w-0 flex-1 items-center gap-2 px-1 text-sm text-muted-foreground">
+                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                                    <span className="truncate">Enhancing audio…</span>
+                                </div>
+                            ) : (
+                                <AudioPlayer
+                                    key={audioUrl || mediaBlobUrl}
+                                    src={audioUrl || mediaBlobUrl}
+                                    className="min-w-0 flex-1"
+                                />
+                            )}
                             <Button
                                 variant="ghost"
                                 size="icon"
