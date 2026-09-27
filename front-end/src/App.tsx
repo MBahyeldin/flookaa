@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import DashboardLayout from "./layouts/dashboard";
 import { Tooltip } from "./components/ui/tooltip";
 import useAudioContext from "./hooks/useAudioContext";
+import useWakeLock from "./hooks/useWakeLock";
 import { useEffect } from "react";
 import { DialogProvider } from "./Dialog.context";
 import { useLoading } from "./Loading.context";
@@ -20,6 +21,8 @@ function App() {
       };
       init();
   }, [initAudio]);
+
+  useWakeLock();
 
   if (isFetchUserLoading) {
     return <AppLoader />;
