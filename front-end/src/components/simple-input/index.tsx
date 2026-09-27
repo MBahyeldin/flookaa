@@ -99,7 +99,11 @@ export default function SimpleInputComponent({ onSend, avatar }: {
 
     const { status, startRecording, stopRecording, mediaBlobUrl, clearBlobUrl, previewAudioStream } =
         useReactMediaRecorder({
-            audio: true,
+            audio: {
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: true,
+            },
             video: false,
             // Only pass a mimeType we actually resolved; handing MediaRecorder
             // an empty string makes it reject the construction outright.

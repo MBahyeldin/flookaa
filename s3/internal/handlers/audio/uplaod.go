@@ -100,9 +100,11 @@ func Upload(c *gin.Context) {
 		Output(AUDIO_STORAGE_DIR+upload.TicketID+".mp3",
 			ffmpeg_go.KwArgs{
 				"ac":  1,     // mono channel (saves space)
-				"b:a": "64k", // audio bitrate (64 kbps = great for voice)
-				"ar":  44100, // sample rate
-				"y":   "",    // overwrite output file if exists
+				"ar":  48000, // browsers record at 48 kHz; matching it avoids a resample
+				"q:a": 2,     // LAME VBR (~170-210 kbps): keeps detail from the already-lossy Opus source
+				// Normalise loudness so quiet and loud recordings play back at a similar level.
+				"af": "loudnorm=I=-16:TP=-1.5:LRA=11",
+				"y":  "", // overwrite output file if exists
 			}).
 		Run()
 
