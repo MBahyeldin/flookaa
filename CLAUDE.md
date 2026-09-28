@@ -97,7 +97,7 @@ Always prefer `pick-and-play.bash` over composing `ansible-playbook` invocations
 
 ### Request paths into the backend
 
-`backend/cmd/server/root.go` builds one Gin engine with three groups, all behind a single CORS config and `AuthMiddleware`:
+`backend/cmd/server/root.go` builds one Gin engine with three groups, all behind a single CORS config and `auth.Middleware` (tiers below):
 
 - `api.AddApiGroup` → `/api/v1/*` REST: auth, users, personas, channels, geo, health. Postgres-backed via sqlc handlers in `backend/internal/db/postgres/handlers/`.
 - `graphql.AddGraphQLGroup` → `POST /query` and `GET /playground`. Posts/comments/replies live in MongoDB (`app.objects` collection); the resolver struct carries `*db.Queries`, the `app.objects` collection, NATS, and the Redis content/persona stores.
@@ -105,9 +105,25 @@ Always prefer `pick-and-play.bash` over composing `ansible-playbook` invocations
 
 `main.go` dispatches on `os.Args[1]`: no args starts the server, `seed` runs `cmd/seeder`.
 
-### Auth is cookie-JWT and non-blocking
+### Auth is cookie-JWT and fails closed per route group
 
-`AuthMiddleware` reads the `jwt` cookie, verifies it, and sets `email_address`, `user_id`, `persona_id` in the Gin context. **It always calls `c.Next()`** — a missing or invalid token is not rejected here. Every handler that needs identity must check `c.Get("user_id")` itself and return 401. A `persona_id` claim matters: content is authored by a persona, not directly by a user.
+`backend/internal/auth` has three pieces:
+
+- `auth.Middleware(signer)` (global) only **parses** the `jwt` cookie and sets `user_id`, `persona_id`, `email_address` in the Gin context. It never rejects.
+- `auth.RequireUser()` → 401 `{"error":"unauthenticated"}`; `auth.RequirePersona()` → 401, or 403 `{"error":"persona_required"}` when no persona is chosen (`persona_id` is 0 after login until `set-current-persona` reissues the JWT).
+- Handlers read identity with `auth.UserID(c)` / `auth.PersonaID(c)` / `auth.Email(c)`, never `c.Get(...)`.
+
+Tiers are applied at **group** level, so a new route inherits its group's tier:
+
+| Tier | Routes |
+|---|---|
+| Public | `/api/v1/health`, `auth/register`, `auth/login`, `auth/logout`, `auth/google`, `auth/oauth2callback/*`, `geo/*` (used during signup) |
+| User | `auth/info`, `auth/verify`, `users/*`, `persona/*` |
+| Persona | `channels/*`, `POST /query`, `POST /control` |
+
+**Content and channel actions belong to a persona, not a user**: authorship, membership, realtime subscriptions (Redis `persona:<id>:subjects`) are all keyed by `persona_id`; `user_id` is only for account and persona management. `/playground` is only mounted when `GIN_MODE` is not `release`.
+
+The frontend mirrors this: REST calls go through `src/lib/apiFetch.ts` and Apollo through an `ErrorLink` in `src/graphql/client.ts`. On 401 they clear `user` (App renders the public layout); on 403 `persona_required` they clear `persona` (DashboardLayout renders persona selection). No redirects.
 
 ### The realtime path
 

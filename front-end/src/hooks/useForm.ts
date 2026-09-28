@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 import type { Form } from "@/models/Forms/Form";
 import { useFormik } from "formik";
 import { unknown } from "zod";
@@ -62,7 +63,7 @@ export default function useForm({
           return;
         }
 
-        const resp = await fetch(`${API_BASE_URL}${form.relativeApiPath}`, {
+        const resp = await apiFetch(`${API_BASE_URL}${form.relativeApiPath}`, {
           method: form.method,
           headers: {
             "Content-Type": "application/json",

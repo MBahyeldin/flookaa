@@ -1,9 +1,10 @@
+import { apiFetch } from "@/lib/apiFetch";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default async function verifyEmail(
     code: string
 ) {
-    const response = await fetch(`${API_BASE_URL}/api/v1/auth/verify`, {
+    const response = await apiFetch(`${API_BASE_URL}/api/v1/auth/verify`, {
         method: "POST",
         credentials: "include",
         headers: {

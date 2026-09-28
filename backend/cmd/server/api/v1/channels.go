@@ -1,13 +1,14 @@
 package v1
 
 import (
+	"app/internal/auth"
 	"app/internal/db/postgres/handlers/channels"
 
 	"github.com/gin-gonic/gin"
 )
 
 func AddChannelsGroups(r *gin.RouterGroup, channels *channels.Handler) {
-	channelsGroup := r.Group("/channels")
+	channelsGroup := r.Group("/channels", auth.RequirePersona())
 	{
 		channelsGroup.GET("/", channels.GetAllChannels)
 		channelsGroup.POST("/create", channels.CreateChannel)

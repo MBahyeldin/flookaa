@@ -1,6 +1,7 @@
 package users
 
 import (
+	"app/internal/auth"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,15 +10,15 @@ import (
 func (h *Handler) Info(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userId, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+	userId, ok := auth.UserID(c)
+	if !ok {
+		auth.Unauthorized(c)
 		return
 	}
 
 	q := h.q
 
-	userRow, err := q.GetUserBasicInfo(ctx, userId.(int64))
+	userRow, err := q.GetUserBasicInfo(ctx, userId)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No user found with this id"})
 		return

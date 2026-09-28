@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 import type { Profile } from "@/types/user";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -7,7 +8,7 @@ export async function getUserData(): Promise<Profile | null> {
     throw new Error("API_BASE_URL is not defined");
   }
   try {
-    const resp = await fetch(`${API_BASE_URL}/api/v1/users/profile`, {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/users/profile`, {
       credentials: "include",
     });
     if (!resp.ok) return null;

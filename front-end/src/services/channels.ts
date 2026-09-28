@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 import type { Channel } from "@/types/channel";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -8,7 +9,7 @@ if (!API_BASE_URL) {
 
 export async function getChannels(): Promise<{ channels: Channel[] } | null> {
   try {
-    const resp = await fetch(`${API_BASE_URL}/api/v1/channels/`, {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/channels/`, {
       credentials: "include",
     });
     if (!resp.ok) return null;
@@ -21,7 +22,7 @@ export async function getChannels(): Promise<{ channels: Channel[] } | null> {
 
 export async function joinChannel(channelId: string): Promise<Error | null> {
   try {
-    const resp = await fetch(`${API_BASE_URL}/api/v1/channels/join/${channelId}`, {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/channels/join/${channelId}`, {
       method: "POST",
       credentials: "include",
     });
@@ -35,7 +36,7 @@ export async function joinChannel(channelId: string): Promise<Error | null> {
 
 export async function leaveChannel(channelId: string): Promise<Error | null> {
   try {
-    const resp = await fetch(`${API_BASE_URL}/api/v1/channels/leave/${channelId}`, {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/channels/leave/${channelId}`, {
       method: "POST",
       credentials: "include",
     });

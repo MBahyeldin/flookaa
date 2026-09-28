@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 import type { Info } from "@/types/auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -8,7 +9,7 @@ if (!API_BASE_URL) {
 
 export async function fetchCurrentUser(): Promise<Info | null> {
   try {
-    const resp = await fetch(`${API_BASE_URL}/api/v1/auth/info`, { credentials: "include" });
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/auth/info`, { credentials: "include" });
     if (!resp.ok) return null;
     const data = (await resp.json()) as Info;
     return (data);
@@ -21,7 +22,7 @@ export async function fetchCurrentUser(): Promise<Info | null> {
 export async function logOut(): Promise<void> {
 
   try {
-    await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
+    await apiFetch(`${API_BASE_URL}/api/v1/auth/logout`, {
       method: "POST",
       credentials: "include",
     });

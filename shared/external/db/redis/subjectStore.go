@@ -27,8 +27,8 @@ func newSubjectStore(client *redis.Client, ttl time.Duration) *SubjectStore {
 	}
 }
 
-// add default subjects for a new user
-func (c *SubjectStore) AddDefaultSubjectsToUser(ctx context.Context, userID string) (*[]types.SubjectOffsets, error) {
+// add default subjects for a new persona
+func (c *SubjectStore) AddDefaultSubjectsToPersona(ctx context.Context, personaID string) (*[]types.SubjectOffsets, error) {
 	var StreamName = nats.USER_EVENTS_STREAM
 	events := []string{
 		"direct_messages",
@@ -37,18 +37,18 @@ func (c *SubjectStore) AddDefaultSubjectsToUser(ctx context.Context, userID stri
 	}
 	var subjectOffsets []types.SubjectOffsets
 
-	userIdInt, err := strconv.Atoi(userID)
+	personaIdInt, err := strconv.ParseInt(personaID, 10, 64)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, event := range events {
 		subjectHelper := subject.New(&StreamName, &models.Owner{
-			ID:   int64(userIdInt),
+			ID:   personaIdInt,
 			Type: models.OwnerTypePersona,
 		}, event, "*")
 		subject := subjectHelper.GetSubject()
-		if result, err := c.AddSubjectToUser(ctx, userID, subject, 0); err != nil {
+		if result, err := c.AddSubjectToPersona(ctx, personaID, subject, 0); err != nil {
 			return nil, err
 		} else {
 			subjectOffsets = append(subjectOffsets, *result)
@@ -57,9 +57,9 @@ func (c *SubjectStore) AddDefaultSubjectsToUser(ctx context.Context, userID stri
 	return &subjectOffsets, nil
 }
 
-// AddSubject creates a new subject for the user with initial offsets
-func (c *SubjectStore) AddSubjectToUser(ctx context.Context, userId string, subject string, offset int) (*types.SubjectOffsets, error) {
-	key := getSubjectsKey(userId)
+// AddSubjectToPersona creates a new subject for the persona with initial offsets
+func (c *SubjectStore) AddSubjectToPersona(ctx context.Context, personaID string, subject string, offset int) (*types.SubjectOffsets, error) {
+	key := getSubjectsKey(personaID)
 
 	data := types.SubjectOffsets{
 		Subject: subject,
@@ -81,9 +81,9 @@ func (c *SubjectStore) AddSubjectToUser(ctx context.Context, userId string, subj
 	}, nil
 }
 
-// RemoveSubject deletes the subject hash for the user
-func (c *SubjectStore) RemoveSubjectFromUser(ctx context.Context, userId string, subject string) (*[]string, error) {
-	key := getSubjectsKey(userId)
+// RemoveSubjectFromPersona deletes the subject for the persona
+func (c *SubjectStore) RemoveSubjectFromPersona(ctx context.Context, personaID string, subject string) (*[]string, error) {
+	key := getSubjectsKey(personaID)
 
 	err := c.client.LRem(ctx, key, 0, subject).Err()
 	if err != nil {
@@ -93,9 +93,9 @@ func (c *SubjectStore) RemoveSubjectFromUser(ctx context.Context, userId string,
 	return &[]string{key}, nil
 }
 
-// ListSubjects returns all subjects the user is subscribed to
-func (c *SubjectStore) ListSubjectsForUser(ctx context.Context, userID string) (*[]types.SubjectOffsets, error) {
-	key := getSubjectsKey(userID)
+// ListSubjectsForPersona returns all subjects the persona is subscribed to
+func (c *SubjectStore) ListSubjectsForPersona(ctx context.Context, personaID string) (*[]types.SubjectOffsets, error) {
+	key := getSubjectsKey(personaID)
 
 	// Get all elements in the list
 	vals, err := c.client.LRange(ctx, key, 0, -1).Result()
@@ -122,6 +122,8 @@ func (c *SubjectStore) ListSubjectsForUser(ctx context.Context, userID string) (
 	return &subjects, nil
 }
 
-func getSubjectsKey(userId string) string {
-	return fmt.Sprintf("user:%s:subjects", userId)
+// Subject lists are keyed by persona. The old user:<id>:subjects keys are
+// no longer read.
+func getSubjectsKey(personaID string) string {
+	return fmt.Sprintf("persona:%s:subjects", personaID)
 }

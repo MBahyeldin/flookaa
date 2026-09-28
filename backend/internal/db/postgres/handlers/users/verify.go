@@ -1,6 +1,7 @@
 package users
 
 import (
+	"app/internal/auth"
 	"app/internal/models"
 	"net/http"
 
@@ -14,7 +15,11 @@ func (h *Handler) Verify(c *gin.Context) {
 		return
 	}
 	verificationCode := req.VerificationCode
-	userId := c.GetInt64("user_id")
+	userId, ok := auth.UserID(c)
+	if !ok {
+		auth.Unauthorized(c)
+		return
+	}
 
 	err := h.verification.VerifyUserCode(userId, verificationCode)
 

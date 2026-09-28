@@ -5,12 +5,12 @@ import (
 	v1 "app/cmd/server/api/v1"
 	"app/cmd/server/control"
 	"app/cmd/server/graphql"
+	"app/internal/auth"
 	"app/internal/config"
 	"app/internal/db/postgres/handlers/channels"
 	"app/internal/db/postgres/handlers/geo"
 	"app/internal/db/postgres/handlers/users"
 	controlhandlers "app/internal/db/redis/handler"
-	"app/internal/middlewares"
 	"app/internal/oauthproviders"
 	"app/util/email"
 	"app/util/image"
@@ -119,7 +119,7 @@ func StartServer(cfg config.Server) error {
 		AllowCredentials: true,
 	}))
 
-	r.Use(middlewares.AuthMiddleware(signer))
+	r.Use(auth.Middleware(signer))
 
 	api.AddApiGroup(r, restHandlers)
 	graphql.AddGraphQLGroup(r, resolver)

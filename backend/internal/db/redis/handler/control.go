@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"app/internal/auth"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -50,10 +51,10 @@ func NewHandler(subjects *redis.SubjectStore) *Handler {
 func (h *Handler) Control(c *gin.Context) {
 	fmt.Println("Control endpoint hit")
 
-	userIdInt64, exists := c.Get("user_id")
-	if !exists {
-		log.Println("User ID not found in context")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+	// Realtime subscriptions belong to the persona, not the user.
+	personaIdInt64, ok := auth.PersonaID(c)
+	if !ok {
+		auth.PersonaRequired(c)
 		return
 	}
 
@@ -64,11 +65,11 @@ func (h *Handler) Control(c *gin.Context) {
 		return
 	}
 
-	userId := strconv.Itoa(int(userIdInt64.(int64)))
+	personaId := strconv.FormatInt(personaIdInt64, 10)
 
 	switch bodyData.Payload.Owner {
 	case OwnerTypeDefault:
-		h.defaultSubjects(c, userId)
+		h.defaultSubjects(c, personaId)
 
 	case OwnerTypeChannel:
 		h.channel(c, bodyData)

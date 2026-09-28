@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 if (!API_BASE_URL) {
@@ -6,7 +7,7 @@ if (!API_BASE_URL) {
 
 export default async function continueWithGoogle(state: "login" | "signup") {
     const googleLoginUrl = `${API_BASE_URL}/api/v1/auth/google?state=${state}`;
-    const oAuthUrlResp = await fetch(googleLoginUrl, {
+    const oAuthUrlResp = await apiFetch(googleLoginUrl, {
         method: "GET",
         credentials: "include",
     })

@@ -122,9 +122,10 @@ func (g *Google) HandleGoogleOAuthCallback(c *gin.Context) {
 }
 
 func (g *Google) handleLogInRequest(c *gin.Context, user users.UserMinimal) {
-	token, err := g.users.LoginToken(users.UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress})
+	token, err := g.users.LoginToken(user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token plaese try again"})
+		return
 	}
 	cookies.AddCookieToContext(c, "jwt", token)
 

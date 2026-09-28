@@ -1,6 +1,7 @@
 package channels
 
 import (
+	"app/internal/auth"
 	"net/http"
 	"shared/pkg/db"
 
@@ -23,9 +24,9 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	personaId, exists := c.Get("persona_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+	personaId, ok := auth.PersonaID(c)
+	if !ok {
+		auth.PersonaRequired(c)
 		return
 	}
 
@@ -36,7 +37,7 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 		Description: req.Description,
 		Thumbnail:   req.Thumbnail,
 		Banner:      req.Banner,
-		OwnerID:     personaId.(int64),
+		OwnerID:     personaId,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -45,7 +46,7 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 
 	_, err = q.AddUserToChannel(ctx, db.AddUserToChannelParams{
 		ChannelID: channel.ID,
-		PersonaID: personaId.(int64),
+		PersonaID: personaId,
 	})
 
 	if err != nil {
@@ -55,7 +56,7 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 
 	_, err = q.FollowChannel(ctx, db.FollowChannelParams{
 		ChannelID: channel.ID,
-		PersonaID: personaId.(int64),
+		PersonaID: personaId,
 	})
 
 	if err != nil {
@@ -72,7 +73,7 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 	// AssignUserRoleInChannel
 	_, err = q.AssignPersonaRoleInChannel(ctx, db.AssignPersonaRoleInChannelParams{
 		ChannelID: channel.ID,
-		PersonaID: personaId.(int64),
+		PersonaID: personaId,
 		RoleID:    moderatorRole.ID,
 	})
 	if err != nil {

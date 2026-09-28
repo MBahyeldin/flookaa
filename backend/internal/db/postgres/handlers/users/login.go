@@ -48,7 +48,8 @@ func (h *Handler) Login(c *gin.Context) {
 
 	cookies.AddCookieToContext(c, "jwt", token)
 
-	c.JSON(http.StatusOK, gin.H{"login": "successful", "token": token})
+	// The token lives only in the httpOnly cookie; never echo it to JS.
+	c.JSON(http.StatusOK, gin.H{"login": "successful"})
 
 }
 

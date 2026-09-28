@@ -1,6 +1,7 @@
 package channels
 
 import (
+	"app/internal/auth"
 	"net/http"
 	"shared/pkg/db"
 	"strconv"
@@ -14,9 +15,9 @@ import (
 func (h *Handler) JoinChannel(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	personaId, exists := c.Get("persona_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+	personaId, ok := auth.PersonaID(c)
+	if !ok {
+		auth.PersonaRequired(c)
 		return
 	}
 
@@ -30,7 +31,7 @@ func (h *Handler) JoinChannel(c *gin.Context) {
 
 	channel, err := q.GetChannel(ctx, db.GetChannelParams{
 		ID:      int64(channelId),
-		OwnerID: personaId.(int64),
+		OwnerID: personaId,
 	})
 
 	if err != nil {
@@ -45,7 +46,7 @@ func (h *Handler) JoinChannel(c *gin.Context) {
 
 	_, err = q.AddUserToChannel(ctx, db.AddUserToChannelParams{
 		ChannelID: int64(channelId),
-		PersonaID: personaId.(int64),
+		PersonaID: personaId,
 	})
 
 	if err != nil {
@@ -59,9 +60,9 @@ func (h *Handler) JoinChannel(c *gin.Context) {
 func (h *Handler) LeaveChannel(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	personaId, exists := c.Get("persona_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+	personaId, ok := auth.PersonaID(c)
+	if !ok {
+		auth.PersonaRequired(c)
 		return
 	}
 
@@ -75,7 +76,7 @@ func (h *Handler) LeaveChannel(c *gin.Context) {
 
 	channel, err := q.GetChannel(ctx, db.GetChannelParams{
 		ID:      int64(channelId),
-		OwnerID: personaId.(int64),
+		OwnerID: personaId,
 	})
 
 	if err != nil {
@@ -95,7 +96,7 @@ func (h *Handler) LeaveChannel(c *gin.Context) {
 
 	_, err = q.RemoveUserFromChannel(ctx, db.RemoveUserFromChannelParams{
 		ChannelID: int64(channelId),
-		PersonaID: personaId.(int64),
+		PersonaID: personaId,
 	})
 
 	if err != nil {
