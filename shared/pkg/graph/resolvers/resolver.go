@@ -8,6 +8,7 @@ import (
 	"shared/external/db/nats"
 	"shared/external/db/redis"
 	"shared/pkg/access"
+	"shared/pkg/counters"
 	"shared/pkg/db"
 	"shared/pkg/graph"
 	"shared/pkg/graph/directives"
@@ -136,38 +137,19 @@ func (r *Resolver) resolvePostMetaCached(ctx context.Context, postID string) (*m
 	if err != nil {
 		log.Println("redis get meta error:", err)
 	}
-
-	if cachedMeta == nil {
-		q := r.Queries
-		postEvents, err := q.GetMetaFromEvents(ctx, postID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get post events from postgres: %w", err)
-		}
-
-		likesEventsCount := int32(0)
-		commentsEventsCount := int32(0)
-		sharesEventsCount := int32(0)
-		for _, event := range postEvents {
-			switch event.Name {
-			case db.EventEnumLike:
-				likesEventsCount = int32(event.Count)
-			case db.EventEnumComment:
-				commentsEventsCount = int32(event.Count)
-			}
-		}
-
-		cachedMeta = &models.Meta{
-			LikesCount:    likesEventsCount,
-			CommentsCount: &commentsEventsCount,
-			SharesCount:   sharesEventsCount,
-		}
-		err = r.Content.SetPostMeta(ctx, postID, cachedMeta)
-		if err != nil {
-			fmt.Println("redis set meta error:", err)
-			return nil, fmt.Errorf("failed to set post meta in redis: %w", err)
-		}
+	if cachedMeta != nil {
+		return cachedMeta, nil
 	}
-	return cachedMeta, nil
+
+	meta, err := counters.Count(ctx, r.Queries, postID)
+	if err != nil {
+		return nil, err
+	}
+	// Fill, not Set: never overwrite a newer recount from the redis worker.
+	if err := r.Content.FillPostMeta(ctx, postID, meta); err != nil {
+		log.Println("redis fill post meta error:", err)
+	}
+	return meta, nil
 }
 
 func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryResolver, limit int32, offset int32) ([]*models.Post, error) {
@@ -223,14 +205,6 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 		return nil, fmt.Errorf("failed to get personaId from context: %w", err)
 	}
 
-	// this should not be here in production, should be done at login or some other place
-	// but for simplicity, we do it here
-	// ensure user activities are cached in Redis
-	err = r.Persona.InitPersonaActivityIfNotSet(ctx, personaId, r.Queries)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get init activities: %w", err)
-	}
-
 	for cursor.Next(ctxTimeout) {
 		var p models.PostGenericDocument
 
@@ -252,26 +226,19 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 			return nil, fmt.Errorf("failed to resolve post meta: %w", err)
 		}
 		post.Meta = meta
-
-		isLikedByMe, err := r.Persona.IsPersonaActivity(ctx, personaId, p.ID, db.EventEnumLike)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve if post is liked by me: %w", err)
-		}
-
-		// post Meta personalization (based on current user activities)
-		personalizedMeta := &models.PersonalizedMeta{
-			LikedByPersona: isLikedByMe,
-			ACL: &models.ACL{
-				CanComment: true,                 // Simplified for this example
-				CanShare:   true,                 // Simplified for this example
-				CanView:    true,                 // Simplified for this example
-				CanReply:   true,                 // Simplified for this example
-				CanLike:    true && !isLikedByMe, // Simplified for this example
-			},
-		}
-		post.PersonalizedMeta = personalizedMeta
 		posts = append(posts, post)
+	}
 
+	postIDs := make([]string, len(posts))
+	for i, post := range posts {
+		postIDs[i] = post.ID
+	}
+	liked, err := r.likedTargets(ctx, personaId, postIDs)
+	if err != nil {
+		return nil, err
+	}
+	for _, post := range posts {
+		post.PersonalizedMeta = personalizedMeta(liked[post.ID])
 	}
 
 	return posts, nil
@@ -318,42 +285,19 @@ func (r *Resolver) resolveCommentMetaCached(ctx context.Context, commentId strin
 	if err != nil {
 		log.Println("redis get meta error:", err)
 	}
-
-	if cachedMeta == nil {
-		log.Println("Comment meta not found in cache, fetching from Postgres")
-		q := r.Queries
-		metaEvents, err := q.GetMetaFromEvents(ctx, commentId)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get post events from postgres: %w", err)
-		}
-
-		likesEventsCount := int32(0)
-		repliesEventsCount := int32(0)
-		sharesEventsCount := int32(0)
-		for _, event := range metaEvents {
-			switch event.Name {
-			case db.EventEnumLike:
-				likesEventsCount = int32(event.Count)
-			case db.EventEnumComment:
-				repliesEventsCount = int32(event.Count)
-			}
-		}
-
-		log.Println("Fetched comment meta from Postgres:", likesEventsCount, repliesEventsCount, sharesEventsCount)
-
-		cachedMeta = &models.Meta{
-			LikesCount:    likesEventsCount,
-			CommentsCount: &repliesEventsCount,
-			SharesCount:   sharesEventsCount,
-		}
-		err = r.Content.SetCommentMeta(ctx, commentId, cachedMeta)
-		if err != nil {
-			fmt.Println("redis set meta error:", err)
-			return nil, fmt.Errorf("failed to set comment meta in redis: %w", err)
-		}
+	if cachedMeta != nil {
+		return cachedMeta, nil
 	}
 
-	return cachedMeta, nil
+	meta, err := counters.Count(ctx, r.Queries, commentId)
+	if err != nil {
+		return nil, err
+	}
+	// Fill, not Set: never overwrite a newer recount from the redis worker.
+	if err := r.Content.FillCommentMeta(ctx, commentId, meta); err != nil {
+		log.Println("redis fill comment meta error:", err)
+	}
+	return meta, nil
 }
 
 func getComments(ctx context.Context, postID string, r *queryResolver, limit int32, offset int32) ([]*models.Comment, error) {
@@ -417,26 +361,54 @@ func getComments(ctx context.Context, postID string, r *queryResolver, limit int
 		}
 		comment.Meta = meta
 
-		isLikedByMe, err := r.Persona.IsPersonaActivity(ctx, personaId, comment.ID, db.EventEnumLike)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve if post is liked by me: %w", err)
-		}
-
-		// post Meta personalization (based on current user activities)
-		personalizedMeta := &models.PersonalizedMeta{
-			LikedByPersona: isLikedByMe,
-			ACL: &models.ACL{
-				CanComment: true,                 // Simplified for this example
-				CanShare:   true,                 // Simplified for this example
-				CanView:    true,                 // Simplified for this example
-				CanReply:   true,                 // Simplified for this example
-				CanLike:    true && !isLikedByMe, // Simplified for this example
-			},
-		}
-		comment.PersonalizedMeta = personalizedMeta
-
 		comments = append(comments, comment)
 	}
 
+	ids := make([]string, len(comments))
+	for i, comment := range comments {
+		ids[i] = comment.ID
+	}
+	liked, err := r.likedTargets(ctx, personaId, ids)
+	if err != nil {
+		return nil, err
+	}
+	for _, comment := range comments {
+		comment.PersonalizedMeta = personalizedMeta(liked[comment.ID])
+	}
+
 	return comments, nil
+}
+
+// likedTargets returns which of ids personaID currently likes, in one query
+// per page (Postgres events are the source of truth).
+func (r *Resolver) likedTargets(ctx context.Context, personaID int64, ids []string) (map[string]bool, error) {
+	liked := make(map[string]bool, len(ids))
+	if len(ids) == 0 {
+		return liked, nil
+	}
+	rows, err := r.Queries.GetLikedTargets(ctx, db.GetLikedTargetsParams{
+		ActorID:   personaID,
+		TargetIds: ids,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve liked targets: %w", err)
+	}
+	for _, id := range rows {
+		liked[id] = true
+	}
+	return liked, nil
+}
+
+// personalizedMeta is the per-persona view of a post or comment.
+func personalizedMeta(likedByPersona bool) *models.PersonalizedMeta {
+	return &models.PersonalizedMeta{
+		LikedByPersona: likedByPersona,
+		ACL: &models.ACL{
+			CanComment: true,            // Simplified for this example
+			CanShare:   true,            // Simplified for this example
+			CanView:    true,            // Simplified for this example
+			CanReply:   true,            // Simplified for this example
+			CanLike:    !likedByPersona, // Simplified for this example
+		},
+	}
 }

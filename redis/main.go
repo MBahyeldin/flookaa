@@ -9,7 +9,9 @@ import (
 	"redis_worker/internal"
 	"redis_worker/internal/config"
 	"shared/external/db/nats"
+	"shared/external/db/postgres"
 	"shared/external/db/redis"
+	"shared/pkg/db"
 	"time"
 )
 
@@ -21,15 +23,21 @@ func main() {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, os.Interrupt)
+
+	pg, err := postgres.Connect(ctx, cfg.DatabaseDSN)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer pg.Close()
 
 	natsHelper, err := nats.Connect(cfg.NATSURL)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer natsHelper.Close()
-	natsHelper.EnsureStreams(ctx)
 
 	redisClient, err := redis.Connect(ctx, cfg.RedisAddr, cfg.RedisPassword)
 	if err != nil {
@@ -38,13 +46,15 @@ func main() {
 	stores := redis.NewStores(redisClient, 30*time.Minute)
 	defer stores.Close()
 
-	// run the internal processes
-	internal.NewWorker(natsHelper, stores.Content, stores.Persona).Run(ctx)
+	consumeCtx, err := internal.NewWorker(natsHelper, stores.Content, db.New(pg)).Run(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Wait for interrupt signal
 	<-sigc
 	fmt.Println("Shutting down gracefully...")
-	cancel()
+	consumeCtx.Stop()
 
 	fmt.Println("Application stopped.")
 }

@@ -60,7 +60,10 @@ func StartServer(cfg config.Server) error {
 		return err
 	}
 	defer natsHelper.Close()
-	natsHelper.EnsureStreams(ctx)
+	// The backend owns stream creation and retention; other services only check.
+	if err := natsHelper.EnsureStreams(ctx); err != nil {
+		return err
+	}
 
 	redisClient, err := redis.Connect(ctx, cfg.RedisAddr, cfg.RedisPassword)
 	if err != nil {

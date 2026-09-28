@@ -3,7 +3,6 @@ package redis
 import (
 	"context"
 	"fmt"
-	"shared/pkg/db"
 	"shared/pkg/graph/models"
 	"strconv"
 	"time"
@@ -26,34 +25,51 @@ func newContentStore(client *redis.Client, ttl time.Duration) *ContentStore {
 const postMetaKeyPattern = "content:post:%s"
 const commentMetaKeyPattern = "content:comment:%s"
 
-// SetPostMeta caches post metadata in Redis
+// contentMetaTTL bounds how long a wrong count can survive if an event is
+// ever lost: the next read after expiry recounts from Postgres.
+const contentMetaTTL = 24 * time.Hour
+
+// Counters are never incremented in Redis. Postgres events are the source of
+// truth; Redis holds whole recounts:
+//   - SetPostMeta/SetCommentMeta overwrite (the redis worker, after an event).
+//   - FillPostMeta/FillCommentMeta only write missing fields (read-through on
+//     a cache miss), so a slower cache fill can never clobber a newer recount.
+
+// SetPostMeta overwrites the cached counters for a post.
 func (s *ContentStore) SetPostMeta(ctx context.Context, postID string, meta *models.Meta) error {
-	key := fmt.Sprintf(postMetaKeyPattern, postID)
-	err := s.client.HSet(ctx, key, map[string]interface{}{
-		"likes_count":    meta.LikesCount,
-		"comments_count": meta.CommentsCount,
-		"shares_count":   meta.SharesCount,
-		"views_count":    meta.ViewsCount,
-	}).Err()
-	if err != nil {
-		return fmt.Errorf("failed to set post meta: %w", err)
-	}
-	return nil
+	return s.writeMeta(ctx, fmt.Sprintf(postMetaKeyPattern, postID), meta, true)
 }
 
-func (s *ContentStore) IncrementPostMeta(ctx context.Context, postID string, event db.EventEnum, val int64) error {
-	key := fmt.Sprintf(postMetaKeyPattern, postID)
-	switch event {
-	case db.EventEnumLike:
-		err := s.client.HIncrBy(ctx, key, "likes_count", val).Err()
-		if err != nil {
-			return fmt.Errorf("failed to increment post meta: %w", err)
+// FillPostMeta caches counters for a post only where none are cached yet.
+func (s *ContentStore) FillPostMeta(ctx context.Context, postID string, meta *models.Meta) error {
+	return s.writeMeta(ctx, fmt.Sprintf(postMetaKeyPattern, postID), meta, false)
+}
+
+func (s *ContentStore) writeMeta(ctx context.Context, key string, meta *models.Meta, overwrite bool) error {
+	var commentsCount int32
+	if meta.CommentsCount != nil {
+		commentsCount = *meta.CommentsCount
+	}
+	fields := map[string]interface{}{
+		"likes_count":    meta.LikesCount,
+		"comments_count": commentsCount,
+		"shares_count":   meta.SharesCount,
+		"views_count":    meta.ViewsCount,
+	}
+
+	_, err := s.client.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+		if overwrite {
+			pipe.HSet(ctx, key, fields)
+		} else {
+			for field, value := range fields {
+				pipe.HSetNX(ctx, key, field, value)
+			}
 		}
-	case db.EventEnumComment:
-		err := s.client.HIncrBy(ctx, key, "comments_count", val).Err()
-		if err != nil {
-			return fmt.Errorf("failed to increment post meta: %w", err)
-		}
+		pipe.Expire(ctx, key, contentMetaTTL)
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to write meta %s: %w", key, err)
 	}
 	return nil
 }
@@ -79,35 +95,14 @@ func (s *ContentStore) DeletePostMeta(ctx context.Context, postID string) error 
 	return s.client.Del(ctx, key).Err()
 }
 
-func (s *ContentStore) SetCommentMeta(ctx context.Context, postID string, meta *models.Meta) error {
-	key := fmt.Sprintf(commentMetaKeyPattern, postID)
-	err := s.client.HSet(ctx, key, map[string]interface{}{
-		"likes_count":    meta.LikesCount,
-		"comments_count": meta.CommentsCount,
-		"shares_count":   meta.SharesCount,
-		"views_count":    meta.ViewsCount,
-	}).Err()
-	if err != nil {
-		return fmt.Errorf("failed to set Comment meta: %w", err)
-	}
-	return nil
+// SetCommentMeta overwrites the cached counters for a comment.
+func (s *ContentStore) SetCommentMeta(ctx context.Context, commentID string, meta *models.Meta) error {
+	return s.writeMeta(ctx, fmt.Sprintf(commentMetaKeyPattern, commentID), meta, true)
 }
 
-func (s *ContentStore) IncrementCommentMeta(ctx context.Context, commentId string, event db.EventEnum, val int64) error {
-	key := fmt.Sprintf(commentMetaKeyPattern, commentId)
-	switch event {
-	case db.EventEnumLike:
-		err := s.client.HIncrBy(ctx, key, "likes_count", val).Err()
-		if err != nil {
-			return fmt.Errorf("failed to increment comment meta: %w", err)
-		}
-	case db.EventEnumComment:
-		err := s.client.HIncrBy(ctx, key, "comments_count", val).Err()
-		if err != nil {
-			return fmt.Errorf("failed to increment comment meta: %w", err)
-		}
-	}
-	return nil
+// FillCommentMeta caches counters for a comment only where none are cached yet.
+func (s *ContentStore) FillCommentMeta(ctx context.Context, commentID string, meta *models.Meta) error {
+	return s.writeMeta(ctx, fmt.Sprintf(commentMetaKeyPattern, commentID), meta, false)
 }
 
 func (s *ContentStore) GetCommentMeta(ctx context.Context, commentId string) (*models.Meta, error) {

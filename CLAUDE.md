@@ -148,9 +148,18 @@ Rules live in one place, `shared/pkg/access` (`LoadChannel` → `CanRead`/`CanWr
 
 Membership is `channel_members` with `left_at IS NULL AND status = 'active'` — every membership query must filter on both. Non-readers get 404 / `channel not found`, never 403, so private channels don't leak existence of content. For existing objects (comments, likes) resolvers authorize and publish against the owner **stored on the Mongo document** (`loadObject` → `authorizeOwner`), never the client's `owner` input. Persona-owned content (`OwnerTypePersona`) is not restricted yet.
 
-### Counters are eventually consistent
+### Counters: Postgres is the source of truth, Redis is a cache
 
-Writes publish an `Event` to JetStream. `redis/internal/root.go` subscribes to `STREAM_CONTENT_EVENTS.>` and increments hash fields (`likes_count`, `comments_count`, …) in Redis via `shared/external/db/redis/contentStore.go`. GraphQL `Meta`/`PersonalizedMeta` reads come from that cache. So a new counter needs three coordinated changes: the event publish, a `handle*Event` case in the redis worker, and the store method.
+Every like/comment is a row in the Postgres `events` table (unlike = soft delete). Counts are always a recount of those rows (`shared/pkg/counters.Count`), never a running total:
+
+- The redis worker (`redis/internal/root.go`) is a durable JetStream pull consumer (`redis-counters`, explicit ack, NAK with backoff, `Term` for unparseable messages). For each like/comment event it recounts the target and **overwrites** `content:post:<id>` / `content:comment:<id>` (`ContentStore.Set*Meta`). Duplicate, replayed or out-of-order events converge; events published while the worker is down are picked up on restart. It needs `DATABASE_DSN`.
+- GraphQL reads `Get*Meta`; on a miss it recounts and uses `Fill*Meta` (HSETNX), so a slow cache fill never clobbers a newer worker write.
+- Content keys expire after 24h; Redis can be flushed at any time and refills on demand.
+- "Liked by me" is one Postgres query per page (`GetLikedTargets`), not a Redis set.
+
+A new counter needs: the event written to `events` + published, a case in `counters.Count`, and a field in `ContentStore.writeMeta`/`getMeta`.
+
+Publishing uses `JetStream.Publish` (acknowledged), so a missing stream is an error. Only the backend runs `EnsureStreams` (creates streams, sets `MaxAge` 7d); the worker only `CheckStream`s.
 
 ### Dependencies are wired explicitly in each `main`
 

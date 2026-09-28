@@ -65,6 +65,46 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event
 	return i, err
 }
 
+const getLikedTargets = `-- name: GetLikedTargets :many
+SELECT DISTINCT target_id
+FROM events
+WHERE actor_id = $1::bigint
+  AND name = 'like'
+  AND deleted_at IS NULL
+  AND target_id = ANY($2::varchar[])
+`
+
+type GetLikedTargetsParams struct {
+	ActorID   int64
+	TargetIds []string
+}
+
+// -------------------------------
+// 3. Which of the given targets a persona currently likes
+// -------------------------------
+func (q *Queries) GetLikedTargets(ctx context.Context, arg GetLikedTargetsParams) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, getLikedTargets, arg.ActorID, pq.Array(arg.TargetIds))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var target_id string
+		if err := rows.Scan(&target_id); err != nil {
+			return nil, err
+		}
+		items = append(items, target_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getMetaFromEvents = `-- name: GetMetaFromEvents :many
 SELECT
     name,
@@ -96,73 +136,6 @@ func (q *Queries) GetMetaFromEvents(ctx context.Context, targetID string) ([]Get
 	for rows.Next() {
 		var i GetMetaFromEventsRow
 		if err := rows.Scan(&i.Name, &i.TargetID, &i.Count); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getPersonaActivities = `-- name: GetPersonaActivities :many
-SELECT
-  actor_id,
-  ARRAY(
-    SELECT target_id
-    FROM events e2
-    WHERE e2.actor_id = e.actor_id AND e2.name = 'comment'
-    ORDER BY e2.created_at DESC
-    LIMIT 1000
-  ) AS comment_targets,
-  ARRAY(
-    SELECT target_id
-    FROM events e2
-    WHERE e2.actor_id = e.actor_id AND e2.name = 'post'
-    ORDER BY e2.created_at DESC
-    LIMIT 1000
-  ) AS post_targets,
-  ARRAY(
-    SELECT target_id
-    FROM events e2
-    WHERE e2.actor_id = e.actor_id AND e2.name = 'like'
-    ORDER BY e2.created_at DESC
-    LIMIT 1000
-  ) AS like_targets
-FROM events e
-WHERE e.actor_id = $1
-GROUP BY actor_id
-`
-
-type GetPersonaActivitiesRow struct {
-	ActorID        int64
-	CommentTargets []string
-	PostTargets    []string
-	LikeTargets    []string
-}
-
-// -------------------------------
-// 3. Get user activities (events)
-// -------------------------------
-func (q *Queries) GetPersonaActivities(ctx context.Context, actorID int64) ([]GetPersonaActivitiesRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPersonaActivities, actorID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetPersonaActivitiesRow
-	for rows.Next() {
-		var i GetPersonaActivitiesRow
-		if err := rows.Scan(
-			&i.ActorID,
-			pq.Array(&i.CommentTargets),
-			pq.Array(&i.PostTargets),
-			pq.Array(&i.LikeTargets),
-		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

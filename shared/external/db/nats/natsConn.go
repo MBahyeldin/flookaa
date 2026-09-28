@@ -3,9 +3,12 @@ package nats
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"shared/pkg/db"
 	"slices"
+	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
@@ -15,6 +18,10 @@ const USER_EVENTS_STREAM = "STREAM_USER_EVENTS"
 const CONTENT_EVENTS_STREAM = "STREAM_CONTENT_EVENTS"
 
 var DefaultStreamNames = []string{USER_EVENTS_STREAM, CONTENT_EVENTS_STREAM}
+
+// StreamMaxAge bounds stream growth. It is also how far back the websocket
+// proxy can replay for a reconnecting browser.
+const StreamMaxAge = 7 * 24 * time.Hour
 
 type Event struct {
 	Name       db.EventEnum           `json:"name"`
@@ -37,12 +44,6 @@ type NatsHelper struct {
 	JetStream jetstream.JetStream
 }
 
-type NatsInterface interface {
-	AddSubjectToStream(streamName, subject string) (*jetstream.Stream, error)
-	RemoveSubjectFromStream(streamName, subject string) error
-	PublishMessage(subject string, message db.CreateEventParams) error
-}
-
 // Connect opens a NATS connection and a JetStream context on top of it.
 func Connect(url string) (*NatsHelper, error) {
 	nc, err := nats.Connect(url)
@@ -61,162 +62,67 @@ func (natsHelper *NatsHelper) Close() {
 	natsHelper.Conn.Close()
 }
 
-// EnsureStreams creates the default streams if they do not exist yet.
-func (natsHelper *NatsHelper) EnsureStreams(ctx context.Context) {
-	js := natsHelper.JetStream
+// EnsureStreams creates the default streams, or updates existing ones so they
+// capture "<stream>.>" and expire messages after StreamMaxAge. Only the
+// backend calls this; other services use CheckStream.
+func (natsHelper *NatsHelper) EnsureStreams(ctx context.Context) error {
+	for _, name := range DefaultStreamNames {
+		subject := name + ".>"
 
-	// get or create default streams
-	streams := js.ListStreams(ctx)
-	for s := range streams.Info() {
-		fmt.Println(s.Config.Name)
-	}
-
-	if streams.Err() != nil {
-		fmt.Println("Unexpected error occurred while listing streams")
-	}
-
-	// list stream names
-	names := js.StreamNames(ctx)
-	if names.Err() != nil {
-		fmt.Println("Unexpected error occurred while listing stream names")
-	}
-	currentNames := []string{}
-	for name := range names.Name() {
-		currentNames = append(currentNames, name)
-	}
-
-	for _, streamName := range DefaultStreamNames {
-		if slices.Contains(currentNames, streamName) {
-			fmt.Printf("Stream %s already exists\n", streamName)
+		stream, err := natsHelper.JetStream.Stream(ctx, name)
+		if errors.Is(err, jetstream.ErrStreamNotFound) {
+			_, err = natsHelper.JetStream.CreateStream(ctx, jetstream.StreamConfig{
+				Name:     name,
+				Subjects: []string{subject},
+				Storage:  jetstream.FileStorage,
+				Replicas: 1,
+				MaxAge:   StreamMaxAge,
+			})
+			if err != nil {
+				return fmt.Errorf("nats: create stream %s: %w", name, err)
+			}
+			log.Printf("nats: created stream %s", name)
 			continue
 		}
-		// list stream names
-
-		_, err := js.CreateStream(ctx, jetstream.StreamConfig{
-			Name:     streamName,
-			Subjects: []string{},
-			Storage:  jetstream.FileStorage,
-			Replicas: 1,
-		})
 		if err != nil {
-			fmt.Printf("Error creating stream %s: %v\n", streamName, err)
-		} else {
-			fmt.Printf("Stream %s created successfully\n", streamName)
+			return fmt.Errorf("nats: get stream %s: %w", name, err)
 		}
-		natsHelper.AddSubjectToStream(ctx, streamName, fmt.Sprintf("%s.>", streamName))
-	}
-}
 
-func (natsHelper *NatsHelper) AddSubjectToStream(ctx context.Context, streamName, subject string) (*jetstream.Stream, error) {
-	streams := natsHelper.JetStream.ListStreams(ctx)
-	subjectExists := false
-	currentStreamSubjects := []string{}
-	for s := range streams.Info() {
-		if s.Config.Name != streamName {
+		// Start from the live config so updates keep every other setting.
+		cfg := stream.CachedInfo().Config
+		if cfg.MaxAge == StreamMaxAge && slices.Contains(cfg.Subjects, subject) {
 			continue
 		}
-		if slices.Contains(s.Config.Subjects, subject) {
-			subjectExists = true
-			break
+		cfg.MaxAge = StreamMaxAge
+		if !slices.Contains(cfg.Subjects, subject) {
+			cfg.Subjects = append(cfg.Subjects, subject)
 		}
-		currentStreamSubjects = s.Config.Subjects
-	}
-
-	if subjectExists {
-		fmt.Printf("Subject %s already exists in a stream\n", subject)
-		return nil, nil
-	}
-
-	stream, err := natsHelper.JetStream.UpdateStream(ctx, jetstream.StreamConfig{
-		Name:     streamName,
-		Subjects: append(currentStreamSubjects, subject),
-		Storage:  jetstream.FileStorage,
-		Replicas: 1,
-	})
-	if err != nil {
-		fmt.Printf("Error adding subject %s to stream %s: %v\n", subject, streamName, err)
-		return nil, err
-	}
-	fmt.Printf("Subject %s added to stream %s successfully\n", subject, streamName)
-	return &stream, nil
-}
-
-func (natsHelper *NatsHelper) RemoveSubjectFromStream(ctx context.Context, streamName, subject string) error {
-	streams := natsHelper.JetStream.ListStreams(ctx)
-	currentStreamSubjects := []string{}
-	for s := range streams.Info() {
-		if s.Config.Name != streamName {
-			continue
+		if _, err := natsHelper.JetStream.UpdateStream(ctx, cfg); err != nil {
+			return fmt.Errorf("nats: update stream %s: %w", name, err)
 		}
-		if !slices.Contains(s.Config.Subjects, subject) {
-			fmt.Printf("Subject %s does not exist in stream %s\n", subject, streamName)
-			return nil
-		}
-		currentStreamSubjects = s.Config.Subjects
+		log.Printf("nats: updated stream %s (max age %s)", name, StreamMaxAge)
 	}
-
-	// remove subject from current subjects
-	newSubjects := []string{}
-	for _, sub := range currentStreamSubjects {
-		if sub != subject {
-			newSubjects = append(newSubjects, sub)
-		}
-	}
-
-	_, err := natsHelper.JetStream.UpdateStream(ctx, jetstream.StreamConfig{
-		Name:     streamName,
-		Subjects: newSubjects,
-		Storage:  jetstream.FileStorage,
-		Replicas: 1,
-	})
-	if err != nil {
-		fmt.Printf("Error removing subject %s from stream %s: %v\n", subject, streamName, err)
-		return err
-	}
-	fmt.Printf("Subject %s removed from stream %s successfully\n", subject, streamName)
 	return nil
 }
 
-func (natsHelper *NatsHelper) PublishMessage(subject string, message *MessageType) error {
+// CheckStream fails when a stream the caller depends on does not exist.
+func (natsHelper *NatsHelper) CheckStream(ctx context.Context, name string) error {
+	if _, err := natsHelper.JetStream.Stream(ctx, name); err != nil {
+		return fmt.Errorf("nats: stream %s is not available (the backend creates it on startup): %w", name, err)
+	}
+	return nil
+}
+
+// PublishMessage publishes to JetStream and waits for the stream to store the
+// message, so a missing stream or a full disk surfaces as an error instead of
+// a silently dropped event.
+func (natsHelper *NatsHelper) PublishMessage(ctx context.Context, subject string, message *MessageType) error {
 	messageBytes, err := json.Marshal(message)
 	if err != nil {
-		fmt.Printf("Error marshalling message for subject %s: %v\n", subject, err)
-		return err
+		return fmt.Errorf("nats: marshal message for %s: %w", subject, err)
 	}
-	err = natsHelper.Conn.Publish(subject, messageBytes)
-	if err != nil {
-		fmt.Printf("Error publishing message to subject %s: %v\n", subject, err)
-		return err
+	if _, err := natsHelper.JetStream.Publish(ctx, subject, messageBytes); err != nil {
+		return fmt.Errorf("nats: publish to %s: %w", subject, err)
 	}
-	return nil
-}
-
-func (natsHelper *NatsHelper) SubscribeToSubject(ctx context.Context, subject string, handler nats.MsgHandler) (*nats.Subscription, error) {
-	subscription, err := natsHelper.Conn.Subscribe(subject, handler)
-	if err != nil {
-		fmt.Printf("Error subscribing to subject %s: %v\n", subject, err)
-		return nil, err
-	}
-	fmt.Printf("Subscribed to subject %s successfully\n", subject)
-	return subscription, nil
-}
-
-func (natsHelper *NatsHelper) QueueSubscribeToSubject(ctx context.Context, subject, queue string, handler nats.MsgHandler) (*nats.Subscription, error) {
-	subscription, err := natsHelper.Conn.QueueSubscribe(subject, queue, handler)
-	if err != nil {
-		fmt.Printf("Error queue subscribing to subject %s: %v\n", subject, err)
-		return nil, err
-	}
-	fmt.Printf("Queue subscribed to subject %s successfully\n", subject)
-	return subscription, nil
-}
-
-func (natsHelper *NatsHelper) DrainSubscription(ctx context.Context, sub *nats.Subscription) error {
-	err := sub.Drain()
-	if err != nil {
-		fmt.Printf("Error draining subscription: %v\n", err)
-		return err
-	}
-	fmt.Println("Subscription drained successfully")
 	return nil
 }
