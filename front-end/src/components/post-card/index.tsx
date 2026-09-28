@@ -20,6 +20,8 @@ import {
 } from "../ui/dropdown-menu";
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { useCreateLikeMutation, type Post } from "@/generated/graphql";
+import { CombinedGraphQLErrors } from "@apollo/client/errors";
+import { toast } from "sonner";
 import { PortableText as PortableTextReact } from "@portabletext/react";
 import deNormalizeBlocks from "@/utils/deNormalizeBlocks";
 import { useBlockObjectsProvider } from "@/BlockObjectsProvider.context";
@@ -53,9 +55,39 @@ export function Post({
   
 
 
-  const toggleLike = () => {
-    if (!persona?.id || !owner) return;
+  const [isLiking, setIsLiking] = useState(false);
+
+  const toggleLike = async () => {
+    if (!persona?.id || !owner || isLiking) return;
     const nextLiked = !liked;
+
+    // Wait for the server before flipping `liked`: it drives the heart
+    // animation, and a rejected like (e.g. "join the channel first") must not
+    // animate. The in-flight guard stops double clicks from racing.
+    setIsLiking(true);
+    try {
+      await createLike({
+        variables: {
+          targetId: post._id,
+          targetType: "POST",
+          liked: nextLiked,
+          owner: {
+            id: owner.id,
+            type: owner.type,
+          },
+        },
+      });
+    } catch (err) {
+      toast.error(
+        CombinedGraphQLErrors.is(err)
+          ? err.errors[0]?.message || "Couldn’t update your like."
+          : "Couldn’t update your like. Check your connection."
+      );
+      return;
+    } finally {
+      setIsLiking(false);
+    }
+
     setLiked(nextLiked);
 
     /*
@@ -65,26 +97,15 @@ export function Post({
      * likes arriving over the websocket — a busy post would chirp repeatedly
      * at a reader who did nothing. Here we know the like is the current user's.
      *
-     * Playing inside the click handler also satisfies the browser's autoplay
-     * policy, which requires a user gesture; the effect had no gesture behind
-     * it and logged "AudioContext was not allowed to start".
+     * It still runs from the click handler, well within the browser's
+     * transient-activation window after the request, which satisfies the
+     * autoplay policy; the effect had no gesture behind it and logged
+     * "AudioContext was not allowed to start".
      */
     if (nextLiked) {
       playSound("HEART_REACT");
     }
-
-    createLike({
-      variables: {
-        targetId: post._id,
-        targetType: "POST",
-        liked: !liked,
-        owner: {
-          id: owner.id,
-          type: owner.type,
-        },
-      },
-    });
-  };  
+  };
 
   const { playSound } = useAudioContext();
 
