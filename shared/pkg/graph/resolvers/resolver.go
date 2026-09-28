@@ -2,9 +2,9 @@ package models
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
+	"shared/external/db/nats"
 	"shared/external/db/redis"
 	"shared/pkg/db"
 	"shared/pkg/graph"
@@ -16,7 +16,6 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/gin-gonic/gin"
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -27,9 +26,13 @@ func NewExecutableSchema(cfg graph.Config) graphql.ExecutableSchema {
 }
 
 type Resolver struct {
-	Postgres *sql.DB
-	Mongo    *mongo.Client
-	Neo4j    neo4j.DriverWithContext
+	Queries *db.Queries
+	Objects *mongo.Collection
+	NATS    *nats.NatsHelper
+	Content *redis.ContentStore
+	Persona *redis.PersonaStore
+	// Neo4j is not used in the first version of the app (see shared/external/db/neo).
+	// Neo4j neo4j.DriverWithContext
 }
 
 func getUserIdFromContext(ctx context.Context) (int64, error) {
@@ -56,19 +59,19 @@ func getPersonaIdFromContext(ctx context.Context) (int64, error) {
 	return personaId, nil
 }
 
-func resolvePersonaCached(ctx context.Context, personaID int64, pg *sql.DB) (*models.Persona, error) {
-	cachedPersona, err := redis.Store.Persona.GetPersonaInfo(ctx, strconv.Itoa(int(personaID)))
+func (r *Resolver) resolvePersonaCached(ctx context.Context, personaID int64) (*models.Persona, error) {
+	cachedPersona, err := r.Persona.GetPersonaInfo(ctx, strconv.Itoa(int(personaID)))
 	if err != nil {
 		log.Println("redis get user error:", err)
 	}
 	if cachedPersona == nil {
-		q := db.New(pg)
+		q := r.Queries
 		persona, err := q.ResolvePersonaByID(ctx, personaID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get persona from postgres: %w", err)
 		}
 		cachedPersona = &persona
-		_ = redis.Store.Persona.SetPersonaInfo(ctx, &persona)
+		_ = r.Persona.SetPersonaInfo(ctx, &persona)
 	}
 	return &models.Persona{
 		ID:              cachedPersona.ID,
@@ -78,14 +81,14 @@ func resolvePersonaCached(ctx context.Context, personaID int64, pg *sql.DB) (*mo
 	}, nil
 }
 
-func resolvePostMetaCached(ctx context.Context, postID string, pg *sql.DB) (*models.Meta, error) {
-	cachedMeta, err := redis.Store.Content.GetPostMeta(ctx, postID)
+func (r *Resolver) resolvePostMetaCached(ctx context.Context, postID string) (*models.Meta, error) {
+	cachedMeta, err := r.Content.GetPostMeta(ctx, postID)
 	if err != nil {
 		log.Println("redis get meta error:", err)
 	}
 
 	if cachedMeta == nil {
-		q := db.New(pg)
+		q := r.Queries
 		postEvents, err := q.GetMetaFromEvents(ctx, postID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get post events from postgres: %w", err)
@@ -108,7 +111,7 @@ func resolvePostMetaCached(ctx context.Context, postID string, pg *sql.DB) (*mod
 			CommentsCount: &commentsEventsCount,
 			SharesCount:   sharesEventsCount,
 		}
-		err = redis.Store.Content.SetPostMeta(ctx, postID, cachedMeta)
+		err = r.Content.SetPostMeta(ctx, postID, cachedMeta)
 		if err != nil {
 			fmt.Println("redis set meta error:", err)
 			return nil, fmt.Errorf("failed to set post meta in redis: %w", err)
@@ -121,7 +124,7 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 	posts := []*models.Post{}
 	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	collection := r.Mongo.Database("app").Collection("objects")
+	collection := r.Objects
 
 	// limit value = 10 if not provided
 	limitVal := int32(10)
@@ -173,7 +176,7 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 	// this should not be here in production, should be done at login or some other place
 	// but for simplicity, we do it here
 	// ensure user activities are cached in Redis
-	err = redis.Store.Persona.InitPersonaActivityIfNotSet(ctx, personaId, r.Postgres)
+	err = r.Persona.InitPersonaActivityIfNotSet(ctx, personaId, r.Queries)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get init activities: %w", err)
 	}
@@ -187,20 +190,20 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 		post := models.PostMapper(&p)
 
 		// Author lookup (from Redis or Postgres)
-		author, err := resolvePersonaCached(ctx, p.AuthorID, r.Postgres)
+		author, err := r.resolvePersonaCached(ctx, p.AuthorID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve author: %w", err)
 		}
 		post.Author = author
 
 		// post metadata lookup (from Redis or Postgres)
-		meta, err := resolvePostMetaCached(ctx, p.ID, r.Postgres)
+		meta, err := r.resolvePostMetaCached(ctx, p.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve post meta: %w", err)
 		}
 		post.Meta = meta
 
-		isLikedByMe, err := redis.Store.Persona.IsPersonaActivity(ctx, personaId, p.ID, db.EventEnumLike)
+		isLikedByMe, err := r.Persona.IsPersonaActivity(ctx, personaId, p.ID, db.EventEnumLike)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve if post is liked by me: %w", err)
 		}
@@ -227,7 +230,7 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 func getTotalPostsCountForChannel(ctx context.Context, channelID int64, r *queryResolver) (int32, error) {
 	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	collection := r.Mongo.Database("app").Collection("objects")
+	collection := r.Objects
 
 	var pipeline = mongo.Pipeline{}
 	pipeline = append(pipeline, bson.D{{Key: "$match", Value: bson.M{
@@ -260,15 +263,15 @@ func getTotalPostsCountForChannel(ctx context.Context, channelID int64, r *query
 	return total, nil
 }
 
-func resolveCommentMetaCached(ctx context.Context, commentId string, pg *sql.DB) (*models.Meta, error) {
-	cachedMeta, err := redis.Store.Content.GetCommentMeta(ctx, commentId)
+func (r *Resolver) resolveCommentMetaCached(ctx context.Context, commentId string) (*models.Meta, error) {
+	cachedMeta, err := r.Content.GetCommentMeta(ctx, commentId)
 	if err != nil {
 		log.Println("redis get meta error:", err)
 	}
 
 	if cachedMeta == nil {
 		log.Println("Comment meta not found in cache, fetching from Postgres")
-		q := db.New(pg)
+		q := r.Queries
 		metaEvents, err := q.GetMetaFromEvents(ctx, commentId)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get post events from postgres: %w", err)
@@ -293,7 +296,7 @@ func resolveCommentMetaCached(ctx context.Context, commentId string, pg *sql.DB)
 			CommentsCount: &repliesEventsCount,
 			SharesCount:   sharesEventsCount,
 		}
-		err = redis.Store.Content.SetCommentMeta(ctx, commentId, cachedMeta)
+		err = r.Content.SetCommentMeta(ctx, commentId, cachedMeta)
 		if err != nil {
 			fmt.Println("redis set meta error:", err)
 			return nil, fmt.Errorf("failed to set comment meta in redis: %w", err)
@@ -311,7 +314,7 @@ func getComments(ctx context.Context, postID string, r *queryResolver, limit int
 	comments := []*models.Comment{}
 	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	collection := r.Mongo.Database("app").Collection("objects")
+	collection := r.Objects
 
 	// limit value = 10 if not provided
 	limitVal := int32(10)
@@ -350,7 +353,7 @@ func getComments(ctx context.Context, postID string, r *queryResolver, limit int
 		}
 
 		// Author lookup (from Redis or Postgres)
-		author, err := resolvePersonaCached(ctx, commentsWithReplies.AuthorID, r.Postgres)
+		author, err := r.resolvePersonaCached(ctx, commentsWithReplies.AuthorID)
 		if err != nil {
 			return nil, err
 		}
@@ -358,13 +361,13 @@ func getComments(ctx context.Context, postID string, r *queryResolver, limit int
 		comment := models.CommentMapper(&commentsWithReplies)
 		comment.Author = author
 
-		meta, err := resolveCommentMetaCached(ctx, commentsWithReplies.ID, r.Postgres)
+		meta, err := r.resolveCommentMetaCached(ctx, commentsWithReplies.ID)
 		if err != nil {
 			return nil, err
 		}
 		comment.Meta = meta
 
-		isLikedByMe, err := redis.Store.Persona.IsPersonaActivity(ctx, personaId, comment.ID, db.EventEnumLike)
+		isLikedByMe, err := r.Persona.IsPersonaActivity(ctx, personaId, comment.ID, db.EventEnumLike)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve if post is liked by me: %w", err)
 		}

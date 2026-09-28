@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AddPersonaRoutes(r *gin.RouterGroup) {
+func AddPersonaRoutes(r *gin.RouterGroup, users *users.Handler) {
 	personaGroup := r.Group("/persona")
 	{
 		personaGroup.GET("/list", users.ListPersonas)

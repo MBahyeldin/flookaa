@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-func AuthMiddleware() gin.HandlerFunc {
+func AuthMiddleware(signer *token.Signer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log.Println("Verifying JWT token")
 		jwtCookie, err := c.Cookie("jwt")
@@ -19,7 +19,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 		log.Println("Found JWT cookie:", jwtCookie)
-		token, err := token.Verify(jwtCookie)
+		token, err := signer.Verify(jwtCookie)
 		if err != nil || !token.Valid {
 			c.Next()
 			return

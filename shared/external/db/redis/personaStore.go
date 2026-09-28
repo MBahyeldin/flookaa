@@ -2,7 +2,6 @@ package redis
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"shared/pkg/db"
@@ -73,7 +72,7 @@ func (s *PersonaStore) DeletePersonaInfo(ctx context.Context, personaID string) 
 	return s.client.Del(ctx, key).Err()
 }
 
-func (s *PersonaStore) InitPersonaActivityIfNotSet(ctx context.Context, personaID int64, pg *sql.DB) error {
+func (s *PersonaStore) InitPersonaActivityIfNotSet(ctx context.Context, personaID int64, q *db.Queries) error {
 	// Check if the sets already exist
 	postsKey := fmt.Sprintf(personaActivityPostsKeyPattern, strconv.Itoa(int(personaID)))
 	likesKey := fmt.Sprintf(personaActivityLikesKeyPattern, strconv.Itoa(int(personaID)))
@@ -86,7 +85,6 @@ func (s *PersonaStore) InitPersonaActivityIfNotSet(ctx context.Context, personaI
 	}
 
 	if exists == 0 {
-		q := db.New(pg)
 		personaActivities, err := q.GetPersonaActivities(ctx, int64(personaID))
 		if err != nil {
 			return fmt.Errorf("failed to get persona activities from postgres: %w", err)

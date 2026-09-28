@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AddChannelsGroups(r *gin.RouterGroup) {
+func AddChannelsGroups(r *gin.RouterGroup, channels *channels.Handler) {
 	channelsGroup := r.Group("/channels")
 	{
 		channelsGroup.GET("/", channels.GetAllChannels)

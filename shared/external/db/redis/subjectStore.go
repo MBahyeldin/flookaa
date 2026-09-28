@@ -100,7 +100,7 @@ func (c *SubjectStore) ListSubjectsForUser(ctx context.Context, userID string) (
 	// Get all elements in the list
 	vals, err := c.client.LRange(ctx, key, 0, -1).Result()
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to list subjects: %w", err)
 	}
 
 	var subjects []types.SubjectOffsets

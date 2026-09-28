@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func channel(c *gin.Context, wsMessage WsMessage) {
+func (h *Handler) channel(c *gin.Context, wsMessage WsMessage) {
 	fmt.Println("Channel control endpoint hit")
 
 	payload := wsMessage.Payload

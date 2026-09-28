@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"hash/fnv"
 	"net/http"
-	"shared/external/db/postgres"
 	"shared/pkg/db"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-func ReadCurrentPersona(c *gin.Context) {
+func (h *Handler) ReadCurrentPersona(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	personaId, exists := c.Get("persona_id")
@@ -27,7 +26,7 @@ func ReadCurrentPersona(c *gin.Context) {
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	personaRow, err := q.GetPersonaBasicInfo(ctx, personaId.(int64))
 	if err != nil {
@@ -46,7 +45,7 @@ func ReadCurrentPersona(c *gin.Context) {
 	})
 }
 
-func ListPersonas(c *gin.Context) {
+func (h *Handler) ListPersonas(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	userId, exists := c.Get("user_id")
@@ -55,7 +54,7 @@ func ListPersonas(c *gin.Context) {
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	personas, err := q.GetUserPersonasByUserId(ctx, userId.(int64))
 	if err != nil {
@@ -83,7 +82,7 @@ func ListPersonas(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func CreatePersona(c *gin.Context) {
+func (h *Handler) CreatePersona(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	userId, exists := c.Get("user_id")
@@ -107,7 +106,7 @@ func CreatePersona(c *gin.Context) {
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	slug := generateSlug(req.FirstName, req.LastName)
 
@@ -131,7 +130,7 @@ func CreatePersona(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"persona_id": personaId})
 }
 
-func SetCurrentPersona(c *gin.Context) {
+func (h *Handler) SetCurrentPersona(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	userId, exists := c.Get("user_id")
@@ -149,7 +148,7 @@ func SetCurrentPersona(c *gin.Context) {
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	persona, err := q.GetPersonaByIdAndUserId(ctx, db.GetPersonaByIdAndUserIdParams{
 		ID:     req.PersonaID,
@@ -161,7 +160,7 @@ func SetCurrentPersona(c *gin.Context) {
 	}
 
 	// generate new JWT with updated persona_id
-	jwt, err := GetLoginToken(UserMinimal{ID: userId.(int64), EmailAddress: c.GetString("email_address"), PersonaId: persona.ID})
+	jwt, err := h.LoginToken(UserMinimal{ID: userId.(int64), EmailAddress: c.GetString("email_address"), PersonaId: persona.ID})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
@@ -181,7 +180,7 @@ func generateSlug(firstName, lastName string) string {
 	return fmt.Sprintf("%x", h.Sum32())
 }
 
-func UpdatePersona(c *gin.Context) {
+func (h *Handler) UpdatePersona(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	userId, exists := c.Get("user_id")
@@ -213,7 +212,7 @@ func UpdatePersona(c *gin.Context) {
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	persona, err := q.GetPersonaByIdAndUserId(ctx, db.GetPersonaByIdAndUserIdParams{
 		ID:     personaId,

@@ -6,12 +6,24 @@ import (
 	"s3/cmd/server/api"
 	audio_handler "s3/internal/handlers/audio"
 	"s3/internal/handlers/uploads"
+	"shared/util/envconfig"
+	"shared/util/token"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func StartServer() {
+	var env envconfig.Reader
+	jwtSecret := env.Required("JWT_SECRET_KEY")
+	if err := env.Err(); err != nil {
+		log.Fatal(err)
+	}
+	signer, err := token.NewSigner(jwtSecret)
+	if err != nil {
+		log.Fatal("JWT_SECRET_KEY: ", err)
+	}
+
 	r := gin.Default()
 
 	// TODO: REMOVE LOCALHOST BEFORE DEPLOYMENT
@@ -30,7 +42,7 @@ func StartServer() {
 		AllowCredentials: true,
 	}))
 
-	api.AddApiGroup(r)
+	api.AddApiGroup(r, signer)
 
 	r.GET("/files/:storageKey", FilesHandler)
 	r.GET("/audio/:storageKey", AudioHandler)

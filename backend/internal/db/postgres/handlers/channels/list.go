@@ -2,7 +2,6 @@ package channels
 
 import (
 	"net/http"
-	"shared/external/db/postgres"
 	"shared/pkg/db"
 	"strconv"
 
@@ -23,7 +22,7 @@ type ChannelResponse struct {
 	IsFollower  bool   `json:"is_follower"`
 }
 
-func GetAllChannels(c *gin.Context) {
+func (h *Handler) GetAllChannels(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	userId, exists := c.Get("user_id")
@@ -32,7 +31,7 @@ func GetAllChannels(c *gin.Context) {
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	limit := int64(10) // Default limit
 	offset := int64(0) // Default offset

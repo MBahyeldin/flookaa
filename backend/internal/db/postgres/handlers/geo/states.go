@@ -2,14 +2,13 @@ package geo
 
 import (
 	"net/http"
-	"shared/external/db/postgres"
 	"shared/pkg/db"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-func GetStatesByCountry(c *gin.Context) {
+func (h *Handler) GetStatesByCountry(c *gin.Context) {
 	country := c.Param("country")
 
 	if country == "" {
@@ -18,7 +17,7 @@ func GetStatesByCountry(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	countryId, err := strconv.ParseInt(country, 10, 64)
 	if err != nil {

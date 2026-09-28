@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
-	"os"
 	"shared/pkg/db"
 	"slices"
 
@@ -45,31 +43,27 @@ type NatsInterface interface {
 	PublishMessage(subject string, message db.CreateEventParams) error
 }
 
-var NatsHelperInstance NatsHelper
-
-func init() {
-	ctx := context.Background()
-	// Connect to NATS server
-	nc, err := nats.Connect(os.Getenv("NATS_CONNECTION"))
+// Connect opens a NATS connection and a JetStream context on top of it.
+func Connect(url string) (*NatsHelper, error) {
+	nc, err := nats.Connect(url)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("nats: connect: %w", err)
 	}
-	fmt.Println("Connected to NATS!")
-
-	// create default stream if not exist
 	js, err := jetstream.New(nc)
 	if err != nil {
-		fmt.Println("cannot connect to jet stream")
+		nc.Close()
+		return nil, fmt.Errorf("nats: jetstream: %w", err)
 	}
-	NatsHelperInstance = NatsHelper{
-		Conn:      nc,
-		JetStream: js,
-	}
-	createDefaultStreams(ctx)
+	return &NatsHelper{Conn: nc, JetStream: js}, nil
 }
 
-func createDefaultStreams(ctx context.Context) {
-	js := NatsHelperInstance.JetStream
+func (natsHelper *NatsHelper) Close() {
+	natsHelper.Conn.Close()
+}
+
+// EnsureStreams creates the default streams if they do not exist yet.
+func (natsHelper *NatsHelper) EnsureStreams(ctx context.Context) {
+	js := natsHelper.JetStream
 
 	// get or create default streams
 	streams := js.ListStreams(ctx)
@@ -109,7 +103,7 @@ func createDefaultStreams(ctx context.Context) {
 		} else {
 			fmt.Printf("Stream %s created successfully\n", streamName)
 		}
-		NatsHelperInstance.AddSubjectToStream(ctx, streamName, fmt.Sprintf("%s.>", streamName))
+		natsHelper.AddSubjectToStream(ctx, streamName, fmt.Sprintf("%s.>", streamName))
 	}
 }
 
@@ -189,7 +183,7 @@ func (natsHelper *NatsHelper) PublishMessage(subject string, message *MessageTyp
 		fmt.Printf("Error marshalling message for subject %s: %v\n", subject, err)
 		return err
 	}
-	err = NatsHelperInstance.Conn.Publish(subject, messageBytes)
+	err = natsHelper.Conn.Publish(subject, messageBytes)
 	if err != nil {
 		fmt.Printf("Error publishing message to subject %s: %v\n", subject, err)
 		return err

@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AddAuthRoutes(r *gin.RouterGroup) {
+func AddAuthRoutes(r *gin.RouterGroup, users *users.Handler, google *oauthproviders.Google) {
 	authGroup := r.Group("/auth")
 	{
 		authGroup.POST("/register", users.Create)
@@ -16,12 +16,12 @@ func AddAuthRoutes(r *gin.RouterGroup) {
 		authGroup.POST("/login", users.Login)
 		authGroup.POST("/logout", handleLogOut)
 		authGroup.GET("/info", users.Info)
-		authGroup.GET("/google", oauthproviders.HandleGoogleOAuth)
+		authGroup.GET("/google", google.HandleGoogleOAuth)
 	}
 
 	oAuthGroup := authGroup.Group("/oauth2callback")
 	{
-		oAuthGroup.GET("/google", oauthproviders.HandleGoogleOAuthCallback)
+		oAuthGroup.GET("/google", google.HandleGoogleOAuthCallback)
 	}
 }
 

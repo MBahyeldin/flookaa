@@ -4,14 +4,21 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"shared/external/db/postgres"
 	"shared/pkg/db"
 	"time"
 )
 
-func CreateVerificationCode(userId int64) (string, error) {
+type Service struct {
+	q *db.Queries
+}
+
+func NewService(q *db.Queries) *Service {
+	return &Service{q: q}
+}
+
+func (s *Service) CreateVerificationCode(userId int64) (string, error) {
 	// create a new verification code for the user
-	q := db.New(postgres.DbConn)
+	q := s.q
 	ctx, cancle := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancle()
 

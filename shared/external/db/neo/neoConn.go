@@ -1,34 +1,25 @@
 package neo
 
+// Neo4j is not wired into any binary for the first version of the app. It is
+// meant for friends-of-friends recommendations; call Connect from a main and
+// pass the driver into the resolver when that feature is picked up again.
+
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
-var Neo4jDriver neo4j.DriverWithContext
-
-func init() {
-	ctx := context.Background()
-	dbUri := os.Getenv("NEO4J_URI")
-	dbUser := os.Getenv("NEO4J_USER")
-	dbPassword := os.Getenv("NEO4J_PASSWORD")
-	driver, err := neo4j.NewDriverWithContext(
-		dbUri,
-		neo4j.BasicAuth(dbUser, dbPassword, ""))
-	Neo4jDriver = driver
-
+// Connect opens a Neo4j driver and verifies connectivity.
+func Connect(ctx context.Context, uri, user, password string) (neo4j.DriverWithContext, error) {
+	driver, err := neo4j.NewDriverWithContext(uri, neo4j.BasicAuth(user, password, ""))
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("neo4j: new driver: %w", err)
 	}
-	fmt.Println("Connected to Neo4j database!")
-
-	err = driver.VerifyConnectivity(ctx)
-	if err != nil {
-		panic(err)
+	if err := driver.VerifyConnectivity(ctx); err != nil {
+		_ = driver.Close(ctx)
+		return nil, fmt.Errorf("neo4j: verify connectivity: %w", err)
 	}
-
-	fmt.Println("Connection established.")
+	return driver, nil
 }

@@ -18,14 +18,19 @@ type GetImageFromUrlRequest struct {
 	Token string `json:"token" binding:"required"`
 }
 
-func FromUrl(c *gin.Context) {
+// FromUrl downloads the image named in a token signed by the backend.
+func FromUrl(signer *token.Signer) gin.HandlerFunc {
+	return func(c *gin.Context) { fromUrl(c, signer) }
+}
+
+func fromUrl(c *gin.Context, signer *token.Signer) {
 	var req GetImageFromUrlRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	token, err := token.Verify(req.Token)
+	token, err := signer.Verify(req.Token)
 	if err != nil {
 		c.JSON(401, gin.H{"error": "invalid token"})
 		return

@@ -2,7 +2,6 @@ package geo
 
 import (
 	"net/http"
-	"shared/external/db/postgres"
 	"shared/pkg/db"
 	"strconv"
 
@@ -14,7 +13,7 @@ type City struct {
 	Name string `json:"name"`
 }
 
-func SearchCitiesByStateId(c *gin.Context) {
+func (h *Handler) SearchCitiesByStateId(c *gin.Context) {
 	stateIdParam := c.Param("state")
 	stateId, err := strconv.ParseInt(stateIdParam, 10, 64)
 	if err != nil {
@@ -30,7 +29,7 @@ func SearchCitiesByStateId(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	q := db.New(postgres.DbConn)
+	q := h.q
 	cities, err := q.ListCitiesByState(ctx, listCititesByStateParams)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch cities"})

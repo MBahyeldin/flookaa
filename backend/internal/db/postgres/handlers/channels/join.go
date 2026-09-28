@@ -2,7 +2,6 @@ package channels
 
 import (
 	"net/http"
-	"shared/external/db/postgres"
 	"shared/pkg/db"
 	"strconv"
 
@@ -12,7 +11,7 @@ import (
 // JoinChannel allows a user to join a channel.
 // It expects the user ID to be set in the context (e.g., via middleware)
 // user becomes a member of the channel specified by channel_id in the URL.
-func JoinChannel(c *gin.Context) {
+func (h *Handler) JoinChannel(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	personaId, exists := c.Get("persona_id")
@@ -27,7 +26,7 @@ func JoinChannel(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid channel ID"})
 		return
 	}
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	channel, err := q.GetChannel(ctx, db.GetChannelParams{
 		ID:      int64(channelId),
@@ -57,7 +56,7 @@ func JoinChannel(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "joined channel successfully"})
 }
 
-func LeaveChannel(c *gin.Context) {
+func (h *Handler) LeaveChannel(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	personaId, exists := c.Get("persona_id")
@@ -72,7 +71,7 @@ func LeaveChannel(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid channel ID"})
 		return
 	}
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	channel, err := q.GetChannel(ctx, db.GetChannelParams{
 		ID:      int64(channelId),

@@ -100,7 +100,7 @@ Always prefer `pick-and-play.bash` over composing `ansible-playbook` invocations
 `backend/cmd/server/root.go` builds one Gin engine with three groups, all behind a single CORS config and `AuthMiddleware`:
 
 - `api.AddApiGroup` → `/api/v1/*` REST: auth, users, personas, channels, geo, health. Postgres-backed via sqlc handlers in `backend/internal/db/postgres/handlers/`.
-- `graphql.AddGraphQLGroup` → `POST /query` and `GET /playground`. Posts/comments/replies live in MongoDB (`app.objects` collection); the resolver struct carries Postgres, Mongo **and** Neo4j handles.
+- `graphql.AddGraphQLGroup` → `POST /query` and `GET /playground`. Posts/comments/replies live in MongoDB (`app.objects` collection); the resolver struct carries `*db.Queries`, the `app.objects` collection, NATS, and the Redis content/persona stores.
 - `control.AddControlGroup` → `POST /control`, called by the Rust proxy, not by browsers.
 
 `main.go` dispatches on `os.Args[1]`: no args starts the server, `seed` runs `cmd/seeder`.
@@ -123,22 +123,28 @@ Subject strings are built only through `shared/pkg/subject` — `{stream}.{owner
 
 Writes publish an `Event` to JetStream. `redis/internal/root.go` subscribes to `STREAM_CONTENT_EVENTS.>` and increments hash fields (`likes_count`, `comments_count`, …) in Redis via `shared/external/db/redis/contentStore.go`. GraphQL `Meta`/`PersonalizedMeta` reads come from that cache. So a new counter needs three coordinated changes: the event publish, a `handle*Event` case in the redis worker, and the store method.
 
-### DB connections are package-level `init()` singletons
+### Dependencies are wired explicitly in each `main`
 
-`shared/external/db/{postgres,mongo,nats,neo,redis}` each open their connection in `init()` and `log.Fatal` on failure. Importing the package connects. Consequence: any Go binary that imports these — including a CLI subcommand or the seeder — needs the full env set present or it dies at startup.
+There are no connection globals. `shared/external/db/{postgres,mongo,nats,redis}` each expose `Connect(...)`, and importing a package connects nothing. Each binary's `main` loads its own `internal/config` (built on `shared/util/envconfig`, which reports **all** missing vars in one error), connects only what it uses, and passes handles into constructors:
+
+- Backend: `backend/cmd/server/root.go` builds one `Handler` struct per domain (`users`, `channels`, `geo`, the `/control` handler, `oauthproviders.Google`) plus the GraphQL `resolvers.Resolver`, each holding only its own deps (`*db.Queries`, specific Redis sub-stores, `*nats.NatsHelper`, `*token.Signer`). The seeder (`app seed`) loads only `DATABASE_DSN` and the admin credentials.
+- Redis worker: `redis/main.go` → `internal.NewWorker(...)`.
+- JWTs go through `token.Signer` (`shared/util/token`), which refuses a secret under 32 bytes. `s3` builds its own signer to verify the backend's image tokens.
+
+Only `config` packages call `os.Getenv`. A new dependency means a constructor parameter, not a package global.
 
 ### Data split
 
 - **Postgres** (sqlc): users, personas, roles, channels, memberships, geo, verification, events.
 - **MongoDB** (`app.objects`): posts, comments, replies as portable-text documents.
-- **Neo4j**: wired into the resolver but only lightly used.
+- **Neo4j**: not wired into any binary for now (planned for friends-of-friends recommendations); `shared/external/db/neo` keeps a `Connect` for when it returns.
 - **Redis**: sessions, subscription lists, per-subject offsets, content counters, persona cache.
 
 ### The `whatsapp` service is deliberately different
 
 It breaks several repo-wide patterns on purpose — keep it that way:
 
-- **No `shared` import**, so the `init()` connection singletons don't force the whole platform's env on it. Config is loaded explicitly via `internal/config.Load()`.
+- **No `shared` import**: it has no need for the platform's databases or env. Config is loaded explicitly via `internal/config.Load()`.
 - **Auth aborts** with 401 (static bearer token, constant-time compare) instead of the backend's always-`c.Next()` pattern. No CORS; browsers never call it — go frontend → backend → whatsapp.
 - **Pure-Go SQLite (`modernc.org/sqlite`) with `CGO_ENABLED=0`.** Swapping to `mattn/go-sqlite3` breaks the macOS → linux cross-build.
 - **Session DB lives in `/opt/whatsapp-data/`**, outside the versioned `/opt/whatsapp/<version>` dir the gRPC agent creates, or each deploy would orphan it.

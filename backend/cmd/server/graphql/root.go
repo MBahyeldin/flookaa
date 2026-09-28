@@ -2,9 +2,6 @@ package graphql
 
 import (
 	"context"
-	"shared/external/db/mongo"
-	"shared/external/db/neo"
-	"shared/external/db/postgres"
 	"shared/pkg/graph"
 	models "shared/pkg/graph/resolvers"
 	"shared/util/keys"
@@ -14,14 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AddGraphQLGroup(r *gin.Engine) {
+func AddGraphQLGroup(r *gin.Engine, resolver *models.Resolver) {
 	// --- GraphQL server ---
-	resolver := &models.Resolver{
-		Postgres: postgres.DbConn,
-		Mongo:    mongo.Client,
-		Neo4j:    neo.Neo4jDriver,
-	}
-
 	srv := handler.NewDefaultServer(
 		models.NewExecutableSchema(
 			graph.Config{

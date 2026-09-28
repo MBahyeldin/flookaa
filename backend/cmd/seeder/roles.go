@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"log"
-	"shared/external/db/postgres"
 	"shared/pkg/db"
 )
 
@@ -15,9 +14,8 @@ var roles = []db.CreateRoleParams{
 	{Name: "viewer", Description: sql.NullString{String: "Limited access for viewer users", Valid: true}},
 }
 
-func SeedRoles() {
+func SeedRoles(q *db.Queries) {
 	ctx := context.Background()
-	q := db.New(postgres.DbConn)
 
 	for _, role := range roles {
 		// Check if role already exists

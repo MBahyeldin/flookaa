@@ -2,13 +2,11 @@ package users
 
 import (
 	"net/http"
-	"shared/external/db/postgres"
-	"shared/pkg/db"
 
 	"github.com/gin-gonic/gin"
 )
 
-func Info(c *gin.Context) {
+func (h *Handler) Info(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	userId, exists := c.Get("user_id")
@@ -17,7 +15,7 @@ func Info(c *gin.Context) {
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	userRow, err := q.GetUserBasicInfo(ctx, userId.(int64))
 	if err != nil {

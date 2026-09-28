@@ -6,14 +6,11 @@ import (
 	"app/util/encryption"
 	"fmt"
 	"net/http"
-	"shared/external/db/postgres"
-	"shared/pkg/db"
-	"shared/util/token"
 
 	"github.com/gin-gonic/gin"
 )
 
-func Login(c *gin.Context) {
+func (h *Handler) Login(c *gin.Context) {
 	fmt.Println("Login endpoint hit")
 
 	var req models.LoginRequest
@@ -23,7 +20,7 @@ func Login(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	q := db.New(postgres.DbConn)
+	q := h.q
 	user, err := q.GetUserHashedPasswordByEmail(ctx, req.EmailAddress)
 	if err != nil {
 		fmt.Println("Error fetching user:", err)
@@ -42,7 +39,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	token, err := GetLoginToken(UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress})
+	token, err := h.LoginToken(UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress})
 	if err != nil {
 		fmt.Println("Error generating token:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
@@ -61,9 +58,10 @@ type UserMinimal struct {
 	PersonaId    int64
 }
 
-func GetLoginToken(user UserMinimal) (string, error) {
+// LoginToken issues the session JWT for user.
+func (h *Handler) LoginToken(user UserMinimal) (string, error) {
 	// Generate JWT token
-	tokenStr, err := token.Generate(map[string]interface{}{
+	tokenStr, err := h.signer.Generate(map[string]interface{}{
 		"user_id":       user.ID,
 		"email_address": user.EmailAddress,
 		"persona_id":    user.PersonaId,

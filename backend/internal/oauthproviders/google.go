@@ -9,8 +9,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
-	"shared/external/db/postgres"
 	"shared/pkg/db"
 	"strings"
 
@@ -19,18 +17,29 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-var ClinetId = os.Getenv("GOOGLE_OAUTH_CLIENT_ID")
-var ClientSecret = os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET")
+type Google struct {
+	config *oauth2.Config
+	q      *db.Queries
+	users  *users.Handler
+	images *image.Client
+}
 
-var config = &oauth2.Config{
-	ClientID:     ClinetId,
-	ClientSecret: ClientSecret,
-	Endpoint:     google.Endpoint,
-	RedirectURL:  "https://api.flookaa.com/api/v1/auth/oauth2callback/google",
-	Scopes: []string{
-		"https://www.googleapis.com/auth/userinfo.profile",
-		"https://www.googleapis.com/auth/userinfo.email",
-	},
+func NewGoogle(clientID, clientSecret string, q *db.Queries, users *users.Handler, images *image.Client) *Google {
+	return &Google{
+		config: &oauth2.Config{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			Endpoint:     google.Endpoint,
+			RedirectURL:  "https://api.flookaa.com/api/v1/auth/oauth2callback/google",
+			Scopes: []string{
+				"https://www.googleapis.com/auth/userinfo.profile",
+				"https://www.googleapis.com/auth/userinfo.email",
+			},
+		},
+		q:      q,
+		users:  users,
+		images: images,
+	}
 }
 
 var validStates = map[string]bool{
@@ -45,30 +54,30 @@ type GoogleUser struct {
 	Picture string `json:"picture"`
 }
 
-func HandleGoogleOAuth(c *gin.Context) {
+func (g *Google) HandleGoogleOAuth(c *gin.Context) {
 	state := c.Query("state")
 	if _, ok := validStates[state]; !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state parameter"})
 		return
 	}
-	url := config.AuthCodeURL(state)
+	url := g.config.AuthCodeURL(state)
 	c.JSON(http.StatusOK, gin.H{"url": url})
 }
 
-func HandleGoogleOAuthCallback(c *gin.Context) {
+func (g *Google) HandleGoogleOAuthCallback(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
 	if _, ok := validStates[state]; !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state parameter"})
 		return
 	}
-	token, err := config.Exchange(oauth2.NoContext, code)
+	token, err := g.config.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange token"})
 		return
 	}
 
-	client := config.Client(context.Background(), token)
+	client := g.config.Client(context.Background(), token)
 
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err != nil {
@@ -84,27 +93,27 @@ func HandleGoogleOAuthCallback(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	q := db.New(postgres.DbConn)
+	q := g.q
 
 	switch state {
 	case "login":
 		dbUser, err := q.GetUserByEmailAddress(ctx, user.Email)
 		if err != nil {
 			// welcome new user!, hand it over to signup logic
-			handleSignUpRequest(c, user)
+			g.handleSignUpRequest(c, user)
 			return
 		}
-		handleLogInRequest(c, users.UserMinimal{ID: dbUser.ID, EmailAddress: dbUser.EmailAddress})
+		g.handleLogInRequest(c, users.UserMinimal{ID: dbUser.ID, EmailAddress: dbUser.EmailAddress})
 		return
 	case "signup":
 		// Check if user already exists
 		existingUser, err := q.GetUserByEmailAddress(ctx, user.Email)
 		if err == nil && existingUser.ID != 0 {
 			// I got you bro, you already have an account
-			handleLogInRequest(c, users.UserMinimal{ID: existingUser.ID, EmailAddress: existingUser.EmailAddress})
+			g.handleLogInRequest(c, users.UserMinimal{ID: existingUser.ID, EmailAddress: existingUser.EmailAddress})
 			return
 		}
-		handleSignUpRequest(c, user)
+		g.handleSignUpRequest(c, user)
 		return
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state parameter"})
@@ -112,8 +121,8 @@ func HandleGoogleOAuthCallback(c *gin.Context) {
 	}
 }
 
-func handleLogInRequest(c *gin.Context, user users.UserMinimal) {
-	token, err := users.GetLoginToken(users.UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress})
+func (g *Google) handleLogInRequest(c *gin.Context, user users.UserMinimal) {
+	token, err := g.users.LoginToken(users.UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token plaese try again"})
 	}
@@ -122,13 +131,13 @@ func handleLogInRequest(c *gin.Context, user users.UserMinimal) {
 	c.Redirect(http.StatusFound, "https://flookaa.com")
 }
 
-func handleSignUpRequest(c *gin.Context, user GoogleUser) {
+func (g *Google) handleSignUpRequest(c *gin.Context, user GoogleUser) {
 	ctx := context.Background()
-	q := db.New(postgres.DbConn)
+	q := g.q
 
 	firstName := ""
 	lastName := ""
-	thunmbnail, err := image.GetImageInternalUrl(user.Picture)
+	thunmbnail, err := g.images.GetImageInternalUrl(user.Picture)
 	if err != nil {
 		log.Println("Error getting image from google:", err)
 	}
@@ -160,5 +169,5 @@ func handleSignUpRequest(c *gin.Context, user GoogleUser) {
 		return
 	}
 
-	handleLogInRequest(c, users.UserMinimal{ID: newUser.ID, EmailAddress: newUser.EmailAddress, PersonaId: defaultPersona.ID})
+	g.handleLogInRequest(c, users.UserMinimal{ID: newUser.ID, EmailAddress: newUser.EmailAddress, PersonaId: defaultPersona.ID})
 }

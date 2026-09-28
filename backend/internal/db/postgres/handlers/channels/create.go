@@ -2,7 +2,6 @@ package channels
 
 import (
 	"net/http"
-	"shared/external/db/postgres"
 	"shared/pkg/db"
 
 	"github.com/gin-gonic/gin"
@@ -15,7 +14,7 @@ type CreateChannelRequest struct {
 	Banner      string `json:"banner"`
 }
 
-func CreateChannel(c *gin.Context) {
+func (h *Handler) CreateChannel(c *gin.Context) {
 	var req CreateChannelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -30,7 +29,7 @@ func CreateChannel(c *gin.Context) {
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	channel, err := q.CreateChannel(ctx, db.CreateChannelParams{
 		Name:        req.Name,

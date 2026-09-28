@@ -6,6 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AddControlGroup(r *gin.Engine) {
-	r.POST("/control", handlers.Control)
+func AddControlGroup(r *gin.Engine, h *handlers.Handler) {
+	r.POST("/control", h.Control)
 }

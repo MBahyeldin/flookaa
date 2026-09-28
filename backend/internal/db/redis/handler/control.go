@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"shared/external/db/redis"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -38,7 +39,15 @@ type Payload struct {
 	OwnerID     int64     `json:"owner_id"`
 }
 
-func Control(c *gin.Context) {
+type Handler struct {
+	subjects *redis.SubjectStore
+}
+
+func NewHandler(subjects *redis.SubjectStore) *Handler {
+	return &Handler{subjects: subjects}
+}
+
+func (h *Handler) Control(c *gin.Context) {
 	fmt.Println("Control endpoint hit")
 
 	userIdInt64, exists := c.Get("user_id")
@@ -59,10 +68,10 @@ func Control(c *gin.Context) {
 
 	switch bodyData.Payload.Owner {
 	case OwnerTypeDefault:
-		defaultSubjects(c, userId)
+		h.defaultSubjects(c, userId)
 
 	case OwnerTypeChannel:
-		channel(c, bodyData)
+		h.channel(c, bodyData)
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid owner type %s", bodyData.Payload.Owner)})
 		return
