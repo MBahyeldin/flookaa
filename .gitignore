@@ -6,3 +6,6 @@ bin
 *.pyc
 .playwright-mcp/
 .ansible
+
+nats/target/
+frontend/dist/

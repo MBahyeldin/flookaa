@@ -1,8 +1,11 @@
 // Avatar from ../ui/avatar, not the raw Radix Root: the styled wrapper supplies
 // `overflow-hidden rounded-full`, without which the image isn't clipped to a circle.
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { useGetCommentsLazyQuery, type Comment, type GetCommentsQuery, type GetCommentsQueryVariables, type SimpleInput } from "@/generated/graphql";
-import { ChevronDown, ChevronRight, Loader2, User2 } from "lucide-react";
+import { useCreateLikeMutation, useGetCommentsLazyQuery, type Comment, type GetCommentsQuery, type GetCommentsQueryVariables, type SimpleInput } from "@/generated/graphql";
+import { ChevronDown, ChevronRight, Heart, Loader2, User2 } from "lucide-react";
+import { CombinedGraphQLErrors } from "@apollo/client/errors";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import React from "react";
@@ -49,6 +52,41 @@ const CommentItem = React.memo(({
         persona?.id != null && comment?.authorId === persona.id;
 
     const [collapsed, setCollapsed] = useState(true);
+
+    const owner = useAppStore((state) => state.owner);
+    const [createLike] = useCreateLikeMutation();
+    const [liked, setLiked] = useState(comment?.personalizedMeta?.likedByPersona ?? false);
+    const [isLiking, setIsLiking] = useState(false);
+    const likesCount = comment?.meta.likesCount ?? 0;
+
+    // Same flow as the post card: flip `liked` only once the server accepts,
+    // and let the count arrive over the websocket (handleLikeEvents), so it
+    // isn't bumped twice.
+    const toggleLike = async () => {
+        if (!persona?.id || !owner || !comment || isLiking) return;
+        const nextLiked = !liked;
+        setIsLiking(true);
+        try {
+            await createLike({
+                variables: {
+                    targetId: comment._id,
+                    targetType: "COMMENT",
+                    liked: nextLiked,
+                    owner: { id: owner.id, type: owner.type },
+                },
+            });
+        } catch (err) {
+            toast.error(
+                CombinedGraphQLErrors.is(err)
+                    ? err.errors[0]?.message || "Couldn’t update your like."
+                    : "Couldn’t update your like. Check your connection."
+            );
+            return;
+        } finally {
+            setIsLiking(false);
+        }
+        setLiked(nextLiked);
+    };
 
     const formatedDate = useMemo(() => {
         if (!comment?.createdAt) return "";
@@ -210,7 +248,20 @@ const CommentItem = React.memo(({
                     </div>
 
                     <div className="flex flex-nowrap items-center gap-x-4">
-                        <button className="hover:text-foreground transition-colors">Like</button>
+                        <button
+                            className={cn(
+                                "flex items-center gap-1 transition-colors disabled:opacity-60",
+                                liked ? "text-destructive" : "hover:text-foreground"
+                            )}
+                            onClick={toggleLike}
+                            disabled={isLiking}
+                            aria-pressed={liked}
+                            aria-label={`${liked ? "Unlike" : "Like"} — ${likesCount} ${likesCount === 1 ? "like" : "likes"}`}
+                        >
+                            <Heart className={cn("h-3 w-3", liked && "fill-destructive stroke-destructive")} />
+                            <span>{liked ? "Liked" : "Like"}</span>
+                            {likesCount > 0 && <span>{likesCount}</span>}
+                        </button>
                         <button
                             className="hover:text-foreground transition-colors"
                             onClick={() => setShowReplyInput((prev) => !prev)}
