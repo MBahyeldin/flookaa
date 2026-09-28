@@ -13,15 +13,16 @@ There are no tests anywhere in the repo (no `*_test.go`, no frontend test runner
 | Path | Module / language | Role |
 |---|---|---|
 | `backend/` | Go, module `app` | Main HTTP service: REST (`/api/v1`), GraphQL (`/query`), and `/control` |
-| `shared/` | Go, module `shared` | Shared library: DB connections, SQL migrations/queries, generated sqlc + gqlgen code, subject helpers. Imported by all Go services |
+| `shared/` | Go, module `shared` | Shared library: DB connections, SQL migrations/queries, generated sqlc + gqlgen code, subject helpers. Imported by every Go service except `whatsapp` |
 | `redis/` | Go, module `redis_worker` | NATS consumer that maintains Redis counter caches |
 | `s3/` | Go, module `s3` | Separate upload service (images, audio) backed by S3 |
+| `whatsapp/` | Go, module `whatsapp` | Send-only WhatsApp REST service (whatsmeow, unofficial linked-device client). Standalone; see `whatsapp/README.md` |
 | `gRCP/server`, `gRCP/client` | Go | gRPC deploy agent: watches a directory, publishes binaries to `/opt/<svc>/<version>`, flips a `current` symlink, restarts systemd |
 | `nats/` | Rust, crate `ws_proxy` | Axum WebSocket proxy that bridges browsers ↔ NATS JetStream |
 | `front-end/` | React 19 + Vite + TS | SPA |
 | `ansible/` | Ansible | LXD host + per-service container provisioning |
 
-`go.work` uses `backend`, `redis`, `shared`, `gRCP/client`, `gRCP/server`, `s3`. Note `gRCP` is spelled that way on disk (not `gRPC`).
+`go.work` uses `backend`, `redis`, `shared`, `gRCP/client`, `gRCP/server`, `s3`, `whatsapp`. Note `gRCP` is spelled that way on disk (not `gRPC`).
 
 ## Commands
 
@@ -74,6 +75,8 @@ Each Go service has its own `deploy.bash` / `deploy.sh` that cross-compiles for 
 ```bash
 cd backend && ./deploy.bash     # -> gRPC@backend
 cd s3      && ./deploy.bash     # -> gRPC@s3
+cd redis   && ./deploy.bash     # -> gRPC@redis
+cd whatsapp && ./deploy.bash    # -> gRPC@whatsapp (CGO_ENABLED=0)
 cd front-end && ./deploy.sh     # pnpm build + scp dist/* to the nginx host
 cd nats    && ./deploy.sh       # Rust cross-build
 ./rsync.sh                      # sync git-tracked files to the internal build host
@@ -131,6 +134,16 @@ Writes publish an `Event` to JetStream. `redis/internal/root.go` subscribes to `
 - **Neo4j**: wired into the resolver but only lightly used.
 - **Redis**: sessions, subscription lists, per-subject offsets, content counters, persona cache.
 
+### The `whatsapp` service is deliberately different
+
+It breaks several repo-wide patterns on purpose — keep it that way:
+
+- **No `shared` import**, so the `init()` connection singletons don't force the whole platform's env on it. Config is loaded explicitly via `internal/config.Load()`.
+- **Auth aborts** with 401 (static bearer token, constant-time compare) instead of the backend's always-`c.Next()` pattern. No CORS; browsers never call it — go frontend → backend → whatsapp.
+- **Pure-Go SQLite (`modernc.org/sqlite`) with `CGO_ENABLED=0`.** Swapping to `mattn/go-sqlite3` breaks the macOS → linux cross-build.
+- **Session DB lives in `/opt/whatsapp-data/`**, outside the versioned `/opt/whatsapp/<version>` dir the gRPC agent creates, or each deploy would orphan it.
+- Boots unpaired and prints a pairing QR to stdout (`journalctl -u whatsapp -f`); poll `GET /api/v1/status` for link state. Sends are never auto-retried; callers pass `message_id` for idempotent retries.
+
 ### Frontend conventions
 
 `@/` aliases `src/` (both `vite.config.ts` and tsconfig). Data access splits three ways: `src/services/*.ts` for REST, Apollo + `.graphql` documents in `src/graphql/` for content (hooks come from `src/generated/graphql.ts` after `pnpm codegen`), and the WS singleton for realtime. Zustand stores in `src/stores/` hold client-only state; React contexts at `src/*.context.tsx` provide auth, theme, dialogs, websocket. Components are shadcn-style under `src/components/ui/`. Post editing uses `@portabletext/editor` — the renderers and schema live in `src/components/portable-text/`.
@@ -143,10 +156,12 @@ Dev-mode requests are proxied, not direct: `/api`, `/query`, `/ws` go to `VITE_A
 
 `DATABASE_DSN`, `MONGODB_DSN`, `NATS_CONNECTION`, `REDIS_ADDR`, `REDIS_PASSWORD`, `JWT_SECRET_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_EMAIL_ADDRESS`, `SMTP_EMAIL_PASSWORD`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `GRPC_PORT`, `GRPC_WATCHING_DIR`.
 
+`whatsapp` reads only its own vars: `WHATSAPP_API_TOKEN` (required, fatal if unset), `WHATSAPP_SESSION_DB`, `WHATSAPP_SEND_RATE`, `WHATSAPP_SEND_BURST`, `WHATSAPP_PORT`.
+
 Rust proxy: `GO_APP_URL`. Frontend: `VITE_API_BASE_URL`, `VITE_WEBSOCKET_BASE_URL`, `VITE_HEART_REACT_VOICE_URL`.
 
 ## Conventions
 
-- Commits are prefixed with a ticket key, e.g. `WWW-0000 Fix linting issues`.
+- Older commits are prefixed with a ticket key (`WWW-0000 Fix linting issues`); recent ones use conventional-commit prefixes (`feat: ...`). Follow whatever the user asks for.
 - Never hand-edit generated output: `shared/pkg/db/`, `shared/pkg/graph/*.generated.go`, `shared/pkg/graph/models/models_gen.go`, `front-end/src/generated/graphql.ts`, `gRCP/*/app_service/`.
 - A backend change touching the GraphQL schema requires regenerating on both sides: `make generate-models` in `shared/`, then `pnpm codegen` in `front-end/` once the schema is deployed.
