@@ -11,21 +11,22 @@ import (
 )
 
 const addUserToChannel = `-- name: AddUserToChannel :one
-INSERT INTO channel_members (channel_id, persona_id)
-VALUES ($1, $2)
-RETURNING id, channel_id, persona_id, joined_at, left_at
+INSERT INTO channel_members (channel_id, persona_id, status)
+VALUES ($1, $2, $3)
+RETURNING id, channel_id, persona_id, joined_at, left_at, status
 `
 
 type AddUserToChannelParams struct {
 	ChannelID int64
 	PersonaID int64
+	Status    ChannelMembershipStatusEnum
 }
 
 // -------------------------------
 // 7. Add user to channel
 // -------------------------------
 func (q *Queries) AddUserToChannel(ctx context.Context, arg AddUserToChannelParams) (ChannelMember, error) {
-	row := q.db.QueryRowContext(ctx, addUserToChannel, arg.ChannelID, arg.PersonaID)
+	row := q.db.QueryRowContext(ctx, addUserToChannel, arg.ChannelID, arg.PersonaID, arg.Status)
 	var i ChannelMember
 	err := row.Scan(
 		&i.ID,
@@ -33,14 +34,15 @@ func (q *Queries) AddUserToChannel(ctx context.Context, arg AddUserToChannelPara
 		&i.PersonaID,
 		&i.JoinedAt,
 		&i.LeftAt,
+		&i.Status,
 	)
 	return i, err
 }
 
 const createChannel = `-- name: CreateChannel :one
-INSERT INTO channels (name, description,  owner_id, thumbnail, banner, created_at)
-VALUES ($1, $2, $3, $4, $5, NOW())
-RETURNING id, name, description, thumbnail, banner, owner_id, created_at, updated_at, deleted_at
+INSERT INTO channels (name, description,  owner_id, thumbnail, banner, visibility, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, NOW())
+RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at
 `
 
 type CreateChannelParams struct {
@@ -49,6 +51,7 @@ type CreateChannelParams struct {
 	OwnerID     int64
 	Thumbnail   string
 	Banner      string
+	Visibility  ChannelVisibilityEnum
 }
 
 // -------------------------------
@@ -61,6 +64,7 @@ func (q *Queries) CreateChannel(ctx context.Context, arg CreateChannelParams) (C
 		arg.OwnerID,
 		arg.Thumbnail,
 		arg.Banner,
+		arg.Visibility,
 	)
 	var i Channel
 	err := row.Scan(
@@ -70,6 +74,7 @@ func (q *Queries) CreateChannel(ctx context.Context, arg CreateChannelParams) (C
 		&i.Thumbnail,
 		&i.Banner,
 		&i.OwnerID,
+		&i.Visibility,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -106,15 +111,22 @@ func (q *Queries) FollowChannel(ctx context.Context, arg FollowChannelParams) (C
 
 const getAllChannels = `-- name: GetAllChannels :many
 SELECT 
-    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.created_at, c.updated_at, c.deleted_at,
+    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at,
     (c.owner_id = $1) AS is_owner,
     EXISTS (
         SELECT 1 
         FROM channel_members cm 
         WHERE cm.channel_id = c.id 
           AND cm.persona_id = $1 
-          AND cm.left_at IS NULL
+          AND cm.left_at IS NULL AND cm.status = 'active'
     ) AS is_member,
+    EXISTS (
+        SELECT 1 
+        FROM channel_members cm 
+        WHERE cm.channel_id = c.id 
+          AND cm.persona_id = $1 
+          AND cm.left_at IS NULL AND cm.status = 'pending'
+    ) AS is_pending,
     EXISTS (
         SELECT 1 
         FROM channel_followers cf 
@@ -140,11 +152,13 @@ type GetAllChannelsRow struct {
 	Thumbnail   string
 	Banner      string
 	OwnerID     int64
+	Visibility  ChannelVisibilityEnum
 	CreatedAt   sql.NullTime
 	UpdatedAt   sql.NullTime
 	DeletedAt   sql.NullTime
 	IsOwner     bool
 	IsMember    bool
+	IsPending   bool
 	IsFollower  bool
 }
 
@@ -167,11 +181,13 @@ func (q *Queries) GetAllChannels(ctx context.Context, arg GetAllChannelsParams) 
 			&i.Thumbnail,
 			&i.Banner,
 			&i.OwnerID,
+			&i.Visibility,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.IsOwner,
 			&i.IsMember,
+			&i.IsPending,
 			&i.IsFollower,
 		); err != nil {
 			return nil, err
@@ -189,15 +205,22 @@ func (q *Queries) GetAllChannels(ctx context.Context, arg GetAllChannelsParams) 
 
 const getChannel = `-- name: GetChannel :one
 SELECT 
-    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.created_at, c.updated_at, c.deleted_at,
+    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at,
     (c.owner_id = $1) AS is_owner,
     EXISTS (
         SELECT 1 
         FROM channel_members cm 
         WHERE cm.channel_id = c.id 
           AND cm.persona_id = $1 
-          AND cm.left_at IS NULL
+          AND cm.left_at IS NULL AND cm.status = 'active'
     ) AS is_member,
+    EXISTS (
+        SELECT 1 
+        FROM channel_members cm 
+        WHERE cm.channel_id = c.id 
+          AND cm.persona_id = $1 
+          AND cm.left_at IS NULL AND cm.status = 'pending'
+    ) AS is_pending,
     EXISTS (
         SELECT 1 
         FROM channel_followers cf 
@@ -221,11 +244,13 @@ type GetChannelRow struct {
 	Thumbnail   string
 	Banner      string
 	OwnerID     int64
+	Visibility  ChannelVisibilityEnum
 	CreatedAt   sql.NullTime
 	UpdatedAt   sql.NullTime
 	DeletedAt   sql.NullTime
 	IsOwner     bool
 	IsMember    bool
+	IsPending   bool
 	IsFollower  bool
 }
 
@@ -242,22 +267,100 @@ func (q *Queries) GetChannel(ctx context.Context, arg GetChannelParams) (GetChan
 		&i.Thumbnail,
 		&i.Banner,
 		&i.OwnerID,
+		&i.Visibility,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.IsOwner,
 		&i.IsMember,
+		&i.IsPending,
 		&i.IsFollower,
 	)
 	return i, err
 }
 
+const getChannelAccess = `-- name: GetChannelAccess :one
+SELECT
+    c.id,
+    c.visibility,
+    (c.owner_id = $1::bigint) AS is_owner,
+    EXISTS (
+        SELECT 1
+        FROM channel_members cm
+        WHERE cm.channel_id = c.id
+          AND cm.persona_id = $1::bigint
+          AND cm.left_at IS NULL AND cm.status = 'active'
+    ) AS is_member,
+    EXISTS (
+        SELECT 1
+        FROM channel_members cm
+        WHERE cm.channel_id = c.id
+          AND cm.persona_id = $1::bigint
+          AND cm.left_at IS NULL AND cm.status = 'pending'
+    ) AS is_pending,
+    (
+        c.owner_id = $1::bigint
+        OR EXISTS (
+            SELECT 1
+            FROM channel_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.channel_id = c.id
+              AND cr.persona_id = $1::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name IN ('moderator', 'Administrator')
+        )
+        OR EXISTS (
+            SELECT 1
+            FROM personas p
+            JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
+            JOIN roles r ON r.id = ur.role_id
+            WHERE p.id = $1::bigint
+              AND r.name = 'Administrator'
+        )
+    )::boolean AS can_moderate
+FROM channels c
+WHERE c.id = $2::bigint AND c.deleted_at IS NULL
+`
+
+type GetChannelAccessParams struct {
+	PersonaID int64
+	ChannelID int64
+}
+
+type GetChannelAccessRow struct {
+	ID          int64
+	Visibility  ChannelVisibilityEnum
+	IsOwner     bool
+	IsMember    bool
+	IsPending   bool
+	CanModerate bool
+}
+
+// -------------------------------
+// 11. What a persona may do in a channel
+// -------------------------------
+// A missing row (sql.ErrNoRows) means the channel does not exist or is deleted.
+// can_moderate: channel owner, a channel moderator/Administrator, or a global Administrator.
+func (q *Queries) GetChannelAccess(ctx context.Context, arg GetChannelAccessParams) (GetChannelAccessRow, error) {
+	row := q.db.QueryRowContext(ctx, getChannelAccess, arg.PersonaID, arg.ChannelID)
+	var i GetChannelAccessRow
+	err := row.Scan(
+		&i.ID,
+		&i.Visibility,
+		&i.IsOwner,
+		&i.IsMember,
+		&i.IsPending,
+		&i.CanModerate,
+	)
+	return i, err
+}
+
 const getChannelsForUser = `-- name: GetChannelsForUser :many
-SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.created_at, c.updated_at, c.deleted_at
+SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at
 FROM channel_members cm
 JOIN channels c ON cm.channel_id = c.id
 WHERE cm.persona_id = $1
-  AND cm.left_at IS NULL
+  AND cm.left_at IS NULL AND cm.status = 'active'
 `
 
 // -------------------------------
@@ -279,6 +382,7 @@ func (q *Queries) GetChannelsForUser(ctx context.Context, personaID int64) ([]Ch
 			&i.Thumbnail,
 			&i.Banner,
 			&i.OwnerID,
+			&i.Visibility,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -297,7 +401,7 @@ func (q *Queries) GetChannelsForUser(ctx context.Context, personaID int64) ([]Ch
 }
 
 const getFollowedChannelsForUser = `-- name: GetFollowedChannelsForUser :many
-SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.created_at, c.updated_at, c.deleted_at
+SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at
 FROM channel_followers cf
 JOIN channels c ON cf.channel_id = c.id
 WHERE cf.persona_id = $1
@@ -323,6 +427,7 @@ func (q *Queries) GetFollowedChannelsForUser(ctx context.Context, personaID int6
 			&i.Thumbnail,
 			&i.Banner,
 			&i.OwnerID,
+			&i.Visibility,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -341,7 +446,7 @@ func (q *Queries) GetFollowedChannelsForUser(ctx context.Context, personaID int6
 }
 
 const listChannels = `-- name: ListChannels :many
-SELECT id, name, description, thumbnail, banner, owner_id, created_at, updated_at, deleted_at
+SELECT id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at
 FROM channels
 WHERE deleted_at IS NULL
 ORDER BY name
@@ -372,9 +477,68 @@ func (q *Queries) ListChannels(ctx context.Context, arg ListChannelsParams) ([]C
 			&i.Thumbnail,
 			&i.Banner,
 			&i.OwnerID,
+			&i.Visibility,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPendingJoinRequests = `-- name: ListPendingJoinRequests :many
+SELECT
+    cm.persona_id,
+    cm.joined_at AS requested_at,
+    p.name,
+    p.first_name,
+    p.last_name,
+    p.thumbnail
+FROM channel_members cm
+JOIN personas p ON p.id = cm.persona_id
+WHERE cm.channel_id = $1
+  AND cm.left_at IS NULL
+  AND cm.status = 'pending'
+ORDER BY cm.joined_at
+`
+
+type ListPendingJoinRequestsRow struct {
+	PersonaID   int64
+	RequestedAt sql.NullTime
+	Name        string
+	FirstName   string
+	LastName    string
+	Thumbnail   sql.NullString
+}
+
+// -------------------------------
+// 12. Pending join requests for a channel
+// -------------------------------
+func (q *Queries) ListPendingJoinRequests(ctx context.Context, channelID int64) ([]ListPendingJoinRequestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPendingJoinRequests, channelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPendingJoinRequestsRow
+	for rows.Next() {
+		var i ListPendingJoinRequestsRow
+		if err := rows.Scan(
+			&i.PersonaID,
+			&i.RequestedAt,
+			&i.Name,
+			&i.FirstName,
+			&i.LastName,
+			&i.Thumbnail,
 		); err != nil {
 			return nil, err
 		}
@@ -393,7 +557,7 @@ const removeChannel = `-- name: RemoveChannel :one
 UPDATE channels
 SET deleted_at = NOW()
 WHERE id = $1
-RETURNING id, name, description, thumbnail, banner, owner_id, created_at, updated_at, deleted_at
+RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at
 `
 
 // -------------------------------
@@ -409,6 +573,7 @@ func (q *Queries) RemoveChannel(ctx context.Context, id int64) (Channel, error) 
 		&i.Thumbnail,
 		&i.Banner,
 		&i.OwnerID,
+		&i.Visibility,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -420,7 +585,7 @@ const removeUserFromChannel = `-- name: RemoveUserFromChannel :one
 UPDATE channel_members
 SET left_at = NOW()
 WHERE channel_id = $1 AND persona_id = $2
-RETURNING id, channel_id, persona_id, joined_at, left_at
+RETURNING id, channel_id, persona_id, joined_at, left_at, status
 `
 
 type RemoveUserFromChannelParams struct {
@@ -440,6 +605,40 @@ func (q *Queries) RemoveUserFromChannel(ctx context.Context, arg RemoveUserFromC
 		&i.PersonaID,
 		&i.JoinedAt,
 		&i.LeftAt,
+		&i.Status,
+	)
+	return i, err
+}
+
+const resolveJoinRequest = `-- name: ResolveJoinRequest :one
+UPDATE channel_members
+SET status = $1::channel_membership_status_enum
+WHERE channel_id = $2::bigint
+  AND persona_id = $3::bigint
+  AND left_at IS NULL
+  AND status = 'pending'
+RETURNING id, channel_id, persona_id, joined_at, left_at, status
+`
+
+type ResolveJoinRequestParams struct {
+	Status    ChannelMembershipStatusEnum
+	ChannelID int64
+	PersonaID int64
+}
+
+// -------------------------------
+// 13. Approve or reject a pending join request
+// -------------------------------
+func (q *Queries) ResolveJoinRequest(ctx context.Context, arg ResolveJoinRequestParams) (ChannelMember, error) {
+	row := q.db.QueryRowContext(ctx, resolveJoinRequest, arg.Status, arg.ChannelID, arg.PersonaID)
+	var i ChannelMember
+	err := row.Scan(
+		&i.ID,
+		&i.ChannelID,
+		&i.PersonaID,
+		&i.JoinedAt,
+		&i.LeftAt,
+		&i.Status,
 	)
 	return i, err
 }
@@ -478,7 +677,7 @@ SET name = COALESCE($1, name),
     description = COALESCE($2, description),
     updated_at = NOW()
 WHERE id = $3
-RETURNING id, name, description, thumbnail, banner, owner_id, created_at, updated_at, deleted_at
+RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at
 `
 
 type UpdateChannelParams struct {
@@ -500,6 +699,7 @@ func (q *Queries) UpdateChannel(ctx context.Context, arg UpdateChannelParams) (C
 		&i.Thumbnail,
 		&i.Banner,
 		&i.OwnerID,
+		&i.Visibility,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,

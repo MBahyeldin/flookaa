@@ -47,7 +47,7 @@ SELECT u.id, u.name, u.slug, u.first_name, u.last_name, u.thumbnail, u.created_a
            )), '[]'::json)
            FROM channel_members cm
            JOIN channels c ON c.id = cm.channel_id
-           WHERE cm.persona_id = u.id AND cm.left_at IS NULL
+           WHERE cm.persona_id = u.id AND cm.left_at IS NULL AND cm.status = 'active'
        ) AS joined_channels,
         (SELECT COALESCE(json_agg(json_build_object(
                'id', c.id,
@@ -69,7 +69,7 @@ WHERE u.id = $1
 -- -------------------------------
 -- name: GetPersonaStats :one
 SELECT u.id,
-       (SELECT COUNT(*) FROM channel_members cm WHERE cm.persona_id = u.id AND cm.left_at IS NULL) AS channels_joined,
+       (SELECT COUNT(*) FROM channel_members cm WHERE cm.persona_id = u.id AND cm.left_at IS NULL AND cm.status = 'active') AS channels_joined,
        (SELECT COUNT(*) FROM channel_followers cf WHERE cf.persona_id = u.id AND cf.unfollowed_at IS NULL) AS channels_followed,
        (SELECT COUNT(*) FROM post_references pr WHERE pr.owner_type = 'PERSONA' AND pr.owner_id = u.id) AS posts_count
 FROM personas u
@@ -84,7 +84,7 @@ SELECT c.*
 FROM channel_members cm
 JOIN channels c ON cm.channel_id = c.id
 WHERE cm.persona_id = $1
-  AND cm.left_at IS NULL;
+  AND cm.left_at IS NULL AND cm.status = 'active';
 
 -- -------------------------------
 -- 10. Get channels a persona follows

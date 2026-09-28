@@ -13,6 +13,8 @@ type CreateChannelRequest struct {
 	Description string `json:"description"`
 	Thumbnail   string `json:"thumbnail"`
 	Banner      string `json:"banner"`
+	// public: readable by every persona; private: members only, joins need approval.
+	Visibility string `json:"visibility" binding:"required,oneof=public private"`
 }
 
 func (h *Handler) CreateChannel(c *gin.Context) {
@@ -38,6 +40,7 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 		Thumbnail:   req.Thumbnail,
 		Banner:      req.Banner,
 		OwnerID:     personaId,
+		Visibility:  db.ChannelVisibilityEnum(req.Visibility),
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -47,6 +50,7 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 	_, err = q.AddUserToChannel(ctx, db.AddUserToChannelParams{
 		ChannelID: channel.ID,
 		PersonaID: personaId,
+		Status:    db.ChannelMembershipStatusEnumActive,
 	})
 
 	if err != nil {

@@ -20,17 +20,26 @@ export async function getChannels(): Promise<{ channels: Channel[] } | null> {
   }
 }
 
-export async function joinChannel(channelId: string): Promise<Error | null> {
+/**
+ * Joining a public channel makes the persona a member ("active"); joining a
+ * private one files a request a moderator must approve ("pending").
+ */
+export type JoinResult =
+  | { error: Error; status?: undefined }
+  | { error: null; status: "active" | "pending" };
+
+export async function joinChannel(channelId: string): Promise<JoinResult> {
   try {
     const resp = await apiFetch(`${API_BASE_URL}/api/v1/channels/join/${channelId}`, {
       method: "POST",
       credentials: "include",
     });
+    const body = await resp.json().catch(() => ({}));
     if (!resp.ok)
-      return new Error((await resp.json()).error || "Failed to join channel");
-    return null;
+      return { error: new Error(body.error || "Failed to join channel") };
+    return { error: null, status: body.status === "pending" ? "pending" : "active" };
   } catch (err) {
-    return err as Error | null;
+    return { error: err as Error };
   }
 }
 

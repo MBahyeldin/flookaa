@@ -35,7 +35,7 @@ cd shared
 make generate-models        # rm -rf pkg/db && sqlc generate && gqlgen generate
 ```
 
-The workflow is: edit `external/db/postgres/schemas/*.sql` + `external/db/postgres/queries/*.sql` (for sqlc) or `external/graph/*.graphqls` (for gqlgen), then regenerate. `sqlc.yaml` connects to `$DATABASE_DSN`, so that must be set and reachable. Resolver bodies live in `shared/pkg/graph/resolvers/schema.resolvers.go` and are preserved across `gqlgen generate`.
+The workflow is: edit `external/db/postgres/schemas/*.sql` + `external/db/postgres/queries/*.sql` (for sqlc) or `external/graph/*.graphqls` (for gqlgen), then regenerate. `sqlc.yaml` uses database-backed analysis via `$DATABASE_DSN`, so it must point at a Postgres **with all migrations applied**. Don't strip the `database:` block to generate offline: the inferred types differ (e.g. `LIMIT` becomes `int32`, arrays and JSON become `interface{}`) and existing callers break. A throwaway local cluster works: `initdb`, start on a spare port, `make migrate-up`, then `sqlc generate`. Resolver bodies live in `shared/pkg/graph/resolvers/schema.resolvers.go` and are preserved across `gqlgen generate`.
 
 ### Migrations (run from `shared/`)
 
@@ -134,6 +134,19 @@ The frontend mirrors this: REST calls go through `src/lib/apiFetch.ts` and Apoll
 5. Frontend (`front-end/src/ws/index.tsx`, a singleton with a 5s `HEARTBEAT`) dispatches incoming frames to listeners keyed by the message `id`, then refetches details over REST/GraphQL — events carry IDs, not full payloads.
 
 Subject strings are built only through `shared/pkg/subject` — `{stream}.{ownerType}.{ownerID}.{event}.{action}` (stream segment omitted when `StreamName` is nil). Streams are declared in `shared/external/db/nats/natsConn.go` (`STREAM_USER_EVENTS`, `STREAM_CONTENT_EVENTS`).
+
+### Channel access
+
+Rules live in one place, `shared/pkg/access` (`LoadChannel` → `CanRead`/`CanWrite`/`CanModerate`), used by the REST channel handlers, `/control`, and the GraphQL resolvers:
+
+| | public channel | private channel |
+|---|---|---|
+| see metadata (list, `getChannel`) | every persona | every persona (so they can request to join) |
+| read posts/comments, subscribe | every persona | active members |
+| post / comment / like | active members | active members |
+| join | immediate (`status = 'active'`) | pending request; owner, channel moderators, or global Administrators approve via `/channels/:id/requests/...` |
+
+Membership is `channel_members` with `left_at IS NULL AND status = 'active'` — every membership query must filter on both. Non-readers get 404 / `channel not found`, never 403, so private channels don't leak existence of content. For existing objects (comments, likes) resolvers authorize and publish against the owner **stored on the Mongo document** (`loadObject` → `authorizeOwner`), never the client's `owner` input. Persona-owned content (`OwnerTypePersona`) is not restricted yet.
 
 ### Counters are eventually consistent
 

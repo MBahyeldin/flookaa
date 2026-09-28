@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"shared/external/db/nats"
+	"shared/pkg/access"
 	"shared/pkg/graph/models"
 	"shared/pkg/subject"
 	"shared/pkg/types"
@@ -11,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (h *Handler) channel(c *gin.Context, wsMessage WsMessage) {
+func (h *Handler) channel(c *gin.Context, wsMessage WsMessage, personaId int64) {
 	fmt.Println("Channel control endpoint hit")
 
 	payload := wsMessage.Payload
@@ -25,7 +27,23 @@ func (h *Handler) channel(c *gin.Context, wsMessage WsMessage) {
 		return
 	}
 
-	// TODO: validate id user can subscribe to this subject
+	// Subscribing needs read access; private channels answer 404 to non-members.
+	// Unsubscribing is always allowed.
+	if wsMessage.Type == WsMessageTypeSubscribe {
+		channelAccess, err := access.LoadChannel(c.Request.Context(), h.q, payload.OwnerID, personaId)
+		if err == nil {
+			err = channelAccess.Read()
+		}
+		if errors.Is(err, access.ErrChannelNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
 	var streamName = nats.CONTENT_EVENTS_STREAM
 	switch wsMessage.Type {
 	case WsMessageTypeSubscribe:

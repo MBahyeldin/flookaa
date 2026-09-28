@@ -1,4 +1,8 @@
 
+CREATE TYPE channel_visibility_enum AS ENUM ('public', 'private');
+
+CREATE TYPE channel_membership_status_enum AS ENUM ('pending', 'active', 'rejected');
+
 -- -------------------------------
 -- 4. Channels Table
 -- -------------------------------
@@ -9,6 +13,7 @@ CREATE TABLE channels (
     thumbnail VARCHAR(255) NOT NULL,
     banner VARCHAR(255) NOT NULL,
     owner_id BIGINT REFERENCES personas(id) ON DELETE SET NULL NOT NULL,
+    visibility channel_visibility_enum NOT NULL DEFAULT 'public',
     created_at TIMESTAMP DEFAULT now(),
     updated_at TIMESTAMP DEFAULT now(),
     deleted_at TIMESTAMP
@@ -21,7 +26,7 @@ CREATE TABLE channel_roles (
     channel_id BIGINT REFERENCES channels(id) ON DELETE CASCADE NOT NULL,
     role_id INT REFERENCES roles(id) ON DELETE CASCADE NOT NULL,
     persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE NOT NULL,
-    PRIMARY KEY (channel_id, role_id),
+    PRIMARY KEY (channel_id, persona_id, role_id),
     deleted_at TIMESTAMP WITHOUT TIME ZONE,
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now()
 );
@@ -34,7 +39,8 @@ CREATE TABLE channel_members (
     channel_id BIGINT REFERENCES channels(id) ON DELETE CASCADE NOT NULL,
     persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE NOT NULL,
     joined_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
-    left_at TIMESTAMP WITHOUT TIME ZONE
+    left_at TIMESTAMP WITHOUT TIME ZONE,
+    status channel_membership_status_enum NOT NULL DEFAULT 'active'
 );
 
 -- -------------------------------

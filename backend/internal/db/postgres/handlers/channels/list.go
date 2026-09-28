@@ -20,6 +20,8 @@ type ChannelResponse struct {
 	UpdatedAt   string `json:"updated_at"`
 	IsOwner     bool   `json:"is_owner"`
 	IsMember    bool   `json:"is_member"`
+	IsPending   bool   `json:"is_pending"`
+	Visibility  string `json:"visibility"`
 	IsFollower  bool   `json:"is_follower"`
 }
 
@@ -72,6 +74,8 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 			UpdatedAt:   ch.UpdatedAt.Time.String(),
 			IsOwner:     ch.IsOwner,
 			IsMember:    ch.IsMember,
+			IsPending:   ch.IsPending,
+			Visibility:  string(ch.Visibility),
 			IsFollower:  ch.IsFollower,
 		})
 	}

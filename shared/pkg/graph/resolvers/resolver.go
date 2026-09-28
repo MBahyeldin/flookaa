@@ -2,10 +2,12 @@ package models
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"shared/external/db/nats"
 	"shared/external/db/redis"
+	"shared/pkg/access"
 	"shared/pkg/db"
 	"shared/pkg/graph"
 	"shared/pkg/graph/directives"
@@ -33,6 +35,54 @@ type Resolver struct {
 	Persona *redis.PersonaStore
 	// Neo4j is not used in the first version of the app (see shared/external/db/neo).
 	// Neo4j neo4j.DriverWithContext
+}
+
+var errObjectNotFound = errors.New("not found")
+
+// loadObject reads a post, comment or reply by id from app.objects.
+func (r *Resolver) loadObject(ctx context.Context, id string) (*models.PostGenericDocument, error) {
+	var doc models.PostGenericDocument
+	err := r.Objects.FindOne(ctx, bson.M{"id": id}).Decode(&doc)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, errObjectNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to load object %s: %w", id, err)
+	}
+	if doc.Owner == nil {
+		return nil, errObjectNotFound
+	}
+	return &doc, nil
+}
+
+// authorizeOwner checks whether personaID may read (or write, when write is
+// true) content owned by owner. Callers must pass the owner stored on the
+// object, never the client's owner input, when the object already exists.
+//
+// Only channel-owned content is restricted here; see shared/pkg/access.
+func (r *Resolver) authorizeOwner(ctx context.Context, owner *models.Owner, personaID int64, write bool) error {
+	if owner == nil {
+		return errObjectNotFound
+	}
+	if owner.Type != models.OwnerTypeChannel {
+		return nil
+	}
+	channel, err := access.LoadChannel(ctx, r.Queries, owner.ID, personaID)
+	if err != nil {
+		return err
+	}
+	if write {
+		return channel.Write()
+	}
+	return channel.Read()
+}
+
+// eventTargetType maps a stored object's type to the event target type.
+func eventTargetType(t models.PostType) db.EventTargetTypeEnum {
+	if t == models.PostTypePost {
+		return db.EventTargetTypeEnumPOST
+	}
+	return db.EventTargetTypeEnumCOMMENT
 }
 
 func getUserIdFromContext(ctx context.Context) (int64, error) {

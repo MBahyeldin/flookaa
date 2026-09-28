@@ -56,6 +56,9 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   const [isJoined, setIsJoined] = useState(
     channelData?.getChannel?.isMember || false
   );
+  // Set after a join request on a private channel; getChannel doesn't expose
+  // pending state yet, so this only lasts for the current page view.
+  const [isRequested, setIsRequested] = useState(false);
   const [isFollowing, setIsFollowing] = useState(
     channelData?.getChannel?.isFollower || false
   );
@@ -128,15 +131,32 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   const handleJoin = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!channelId) return;
-    const error = isJoined
-      ? await leaveChannel(channelId)
-      : await joinChannel(channelId);
-    if (error) {
-      toast.error(error.message);
+    // Leaving also cancels a pending request.
+    if (isJoined || isRequested) {
+      const error = await leaveChannel(channelId);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success(isRequested ? "Join request cancelled" : "Successfully left channel");
+      setIsJoined(false);
+      setIsRequested(false);
       return;
     }
-    toast.success(`Successfully ${isJoined ? "left" : "joined"} channel`);
-    setIsJoined(!isJoined);
+
+    const result = await joinChannel(channelId);
+    if (result.error) {
+      toast.error(result.error.message);
+      return;
+    }
+    if (result.status === "pending") {
+      // Private channel: posts stay hidden until a moderator approves.
+      toast.success("Join request sent. A moderator will review it.");
+      setIsRequested(true);
+      return;
+    }
+    toast.success("Successfully joined channel");
+    setIsJoined(true);
   };
 
   const handleFollow = (e: React.MouseEvent) => {
@@ -368,7 +388,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <Button
                   onClick={handleJoin}
-                  variant={isJoined ? "secondary" : "default"}
+                  variant={isJoined || isRequested ? "secondary" : "default"}
                   className="flex items-center space-x-2"
                 >
                   <UserPlus className="h-4 w-4" />
@@ -376,9 +396,11 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                       available at 375px. Shortening just this label to "Join"
                       on phones brings the row to ~275px so it fits on one line;
                       the full wording returns from sm: up. */}
-                  <span className="sm:hidden">{isJoined ? "Joined" : "Join"}</span>
+                  <span className="sm:hidden">
+                    {isJoined ? "Joined" : isRequested ? "Requested" : "Join"}
+                  </span>
                   <span className="hidden sm:inline">
-                    {isJoined ? "Joined" : "Join Channel"}
+                    {isJoined ? "Joined" : isRequested ? "Request Sent" : "Join Channel"}
                   </span>
                 </Button>
 

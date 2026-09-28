@@ -123,7 +123,7 @@ func StartServer(cfg config.Server) error {
 
 	api.AddApiGroup(r, restHandlers)
 	graphql.AddGraphQLGroup(r, resolver)
-	control.AddControlGroup(r, controlhandlers.NewHandler(stores.Channel))
+	control.AddControlGroup(r, controlhandlers.NewHandler(stores.Channel, q))
 
 	server := &http.Server{
 		Addr:    ":8080",

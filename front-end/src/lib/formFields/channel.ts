@@ -7,6 +7,7 @@ import type { FormGroup } from "@/types/FormFields";
 // 	Description string `json:"description"`
 // 	Thumbnail   string `json:"thumbnail"`
 // 	Banner      string `json:"banner"`
+// 	Visibility  string `json:"visibility" binding:"required,oneof=public private"`
 // }
 
 const channelFormFields = [
@@ -25,6 +26,19 @@ const channelFormFields = [
     type: "textarea",
     placeholder: "Enter channel description",
     interfaceType: "text",
+    isRequired: true,
+    width: "1/2",
+  }),
+  new FormField({
+    id: "visibility",
+    label: "Visibility",
+    type: "select",
+    placeholder: "Who can see posts in this channel?",
+    interfaceType: "select",
+    options: [
+      { label: "Public: anyone can read", value: "public" },
+      { label: "Private: members only, joins need approval", value: "private" },
+    ],
     isRequired: true,
     width: "1/2",
   }),

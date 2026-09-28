@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"shared/external/db/redis"
+	"shared/pkg/db"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -42,10 +43,11 @@ type Payload struct {
 
 type Handler struct {
 	subjects *redis.SubjectStore
+	q        *db.Queries
 }
 
-func NewHandler(subjects *redis.SubjectStore) *Handler {
-	return &Handler{subjects: subjects}
+func NewHandler(subjects *redis.SubjectStore, q *db.Queries) *Handler {
+	return &Handler{subjects: subjects, q: q}
 }
 
 func (h *Handler) Control(c *gin.Context) {
@@ -72,7 +74,7 @@ func (h *Handler) Control(c *gin.Context) {
 		h.defaultSubjects(c, personaId)
 
 	case OwnerTypeChannel:
-		h.channel(c, bodyData)
+		h.channel(c, bodyData, personaIdInt64)
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid owner type %s", bodyData.Payload.Owner)})
 		return
