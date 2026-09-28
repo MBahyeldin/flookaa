@@ -2,9 +2,27 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import type { Post, Comment, Owner } from "@/generated/graphql";
 
+type OwnerRef = Pick<Owner, "id" | "type">;
+
+const sameOwner = (a: OwnerRef | null, b: OwnerRef | null) =>
+  !!a && !!b && a.type === b.type && String(a.id) === String(b.id);
+
+/**
+ * The store holds the state of the page being viewed (a channel, a profile…),
+ * identified by `owner`. Everything here is dropped when the owner changes.
+ */
+const emptyPageState = () => ({
+  owner: null as Owner | null,
+  posts: {} as Record<string, Post>,
+  comments: {} as Record<string, Comment>,
+  commentsByPost: {} as Record<string, string[]>,
+  commentsByComment: {} as Record<string, string[]>,
+});
+
 export interface AppState {
   owner: Owner | null;
   setOwner: (owner: Owner) => void;
+  resetPage: () => void;
 
   posts: Record<string, Post>;
   comments: Record<string, Comment>;
@@ -25,17 +43,18 @@ export interface AppState {
 
 export const useAppStore = create(
   immer<AppState>((set) => ({
-    owner: null,
-    posts: {},
-    comments: {},
-    replies: {},
-
-    commentsByPost: {},
-    commentsByComment: {},
+    ...emptyPageState(),
 
     setOwner: (owner) =>
       set((s) => {
+        if (sameOwner(s.owner, owner)) return;
+        Object.assign(s, emptyPageState());
         s.owner = owner;
+      }),
+
+    resetPage: () =>
+      set((s) => {
+        Object.assign(s, emptyPageState());
       }),
 
     addPost: (post) =>
@@ -44,16 +63,21 @@ export const useAppStore = create(
         s.commentsByPost[post._id] ??= [];
       }),
 
+    // The parent checks below drop events and fetches that belong to a page
+    // the user has already left (or a thread that was never loaded).
     addCommentToPost: (comment) =>
       set((s) => {
+        const post = s.posts[comment.parentId];
+        if (!post) return;
         s.comments[comment._id] = comment;
         (s.commentsByPost[comment.parentId] ??= []).push(comment._id);
         s.commentsByComment[comment._id] ??= [];
-        s.posts[comment.parentId].meta.commentsCount += 1;
+        post.meta.commentsCount = (post.meta.commentsCount ?? 0) + 1;
       }),
 
     addCommentToComment: (comment) =>
       set((s) => {
+        if (!s.comments[comment.parentId]) return;
         s.comments[comment._id] = comment;
         (s.commentsByComment[comment.parentId] ??= []).push(comment._id);
         s.commentsByComment[comment._id] ??= [];
@@ -71,6 +95,7 @@ export const useAppStore = create(
 
     addCommentsToPost: (postId, comments) =>
       set((state) => {
+        if (!state.posts[postId]) return;
         const list = (state.commentsByPost[postId] ??= []);
         for (const comment of comments) {
           state.comments[comment._id] = comment;
@@ -81,6 +106,7 @@ export const useAppStore = create(
 
     addCommentsToComment: (commentId, comments) =>
       set((state) => {
+        if (!state.comments[commentId]) return;
         const list = (state.commentsByComment[commentId] ??= []);
         for (const comment of comments) {
           state.comments[comment._id] = comment;
@@ -107,3 +133,7 @@ export const useAppStore = create(
       }),
   }))
 );
+
+/** True if the store still holds this owner's page — check after an await before writing. */
+export const isCurrentOwner = (owner: OwnerRef) =>
+  sameOwner(useAppStore.getState().owner, owner);

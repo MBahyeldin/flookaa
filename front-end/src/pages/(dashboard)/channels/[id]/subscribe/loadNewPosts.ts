@@ -1,6 +1,6 @@
 import { GetPostsDocument, type GetPostsQuery } from "@/generated/graphql";
 import client from "@/graphql/client";
-import { useAppStore } from "@/stores/AppStore";
+import { isCurrentOwner, useAppStore } from "@/stores/AppStore";
 
 async function loadNewPosts({
   newPosts,
@@ -29,6 +29,7 @@ async function loadNewPosts({
 
   const fetchedPosts = fetched?.getPosts ?? [];
   if (fetchedPosts.length === 0) return;
+  if (!owner || !isCurrentOwner(owner)) return;
 
   // Add fetched posts to the app store
   addPosts(fetchedPosts);

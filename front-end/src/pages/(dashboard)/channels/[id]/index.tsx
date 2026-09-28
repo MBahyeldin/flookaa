@@ -33,11 +33,18 @@ import { useWebsocketService } from "@/Websocket.context";
 import loadNewPosts from "./subscribe/loadNewPosts";
 import handleChannelEvents from "./subscribe/handleChannelEvents";
 import type { PostEventPayload } from "@/types/Ws";
-import { useAppStore } from "@/stores/AppStore";
+import { isCurrentOwner, useAppStore } from "@/stores/AppStore";
 import { formatDateOnly } from "@/utils/formateDate";
 
 export default function ChannelPage() {
   const { id: channelId } = useParams<{ id: string }>();
+  // React Router keeps this component mounted when only :id changes, so the
+  // paging offset, pending new-post notices and join state carried over to
+  // the next channel. Keying on the id gives each channel a fresh view.
+  return <ChannelView key={channelId} channelId={channelId} />;
+}
+
+function ChannelView({ channelId }: { channelId: string | undefined }) {
   const {
     data: channelData,
     loading: channelLoading,
@@ -56,11 +63,32 @@ export default function ChannelPage() {
   const [newPosts, setNewPosts] = useState<PostEventPayload[]>([]);
 
   const setOwner = useAppStore((state) => state.setOwner);
+  const resetPage = useAppStore((state) => state.resetPage);
   const addPosts = useAppStore((state) => state.addPosts);
   const posts = useAppStore((s) => s.posts);
+  const storeOwner = useAppStore((s) => s.owner);
   const [showLoadMore, setShowLoadMore] = useState(false);
   const [offset, setOffset] = useState(0);
   const [loadMorePosts] = useGetPostsLazyQuery();
+
+  const pageOwner = useMemo(
+    () => ({ id: channelId ?? "", type: "CHANNEL" as const }),
+    [channelId]
+  );
+  // The first render after switching channels happens before the effect below
+  // points the store at this channel; until then the store still holds the
+  // previous page, so its posts must not be shown here.
+  const isStoreOnThisChannel =
+    storeOwner?.type === "CHANNEL" && String(storeOwner.id) === channelId;
+
+  // Point the store at this channel (clearing any other page's posts and
+  // comments), and clear it again on leave. Declared before the effect that
+  // adds the channel's posts, so the reset always lands first.
+  useEffect(() => {
+    if (!channelId) return;
+    setOwner(pageOwner);
+    return () => resetPage();
+  }, [channelId, pageOwner, setOwner, resetPage]);
 
   const handleLoadMorePosts = async () => {
     if (!channelId) return;
@@ -74,6 +102,8 @@ export default function ChannelPage() {
         offset,
       },
     });
+    // The user may have switched channels while this was in flight.
+    if (!isCurrentOwner(pageOwner)) return;
     if (data?.getPosts) {
       addPosts(data.getPosts);
       if (data.getPosts.length < 10 || (channelData?.getChannel?.totalPosts || 0) <= offset + data.getPosts.length) {
@@ -86,11 +116,13 @@ export default function ChannelPage() {
   // useMemo ensures no infinite loops
   const sortedPosts = useMemo(
     () =>
-      Object.values(posts).sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ),
-    [posts]
+      isStoreOnThisChannel
+        ? Object.values(posts).sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )
+        : [],
+    [posts, isStoreOnThisChannel]
   );
 
   const handleJoin = async (e: React.MouseEvent) => {
@@ -136,12 +168,6 @@ export default function ChannelPage() {
   useEffect(() => {
     if (!websocketService || !channelId) return;
 
-    // set the owner in the app store
-    setOwner({
-      "id": channelId,
-      "type": "CHANNEL"
-    });
-
     // subscribe
     const unsubscribe = websocketService.subscribeToChannelEvents(
       Number(channelId),
@@ -154,7 +180,7 @@ export default function ChannelPage() {
     return () => {
       unsubscribe?.();
     };
-  }, [websocketService, channelId, setOwner]);
+  }, [websocketService, channelId]);
 
   useEffect(() => {
     addPosts(channelData?.getChannel?.posts || []);
@@ -164,7 +190,14 @@ export default function ChannelPage() {
     } else {
       setShowLoadMore(false);
     }
-  }, [channelData, addPosts]);  
+  }, [channelData, addPosts]);
+
+  // Sync join/follow once the channel loads: the useState initialisers above
+  // only see the first render, when the data is usually not there yet.
+  useEffect(() => {
+    setIsJoined(channelData?.getChannel?.isMember || false);
+    setIsFollowing(channelData?.getChannel?.isFollower || false);
+  }, [channelData]);
 
 
   // Loading, failed and missing are three different things — collapsing them
@@ -428,7 +461,7 @@ export default function ChannelPage() {
             </button>
           ) : null}
 
-          {sortedPosts.length ? (
+          {!isStoreOnThisChannel ? null : sortedPosts.length ? (
             sortedPosts.map((post) => (
               <Post
                 key={post._id}
