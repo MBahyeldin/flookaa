@@ -1,0 +1,64 @@
+---
+- name: Setup notifier
+  hosts: notifier
+  gather_facts: true
+  become: true
+  vars_files:
+    - universe.yml
+  roles:
+    - init_container
+
+  tasks:
+    - name: Ensure app group exists
+      ansible.builtin.group:
+        name: "{{ app_group }}"
+        gid: "{{ app_group_id }}"
+        state: present
+        system: true
+
+    - name: Ensure app user exists
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        uid: "{{ app_user_id }}"
+        group: "{{ app_group }}"
+        create_home: true
+        shell: /usr/bin/bash
+        home: "/home/{{ app_user }}"
+        state: present
+        system: true
+
+    - name: Add SSH public key to authorized_keys for app user
+      ansible.builtin.authorized_key:
+        user: "{{ app_user }}"
+        key: "{{ lookup('file', app_ssh_key) }}"
+        state: present
+      become: true
+
+    # Stateless: notifications live in Postgres and the consumer position in
+    # NATS (durable consumers), so there is no data directory to keep across
+    # /opt/notifier/<version> releases.
+    - name: Copy notifier service file
+      ansible.builtin.template:
+        src: "templates/notifier/notifier.service.j2"
+        dest: "/etc/systemd/system/{{ service_managed_by_gRPC }}.service"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Reload systemd to recognize new notifier service
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    # Until the first ./deploy.bash puts a binary in /opt/notifier/current the
+    # unit fails and systemd retries every 5s; that is expected.
+    - name: Ensure notifier service is started and enabled
+      ansible.builtin.service:
+        name: "{{ service_managed_by_gRPC }}"
+        state: started
+        enabled: true
+
+    - name: Restart notifier service to apply environment variable changes
+      ansible.builtin.service:
+        name: "{{ service_managed_by_gRPC }}"
+        state: restarted
+        enabled: true

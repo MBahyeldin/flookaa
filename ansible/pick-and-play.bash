@@ -14,6 +14,7 @@ commands=(
   "ansible-playbook   neo4j.playbook.yml                -i inventory/neo4j.inventory.yml           -e @vars/neo4j_vault.yml    --vault-password-file ./internal-scripts/vault-pass.bash"
   "ansible-playbook   internal-build.playbook.yml       -i inventory/internal-build.inventory.yml"
   "ansible-playbook   whatsapp.playbook.yml             -i inventory/whatsapp.inventory.yml        -e @vars/whatsapp_vault.yml --vault-password-file ./internal-scripts/vault-pass.bash"
+  "ansible-playbook   notifier.playbook.yml             -i inventory/notifier.inventory.yml        -e @vars/notifier_vault.yml --vault-password-file ./internal-scripts/vault-pass.bash"
  )
 
 # Display the menu

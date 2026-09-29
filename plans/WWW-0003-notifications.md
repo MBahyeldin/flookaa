@@ -10,7 +10,8 @@ buildable and is reviewed and committed by hand before the next one starts.
 | 1. Event enrichment | done |
 | 2. Schema, queries, registry of kinds | done |
 | 3. `notifier/` service | done |
-| 4–7 | pending |
+| 4. Infrastructure (ansible) | done, not run yet |
+| 5–7 | pending |
 
 ## Decisions
 
@@ -239,8 +240,9 @@ Uses `whatsapp` / `redis` as templates.
   - `grpc_server` role
   - systemd unit from `templates/notifier/app.service.j2` with `DATABASE_DSN` / `NATS_CONNECTION`
 - `vars/notifier_vault.yml` (encrypted), plus its line in `pick-and-play.bash`
-- Allow the new container's IP in Postgres `pg_hba` and anywhere NATS restricts clients. Check `postgres.playbook.yml` / `nats.playbook.yml` for per-container lists.
-- Create the container on the LXD host the same way `whatsapp` was added (hosting-machine playbook / `universe.yml`).
+- Container `notifier` at `10.0.0.130` (SSH `22130`, gRPC `50130`; 1 GB, 1 CPU, 5 GB disk), added to `lxd_containers` in `inventory/hosting-machine.inventory.yml`.
+- No Postgres/NATS changes needed: `pg_hba` already allows `10.0.0.0/24`, and NATS listens on `0.0.0.0:4222` without auth.
+- The service is stateless (rows in Postgres, consumer position in NATS), so unlike `whatsapp` there is no data directory outside `/opt/notifier/<version>`.
 
 ### Step 5: REST API (backend)
 

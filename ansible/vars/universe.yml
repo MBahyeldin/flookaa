@@ -75,3 +75,9 @@ containers:
       ssh: 22120
       grpc: 50120
       http: 8080
+
+  notifier:
+    ip: "10.0.0.130"
+    ports:
+      ssh: 22130
+      grpc: 50130

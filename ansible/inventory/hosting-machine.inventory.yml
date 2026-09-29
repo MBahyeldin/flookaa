@@ -272,3 +272,26 @@ all:
             connect: "tcp:127.0.0.1:{{ containers.whatsapp.ports.grpc }}"
             listen: "tcp:0.0.0.0:{{ containers.whatsapp.ports.grpc }}"
             type: proxy
+
+      - name: "notifier"
+        source_alias: "24.04"
+        source_type: "image"
+        profiles:
+          - "default"
+        state: "started"
+        container_user: "ubuntu"
+        container_ssh_key: "~/ssh-keys/lxd_dev.pem"
+        container_memory_limit: "1GB"
+        container_cpu_limit: "1"
+        container_root_disk_size: "5GB"
+        ipv4_address: "{{ containers.notifier.ip }}"
+
+        devices:
+          sshport:
+            connect: tcp:127.0.0.1:22
+            listen: "tcp:0.0.0.0:{{ containers.notifier.ports.ssh }}"
+            type: proxy
+          gRPCport:
+            connect: "tcp:127.0.0.1:{{ containers.notifier.ports.grpc }}"
+            listen: "tcp:0.0.0.0:{{ containers.notifier.ports.grpc }}"
+            type: proxy

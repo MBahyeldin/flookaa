@@ -1,0 +1,22 @@
+[Unit]
+Description=Notifier Service
+After=network.target
+
+[Service]
+Environment='DATABASE_DSN={{ vault_DATABASE_DSN }}'
+Environment='NATS_CONNECTION={{ vault_NATS_CONNECTION }}'
+WorkingDirectory={{ service_working_dir }}
+ExecStart={{ service_working_dir }}/{{ service_binary_name }}
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+# Resource limits
+LimitNOFILE=65535
+
+User={{ app_user }}
+Group={{ app_group }}
+
+[Install]
+WantedBy=multi-user.target
