@@ -126,7 +126,20 @@ SELECT
         WHERE cf.channel_id = c.id 
           AND cf.persona_id = $1 
           AND cf.unfollowed_at IS NULL
-    ) AS is_follower
+    ) AS is_follower,
+    (
+        SELECT COUNT(*)
+        FROM channel_members cm
+        WHERE cm.channel_id = c.id
+          AND cm.left_at IS NULL AND cm.status = 'active'
+    )::int AS members_count,
+    -- DISTINCT: older rows may hold repeated follows by one persona.
+    (
+        SELECT COUNT(DISTINCT cf.persona_id)
+        FROM channel_followers cf
+        WHERE cf.channel_id = c.id
+          AND cf.unfollowed_at IS NULL
+    )::int AS followers_count
 FROM channels c
 WHERE c.deleted_at IS NULL
 LIMIT $2 OFFSET $3;
