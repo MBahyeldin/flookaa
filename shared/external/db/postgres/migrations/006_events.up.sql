@@ -1,7 +1,8 @@
 BEGIN;
 -- ============================================
--- Table: notifications
--- Description: Stores all user notification events
+-- Table: events
+-- Description: One row per post, comment and like (unlike = soft delete).
+-- The source of truth for counters. Notifications are a separate table (012).
 -- ============================================
 
 DO $$

@@ -57,7 +57,15 @@
 { "type": "channel_message", "channelId": "45", "messageId": "m123" }
 { "type": "dm", "from": "u123", "messageId": "d456" }
 { "type": "user_typing", "channelId": "45", "userId": "u567" }
-{ "type": "notification", "kind": "new_follower", "userId": "u789" }
+```
+
+Notifications arrive as ids only on the persona's
+`STREAM_USER_EVENTS.PERSONA.<id>.notifications.{create|delete}` subject, and
+the browser refetches them over REST:
+
+``` json
+{ "event": { "name": "notifications", "action": "create", "target_id": "42", "owner": "PERSONA", "owner_id": 7 },
+  "payload": { "notification_id": 42 } }
 ```
 
 ------------------------------------------------------------------------
@@ -73,20 +81,29 @@
     -   Updates Redis with subscription lists and offsets.
 -   **Event Publisher**
     -   Publishes state changes to NATS JetStream.
--   **Background Workers**
-    -   Consume JetStream streams for fanout, indexing, analytics.
+-   **Background Workers** (separate services, durable JetStream consumers)
+    -   **redis worker** → recounts likes/comments from Postgres into the
+        Redis counter cache.
+    -   **notifier** → turns content and channel events into per-persona
+        notifications in Postgres (one row per thing, counts recounted at
+        read time) and pushes their ids to the persona's websocket.
+-   **Notifications API** → `/api/v1/notifications` (list, unread count,
+    mark read).
 
 ------------------------------------------------------------------------
 
 ## 🔹 4. NATS + JetStream (Event Backbone)
 
--   **Streams (persistent logs)**:
-    -   `DM_STREAM` → `user.*.dm`
-    -   `CHANNEL_STREAM` → `channel.*.message.*`
-    -   `NOTIFY_STREAM` → `user.*.notify.*`
+-   **Streams (persistent logs, 7 days)**, subjects
+    `{stream}.{ownerType}.{ownerId}.{event}.{action}`:
+    -   `STREAM_CONTENT_EVENTS` → posts, comments, likes.
+    -   `STREAM_CHANNEL_EVENTS` → membership: member, follower, join_request.
+    -   `STREAM_USER_EVENTS` → per persona: direct_messages, notifications,
+        alerts.
 -   **Consumers**:
-    -   **Ephemeral** → channels (per-session).
-    -   **Durable** → DMs & notifications (per-user).
+    -   **Per websocket** → attached by the Rust proxy for the subjects `/control` allows.
+    -   **Durable** → backend workers: `redis-counters`, `notifier-content`,
+        `notifier-channel`.
 
 ------------------------------------------------------------------------
 
@@ -103,7 +120,8 @@ lastRead:user:123:channel:45 = 1023
 
 ## 🔹 6. Databases
 
--   **Postgres** → users, channels, memberships.
+-   **Postgres** → users, personas, channels, memberships, events,
+    notifications.
 -   **MongoDB** → posts, comments, replies.
 
 ------------------------------------------------------------------------

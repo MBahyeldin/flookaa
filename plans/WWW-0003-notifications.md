@@ -12,7 +12,8 @@ buildable and is reviewed and committed by hand before the next one starts.
 | 3. `notifier/` service | done |
 | 4. Infrastructure (ansible) | done, not run yet |
 | 5. REST API | done |
-| 6–7 | pending |
+| 6. Frontend | pending (dropdown vs page still open) |
+| 7. Docs | done |
 
 ## Decisions
 

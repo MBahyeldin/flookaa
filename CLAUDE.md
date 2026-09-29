@@ -15,6 +15,7 @@ There are no tests anywhere in the repo (no `*_test.go`, no frontend test runner
 | `backend/` | Go, module `app` | Main HTTP service: REST (`/api/v1`), GraphQL (`/query`), and `/control` |
 | `shared/` | Go, module `shared` | Shared library: DB connections, SQL migrations/queries, generated sqlc + gqlgen code, subject helpers. Imported by every Go service except `whatsapp` |
 | `redis/` | Go, module `redis_worker` | NATS consumer that maintains Redis counter caches |
+| `notifier/` | Go, module `notifier` | NATS consumer that turns content/channel events into per-persona notifications in Postgres and pushes their ids over `STREAM_USER_EVENTS`. See "Notifications" below |
 | `s3/` | Go, module `s3` | Separate upload service (images, audio) backed by S3 |
 | `whatsapp/` | Go, module `whatsapp` | Send-only WhatsApp REST service (whatsmeow, unofficial linked-device client). Standalone; see `whatsapp/README.md` |
 | `gRCP/server`, `gRCP/client` | Go | gRPC deploy agent: watches a directory, publishes binaries to `/opt/<svc>/<version>`, flips a `current` symlink, restarts systemd |
@@ -22,7 +23,7 @@ There are no tests anywhere in the repo (no `*_test.go`, no frontend test runner
 | `front-end/` | React 19 + Vite + TS | SPA |
 | `ansible/` | Ansible | LXD host + per-service container provisioning |
 
-`go.work` uses `backend`, `redis`, `shared`, `gRCP/client`, `gRCP/server`, `s3`, `whatsapp`. Note `gRCP` is spelled that way on disk (not `gRPC`).
+`go.work` uses `backend`, `gRCP/client`, `gRCP/server`, `notifier`, `redis`, `s3`, `shared`, `whatsapp`. Note `gRCP` is spelled that way on disk (not `gRPC`).
 
 ## Commands
 
@@ -76,6 +77,7 @@ Each Go service has its own `deploy.bash` / `deploy.sh` that cross-compiles for 
 cd backend && ./deploy.bash     # -> gRPC@backend
 cd s3      && ./deploy.bash     # -> gRPC@s3
 cd redis   && ./deploy.bash     # -> gRPC@redis
+cd notifier && ./deploy.bash    # -> gRPC@notifier (needs migration 012 applied, or it refuses to start)
 cd whatsapp && ./deploy.bash    # -> gRPC@whatsapp (CGO_ENABLED=0)
 cd front-end && ./deploy.sh     # pnpm build + scp dist/* to the nginx host
 cd nats    && ./deploy.sh       # Rust cross-build
@@ -99,7 +101,7 @@ Always prefer `pick-and-play.bash` over composing `ansible-playbook` invocations
 
 `backend/cmd/server/root.go` builds one Gin engine with three groups, all behind a single CORS config and `auth.Middleware` (tiers below):
 
-- `api.AddApiGroup` → `/api/v1/*` REST: auth, users, personas, channels, geo, health. Postgres-backed via sqlc handlers in `backend/internal/db/postgres/handlers/`.
+- `api.AddApiGroup` → `/api/v1/*` REST: auth, users, personas, channels, notifications, geo, health. Postgres-backed via sqlc handlers in `backend/internal/db/postgres/handlers/`.
 - `graphql.AddGraphQLGroup` → `POST /query` and `GET /playground`. Posts/comments/replies live in MongoDB (`app.objects` collection); the resolver struct carries `*db.Queries`, the `app.objects` collection, NATS, and the Redis content/persona stores.
 - `control.AddControlGroup` → `POST /control`, called by the Rust proxy, not by browsers.
 
@@ -119,7 +121,7 @@ Tiers are applied at **group** level, so a new route inherits its group's tier:
 |---|---|
 | Public | `/api/v1/health`, `auth/register`, `auth/login`, `auth/logout`, `auth/google`, `auth/oauth2callback/*`, `geo/*` (used during signup) |
 | User | `auth/info`, `auth/verify`, `users/*`, `persona/*` |
-| Persona | `channels/*`, `POST /query`, `POST /control` |
+| Persona | `channels/*`, `notifications/*`, `POST /query`, `POST /control` |
 
 **Content and channel actions belong to a persona, not a user**: authorship, membership, realtime subscriptions (Redis `persona:<id>:subjects`) are all keyed by `persona_id`; `user_id` is only for account and persona management. `/playground` is only mounted when `GIN_MODE` is not `release`.
 
@@ -161,21 +163,41 @@ A new counter needs: the event written to `events` + published, a case in `count
 
 Deletes are soft. `deletePost`/`deleteComment` (author or channel moderator) set `deletedat` on the Mongo document, soft-delete the events about the object via `events.object_id` (its own create event and the likes on it; `object_id` is NOT NULL, likes store the liked object), and publish `…post.delete` / `…comment.delete`. Every read of `app.objects` must filter `deletedat: nil`.
 
-Publishing uses `JetStream.Publish` (acknowledged), so a missing stream is an error. Only the backend runs `EnsureStreams` (creates streams, sets `MaxAge` 7d); the worker only `CheckStream`s.
+Publishing uses `JetStream.Publish` (acknowledged), so a missing stream is an error. Only the backend runs `EnsureStreams` (creates streams, sets `MaxAge` 7d); the workers (redis, notifier) only `CheckStream`.
+
+### Notifications
+
+The `notifier/` service writes them; the backend only reads them (`/api/v1/notifications`: list, `unread-count`, `read`, `read-all`). Recipients are **personas**. Direct messages and broadcast news are deliberately **not** notifications: DMs keep per-conversation unread state, and broadcasts belong in a future announcements table, not N rows.
+
+- **Generic rows** (`notifications`, migration 012). `subject_type/subject_id` is what the notification is about (`POST`, `COMMENT`, `CHANNEL`, `PERSONA`). `scope_type/scope_id` is whose access rule decides visibility: `CHANNEL`, or NULL for personal, always visible. There are no foreign keys to subjects or scopes; the notifier soft-deletes by subject when one goes away. `kind`, subject and scope types are Postgres enums.
+- **One row per thing**: `UNIQUE (recipient_id, group_key)`, `group_key = "<kind>:<subject_id>"`. New activity upserts the row, moves it to the top and marks it unread. Counts and the latest actor of aggregated kinds are **recounted** from `events` / `channel_members` when read, never stored, like the counters. A recount of zero soft-deletes the row, and later activity revives it.
+- **Replay guard**: `last_event_at` is the newest event applied. The upsert only changes a row for a newer event and returns no row otherwise (`sql.ErrNoRows` → nothing published). Soft-deletes move it forward too, so redelivered or out-of-order events can't mark a read row unread or revive a removed one.
+- **Visibility** (`ListNotifications` / `CountUnreadNotifications`): one SQL rule per scope type, mirroring `access.CanRead` for `CHANNEL`. A persona that loses access keeps its rows, but they don't show.
+- **Registry of kinds**: `shared/pkg/notifications.Kinds` maps each kind to its subject type and batched recount (nil = single actor, stored in `actor_id`). The notifier and the API both use it, and both call `notifications.Check` at startup, which fails if the database enum has a kind without a spec.
+- **Notifier**: durable consumers `notifier-content` / `notifier-channel` (`DeliverNew`, explicit ack, same backoff as the redis worker). It never notifies you about your own activity, and it takes the recipient of comments and likes from the event's `recipient_id` (set by the resolvers), so it doesn't read Mongo. It publishes `STREAM_USER_EVENTS.PERSONA.<id>.notifications.{create|delete}` with `{notification_id}`. A future consumer of `STREAM_USER_EVENTS` must use specific filter subjects, never `STREAM_USER_EVENTS.>`, or it would consume these frames.
+- **API paging**: the cursor is `"<updated_at µs>_<id>"`, taken from the last row read. Rows whose recount is zero are dropped after the query, so a page can be short or empty and still have `next_cursor`; page until it's null.
+
+A new kind needs:
+1. `ALTER TYPE notification_kind_enum ADD VALUE` in its own migration (plus subject/scope values if new), then `make generate-models`.
+2. A spec in `notifications.Kinds`.
+3. A notifier handler for its source events.
+4. A visibility rule if the scope type is new.
+5. Frontend rendering.
 
 ### Dependencies are wired explicitly in each `main`
 
 There are no connection globals. `shared/external/db/{postgres,mongo,nats,redis}` each expose `Connect(...)`, and importing a package connects nothing. Each binary's `main` loads its own `internal/config` (built on `shared/util/envconfig`, which reports **all** missing vars in one error), connects only what it uses, and passes handles into constructors:
 
-- Backend: `backend/cmd/server/root.go` builds one `Handler` struct per domain (`users`, `channels`, `geo`, the `/control` handler, `oauthproviders.Google`) plus the GraphQL `resolvers.Resolver`, each holding only its own deps (`*db.Queries`, specific Redis sub-stores, `*nats.NatsHelper`, `*token.Signer`). The seeder (`app seed`) loads only `DATABASE_DSN` and the admin credentials.
+- Backend: `backend/cmd/server/root.go` builds one `Handler` struct per domain (`users`, `channels`, `notifications`, `geo`, the `/control` handler, `oauthproviders.Google`) plus the GraphQL `resolvers.Resolver`, each holding only its own deps (`*db.Queries`, specific Redis sub-stores, `*nats.NatsHelper`, `*token.Signer`). The seeder (`app seed`) loads only `DATABASE_DSN` and the admin credentials.
 - Redis worker: `redis/main.go` → `internal.NewWorker(...)`.
+- Notifier: `notifier/main.go` → `notifications.Check`, then `internal.NewWorker(nats, q)`. It needs `DATABASE_DSN` and `NATS_CONNECTION` only.
 - JWTs go through `token.Signer` (`shared/util/token`), which refuses a secret under 32 bytes. `s3` builds its own signer to verify the backend's image tokens.
 
 Only `config` packages call `os.Getenv`. A new dependency means a constructor parameter, not a package global.
 
 ### Data split
 
-- **Postgres** (sqlc): users, personas, roles, channels, memberships, geo, verification, events.
+- **Postgres** (sqlc): users, personas, roles, channels, memberships, geo, verification, events, notifications.
 - **MongoDB** (`app.objects`): posts, comments, replies as portable-text documents.
 - **Neo4j**: not wired into any binary for now (planned for friends-of-friends recommendations); `shared/external/db/neo` keeps a `Connect` for when it returns.
 - **Redis**: sessions, subscription lists, per-subject offsets, content counters, persona cache.
