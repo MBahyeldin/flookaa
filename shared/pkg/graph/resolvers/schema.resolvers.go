@@ -478,6 +478,8 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		Owner:          &ownerPersona,
 		IsMember:       channel.IsMember,
 		IsFollower:     channel.IsFollower,
+		MembersCount:   &channel.MembersCount,
+		FollowersCount: &channel.FollowersCount,
 		CanModerate:    channelAccess.CanModerate,
 	}, nil
 }

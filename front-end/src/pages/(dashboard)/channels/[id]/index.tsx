@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Users,
   Heart,
-  Share2,
   Settings,
   UserPlus,
   HeartOff,
@@ -66,6 +65,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
 
   const [newPosts, setNewPosts] = useState<PostEventPayload[]>([]);
   const [isManaging, setIsManaging] = useState(false);
+  const [membersCount, setMembersCount] = useState(0);
   const canModerate = channelData?.getChannel?.canModerate || false;
 
   const setOwner = useAppStore((state) => state.setOwner);
@@ -143,6 +143,8 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
         return;
       }
       toast.success(isRequested ? "Join request cancelled" : "Successfully left channel");
+      // A cancelled request was never counted.
+      if (isJoined) setMembersCount((n) => Math.max(0, n - 1));
       setIsJoined(false);
       setIsRequested(false);
       return;
@@ -160,6 +162,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
       return;
     }
     toast.success("Successfully joined channel");
+    setMembersCount((n) => n + 1);
     setIsJoined(true);
   };
 
@@ -221,6 +224,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   useEffect(() => {
     setIsJoined(channelData?.getChannel?.isMember || false);
     setIsFollowing(channelData?.getChannel?.isFollower || false);
+    setMembersCount(channelData?.getChannel?.membersCount ?? 0);
     // Lets post and comment menus offer Delete on other personas' content.
     setCanModerate(channelData?.getChannel?.canModerate || false);
   }, [channelData, setCanModerate]);
@@ -345,7 +349,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                 <div className="flex items-center space-x-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">
-                    {channelData.getChannel.membersCount ?? 0}
+                    {membersCount}
                   </span>
                   <span className="text-muted-foreground">members</span>
                 </div>
@@ -436,30 +440,19 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                   )}
                 </Button> */}
 
-                {/* Not wired up yet — disabled rather than silently inert, so
-                    they don't look clickable. Drop `disabled` once handled. */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled
-                  aria-label="Share channel"
-                  title="Sharing isn’t available yet"
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
-
-                {/* Moderators manage join requests and members here; for
-                    everyone else there are no settings yet. */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!canModerate}
-                  onClick={() => setIsManaging(true)}
-                  aria-label="Manage channel"
-                  title={canModerate ? "Manage channel" : "Channel settings aren’t available yet"}
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
+                {/* Controls that don't apply to this persona, or aren't built
+                    yet, are left out rather than shown disabled. */}
+                {canModerate && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsManaging(true)}
+                    aria-label="Manage channel"
+                    title="Manage channel"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
@@ -479,11 +472,6 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-xl font-semibold">Recent Posts</h2>
-            {/* Sorting isn't implemented; disabled so it reads as inactive
-                instead of a button that does nothing when clicked. */}
-            <Button variant="outline" size="sm" disabled title="Sorting isn’t available yet">
-              Sort by Latest
-            </Button>
           </div>
 
           {newPosts.length ? (
