@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	"shared/external/db/nats"
 	"shared/pkg/db"
 	"strconv"
 	"time"
@@ -108,5 +109,6 @@ func (h *Handler) RemoveMember(c *gin.Context) {
 		return
 	}
 
+	h.publish(ctx, channelId, personaId, nats.EventMember, db.EventActionEnumDelete, memberId, nats.ReasonRemoved)
 	c.JSON(http.StatusOK, gin.H{"message": "member removed"})
 }

@@ -16,8 +16,9 @@ import (
 
 const USER_EVENTS_STREAM = "STREAM_USER_EVENTS"
 const CONTENT_EVENTS_STREAM = "STREAM_CONTENT_EVENTS"
+const CHANNEL_EVENTS_STREAM = "STREAM_CHANNEL_EVENTS"
 
-var DefaultStreamNames = []string{USER_EVENTS_STREAM, CONTENT_EVENTS_STREAM}
+var DefaultStreamNames = []string{USER_EVENTS_STREAM, CONTENT_EVENTS_STREAM, CHANNEL_EVENTS_STREAM}
 
 // StreamMaxAge bounds stream growth. It is also how far back the websocket
 // proxy can replay for a reconnecting browser.

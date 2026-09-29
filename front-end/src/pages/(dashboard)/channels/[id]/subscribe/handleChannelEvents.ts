@@ -1,7 +1,11 @@
 import type {
   Comment,
 } from "@/generated/graphql";
-import type { PostEventPayload, WsEventMessage } from "@/types/Ws";
+import type {
+  ChannelEventPayload,
+  PostEventPayload,
+  WsEventMessage,
+} from "@/types/Ws";
 import handleCommentEvents from "./handleCommentEvents";
 import handleLikeEvents from "./handleLikeEvents";
 import { useAppStore } from "@/stores/AppStore";
@@ -11,8 +15,14 @@ type DeleteEventPayload = { object_id: string };
 
 export default function handleChannelEvents({
   setNewPosts,
+  onMembershipEvent,
 }: {
   setNewPosts: React.Dispatch<React.SetStateAction<PostEventPayload[]>>;
+  /** member, follower and join_request events; the page owns that state. */
+  onMembershipEvent: (
+    event: WsEventMessage["event"],
+    payload: ChannelEventPayload
+  ) => void;
 }) {
   return (payload: WsEventMessage) => {
     if (!payload) return;
@@ -49,6 +59,14 @@ export default function handleChannelEvents({
         handleLikeEvents({
           payload: parsedPayload,
         });
+        break;
+      case "member":
+      case "follower":
+      case "join_request":
+        onMembershipEvent(
+          parsedPayload.event,
+          parsedPayload.payload as ChannelEventPayload
+        );
         break;
       default:
         console.warn(`Unhandled event type: ${payload.event.name}`);

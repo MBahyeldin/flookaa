@@ -8,7 +8,16 @@ type WsMessage<P> = {
   id: string;
 };
 
-type EventType = "post" | "comment" | "reply" | "like" | "*";
+type EventType =
+  | "post"
+  | "comment"
+  | "reply"
+  | "like"
+  // Channel membership (STREAM_CHANNEL_EVENTS); payload is ChannelEventPayload.
+  | "member"
+  | "follower"
+  | "join_request"
+  | "*";
 type EventActionType = "create" | "update" | "delete" | "*";
 type EventOwnerType = "CHANNEL" | "USER";
 
@@ -38,7 +47,26 @@ type Event = {
 
 type WsEventMessage = {
   event: Event;
-  payload: Comment | PostEventPayload;
+  payload: Comment | PostEventPayload | ChannelEventPayload;
+};
+
+/**
+ * Payload of member, follower and join_request events. persona_id is whose
+ * membership changed; the event's actor_id is who changed it (a moderator for
+ * approved, rejected and removed).
+ */
+type ChannelEventPayload = {
+  persona_id: number;
+  reason:
+    | "joined"
+    | "approved"
+    | "rejected"
+    | "requested"
+    | "cancelled"
+    | "left"
+    | "removed"
+    | "followed"
+    | "unfollowed";
 };
 
 type PostEventPayload = {
@@ -61,6 +89,7 @@ export type {
   EventType,
   EventActionType,
   PostEventPayload,
+  ChannelEventPayload,
   EventOwnerType,
   WsEventMessage,
 };

@@ -133,7 +133,7 @@ The frontend mirrors this: REST calls go through `src/lib/apiFetch.ts` and Apoll
 4. Proxy attaches JetStream consumers for those subjects and multiplexes events down the one socket.
 5. Frontend (`front-end/src/ws/index.tsx`, a singleton with a 5s `HEARTBEAT`) dispatches incoming frames to listeners keyed by the message `id`, then refetches details over REST/GraphQL — events carry IDs, not full payloads.
 
-Subject strings are built only through `shared/pkg/subject` — `{stream}.{ownerType}.{ownerID}.{event}.{action}` (stream segment omitted when `StreamName` is nil). Streams are declared in `shared/external/db/nats/natsConn.go` (`STREAM_USER_EVENTS`, `STREAM_CONTENT_EVENTS`).
+Subject strings are built only through `shared/pkg/subject` — `{stream}.{ownerType}.{ownerID}.{event}.{action}` (stream segment omitted when `StreamName` is nil). Streams are declared in `shared/external/db/nats/natsConn.go` (`STREAM_USER_EVENTS`, `STREAM_CONTENT_EVENTS`, `STREAM_CHANNEL_EVENTS`). Channel membership changes (`member`, `follower`, `join_request` × `create`/`delete`, payload `{persona_id, reason}`, `actor_id` = who made the change) go to `STREAM_CHANNEL_EVENTS` only — they are NATS events, not `events` rows. `/control` subscribes a channel's websockets to both the content and channel-events subjects.
 
 ### Channel access
 

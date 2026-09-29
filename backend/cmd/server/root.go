@@ -88,7 +88,7 @@ func StartServer(cfg config.Server) error {
 	)
 	restHandlers := v1.Handlers{
 		Users:    usersHandler,
-		Channels: channels.NewHandler(q),
+		Channels: channels.NewHandler(q, natsHelper),
 		Geo:      geo.NewHandler(q),
 		Google: oauthproviders.NewGoogle(
 			cfg.Google.ClientID,

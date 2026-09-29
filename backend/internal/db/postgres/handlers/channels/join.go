@@ -4,6 +4,7 @@ import (
 	"app/internal/auth"
 	"errors"
 	"net/http"
+	"shared/external/db/nats"
 	"shared/pkg/access"
 	"shared/pkg/db"
 	"strconv"
@@ -57,9 +58,11 @@ func (h *Handler) JoinChannel(c *gin.Context) {
 	}
 
 	if status == db.ChannelMembershipStatusEnumPending {
+		h.publish(ctx, channelId, personaId, nats.EventJoinRequest, db.EventActionEnumCreate, personaId, nats.ReasonRequested)
 		c.JSON(http.StatusAccepted, gin.H{"status": "pending", "message": "join request sent"})
 		return
 	}
+	h.publish(ctx, channelId, personaId, nats.EventMember, db.EventActionEnumCreate, personaId, nats.ReasonJoined)
 	c.JSON(http.StatusOK, gin.H{"status": "active", "message": "joined channel successfully"})
 }
 
@@ -111,6 +114,11 @@ func (h *Handler) LeaveChannel(c *gin.Context) {
 		return
 	}
 
+	if channel.IsMember {
+		h.publish(ctx, channelId, personaId, nats.EventMember, db.EventActionEnumDelete, personaId, nats.ReasonLeft)
+	} else {
+		h.publish(ctx, channelId, personaId, nats.EventJoinRequest, db.EventActionEnumDelete, personaId, nats.ReasonCancelled)
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "left channel successfully"})
 }
 

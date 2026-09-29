@@ -44,23 +44,21 @@ func (h *Handler) channel(c *gin.Context, wsMessage WsMessage, personaId int64) 
 		}
 	}
 
-	var streamName = nats.CONTENT_EVENTS_STREAM
+	// A channel's realtime feed is its content (posts, comments, likes) plus
+	// its membership changes (members, followers, join requests), which live
+	// in separate streams.
+	owner := &models.Owner{ID: payload.OwnerID, Type: models.OwnerTypeChannel}
+	subjects := []*types.SubjectOffsets{}
+	for _, stream := range []string{nats.CONTENT_EVENTS_STREAM, nats.CHANNEL_EVENTS_STREAM} {
+		subjects = append(subjects, subject.New(&stream, owner, payload.Event, payload.EventAction).GetSubjectWithOffsets(0))
+	}
+
 	switch wsMessage.Type {
 	case WsMessageTypeSubscribe:
-		subjectHelper := subject.New(&streamName, &models.Owner{
-			ID:   payload.OwnerID,
-			Type: models.OwnerTypeChannel,
-		}, payload.Event, payload.EventAction)
-		subject := subjectHelper.GetSubjectWithOffsets(0)
-		c.JSON(http.StatusOK, gin.H{"action": "subscribe", "subjects": &[]*types.SubjectOffsets{subject}, "durable": false})
+		c.JSON(http.StatusOK, gin.H{"action": "subscribe", "subjects": &subjects, "durable": false})
 
 	case WsMessageTypeUnsubscribe:
-		subjectHelper := subject.New(&streamName, &models.Owner{
-			ID:   payload.OwnerID,
-			Type: models.OwnerTypeChannel,
-		}, payload.Event, payload.EventAction)
-		subject := subjectHelper.GetSubjectWithOffsets(0)
-		c.JSON(http.StatusOK, gin.H{"action": "unsubscribe", "subjects": &[]*types.SubjectOffsets{subject}, "durable": false})
+		c.JSON(http.StatusOK, gin.H{"action": "unsubscribe", "subjects": &subjects, "durable": false})
 
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid action"})

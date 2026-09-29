@@ -3,6 +3,7 @@ package channels
 import (
 	"app/internal/auth"
 	"net/http"
+	"shared/external/db/nats"
 	"shared/pkg/access"
 	"shared/pkg/db"
 
@@ -10,36 +11,47 @@ import (
 )
 
 // FollowChannel follows a channel the persona can read. Following twice is
-// a no-op, so a retried request still answers "following".
+// a no-op, so a retried request still answers "following" and publishes
+// nothing the second time.
 func (h *Handler) FollowChannel(c *gin.Context) {
+	ctx := c.Request.Context()
 	personaId, channelId, ok := h.followTarget(c)
 	if !ok {
 		return
 	}
 
-	if _, err := h.q.FollowChannel(c.Request.Context(), db.FollowChannelParams{
+	n, err := h.q.FollowChannel(ctx, db.FollowChannelParams{
 		ChannelID: channelId,
 		PersonaID: personaId,
-	}); err != nil {
+	})
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+	if n > 0 {
+		h.publish(ctx, channelId, personaId, nats.EventFollower, db.EventActionEnumCreate, personaId, nats.ReasonFollowed)
 	}
 	c.JSON(http.StatusOK, gin.H{"following": true})
 }
 
 // UnfollowChannel ends the persona's current follow, if any.
 func (h *Handler) UnfollowChannel(c *gin.Context) {
+	ctx := c.Request.Context()
 	personaId, channelId, ok := h.followTarget(c)
 	if !ok {
 		return
 	}
 
-	if _, err := h.q.UnfollowChannel(c.Request.Context(), db.UnfollowChannelParams{
+	n, err := h.q.UnfollowChannel(ctx, db.UnfollowChannelParams{
 		ChannelID: channelId,
 		PersonaID: personaId,
-	}); err != nil {
+	})
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+	if n > 0 {
+		h.publish(ctx, channelId, personaId, nats.EventFollower, db.EventActionEnumDelete, personaId, nats.ReasonUnfollowed)
 	}
 	c.JSON(http.StatusOK, gin.H{"following": false})
 }

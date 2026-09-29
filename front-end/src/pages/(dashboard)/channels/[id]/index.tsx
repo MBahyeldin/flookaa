@@ -31,7 +31,8 @@ import { toast } from "sonner";
 import { useWebsocketService } from "@/Websocket.context";
 import loadNewPosts from "./subscribe/loadNewPosts";
 import handleChannelEvents from "./subscribe/handleChannelEvents";
-import type { PostEventPayload } from "@/types/Ws";
+import type { ChannelEventPayload, PostEventPayload, WsEventMessage } from "@/types/Ws";
+import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { isCurrentOwner, useAppStore } from "@/stores/AppStore";
 import { formatDateOnly } from "@/utils/formateDate";
 import ModerationSheet from "./ModerationSheet";
@@ -207,11 +208,45 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   useEffect(() => {
     if (!websocketService || !channelId) return;
 
+    /*
+     * Membership changes from other personas. Our own actions (actor_id is
+     * us) already updated this view when the request succeeded, so applying
+     * them again would count them twice.
+     */
+    const onMembershipEvent = (
+      event: WsEventMessage["event"],
+      payload: ChannelEventPayload
+    ) => {
+      const me = useUserProfileStore.getState().persona?.id;
+      if (me != null && Number(event.actor_id) === Number(me)) return;
+      const isMe = me != null && Number(payload.persona_id) === Number(me);
+      const delta = event.action === "create" ? 1 : event.action === "delete" ? -1 : 0;
+
+      switch (event.name) {
+        case "member":
+          setMembersCount((n) => Math.max(0, n + delta));
+          if (isMe && payload.reason === "approved") {
+            setIsJoined(true);
+            setIsRequested(false);
+          }
+          if (isMe && payload.reason === "removed") {
+            setIsJoined(false);
+            toast.info("You were removed from this channel.");
+          }
+          break;
+        case "follower":
+          setFollowersCount((n) => Math.max(0, n + delta));
+          break;
+        // join_request: nothing on this page tracks pending requests live yet.
+      }
+    };
+
     // subscribe
     const unsubscribe = websocketService.subscribeToChannelEvents(
       Number(channelId),
       handleChannelEvents({
         setNewPosts,
+        onMembershipEvent,
       })
     );
 
