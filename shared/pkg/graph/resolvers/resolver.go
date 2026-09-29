@@ -20,6 +20,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -39,6 +40,10 @@ type Resolver struct {
 }
 
 var errObjectNotFound = errors.New("not found")
+
+func newObjectID() string {
+	return primitive.NewObjectID().Hex()
+}
 
 // loadObject reads a post, comment or reply by id from app.objects.
 func (r *Resolver) loadObject(ctx context.Context, id string) (*models.PostGenericDocument, error) {

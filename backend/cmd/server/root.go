@@ -54,6 +54,10 @@ func StartServer(cfg config.Server) error {
 		return err
 	}
 	defer mongoClient.Disconnect(context.Background())
+	objects := mongo.Objects(mongoClient)
+	if err := mongo.EnsureObjectIndexes(ctx, objects); err != nil {
+		return err
+	}
 
 	natsHelper, err := nats.Connect(cfg.NATSURL)
 	if err != nil {
@@ -96,7 +100,7 @@ func StartServer(cfg config.Server) error {
 	}
 	resolver := &resolvers.Resolver{
 		Queries: q,
-		Objects: mongo.Objects(mongoClient),
+		Objects: objects,
 		NATS:    natsHelper,
 		Content: stores.Content,
 		Persona: stores.Persona,
