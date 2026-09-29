@@ -1,5 +1,3 @@
-import { useAuth } from "@/Auth.context";
-
 import { DialogTrigger } from "@/components/ui/dialog";
 import { setCurrentPersona } from "@/services/persona";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
@@ -7,7 +5,6 @@ import CreatePersona from "./CreatePersona";
 
 export default function SelectPersonaPage() {
     const { personas } = useUserProfileStore();
-    const { revalidatePersona } = useAuth();
 
     return (
         <main className="min-h-screen flex flex-col items-center justify-center">
@@ -19,7 +16,12 @@ export default function SelectPersonaPage() {
                 {personas.map((persona) => (
                     <button
                         key={persona.id}
-                        onClick={async () => { await setCurrentPersona(persona.id); revalidatePersona(); }}
+                        onClick={async () => {
+                            await setCurrentPersona(persona.id);
+                            // Reload like the sidebar switcher does: the websocket
+                            // subscribes to the persona's default channel only on load.
+                            window.location.reload();
+                        }}
                         className="group flex flex-col items-center focus:outline-none cursor-pointer"
                     >
                         <div className="w-28 h-28 rounded-lg bg-muted overflow-hidden 

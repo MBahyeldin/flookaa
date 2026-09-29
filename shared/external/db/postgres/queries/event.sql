@@ -30,35 +30,15 @@ GROUP BY name, target_id;
 
 
 -- -------------------------------
--- 3. Get user activities (events)
+-- 3. Which of the given targets a persona currently likes
 -- -------------------------------
--- name: GetPersonaActivities :many
-SELECT
-  actor_id,
-  ARRAY(
-    SELECT target_id
-    FROM events e2
-    WHERE e2.actor_id = e.actor_id AND e2.name = 'comment'
-    ORDER BY e2.created_at DESC
-    LIMIT 1000
-  ) AS comment_targets,
-  ARRAY(
-    SELECT target_id
-    FROM events e2
-    WHERE e2.actor_id = e.actor_id AND e2.name = 'post'
-    ORDER BY e2.created_at DESC
-    LIMIT 1000
-  ) AS post_targets,
-  ARRAY(
-    SELECT target_id
-    FROM events e2
-    WHERE e2.actor_id = e.actor_id AND e2.name = 'like'
-    ORDER BY e2.created_at DESC
-    LIMIT 1000
-  ) AS like_targets
-FROM events e
-WHERE e.actor_id = $1
-GROUP BY actor_id;
+-- name: GetLikedTargets :many
+SELECT DISTINCT target_id
+FROM events
+WHERE actor_id = sqlc.arg(actor_id)::bigint
+  AND name = 'like'
+  AND deleted_at IS NULL
+  AND target_id = ANY(sqlc.arg(target_ids)::varchar[]);
 
 --------------------------------
 -- 5. is user liked a target

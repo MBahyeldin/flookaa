@@ -1,35 +1,30 @@
 package users
 
 import (
+	"app/internal/auth"
 	"app/util/cookies"
 	"database/sql"
 	"fmt"
 	"hash/fnv"
 	"net/http"
-	"shared/external/db/postgres"
 	"shared/pkg/db"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-func ReadCurrentPersona(c *gin.Context) {
+func (h *Handler) ReadCurrentPersona(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	personaId, exists := c.Get("persona_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "No persona is set in the context"})
+	personaId, ok := auth.PersonaID(c)
+	if !ok {
+		auth.PersonaRequired(c)
 		return
 	}
 
-	if personaId.(int64) == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "No persona is chosen yet"})
-		return
-	}
+	q := h.q
 
-	q := db.New(postgres.DbConn)
-
-	personaRow, err := q.GetPersonaBasicInfo(ctx, personaId.(int64))
+	personaRow, err := q.GetPersonaBasicInfo(ctx, personaId)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("No Persona found with this id: %v", personaId)})
 		return
@@ -46,18 +41,18 @@ func ReadCurrentPersona(c *gin.Context) {
 	})
 }
 
-func ListPersonas(c *gin.Context) {
+func (h *Handler) ListPersonas(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userId, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "No user is set in the context"})
+	userId, ok := auth.UserID(c)
+	if !ok {
+		auth.Unauthorized(c)
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
-	personas, err := q.GetUserPersonasByUserId(ctx, userId.(int64))
+	personas, err := q.GetUserPersonasByUserId(ctx, userId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve personas"})
 		return
@@ -83,12 +78,12 @@ func ListPersonas(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func CreatePersona(c *gin.Context) {
+func (h *Handler) CreatePersona(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userId, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "No user is set in the context"})
+	userId, ok := auth.UserID(c)
+	if !ok {
+		auth.Unauthorized(c)
 		return
 	}
 
@@ -107,12 +102,12 @@ func CreatePersona(c *gin.Context) {
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	slug := generateSlug(req.FirstName, req.LastName)
 
 	personaId, err := q.CreatePersona(ctx, db.CreatePersonaParams{
-		UserID:      userId.(int64),
+		UserID:      userId,
 		Name:        req.Name,
 		Description: req.Description,
 		Bio:         sql.NullString{String: req.Bio, Valid: req.Bio != ""},
@@ -131,12 +126,12 @@ func CreatePersona(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"persona_id": personaId})
 }
 
-func SetCurrentPersona(c *gin.Context) {
+func (h *Handler) SetCurrentPersona(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userId, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "No user is set in the context"})
+	userId, ok := auth.UserID(c)
+	if !ok {
+		auth.Unauthorized(c)
 		return
 	}
 
@@ -149,11 +144,11 @@ func SetCurrentPersona(c *gin.Context) {
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	persona, err := q.GetPersonaByIdAndUserId(ctx, db.GetPersonaByIdAndUserIdParams{
 		ID:     req.PersonaID,
-		UserID: userId.(int64),
+		UserID: userId,
 	})
 	if err != nil || persona.ID == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Persona not found or does not belong to the user"})
@@ -161,7 +156,7 @@ func SetCurrentPersona(c *gin.Context) {
 	}
 
 	// generate new JWT with updated persona_id
-	jwt, err := GetLoginToken(UserMinimal{ID: userId.(int64), EmailAddress: c.GetString("email_address"), PersonaId: persona.ID})
+	jwt, err := h.LoginToken(UserMinimal{ID: userId, EmailAddress: auth.Email(c), PersonaId: persona.ID})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
@@ -181,12 +176,12 @@ func generateSlug(firstName, lastName string) string {
 	return fmt.Sprintf("%x", h.Sum32())
 }
 
-func UpdatePersona(c *gin.Context) {
+func (h *Handler) UpdatePersona(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userId, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "No user is set in the context"})
+	userId, ok := auth.UserID(c)
+	if !ok {
+		auth.Unauthorized(c)
 		return
 	}
 
@@ -213,11 +208,11 @@ func UpdatePersona(c *gin.Context) {
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	persona, err := q.GetPersonaByIdAndUserId(ctx, db.GetPersonaByIdAndUserIdParams{
 		ID:     personaId,
-		UserID: userId.(int64),
+		UserID: userId,
 	})
 	if err != nil || persona.ID == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Persona not found or does not belong to the user"})
@@ -226,7 +221,7 @@ func UpdatePersona(c *gin.Context) {
 
 	updatedPersona, err := q.UpdatePersonaByIdAndUserId(ctx, db.UpdatePersonaByIdAndUserIdParams{
 		ID:          personaId,
-		UserID:      userId.(int64),
+		UserID:      userId,
 		Name:        getStringOrDefault(req.Name, persona.Name),
 		Description: getStringOrDefault(req.Description, persona.Description),
 		Bio:         sql.NullString{String: getStringOrDefault(req.Bio, persona.Bio.String), Valid: req.Bio != ""},

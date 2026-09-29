@@ -1,25 +1,24 @@
 package users
 
 import (
+	"app/internal/auth"
 	"net/http"
-	"shared/external/db/postgres"
-	"shared/pkg/db"
 
 	"github.com/gin-gonic/gin"
 )
 
-func Info(c *gin.Context) {
+func (h *Handler) Info(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userId, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+	userId, ok := auth.UserID(c)
+	if !ok {
+		auth.Unauthorized(c)
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
-	userRow, err := q.GetUserBasicInfo(ctx, userId.(int64))
+	userRow, err := q.GetUserBasicInfo(ctx, userId)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No user found with this id"})
 		return

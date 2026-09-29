@@ -3,15 +3,14 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"shared/external/db/redis"
 
 	"github.com/gin-gonic/gin"
 )
 
-func defaultSubjects(c *gin.Context, userId string) {
+func (h *Handler) defaultSubjects(c *gin.Context, personaId string) {
 	fmt.Println("Default control endpoint hit")
-	// Fetch all subjects for this user
-	subjects, err := redis.Store.Channel.ListSubjectsForUser(c, userId)
+	// Fetch all subjects for this persona
+	subjects, err := h.subjects.ListSubjectsForPersona(c, personaId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list subjects"})
 		return
@@ -20,7 +19,7 @@ func defaultSubjects(c *gin.Context, userId string) {
 
 	if len(*subjects) == 0 {
 		// If no subjects, add default subjects
-		subjects, err = redis.Store.Channel.AddDefaultSubjectsToUser(c, userId)
+		subjects, err = h.subjects.AddDefaultSubjectsToPersona(c, personaId)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add default subjects"})
 			return

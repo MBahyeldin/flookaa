@@ -4,14 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"shared/external/db/postgres"
-	"shared/pkg/db"
 	"time"
 )
 
-func canResendVerificationCode(userId int64) (bool, error) {
+func (s *Service) canResendVerificationCode(userId int64) (bool, error) {
 	// check if user can generate a new verification code
-	q := db.New(postgres.DbConn)
+	q := s.q
 	ctx, cancle := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancle()
 
@@ -25,9 +23,9 @@ func canResendVerificationCode(userId int64) (bool, error) {
 	return true, nil
 }
 
-func GetNewVerificationCode(userId int64) (string, error) {
+func (s *Service) GetNewVerificationCode(userId int64) (string, error) {
 	// get a new verification code for the user
-	canResend, err := canResendVerificationCode(userId)
+	canResend, err := s.canResendVerificationCode(userId)
 	if err != nil {
 		return "", err
 	}

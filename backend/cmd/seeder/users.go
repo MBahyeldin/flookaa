@@ -4,26 +4,22 @@ import (
 	"context"
 	"database/sql"
 	"log"
-	"os"
-	"shared/external/db/postgres"
 	"shared/pkg/db"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-var users = []db.CreateUserParams{
-	{
-		FirstName:      "Mohamed",
-		LastName:       "Bahyeldin",
-		EmailAddress:   os.Getenv("ADMIN_EMAIL"),
-		HashedPassword: sql.NullString{String: os.Getenv("ADMIN_PASSWORD"), Valid: true},
-		Thumbnail:      sql.NullString{String: "/files/thumbnail.jpg", Valid: true},
-	},
-}
-
-func SeedUsers() {
+func SeedUsers(q *db.Queries, adminEmail, adminPassword string) {
 	ctx := context.Background()
-	q := db.New(postgres.DbConn)
+	users := []db.CreateUserParams{
+		{
+			FirstName:      "Mohamed",
+			LastName:       "Bahyeldin",
+			EmailAddress:   adminEmail,
+			HashedPassword: sql.NullString{String: adminPassword, Valid: true},
+			Thumbnail:      sql.NullString{String: "/files/thumbnail.jpg", Valid: true},
+		},
+	}
 
 	for _, user := range users {
 		// Check if user already exists

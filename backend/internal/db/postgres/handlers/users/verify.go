@@ -1,23 +1,27 @@
 package users
 
 import (
+	"app/internal/auth"
 	"app/internal/models"
-	"app/util/verification"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func Verify(c *gin.Context) {
+func (h *Handler) Verify(c *gin.Context) {
 	var req models.VerifyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	verificationCode := req.VerificationCode
-	userId := c.GetInt64("user_id")
+	userId, ok := auth.UserID(c)
+	if !ok {
+		auth.Unauthorized(c)
+		return
+	}
 
-	err := verification.VerifyUserCode(userId, verificationCode)
+	err := h.verification.VerifyUserCode(userId, verificationCode)
 
 	if err != nil {
 		c.JSON(401, gin.H{"error": err.Error()})

@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"app/internal/auth"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"shared/external/db/redis"
+	"shared/pkg/db"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -38,13 +41,22 @@ type Payload struct {
 	OwnerID     int64     `json:"owner_id"`
 }
 
-func Control(c *gin.Context) {
+type Handler struct {
+	subjects *redis.SubjectStore
+	q        *db.Queries
+}
+
+func NewHandler(subjects *redis.SubjectStore, q *db.Queries) *Handler {
+	return &Handler{subjects: subjects, q: q}
+}
+
+func (h *Handler) Control(c *gin.Context) {
 	fmt.Println("Control endpoint hit")
 
-	userIdInt64, exists := c.Get("user_id")
-	if !exists {
-		log.Println("User ID not found in context")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+	// Realtime subscriptions belong to the persona, not the user.
+	personaIdInt64, ok := auth.PersonaID(c)
+	if !ok {
+		auth.PersonaRequired(c)
 		return
 	}
 
@@ -55,14 +67,14 @@ func Control(c *gin.Context) {
 		return
 	}
 
-	userId := strconv.Itoa(int(userIdInt64.(int64)))
+	personaId := strconv.FormatInt(personaIdInt64, 10)
 
 	switch bodyData.Payload.Owner {
 	case OwnerTypeDefault:
-		defaultSubjects(c, userId)
+		h.defaultSubjects(c, personaId)
 
 	case OwnerTypeChannel:
-		channel(c, bodyData)
+		h.channel(c, bodyData, personaIdInt64)
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid owner type %s", bodyData.Payload.Owner)})
 		return

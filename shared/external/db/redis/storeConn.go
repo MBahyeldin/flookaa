@@ -1,43 +1,50 @@
 package redis
 
 import (
-	"os"
+	"context"
+	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
-var redisClient *redis.Client
-
-var Store *RedisStores
-
-func init() {
-	redisClient = redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_ADDR"),
-		Password: os.Getenv("REDIS_PASSWORD"),
+// Connect opens a Redis client and pings it.
+func Connect(ctx context.Context, addr, password string) (*redis.Client, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: password,
 		DB:       0,
 	})
-	Store = newStore(30 * time.Minute)
+
+	pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if err := client.Ping(pingCtx).Err(); err != nil {
+		client.Close()
+		return nil, fmt.Errorf("redis: ping: %w", err)
+	}
+	return client, nil
 }
 
-// Store struct for Redis
+// RedisStores groups the typed stores that share one Redis client.
 type RedisStores struct {
+	client  *redis.Client
 	Persona *PersonaStore
 	Session *SessionStore
 	Channel *SubjectStore
 	Content *ContentStore
 }
 
-// NewStore creates a new Redis store
-func newStore(ttl time.Duration) *RedisStores {
+// NewStores builds every store on top of client.
+func NewStores(client *redis.Client, ttl time.Duration) *RedisStores {
 	return &RedisStores{
-		Persona: newPersonaStore(redisClient, ttl),
-		Session: newSessionStore(redisClient, ttl),
-		Channel: newSubjectStore(redisClient, ttl),
-		Content: newContentStore(redisClient, ttl),
+		client:  client,
+		Persona: newPersonaStore(client, ttl),
+		Session: newSessionStore(client, ttl),
+		Channel: newSubjectStore(client, ttl),
+		Content: newContentStore(client, ttl),
 	}
 }
 
 func (s *RedisStores) Close() error {
-	return s.Persona.client.Close()
+	return s.client.Close()
 }

@@ -1,8 +1,8 @@
 package channels
 
 import (
+	"app/internal/auth"
 	"net/http"
-	"shared/external/db/postgres"
 	"shared/pkg/db"
 
 	"github.com/gin-gonic/gin"
@@ -13,9 +13,11 @@ type CreateChannelRequest struct {
 	Description string `json:"description"`
 	Thumbnail   string `json:"thumbnail"`
 	Banner      string `json:"banner"`
+	// public: readable by every persona; private: members only, joins need approval.
+	Visibility string `json:"visibility" binding:"required,oneof=public private"`
 }
 
-func CreateChannel(c *gin.Context) {
+func (h *Handler) CreateChannel(c *gin.Context) {
 	var req CreateChannelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -24,20 +26,21 @@ func CreateChannel(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	personaId, exists := c.Get("persona_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+	personaId, ok := auth.PersonaID(c)
+	if !ok {
+		auth.PersonaRequired(c)
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	channel, err := q.CreateChannel(ctx, db.CreateChannelParams{
 		Name:        req.Name,
 		Description: req.Description,
 		Thumbnail:   req.Thumbnail,
 		Banner:      req.Banner,
-		OwnerID:     personaId.(int64),
+		OwnerID:     personaId,
+		Visibility:  db.ChannelVisibilityEnum(req.Visibility),
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -46,7 +49,8 @@ func CreateChannel(c *gin.Context) {
 
 	_, err = q.AddUserToChannel(ctx, db.AddUserToChannelParams{
 		ChannelID: channel.ID,
-		PersonaID: personaId.(int64),
+		PersonaID: personaId,
+		Status:    db.ChannelMembershipStatusEnumActive,
 	})
 
 	if err != nil {
@@ -56,7 +60,7 @@ func CreateChannel(c *gin.Context) {
 
 	_, err = q.FollowChannel(ctx, db.FollowChannelParams{
 		ChannelID: channel.ID,
-		PersonaID: personaId.(int64),
+		PersonaID: personaId,
 	})
 
 	if err != nil {
@@ -73,7 +77,7 @@ func CreateChannel(c *gin.Context) {
 	// AssignUserRoleInChannel
 	_, err = q.AssignPersonaRoleInChannel(ctx, db.AssignPersonaRoleInChannelParams{
 		ChannelID: channel.ID,
-		PersonaID: personaId.(int64),
+		PersonaID: personaId,
 		RoleID:    moderatorRole.ID,
 	})
 	if err != nil {

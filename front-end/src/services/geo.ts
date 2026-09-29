@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 if (!API_BASE_URL) {
@@ -6,7 +7,7 @@ if (!API_BASE_URL) {
 
 export const getCountries = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/geo/countries`, {
+    const response = await apiFetch(`${API_BASE_URL}/api/v1/geo/countries`, {
       credentials: "include",
     });
     if (!response.ok) {
@@ -22,7 +23,7 @@ export const getCountries = async () => {
 
 export const getStatesByCountryID = async (countryID: string) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/geo/countries/${countryID}/states`, {
+    const response = await apiFetch(`${API_BASE_URL}/api/v1/geo/countries/${countryID}/states`, {
       credentials: "include",
     });
     if (!response.ok) {
@@ -44,7 +45,7 @@ export const searchCitiesByStateId = async ({
   search?: string;
 }) => {
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${API_BASE_URL}/api/v1/geo/states/${stateId}/cities?search=${encodeURIComponent(
         search
       )}`,

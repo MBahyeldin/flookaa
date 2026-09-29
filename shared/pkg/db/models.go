@@ -13,6 +13,91 @@ import (
 	"github.com/google/uuid"
 )
 
+type ChannelMembershipStatusEnum string
+
+const (
+	ChannelMembershipStatusEnumPending  ChannelMembershipStatusEnum = "pending"
+	ChannelMembershipStatusEnumActive   ChannelMembershipStatusEnum = "active"
+	ChannelMembershipStatusEnumRejected ChannelMembershipStatusEnum = "rejected"
+)
+
+func (e *ChannelMembershipStatusEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ChannelMembershipStatusEnum(s)
+	case string:
+		*e = ChannelMembershipStatusEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ChannelMembershipStatusEnum: %T", src)
+	}
+	return nil
+}
+
+type NullChannelMembershipStatusEnum struct {
+	ChannelMembershipStatusEnum ChannelMembershipStatusEnum
+	Valid                       bool // Valid is true if ChannelMembershipStatusEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullChannelMembershipStatusEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.ChannelMembershipStatusEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ChannelMembershipStatusEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullChannelMembershipStatusEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ChannelMembershipStatusEnum), nil
+}
+
+type ChannelVisibilityEnum string
+
+const (
+	ChannelVisibilityEnumPublic  ChannelVisibilityEnum = "public"
+	ChannelVisibilityEnumPrivate ChannelVisibilityEnum = "private"
+)
+
+func (e *ChannelVisibilityEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ChannelVisibilityEnum(s)
+	case string:
+		*e = ChannelVisibilityEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ChannelVisibilityEnum: %T", src)
+	}
+	return nil
+}
+
+type NullChannelVisibilityEnum struct {
+	ChannelVisibilityEnum ChannelVisibilityEnum
+	Valid                 bool // Valid is true if ChannelVisibilityEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullChannelVisibilityEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.ChannelVisibilityEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ChannelVisibilityEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullChannelVisibilityEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ChannelVisibilityEnum), nil
+}
+
 type EventActionEnum string
 
 const (
@@ -321,6 +406,7 @@ type Channel struct {
 	Thumbnail   string
 	Banner      string
 	OwnerID     int64
+	Visibility  ChannelVisibilityEnum
 	CreatedAt   sql.NullTime
 	UpdatedAt   sql.NullTime
 	DeletedAt   sql.NullTime
@@ -340,6 +426,7 @@ type ChannelMember struct {
 	PersonaID int64
 	JoinedAt  sql.NullTime
 	LeftAt    sql.NullTime
+	Status    ChannelMembershipStatusEnum
 }
 
 type ChannelRole struct {

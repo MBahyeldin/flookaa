@@ -106,7 +106,7 @@ const getChannelRolesForPersona = `-- name: GetChannelRolesForPersona :many
 SELECT r.id, r.name, r.description, r.created_at, r.updated_at, r.deleted_at
 FROM channel_roles cr
 JOIN roles r ON cr.role_id = r.id
-JOIN channel_members cm ON cm.channel_id = cr.channel_id AND cm.persona_id = $2
+JOIN channel_members cm ON cm.channel_id = cr.channel_id AND cm.persona_id = $2 AND cm.left_at IS NULL AND cm.status = 'active'
 WHERE cr.channel_id = $1
   AND cr.deleted_at IS NULL
 `

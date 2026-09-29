@@ -4,18 +4,32 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/smtp"
-	"os"
 	"time"
 )
 
-func SendEmail(reciever string, verificationLink string) error {
-	from := os.Getenv("SMTP_EMAIL_ADDRESS")
-	password := os.Getenv("SMTP_EMAIL_PASSWORD")
+type Config struct {
+	Host     string
+	Port     string
+	Address  string
+	Password string
+}
+
+type Sender struct {
+	cfg Config
+}
+
+func NewSender(cfg Config) *Sender {
+	return &Sender{cfg: cfg}
+}
+
+func (s *Sender) SendEmail(reciever string, verificationLink string) error {
+	from := s.cfg.Address
+	password := s.cfg.Password
 
 	to := []string{reciever}
 
-	smtpHost := os.Getenv("SMTP_HOST")
-	smtpPort := os.Getenv("SMTP_PORT")
+	smtpHost := s.cfg.Host
+	smtpPort := s.cfg.Port
 
 	body := getEmailBody(verificationLink)
 

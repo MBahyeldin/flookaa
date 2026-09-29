@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 import type { Persona } from "@/types/persona";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -8,7 +9,7 @@ if (!API_BASE_URL) {
 
 export async function fetchCurrentPersona(): Promise<Persona | null> {
   try {
-    const resp = await fetch(`${API_BASE_URL}/api/v1/persona/current`, { credentials: "include" });
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/persona/current`, { credentials: "include" });
     if (!resp.ok) return null;
     const data = (await resp.json()) as Persona;
     return (data);
@@ -20,7 +21,7 @@ export async function fetchCurrentPersona(): Promise<Persona | null> {
 
 export async function fetchUserPersonas(): Promise<Persona[]> {
   try {
-    const resp = await fetch(`${API_BASE_URL}/api/v1/persona/list`, { credentials: "include" });
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/persona/list`, { credentials: "include" });
     if (!resp.ok) return [];
     const data = (await resp.json()) as Persona[];
     return data.sort((a, b) => a.created_at.localeCompare(b.created_at));
@@ -32,7 +33,7 @@ export async function fetchUserPersonas(): Promise<Persona[]> {
 
 export async function setCurrentPersona(personaId: string): Promise<boolean> {
   try {
-    const resp = await fetch(`${API_BASE_URL}/api/v1/persona/set-current-persona`, {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/persona/set-current-persona`, {
       method: "POST",
       credentials: "include",
       headers: {

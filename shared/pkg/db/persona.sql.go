@@ -107,7 +107,7 @@ SELECT u.id, u.name, u.slug, u.first_name, u.last_name, u.thumbnail, u.created_a
            )), '[]'::json)
            FROM channel_members cm
            JOIN channels c ON c.id = cm.channel_id
-           WHERE cm.persona_id = u.id AND cm.left_at IS NULL
+           WHERE cm.persona_id = u.id AND cm.left_at IS NULL AND cm.status = 'active'
        ) AS joined_channels,
         (SELECT COALESCE(json_agg(json_build_object(
                'id', c.id,
@@ -197,7 +197,7 @@ func (q *Queries) GetPersonaByIdAndUserId(ctx context.Context, arg GetPersonaByI
 }
 
 const getPersonaFollowedChannels = `-- name: GetPersonaFollowedChannels :many
-SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.created_at, c.updated_at, c.deleted_at
+SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at
 FROM channel_followers cf
 JOIN channels c ON cf.channel_id = c.id
 WHERE cf.persona_id = $1
@@ -223,6 +223,7 @@ func (q *Queries) GetPersonaFollowedChannels(ctx context.Context, personaID int6
 			&i.Thumbnail,
 			&i.Banner,
 			&i.OwnerID,
+			&i.Visibility,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -241,11 +242,11 @@ func (q *Queries) GetPersonaFollowedChannels(ctx context.Context, personaID int6
 }
 
 const getPersonaJoinedChannels = `-- name: GetPersonaJoinedChannels :many
-SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.created_at, c.updated_at, c.deleted_at
+SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at
 FROM channel_members cm
 JOIN channels c ON cm.channel_id = c.id
 WHERE cm.persona_id = $1
-  AND cm.left_at IS NULL
+  AND cm.left_at IS NULL AND cm.status = 'active'
 `
 
 // -------------------------------
@@ -267,6 +268,7 @@ func (q *Queries) GetPersonaJoinedChannels(ctx context.Context, personaID int64)
 			&i.Thumbnail,
 			&i.Banner,
 			&i.OwnerID,
+			&i.Visibility,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -286,7 +288,7 @@ func (q *Queries) GetPersonaJoinedChannels(ctx context.Context, personaID int64)
 
 const getPersonaStats = `-- name: GetPersonaStats :one
 SELECT u.id,
-       (SELECT COUNT(*) FROM channel_members cm WHERE cm.persona_id = u.id AND cm.left_at IS NULL) AS channels_joined,
+       (SELECT COUNT(*) FROM channel_members cm WHERE cm.persona_id = u.id AND cm.left_at IS NULL AND cm.status = 'active') AS channels_joined,
        (SELECT COUNT(*) FROM channel_followers cf WHERE cf.persona_id = u.id AND cf.unfollowed_at IS NULL) AS channels_followed,
        (SELECT COUNT(*) FROM post_references pr WHERE pr.owner_type = 'PERSONA' AND pr.owner_id = u.id) AS posts_count
 FROM personas u

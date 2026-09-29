@@ -3,6 +3,7 @@ Description=App Service for Redis
 After=network.target
 
 [Service]
+Environment='DATABASE_DSN={{ vault_DATABASE_DSN }}'
 Environment='NATS_CONNECTION={{ vault_NATS_CONNECTION }}'
 Environment='REDIS_ADDR={{ vault_REDIS_ADDR }}'
 Environment='REDIS_PASSWORD={{ vault_REDIS_PASSWORD }}'

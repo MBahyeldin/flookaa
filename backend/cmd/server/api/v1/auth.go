@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"app/internal/auth"
 	"app/internal/db/postgres/handlers/users"
 	oauthproviders "app/internal/oauthproviders"
 	"net/http"
@@ -8,20 +9,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AddAuthRoutes(r *gin.RouterGroup) {
+func AddAuthRoutes(r *gin.RouterGroup, users *users.Handler, google *oauthproviders.Google) {
+	// Public: these are how a visitor gets a session.
 	authGroup := r.Group("/auth")
 	{
 		authGroup.POST("/register", users.Create)
-		authGroup.POST("/verify", users.Verify)
 		authGroup.POST("/login", users.Login)
 		authGroup.POST("/logout", handleLogOut)
-		authGroup.GET("/info", users.Info)
-		authGroup.GET("/google", oauthproviders.HandleGoogleOAuth)
+		authGroup.GET("/google", google.HandleGoogleOAuth)
 	}
 
 	oAuthGroup := authGroup.Group("/oauth2callback")
 	{
-		oAuthGroup.GET("/google", oauthproviders.HandleGoogleOAuthCallback)
+		oAuthGroup.GET("/google", google.HandleGoogleOAuthCallback)
+	}
+
+	// User tier: registration sets the cookie before the email is verified.
+	sessionGroup := authGroup.Group("", auth.RequireUser())
+	{
+		sessionGroup.POST("/verify", users.Verify)
+		sessionGroup.GET("/info", users.Info)
 	}
 }
 

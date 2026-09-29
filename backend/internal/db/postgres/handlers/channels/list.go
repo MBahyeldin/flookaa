@@ -1,8 +1,8 @@
 package channels
 
 import (
+	"app/internal/auth"
 	"net/http"
-	"shared/external/db/postgres"
 	"shared/pkg/db"
 	"strconv"
 
@@ -20,19 +20,22 @@ type ChannelResponse struct {
 	UpdatedAt   string `json:"updated_at"`
 	IsOwner     bool   `json:"is_owner"`
 	IsMember    bool   `json:"is_member"`
+	IsPending   bool   `json:"is_pending"`
+	Visibility  string `json:"visibility"`
 	IsFollower  bool   `json:"is_follower"`
 }
 
-func GetAllChannels(c *gin.Context) {
+func (h *Handler) GetAllChannels(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userId, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+	// is_owner / is_member are per persona, not per user.
+	personaId, ok := auth.PersonaID(c)
+	if !ok {
+		auth.PersonaRequired(c)
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
 	limit := int64(10) // Default limit
 	offset := int64(0) // Default offset
@@ -51,7 +54,7 @@ func GetAllChannels(c *gin.Context) {
 	channels, err := q.GetAllChannels(ctx, db.GetAllChannelsParams{
 		Limit:   limit,
 		Offset:  offset,
-		OwnerID: userId.(int64),
+		OwnerID: personaId,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -71,6 +74,8 @@ func GetAllChannels(c *gin.Context) {
 			UpdatedAt:   ch.UpdatedAt.Time.String(),
 			IsOwner:     ch.IsOwner,
 			IsMember:    ch.IsMember,
+			IsPending:   ch.IsPending,
+			Visibility:  string(ch.Visibility),
 			IsFollower:  ch.IsFollower,
 		})
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AddGeoRoutes(r *gin.RouterGroup) {
+func AddGeoRoutes(r *gin.RouterGroup, geo *geo.Handler) {
 	geoGroup := r.Group("/geo")
 	{
 		geoGroup.GET("/countries", geo.ListCountries)

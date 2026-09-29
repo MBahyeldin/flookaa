@@ -35,7 +35,7 @@ cd shared
 make generate-models        # rm -rf pkg/db && sqlc generate && gqlgen generate
 ```
 
-The workflow is: edit `external/db/postgres/schemas/*.sql` + `external/db/postgres/queries/*.sql` (for sqlc) or `external/graph/*.graphqls` (for gqlgen), then regenerate. `sqlc.yaml` connects to `$DATABASE_DSN`, so that must be set and reachable. Resolver bodies live in `shared/pkg/graph/resolvers/schema.resolvers.go` and are preserved across `gqlgen generate`.
+The workflow is: edit `external/db/postgres/schemas/*.sql` + `external/db/postgres/queries/*.sql` (for sqlc) or `external/graph/*.graphqls` (for gqlgen), then regenerate. `sqlc.yaml` uses database-backed analysis via `$DATABASE_DSN`, so it must point at a Postgres **with all migrations applied**. Don't strip the `database:` block to generate offline: the inferred types differ (e.g. `LIMIT` becomes `int32`, arrays and JSON become `interface{}`) and existing callers break. A throwaway local cluster works: `initdb`, start on a spare port, `make migrate-up`, then `sqlc generate`. Resolver bodies live in `shared/pkg/graph/resolvers/schema.resolvers.go` and are preserved across `gqlgen generate`.
 
 ### Migrations (run from `shared/`)
 
@@ -97,17 +97,33 @@ Always prefer `pick-and-play.bash` over composing `ansible-playbook` invocations
 
 ### Request paths into the backend
 
-`backend/cmd/server/root.go` builds one Gin engine with three groups, all behind a single CORS config and `AuthMiddleware`:
+`backend/cmd/server/root.go` builds one Gin engine with three groups, all behind a single CORS config and `auth.Middleware` (tiers below):
 
 - `api.AddApiGroup` → `/api/v1/*` REST: auth, users, personas, channels, geo, health. Postgres-backed via sqlc handlers in `backend/internal/db/postgres/handlers/`.
-- `graphql.AddGraphQLGroup` → `POST /query` and `GET /playground`. Posts/comments/replies live in MongoDB (`app.objects` collection); the resolver struct carries Postgres, Mongo **and** Neo4j handles.
+- `graphql.AddGraphQLGroup` → `POST /query` and `GET /playground`. Posts/comments/replies live in MongoDB (`app.objects` collection); the resolver struct carries `*db.Queries`, the `app.objects` collection, NATS, and the Redis content/persona stores.
 - `control.AddControlGroup` → `POST /control`, called by the Rust proxy, not by browsers.
 
 `main.go` dispatches on `os.Args[1]`: no args starts the server, `seed` runs `cmd/seeder`.
 
-### Auth is cookie-JWT and non-blocking
+### Auth is cookie-JWT and fails closed per route group
 
-`AuthMiddleware` reads the `jwt` cookie, verifies it, and sets `email_address`, `user_id`, `persona_id` in the Gin context. **It always calls `c.Next()`** — a missing or invalid token is not rejected here. Every handler that needs identity must check `c.Get("user_id")` itself and return 401. A `persona_id` claim matters: content is authored by a persona, not directly by a user.
+`backend/internal/auth` has three pieces:
+
+- `auth.Middleware(signer)` (global) only **parses** the `jwt` cookie and sets `user_id`, `persona_id`, `email_address` in the Gin context. It never rejects.
+- `auth.RequireUser()` → 401 `{"error":"unauthenticated"}`; `auth.RequirePersona()` → 401, or 403 `{"error":"persona_required"}` when no persona is chosen (`persona_id` is 0 after login until `set-current-persona` reissues the JWT).
+- Handlers read identity with `auth.UserID(c)` / `auth.PersonaID(c)` / `auth.Email(c)`, never `c.Get(...)`.
+
+Tiers are applied at **group** level, so a new route inherits its group's tier:
+
+| Tier | Routes |
+|---|---|
+| Public | `/api/v1/health`, `auth/register`, `auth/login`, `auth/logout`, `auth/google`, `auth/oauth2callback/*`, `geo/*` (used during signup) |
+| User | `auth/info`, `auth/verify`, `users/*`, `persona/*` |
+| Persona | `channels/*`, `POST /query`, `POST /control` |
+
+**Content and channel actions belong to a persona, not a user**: authorship, membership, realtime subscriptions (Redis `persona:<id>:subjects`) are all keyed by `persona_id`; `user_id` is only for account and persona management. `/playground` is only mounted when `GIN_MODE` is not `release`.
+
+The frontend mirrors this: REST calls go through `src/lib/apiFetch.ts` and Apollo through an `ErrorLink` in `src/graphql/client.ts`. On 401 they clear `user` (App renders the public layout); on 403 `persona_required` they clear `persona` (DashboardLayout renders persona selection). No redirects.
 
 ### The realtime path
 
@@ -119,26 +135,54 @@ Always prefer `pick-and-play.bash` over composing `ansible-playbook` invocations
 
 Subject strings are built only through `shared/pkg/subject` — `{stream}.{ownerType}.{ownerID}.{event}.{action}` (stream segment omitted when `StreamName` is nil). Streams are declared in `shared/external/db/nats/natsConn.go` (`STREAM_USER_EVENTS`, `STREAM_CONTENT_EVENTS`).
 
-### Counters are eventually consistent
+### Channel access
 
-Writes publish an `Event` to JetStream. `redis/internal/root.go` subscribes to `STREAM_CONTENT_EVENTS.>` and increments hash fields (`likes_count`, `comments_count`, …) in Redis via `shared/external/db/redis/contentStore.go`. GraphQL `Meta`/`PersonalizedMeta` reads come from that cache. So a new counter needs three coordinated changes: the event publish, a `handle*Event` case in the redis worker, and the store method.
+Rules live in one place, `shared/pkg/access` (`LoadChannel` → `CanRead`/`CanWrite`/`CanModerate`), used by the REST channel handlers, `/control`, and the GraphQL resolvers:
 
-### DB connections are package-level `init()` singletons
+| | public channel | private channel |
+|---|---|---|
+| see metadata (list, `getChannel`) | every persona | every persona (so they can request to join) |
+| read posts/comments, subscribe | every persona | active members |
+| post / comment / like | active members | active members |
+| join | immediate (`status = 'active'`) | pending request; owner, channel moderators, or global Administrators approve via `/channels/:id/requests/...` |
 
-`shared/external/db/{postgres,mongo,nats,neo,redis}` each open their connection in `init()` and `log.Fatal` on failure. Importing the package connects. Consequence: any Go binary that imports these — including a CLI subcommand or the seeder — needs the full env set present or it dies at startup.
+Membership is `channel_members` with `left_at IS NULL AND status = 'active'` — every membership query must filter on both. Non-readers get 404 / `channel not found`, never 403, so private channels don't leak existence of content. For existing objects (comments, likes) resolvers authorize and publish against the owner **stored on the Mongo document** (`loadObject` → `authorizeOwner`), never the client's `owner` input. Persona-owned content (`OwnerTypePersona`) is not restricted yet.
+
+### Counters: Postgres is the source of truth, Redis is a cache
+
+Every like/comment is a row in the Postgres `events` table (unlike = soft delete). Counts are always a recount of those rows (`shared/pkg/counters.Count`), never a running total:
+
+- The redis worker (`redis/internal/root.go`) is a durable JetStream pull consumer (`redis-counters`, explicit ack, NAK with backoff, `Term` for unparseable messages). For each like/comment event it recounts the target and **overwrites** `content:post:<id>` / `content:comment:<id>` (`ContentStore.Set*Meta`). Duplicate, replayed or out-of-order events converge; events published while the worker is down are picked up on restart. It needs `DATABASE_DSN`.
+- GraphQL reads `Get*Meta`; on a miss it recounts and uses `Fill*Meta` (HSETNX), so a slow cache fill never clobbers a newer worker write.
+- Content keys expire after 24h; Redis can be flushed at any time and refills on demand.
+- "Liked by me" is one Postgres query per page (`GetLikedTargets`), not a Redis set.
+
+A new counter needs: the event written to `events` + published, a case in `counters.Count`, and a field in `ContentStore.writeMeta`/`getMeta`.
+
+Publishing uses `JetStream.Publish` (acknowledged), so a missing stream is an error. Only the backend runs `EnsureStreams` (creates streams, sets `MaxAge` 7d); the worker only `CheckStream`s.
+
+### Dependencies are wired explicitly in each `main`
+
+There are no connection globals. `shared/external/db/{postgres,mongo,nats,redis}` each expose `Connect(...)`, and importing a package connects nothing. Each binary's `main` loads its own `internal/config` (built on `shared/util/envconfig`, which reports **all** missing vars in one error), connects only what it uses, and passes handles into constructors:
+
+- Backend: `backend/cmd/server/root.go` builds one `Handler` struct per domain (`users`, `channels`, `geo`, the `/control` handler, `oauthproviders.Google`) plus the GraphQL `resolvers.Resolver`, each holding only its own deps (`*db.Queries`, specific Redis sub-stores, `*nats.NatsHelper`, `*token.Signer`). The seeder (`app seed`) loads only `DATABASE_DSN` and the admin credentials.
+- Redis worker: `redis/main.go` → `internal.NewWorker(...)`.
+- JWTs go through `token.Signer` (`shared/util/token`), which refuses a secret under 32 bytes. `s3` builds its own signer to verify the backend's image tokens.
+
+Only `config` packages call `os.Getenv`. A new dependency means a constructor parameter, not a package global.
 
 ### Data split
 
 - **Postgres** (sqlc): users, personas, roles, channels, memberships, geo, verification, events.
 - **MongoDB** (`app.objects`): posts, comments, replies as portable-text documents.
-- **Neo4j**: wired into the resolver but only lightly used.
+- **Neo4j**: not wired into any binary for now (planned for friends-of-friends recommendations); `shared/external/db/neo` keeps a `Connect` for when it returns.
 - **Redis**: sessions, subscription lists, per-subject offsets, content counters, persona cache.
 
 ### The `whatsapp` service is deliberately different
 
 It breaks several repo-wide patterns on purpose — keep it that way:
 
-- **No `shared` import**, so the `init()` connection singletons don't force the whole platform's env on it. Config is loaded explicitly via `internal/config.Load()`.
+- **No `shared` import**: it has no need for the platform's databases or env. Config is loaded explicitly via `internal/config.Load()`.
 - **Auth aborts** with 401 (static bearer token, constant-time compare) instead of the backend's always-`c.Next()` pattern. No CORS; browsers never call it — go frontend → backend → whatsapp.
 - **Pure-Go SQLite (`modernc.org/sqlite`) with `CGO_ENABLED=0`.** Swapping to `mattn/go-sqlite3` breaks the macOS → linux cross-build.
 - **Session DB lives in `/opt/whatsapp-data/`**, outside the versioned `/opt/whatsapp/<version>` dir the gRPC agent creates, or each deploy would orphan it.

@@ -1,30 +1,28 @@
 package users
 
 import (
+	"app/internal/auth"
 	"app/internal/models"
 	"database/sql"
 	"net/http"
-	"shared/external/db/postgres"
 	"shared/pkg/db"
-	"shared/util/token"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt"
 )
 
-func GetProfile(c *gin.Context) {
+func (h *Handler) GetProfile(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userId, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+	userId, ok := auth.UserID(c)
+	if !ok {
+		auth.Unauthorized(c)
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 
-	user, err := q.GetUserProfile(ctx, userId.(int64))
+	user, err := q.GetUserProfile(ctx, userId)
 
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "not found"})
@@ -49,20 +47,12 @@ func GetProfile(c *gin.Context) {
 }
 
 // patch update /user/profile
-func UpdateProfile(c *gin.Context) {
-	jwtCookie, err := c.Cookie("jwt")
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+func (h *Handler) UpdateProfile(c *gin.Context) {
+	userId, ok := auth.UserID(c)
+	if !ok {
+		auth.Unauthorized(c)
 		return
 	}
-	token, err := token.Verify(jwtCookie)
-	if err != nil || !token.Valid {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-	claims := token.Claims.(jwt.MapClaims)
-
-	userId := int64(claims["user_id"].(float64))
 
 	var input models.PatchUserRequest
 
@@ -71,7 +61,7 @@ func UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	q := db.New(postgres.DbConn)
+	q := h.q
 	ctx := c.Request.Context()
 
 	currentUser, err := q.GetUserProfile(ctx, userId)

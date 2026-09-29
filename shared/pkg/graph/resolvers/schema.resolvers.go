@@ -9,8 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"shared/external/db/mongo"
 	"shared/external/db/nats"
+	"shared/pkg/access"
 	"shared/pkg/db"
 	"shared/pkg/graph"
 	"shared/pkg/graph/models"
@@ -23,10 +23,13 @@ import (
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInput) (*models.PostGenericDocument, error) {
 	// Create Object in Mongodb
-	Collection := mongo.Client.Database("app").Collection("objects")
+	Collection := r.Objects
 	personaId, err := getPersonaIdFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unauthenticated: %w", err)
+	}
+	if err := r.authorizeOwner(ctx, &models.Owner{ID: input.Owner.ID, Type: input.Owner.Type}, personaId, true); err != nil {
+		return nil, err
 	}
 	rawContent, err := json.Marshal(input.Content)
 	if err != nil {
@@ -87,7 +90,7 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 		ActorID:    int64(personaId),
 	}
 
-	_, err = db.New(r.Postgres).CreateEvent(ctx, event)
+	_, err = r.Queries.CreateEvent(ctx, event)
 
 	if err != nil {
 		log.Println("Warning: failed to create event:", err)
@@ -102,7 +105,8 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 		Type: input.Owner.Type,
 	}, string(db.EventEnumPost), string(db.EventActionEnumCreate))
 
-	err = nats.NatsHelperInstance.PublishMessage(
+	err = r.NATS.PublishMessage(
+		ctx,
 		subjectHelper.GetSubject(),
 		&nats.MessageType{Event: *models.EventMapper(event), Payload: metaData},
 	)
@@ -116,29 +120,36 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 
 // CreateComment is the resolver for the createComment field.
 func (r *mutationResolver) CreateComment(ctx context.Context, input models.CommentInput) (*models.PostGenericDocument, error) {
-	Collection := mongo.Client.Database("app").Collection("objects")
+	Collection := r.Objects
 	personaId, err := getPersonaIdFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unauthenticated: %w", err)
 	}
+	// Authorize and route against the parent's stored channel, never the
+	// client's owner input.
+	parent, err := r.loadObject(ctx, input.ParentID)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.authorizeOwner(ctx, parent.Owner, personaId, true); err != nil {
+		return nil, err
+	}
+	owner := parent.Owner
 	rawContent, err := json.Marshal(input.Content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal content: %w", err)
 	}
 
 	object := &models.PostGenericDocument{
-		ID:         fmt.Sprintf("obj_%d_%d", personaId, time.Now().Unix()),
-		Type:       models.PostTypeComment,
-		ParentID:   &input.ParentID,
-		AuthorID:   personaId,
-		Tags:       input.Tags,
-		RawContent: string(rawContent),
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-		Owner: &models.Owner{
-			ID:   input.Owner.ID,
-			Type: input.Owner.Type,
-		},
+		ID:                fmt.Sprintf("obj_%d_%d", personaId, time.Now().Unix()),
+		Type:              models.PostTypeComment,
+		ParentID:          &input.ParentID,
+		AuthorID:          personaId,
+		Tags:              input.Tags,
+		RawContent:        string(rawContent),
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		Owner:             owner,
 		Privacy:           models.Privacy(input.Privacy.String()),
 		AllowedPersonaIds: input.AllowedPersonaIds,
 		DeniedPersonaIds:  input.DeniedPersonaIds,
@@ -149,7 +160,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 		return nil, fmt.Errorf("failed to insert object: %w", insertError)
 	}
 
-	author, err := resolvePersonaCached(ctx, personaId, r.Postgres)
+	author, err := r.resolvePersonaCached(ctx, personaId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve author: %w", err)
 	}
@@ -185,25 +196,19 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 		},
 	}
 
-	var targetType db.EventTargetTypeEnum
-
-	if input.Level == 1 {
-		targetType = db.EventTargetTypeEnumPOST
-	} else {
-		targetType = db.EventTargetTypeEnumCOMMENT
-	}
+	targetType := eventTargetType(parent.Type)
 
 	event := db.CreateEventParams{
 		Name:       db.EventEnumComment,
 		Action:     db.EventActionEnumCreate,
 		TargetID:   input.ParentID,
 		TargetType: targetType,
-		Owner:      db.OwnerEnum(input.Owner.Type.String()),
-		OwnerID:    int64(input.Owner.ID),
+		Owner:      db.OwnerEnum(owner.Type.String()),
+		OwnerID:    owner.ID,
 		ActorID:    int64(personaId),
 	}
 
-	_, err = db.New(r.Postgres).CreateEvent(ctx, event)
+	_, err = r.Queries.CreateEvent(ctx, event)
 
 	if err != nil {
 		log.Println("Warning: failed to create event:", err)
@@ -213,12 +218,10 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 		log.Println("Warning: failed to marshal metadata for NATS:", err)
 	}
 	var streamName = nats.CONTENT_EVENTS_STREAM
-	subjectHelper := subject.New(&streamName, &models.Owner{
-		ID:   input.Owner.ID,
-		Type: input.Owner.Type,
-	}, string(db.EventEnumComment), string(db.EventActionEnumCreate))
+	subjectHelper := subject.New(&streamName, owner, string(db.EventEnumComment), string(db.EventActionEnumCreate))
 
-	err = nats.NatsHelperInstance.PublishMessage(
+	err = r.NATS.PublishMessage(
+		ctx,
 		subjectHelper.GetSubject(),
 		&nats.MessageType{Event: *models.EventMapper(event), Payload: comment},
 	)
@@ -236,8 +239,18 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 	if err != nil {
 		return false, fmt.Errorf("unauthenticated: %w", err)
 	}
+	// Authorize and route against the target's stored channel and type,
+	// never the client's owner/targetType input.
+	target, err := r.loadObject(ctx, input.TargetID)
+	if err != nil {
+		return false, err
+	}
+	if err := r.authorizeOwner(ctx, target.Owner, personaId, true); err != nil {
+		return false, err
+	}
+	owner := target.Owner
 
-	q := db.New(r.Postgres)
+	q := r.Queries
 	isLikedByUser, err := q.IsUserLikedTarget(ctx, db.IsUserLikedTargetParams{
 		TargetID: input.TargetID,
 		ActorID:  int64(personaId),
@@ -269,9 +282,9 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 		Name:       db.EventEnumLike,
 		Action:     action,
 		TargetID:   input.TargetID,
-		TargetType: db.EventTargetTypeEnum(input.TargetType.String()),
-		Owner:      db.OwnerEnum(input.Owner.Type),
-		OwnerID:    input.Owner.ID,
+		TargetType: eventTargetType(target.Type),
+		Owner:      db.OwnerEnum(owner.Type),
+		OwnerID:    owner.ID,
 		ActorID:    int64(personaId),
 	}
 
@@ -293,15 +306,17 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 
 	var streamName = nats.CONTENT_EVENTS_STREAM
 
-	subjectHelper := subject.New(&streamName, &models.Owner{
-		ID:   input.Owner.ID,
-		Type: input.Owner.Type,
-	}, string(db.EventEnumLike), string(db.EventActionEnumCreate))
+	subjectHelper := subject.New(&streamName, owner, string(db.EventEnumLike), string(db.EventActionEnumCreate))
 
-	nats.NatsHelperInstance.PublishMessage(
+	// The like is already stored; a failed publish only delays the counter
+	// until the next event on this target or the cache TTL.
+	if err := r.NATS.PublishMessage(
+		ctx,
 		subjectHelper.GetSubject(),
 		&nats.MessageType{Event: *models.EventMapper(event), Payload: nil},
-	)
+	); err != nil {
+		log.Println("Warning: failed to publish like event to NATS:", err)
+	}
 
 	return true, nil
 }
@@ -323,9 +338,12 @@ func (r *mutationResolver) DeleteReply(ctx context.Context, id string, owner mod
 
 // GetPosts is the resolver for the getPosts field.
 func (r *queryResolver) GetPosts(ctx context.Context, owner models.OwnerInput, ids []string, limit *int32, offset *int32) ([]*models.Post, error) {
-	_, err := getPersonaIdFromContext(ctx)
+	personaId, err := getPersonaIdFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unauthenticated: %w", err)
+	}
+	if err := r.authorizeOwner(ctx, &models.Owner{ID: owner.ID, Type: owner.Type}, personaId, false); err != nil {
+		return nil, err
 	}
 	posts, err := getPosts(ctx, models.Owner{
 		ID:   owner.ID,
@@ -339,9 +357,16 @@ func (r *queryResolver) GetPosts(ctx context.Context, owner models.OwnerInput, i
 
 // GetComments is the resolver for the getComments field.
 func (r *queryResolver) GetComments(ctx context.Context, parentID string, limit *int32, offset *int32) ([]*models.Comment, error) {
-	_, err := getPersonaIdFromContext(ctx)
+	personaId, err := getPersonaIdFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unauthenticated: %w", err)
+	}
+	parent, err := r.loadObject(ctx, parentID)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.authorizeOwner(ctx, parent.Owner, personaId, false); err != nil {
+		return nil, err
 	}
 	comments, err := getComments(ctx, parentID, r, *limit, *offset)
 	if err != nil {
@@ -357,17 +382,26 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		return nil, fmt.Errorf("unauthenticated: %w", err)
 	}
 
+	// Every persona may see a channel's metadata (so it can ask to join a
+	// private one); posts are only fetched for personas that can read them.
+	channelAccess, err := access.LoadChannel(ctx, r.Queries, id, personaId)
+	if err != nil {
+		return nil, err
+	}
+	canRead := channelAccess.CanRead()
+
 	var channel db.GetChannelRow
 	var channelErr, postsErr error
 	var posts []*models.Post
 	var ownerPersona models.Persona
+	var totalPostsCount int32
 	wg := sync.WaitGroup{}
-	wg.Add(3)
 
 	// --- Fetch Channel Details + Owner ---
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		q := db.New(r.Postgres)
+		q := r.Queries
 		ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 
@@ -381,11 +415,8 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		}
 		channel = channelResult
 
-		fmt.Println("Fetched channel:", channel.ID)
-		fmt.Println("Fetching owner persona for channel owner ID:", channel.OwnerID)
-
 		// Owner lookup + cache
-		cachedPersona, err := resolvePersonaCached(ctx, channel.OwnerID, r.Postgres)
+		cachedPersona, err := r.resolvePersonaCached(ctx, channel.OwnerID)
 		if err != nil {
 			channelErr = err
 			return
@@ -393,41 +424,43 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		ownerPersona = *cachedPersona
 	}()
 
-	// --- Fetch Posts + Comments using $lookup ---
-	go func() {
-		defer wg.Done()
-		posts, postsErr = getPosts(ctx, models.Owner{
-			ID:   id,
-			Type: models.OwnerTypeChannel,
-		}, nil, r, 10, 0)
-	}()
+	if canRead {
+		// --- Fetch Posts ---
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			posts, postsErr = getPosts(ctx, models.Owner{
+				ID:   id,
+				Type: models.OwnerTypeChannel,
+			}, nil, r, 10, 0)
+		}()
 
-	var totalPostsCount int32
-	// --- Fetch Total Posts Count ---
-	go func() {
-		ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
-		defer wg.Done()
+		// --- Fetch Total Posts Count ---
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
+			defer cancel()
 
-		count, err := getTotalPostsCountForChannel(ctxTimeout, id, r)
-		if err != nil {
-			log.Println("Warning: failed to get total posts count for channel:", err)
-			return
-		}
-		totalPostsCount = int32(count)
-	}()
-
-	fmt.Printf("Fetching channel %d details and posts concurrently...\n", id)
+			count, err := getTotalPostsCountForChannel(ctxTimeout, id, r)
+			if err != nil {
+				log.Println("Warning: failed to get total posts count for channel:", err)
+				return
+			}
+			totalPostsCount = int32(count)
+		}()
+	}
 
 	wg.Wait()
-
-	fmt.Println("Found posts:", len(posts))
 
 	if channelErr != nil {
 		return nil, channelErr
 	}
 	if postsErr != nil {
 		return nil, postsErr
+	}
+	if posts == nil {
+		posts = []*models.Post{}
 	}
 
 	return &models.Channel{
