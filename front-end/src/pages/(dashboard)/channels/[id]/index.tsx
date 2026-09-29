@@ -68,6 +68,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   const setOwner = useAppStore((state) => state.setOwner);
   const resetPage = useAppStore((state) => state.resetPage);
   const addPosts = useAppStore((state) => state.addPosts);
+  const setCanModerate = useAppStore((state) => state.setCanModerate);
   const posts = useAppStore((s) => s.posts);
   const storeOwner = useAppStore((s) => s.owner);
   const [showLoadMore, setShowLoadMore] = useState(false);
@@ -217,7 +218,9 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   useEffect(() => {
     setIsJoined(channelData?.getChannel?.isMember || false);
     setIsFollowing(channelData?.getChannel?.isFollower || false);
-  }, [channelData]);
+    // Lets post and comment menus offer Delete on other personas' content.
+    setCanModerate(channelData?.getChannel?.canModerate || false);
+  }, [channelData, setCanModerate]);
 
 
   // Loading, failed and missing are three different things — collapsing them

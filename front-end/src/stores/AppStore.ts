@@ -17,6 +17,8 @@ const emptyPageState = () => ({
   comments: {} as Record<string, Comment>,
   commentsByPost: {} as Record<string, string[]>,
   commentsByComment: {} as Record<string, string[]>,
+  canModerate: false,
+  deletedIds: {} as Record<string, true>,
 });
 
 export interface AppState {
@@ -39,6 +41,13 @@ export interface AppState {
   addCommentsToComment: (commentId: string, comments: Comment[]) => void;
 
   addOrRemoveLike: (targetType: "POST" | "COMMENT", targetId: string, inc: number) => void;
+
+  canModerate: boolean;
+  setCanModerate: (canModerate: boolean) => void;
+
+  deletedIds: Record<string, true>;
+  removePost: (postId: string) => void;
+  removeComment: (commentId: string, parentId: string, parentType: "POST" | "COMMENT") => void;
 }
 
 export const useAppStore = create(
@@ -129,6 +138,37 @@ export const useAppStore = create(
           if (comment) {
             comment.meta.likesCount = (comment.meta.likesCount ?? 0) + inc;
           }
+        }
+      }),
+
+    setCanModerate: (canModerate) =>
+      set((s) => {
+        s.canModerate = canModerate;
+      }),
+
+    removePost: (postId) =>
+      set((s) => {
+        if (s.deletedIds[postId]) return;
+        s.deletedIds[postId] = true;
+        delete s.posts[postId];
+        delete s.commentsByPost[postId];
+      }),
+
+    removeComment: (commentId, parentId, parentType) =>
+      set((s) => {
+        if (s.deletedIds[commentId]) return;
+        s.deletedIds[commentId] = true;
+        delete s.comments[commentId];
+        delete s.commentsByComment[commentId];
+        const siblings =
+          parentType === "POST" ? s.commentsByPost[parentId] : s.commentsByComment[parentId];
+        if (siblings) {
+          const i = siblings.indexOf(commentId);
+          if (i !== -1) siblings.splice(i, 1);
+        }
+        const parent = parentType === "POST" ? s.posts[parentId] : s.comments[parentId];
+        if (parent) {
+          parent.meta.commentsCount = Math.max(0, (parent.meta.commentsCount ?? 0) - 1);
         }
       }),
   }))

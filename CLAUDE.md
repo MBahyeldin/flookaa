@@ -159,6 +159,8 @@ Every like/comment is a row in the Postgres `events` table (unlike = soft delete
 
 A new counter needs: the event written to `events` + published, a case in `counters.Count`, and a field in `ContentStore.writeMeta`/`getMeta`.
 
+Deletes are soft. `deletePost`/`deleteComment` (author or channel moderator) set `deletedat` on the Mongo document, soft-delete the events about the object via `events.object_id` (its own create event and the likes on it; `object_id` is NOT NULL, likes store the liked object), and publish `…post.delete` / `…comment.delete`. Every read of `app.objects` must filter `deletedat: nil`.
+
 Publishing uses `JetStream.Publish` (acknowledged), so a missing stream is an error. Only the backend runs `EnsureStreams` (creates streams, sets `MaxAge` 7d); the worker only `CheckStream`s.
 
 ### Dependencies are wired explicitly in each `main`

@@ -19,10 +19,11 @@ INSERT INTO events (
     target_type,
     owner,
     owner_id,
-    actor_id
+    actor_id,
+    object_id
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, name, action, target_id, target_type, owner, owner_id, actor_id, created_at, updated_at, deleted_at
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, name, action, target_id, target_type, owner, owner_id, actor_id, created_at, updated_at, deleted_at, object_id
 `
 
 type CreateEventParams struct {
@@ -33,6 +34,7 @@ type CreateEventParams struct {
 	Owner      OwnerEnum
 	OwnerID    int64
 	ActorID    int64
+	ObjectID   string
 }
 
 // -------------------------------
@@ -47,6 +49,7 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event
 		arg.Owner,
 		arg.OwnerID,
 		arg.ActorID,
+		arg.ObjectID,
 	)
 	var i Event
 	err := row.Scan(
@@ -61,6 +64,7 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.ObjectID,
 	)
 	return i, err
 }
@@ -172,6 +176,24 @@ func (q *Queries) IsUserLikedTarget(ctx context.Context, arg IsUserLikedTargetPa
 	var liked bool
 	err := row.Scan(&liked)
 	return liked, err
+}
+
+const softDeleteObjectEvents = `-- name: SoftDeleteObjectEvents :execrows
+UPDATE events
+SET deleted_at = NOW(), updated_at = NOW()
+WHERE object_id = $1
+  AND deleted_at IS NULL
+`
+
+// ------------------------------
+// 7. Soft delete the events of a deleted post or comment
+// ------------------------------
+func (q *Queries) SoftDeleteObjectEvents(ctx context.Context, objectID string) (int64, error) {
+	result, err := q.db.ExecContext(ctx, softDeleteObjectEvents, objectID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const unlikeEvent = `-- name: UnlikeEvent :exec

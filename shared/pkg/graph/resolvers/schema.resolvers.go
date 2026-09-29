@@ -86,6 +86,7 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 		Owner:      ownerType,
 		OwnerID:    int64(input.Owner.ID),
 		ActorID:    int64(personaId),
+		ObjectID:   object.ID,
 	}
 
 	_, err = r.Queries.CreateEvent(ctx, event)
@@ -204,6 +205,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 		Owner:      db.OwnerEnum(owner.Type.String()),
 		OwnerID:    owner.ID,
 		ActorID:    int64(personaId),
+		ObjectID:   object.ID,
 	}
 
 	_, err = r.Queries.CreateEvent(ctx, event)
@@ -284,6 +286,7 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 		Owner:      db.OwnerEnum(owner.Type),
 		OwnerID:    owner.ID,
 		ActorID:    int64(personaId),
+		ObjectID:   input.TargetID,
 	}
 
 	switch action {
@@ -320,18 +323,19 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 }
 
 // DeletePost is the resolver for the deletePost field.
-func (r *mutationResolver) DeletePost(ctx context.Context, id string, owner models.OwnerInput) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeletePost - deletePost"))
+func (r *mutationResolver) DeletePost(ctx context.Context, id string) (bool, error) {
+	if err := r.deleteObject(ctx, id, models.PostTypePost); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // DeleteComment is the resolver for the deleteComment field.
-func (r *mutationResolver) DeleteComment(ctx context.Context, id string, owner models.OwnerInput) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteComment - deleteComment"))
-}
-
-// DeleteReply is the resolver for the deleteReply field.
-func (r *mutationResolver) DeleteReply(ctx context.Context, id string, owner models.OwnerInput) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteReply - deleteReply"))
+func (r *mutationResolver) DeleteComment(ctx context.Context, id string) (bool, error) {
+	if err := r.deleteObject(ctx, id, models.PostTypeComment); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // GetPosts is the resolver for the getPosts field.
@@ -474,6 +478,7 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		Owner:          &ownerPersona,
 		IsMember:       channel.IsMember,
 		IsFollower:     channel.IsFollower,
+		CanModerate:    channelAccess.CanModerate,
 	}, nil
 }
 
