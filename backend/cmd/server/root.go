@@ -9,6 +9,7 @@ import (
 	"app/internal/config"
 	"app/internal/db/postgres/handlers/channels"
 	"app/internal/db/postgres/handlers/geo"
+	"app/internal/db/postgres/handlers/notifications"
 	"app/internal/db/postgres/handlers/users"
 	controlhandlers "app/internal/db/redis/handler"
 	"app/internal/oauthproviders"
@@ -27,6 +28,7 @@ import (
 	"shared/external/db/redis"
 	"shared/pkg/db"
 	resolvers "shared/pkg/graph/resolvers"
+	sharednotifications "shared/pkg/notifications"
 	"shared/util/token"
 	"time"
 
@@ -79,6 +81,9 @@ func StartServer(cfg config.Server) error {
 	// Neo4j is not wired for the first version of the app (see shared/external/db/neo).
 
 	q := db.New(pg)
+	if err := sharednotifications.Check(ctx, q); err != nil {
+		return err
+	}
 
 	usersHandler := users.NewHandler(
 		q,
@@ -87,9 +92,10 @@ func StartServer(cfg config.Server) error {
 		verification.NewService(q),
 	)
 	restHandlers := v1.Handlers{
-		Users:    usersHandler,
-		Channels: channels.NewHandler(q, natsHelper),
-		Geo:      geo.NewHandler(q),
+		Users:         usersHandler,
+		Channels:      channels.NewHandler(q, natsHelper),
+		Geo:           geo.NewHandler(q),
+		Notifications: notifications.NewHandler(q, stores.Persona),
 		Google: oauthproviders.NewGoogle(
 			cfg.Google.ClientID,
 			cfg.Google.ClientSecret,

@@ -3,6 +3,7 @@ package v1
 import (
 	"app/internal/db/postgres/handlers/channels"
 	"app/internal/db/postgres/handlers/geo"
+	"app/internal/db/postgres/handlers/notifications"
 	"app/internal/db/postgres/handlers/users"
 	oauthproviders "app/internal/oauthproviders"
 
@@ -11,10 +12,11 @@ import (
 
 // Handlers are the REST handlers mounted under /api/v1.
 type Handlers struct {
-	Users    *users.Handler
-	Channels *channels.Handler
-	Geo      *geo.Handler
-	Google   *oauthproviders.Google
+	Users         *users.Handler
+	Channels      *channels.Handler
+	Geo           *geo.Handler
+	Notifications *notifications.Handler
+	Google        *oauthproviders.Google
 }
 
 func AddV1Group(r *gin.RouterGroup, h Handlers) *gin.RouterGroup {
@@ -25,5 +27,6 @@ func AddV1Group(r *gin.RouterGroup, h Handlers) *gin.RouterGroup {
 	AddGeoRoutes(v1Group, h.Geo)
 	AddChannelsGroups(v1Group, h.Channels)
 	AddPersonaRoutes(v1Group, h.Users)
+	AddNotificationsRoutes(v1Group, h.Notifications)
 	return v1Group
 }

@@ -11,7 +11,8 @@ buildable and is reviewed and committed by hand before the next one starts.
 | 2. Schema, queries, registry of kinds | done |
 | 3. `notifier/` service | done |
 | 4. Infrastructure (ansible) | done, not run yet |
-| 5–7 | pending |
+| 5. REST API | done |
+| 6–7 | pending |
 
 ## Decisions
 
@@ -238,7 +239,7 @@ Uses `whatsapp` / `redis` as templates.
   - `init_container`
   - app user + SSH key
   - `grpc_server` role
-  - systemd unit from `templates/notifier/app.service.j2` with `DATABASE_DSN` / `NATS_CONNECTION`
+  - systemd unit from `templates/notifier/notifier.service.j2` with `DATABASE_DSN` / `NATS_CONNECTION`
 - `vars/notifier_vault.yml` (encrypted), plus its line in `pick-and-play.bash`
 - Container `notifier` at `10.0.0.130` (SSH `22130`, gRPC `50130`; 1 GB, 1 CPU, 5 GB disk), added to `lxd_containers` in `inventory/hosting-machine.inventory.yml`.
 - No Postgres/NATS changes needed: `pg_hba` already allows `10.0.0.0/24`, and NATS listens on `0.0.0.0:4222` without auth.
@@ -246,20 +247,28 @@ Uses `whatsapp` / `redis` as templates.
 
 ### Step 5: REST API (backend)
 
-`backend/internal/db/postgres/handlers/notifications/`, a new `Handler` with `*db.Queries`, wired in `backend/cmd/server/root.go`. It goes in its own group under `auth.RequirePersona()`; identity comes from `auth.PersonaID(c)`.
+`backend/internal/db/postgres/handlers/notifications/` (`Handler{q, personas}`: `*db.Queries` + the Redis persona store), wired in `backend/cmd/server/root.go` and `api/v1/notifications.go`. It goes in its own group under `auth.RequirePersona()`; identity comes from `auth.PersonaID(c)`.
 
 | Route | Returns |
 |---|---|
-| `GET /api/v1/notifications?cursor=&limit=` | page of `{id, kind, subject: {type, id}, scope: {type, id} \| null, count, latest_actor: {id, name, avatar} \| null, data, read, updated_at}` + `next_cursor` |
+| `GET /api/v1/notifications?cursor=&limit=` | `{notifications: [{id, kind, subject: {type, id}, scope: {type, id} \| null, count, latest_actor: {id, first_name, last_name, thumbnail} \| null, data?, read, updated_at}], next_cursor: string \| null}`. `limit` defaults to 20, max 50. |
 | `GET /api/v1/notifications/unread-count` | `{count}` |
-| `POST /api/v1/notifications/read` | body `{ids: []}` |
-| `POST /api/v1/notifications/read-all` | — |
+| `POST /api/v1/notifications/read` | body `{ids: [...]}`, 1–100 ids → `{updated}`. Other personas' ids are ignored. |
+| `POST /api/v1/notifications/read-all` | `{updated}` |
 
-- For aggregated kinds, `count` and `latest_actor` come from the batched recount queries, one per kind present on the page. For single-actor kinds they come from `actor_id`, with `count = 1`. System kinds have `latest_actor = null`.
-- `shared/pkg/notifications.Kinds` (step 2) decides which recount a kind uses, batched per kind on a page. The backend also calls `notifications.Check` at startup.
-- Persona display data comes from the existing persona lookup/cache.
-- Rows whose recount returns zero between the notifier's cleanup and the read are dropped from the page. That's rare, and a notifier catch-up soft-deletes them.
+- For aggregated kinds, `count` and `latest_actor` come from the batched recount queries, one per kind on the page. For single-actor kinds they come from `actor_id`, with `count = 1`. System kinds and deleted personas have `latest_actor = null`.
+- `shared/pkg/notifications.Kinds` (step 2) decides which recount a kind uses. The backend calls `notifications.Check` at startup and refuses to start without a spec for every kind.
+- Actors come from the Redis persona cache, falling back to `ResolvePersonaByID`, like GraphQL authors.
+- The cursor is `"<updated_at unix µs>_<id>"`, taken from the last row **read**, not the last row shown.
+- Rows whose recount is zero (the notifier hasn't removed them yet) are dropped from the page. **So a page can be shorter than `limit`, or empty, and still have a `next_cursor`: the frontend pages until `next_cursor` is null.** The unread count doesn't recount, so it can briefly include such a row.
 - Marking read only touches rows owned by the caller (`recipient_id = persona`).
+- Verified with a temporary test (deleted after the run) against a throwaway Postgres covering:
+  - auth;
+  - paging across dropped and hidden rows;
+  - recounts excluding the recipient, and the latest actor;
+  - unscoped vs private-channel scoped rows;
+  - mark read (including another persona's id) and read-all;
+  - bad input.
 
 ### Step 6: Frontend
 
