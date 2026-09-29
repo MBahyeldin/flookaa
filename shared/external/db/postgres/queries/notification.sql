@@ -47,6 +47,17 @@ WHERE group_key = sqlc.arg(group_key)::varchar
 RETURNING id, recipient_id;
 
 -- -------------------------------
+-- 2.1 Who has an active notification for a group
+-- -------------------------------
+-- Removal events (unlike, deleted comment, resolved join request) do not
+-- name the recipient; the notifier recounts for the recipients found here.
+-- name: ListNotificationRecipientsByGroup :many
+SELECT recipient_id
+FROM notifications
+WHERE group_key = sqlc.arg(group_key)::varchar
+  AND deleted_at IS NULL;
+
+-- -------------------------------
 -- 3. Remove everything about a deleted post or comment
 -- -------------------------------
 -- name: SoftDeleteNotificationsByObject :many

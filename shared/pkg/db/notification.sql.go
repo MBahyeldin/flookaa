@@ -87,6 +87,41 @@ func (q *Queries) ListChannelModeratorIDs(ctx context.Context, channelID int64) 
 	return items, nil
 }
 
+const listNotificationRecipientsByGroup = `-- name: ListNotificationRecipientsByGroup :many
+SELECT recipient_id
+FROM notifications
+WHERE group_key = $1::varchar
+  AND deleted_at IS NULL
+`
+
+// -------------------------------
+// 2.1 Who has an active notification for a group
+// -------------------------------
+// Removal events (unlike, deleted comment, resolved join request) do not
+// name the recipient; the notifier recounts for the recipients found here.
+func (q *Queries) ListNotificationRecipientsByGroup(ctx context.Context, groupKey string) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listNotificationRecipientsByGroup, groupKey)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var recipient_id int64
+		if err := rows.Scan(&recipient_id); err != nil {
+			return nil, err
+		}
+		items = append(items, recipient_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listNotifications = `-- name: ListNotifications :many
 SELECT n.id, n.recipient_id, n.kind, n.group_key, n.object_id, n.channel_id, n.actor_id, n.last_event_at, n.created_at, n.updated_at, n.read_at, n.deleted_at
 FROM notifications n

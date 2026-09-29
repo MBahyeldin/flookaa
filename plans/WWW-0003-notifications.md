@@ -26,7 +26,7 @@ buildable and is reviewed and committed by hand before the next one starts.
 | `comment_like` | `CONTENT … like.create`, target type `COMMENT` | comment author | `comment_like:<comment_id>` | yes: active like events with `object_id = comment` |
 | `join_request` | `CHANNEL … join_request.create` | channel owner and every channel moderator | `join_request:<channel_id>` | yes: pending rows in `channel_members` |
 | `request_approved` | `CHANNEL … member.create`, reason `approved` | the approved persona | `request_approved:<channel_id>` | no (single actor = moderator) |
-| `removed_from_channel` | `CHANNEL … member.delete`, reason `removed` | the removed persona | `removed:<channel_id>` | no (single actor = moderator) |
+| `removed_from_channel` | `CHANNEL … member.delete`, reason `removed` | the removed persona | `removed_from_channel:<channel_id>` | no (single actor = moderator) |
 
 Rules applied to every kind:
 
@@ -100,6 +100,7 @@ The notifier must not need Mongo. The resolvers already load the parent/target t
 - `shared/external/db/postgres/queries/notification.sql`:
   - `UpsertNotification` (above)
   - `SoftDeleteNotificationsByGroup(group_key, event_at)`: used whenever a recount reaches zero. For likes and comments the group has one recipient; for join requests it has every moderator
+  - `ListNotificationRecipientsByGroup(group_key)`: removal events don't name the recipient, so the notifier recounts for the recipients found here (added in step 3)
   - `SoftDeleteNotificationsByObject(object_id)`: the post/comment was deleted
   - `ListNotifications(recipient_id, cursor_updated_at, cursor_id, limit)`, with the access filter below
   - `CountUnreadNotifications(recipient_id)`, with the same access filter
