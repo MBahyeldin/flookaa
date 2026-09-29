@@ -8,7 +8,6 @@ fi
 
 # If DRY_RUN is set, rsync will perform a dry run.
 
-git ls-files -co --exclude-standard -z | rsync -avz --delete \
-  --files-from=- \
-  --from0 \
-  ./ devBuilder@flookaa-internal-build:/home/devBuilder/workspace/ $DRY_RUN
+#! /bin/bash
+
+rsync -avz  --files-from=<(git ls-files) ./ devBuilder@flookaa-internal-build:/home/devBuilder/workspace/ $DRY_RUN
