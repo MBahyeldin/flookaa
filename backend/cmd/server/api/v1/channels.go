@@ -19,5 +19,9 @@ func AddChannelsGroups(r *gin.RouterGroup, channels *channels.Handler) {
 		channelsGroup.GET("/:channel_id/requests", channels.ListJoinRequests)
 		channelsGroup.POST("/:channel_id/requests/:persona_id/approve", channels.ApproveJoinRequest)
 		channelsGroup.POST("/:channel_id/requests/:persona_id/reject", channels.RejectJoinRequest)
+
+		// Members: owner, moderators and admins. Personas leave via /leave.
+		channelsGroup.GET("/:channel_id/members", channels.ListMembers)
+		channelsGroup.POST("/:channel_id/members/:persona_id/remove", channels.RemoveMember)
 	}
 }

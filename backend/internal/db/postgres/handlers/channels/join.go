@@ -93,6 +93,15 @@ func (h *Handler) LeaveChannel(c *gin.Context) {
 		return
 	}
 
+	// A moderator who leaves stops moderating.
+	if err := h.q.RevokeChannelRolesForPersona(ctx, db.RevokeChannelRolesForPersonaParams{
+		ChannelID: channelId,
+		PersonaID: personaId,
+	}); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	_, err := h.q.RemoveUserFromChannel(ctx, db.RemoveUserFromChannelParams{
 		ChannelID: channelId,
 		PersonaID: personaId,

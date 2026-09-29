@@ -8,6 +8,7 @@ import (
 	"shared/pkg/access"
 	"shared/pkg/db"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,7 +43,7 @@ func (h *Handler) ListJoinRequests(c *gin.Context) {
 			FirstName:   row.FirstName,
 			LastName:    row.LastName,
 			Thumbnail:   row.Thumbnail.String,
-			RequestedAt: row.RequestedAt.Time.String(),
+			RequestedAt: row.RequestedAt.Time.Format(time.RFC3339),
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{"requests": requests})

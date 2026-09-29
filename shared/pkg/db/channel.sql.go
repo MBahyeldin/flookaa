@@ -445,6 +445,79 @@ func (q *Queries) GetFollowedChannelsForUser(ctx context.Context, personaID int6
 	return items, nil
 }
 
+const listChannelMembers = `-- name: ListChannelMembers :many
+SELECT
+    cm.persona_id,
+    cm.joined_at,
+    p.name,
+    p.first_name,
+    p.last_name,
+    p.thumbnail,
+    (c.owner_id = cm.persona_id)::boolean AS is_owner,
+    EXISTS (
+        SELECT 1
+        FROM channel_roles cr
+        JOIN roles r ON r.id = cr.role_id
+        WHERE cr.channel_id = cm.channel_id
+          AND cr.persona_id = cm.persona_id
+          AND cr.deleted_at IS NULL
+          AND r.name IN ('moderator', 'Administrator')
+    )::boolean AS is_moderator
+FROM channel_members cm
+JOIN channels c ON c.id = cm.channel_id
+JOIN personas p ON p.id = cm.persona_id
+WHERE cm.channel_id = $1
+  AND cm.left_at IS NULL
+  AND cm.status = 'active'
+ORDER BY (c.owner_id = cm.persona_id) DESC, cm.joined_at
+`
+
+type ListChannelMembersRow struct {
+	PersonaID   int64
+	JoinedAt    sql.NullTime
+	Name        string
+	FirstName   string
+	LastName    string
+	Thumbnail   sql.NullString
+	IsOwner     bool
+	IsModerator bool
+}
+
+// -------------------------------
+// 14. List active members (moderators only)
+// -------------------------------
+func (q *Queries) ListChannelMembers(ctx context.Context, channelID int64) ([]ListChannelMembersRow, error) {
+	rows, err := q.db.QueryContext(ctx, listChannelMembers, channelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListChannelMembersRow
+	for rows.Next() {
+		var i ListChannelMembersRow
+		if err := rows.Scan(
+			&i.PersonaID,
+			&i.JoinedAt,
+			&i.Name,
+			&i.FirstName,
+			&i.LastName,
+			&i.Thumbnail,
+			&i.IsOwner,
+			&i.IsModerator,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listChannels = `-- name: ListChannels :many
 SELECT id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at
 FROM channels
@@ -584,7 +657,7 @@ func (q *Queries) RemoveChannel(ctx context.Context, id int64) (Channel, error) 
 const removeUserFromChannel = `-- name: RemoveUserFromChannel :one
 UPDATE channel_members
 SET left_at = NOW()
-WHERE channel_id = $1 AND persona_id = $2
+WHERE channel_id = $1 AND persona_id = $2 AND left_at IS NULL
 RETURNING id, channel_id, persona_id, joined_at, left_at, status
 `
 
@@ -596,6 +669,8 @@ type RemoveUserFromChannelParams struct {
 // -------------------------------
 // 8. Remove user from channel (leave)
 // -------------------------------
+// Ends the current membership or pending request; earlier memberships keep
+// their left_at.
 func (q *Queries) RemoveUserFromChannel(ctx context.Context, arg RemoveUserFromChannelParams) (ChannelMember, error) {
 	row := q.db.QueryRowContext(ctx, removeUserFromChannel, arg.ChannelID, arg.PersonaID)
 	var i ChannelMember

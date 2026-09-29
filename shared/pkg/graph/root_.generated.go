@@ -1690,8 +1690,6 @@ type Mutation {
 
   createLike(input: LikeInput!): Boolean!
 
-  # Soft deletes. Allowed for the author or a moderator of the channel the
-  # object belongs to. Replies are comments, so deleteComment covers them.
   deletePost(id: ObjectId!): Boolean!
 
   deleteComment(id: ObjectId!): Boolean!
@@ -1719,8 +1717,6 @@ type Channel {
   followersCount: Int
   isMember: Boolean!
   isFollower: Boolean!
-  # Owner, channel moderator or global administrator: may delete any post or
-  # comment and manage join requests and members.
   canModerate: Boolean!
 }
 

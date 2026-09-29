@@ -70,7 +70,7 @@ RETURNING *;
 -- name: RemoveUserFromChannel :one
 UPDATE channel_members
 SET left_at = NOW()
-WHERE channel_id = $1 AND persona_id = $2
+WHERE channel_id = $1 AND persona_id = $2 AND left_at IS NULL
 RETURNING *;
 
 -- -------------------------------
@@ -228,3 +228,32 @@ WHERE channel_id = sqlc.arg(channel_id)::bigint
   AND left_at IS NULL
   AND status = 'pending'
 RETURNING *;
+
+-- -------------------------------
+-- 14. List active members (moderators only)
+-- -------------------------------
+-- name: ListChannelMembers :many
+SELECT
+    cm.persona_id,
+    cm.joined_at,
+    p.name,
+    p.first_name,
+    p.last_name,
+    p.thumbnail,
+    (c.owner_id = cm.persona_id)::boolean AS is_owner,
+    EXISTS (
+        SELECT 1
+        FROM channel_roles cr
+        JOIN roles r ON r.id = cr.role_id
+        WHERE cr.channel_id = cm.channel_id
+          AND cr.persona_id = cm.persona_id
+          AND cr.deleted_at IS NULL
+          AND r.name IN ('moderator', 'Administrator')
+    )::boolean AS is_moderator
+FROM channel_members cm
+JOIN channels c ON c.id = cm.channel_id
+JOIN personas p ON p.id = cm.persona_id
+WHERE cm.channel_id = $1
+  AND cm.left_at IS NULL
+  AND cm.status = 'active'
+ORDER BY (c.owner_id = cm.persona_id) DESC, cm.joined_at;

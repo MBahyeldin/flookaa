@@ -305,6 +305,27 @@ func (q *Queries) RemoveUserRole(ctx context.Context, arg RemoveUserRoleParams) 
 	return i, err
 }
 
+const revokeChannelRolesForPersona = `-- name: RevokeChannelRolesForPersona :exec
+UPDATE channel_roles
+SET deleted_at = NOW(), updated_at = NOW()
+WHERE channel_id = $1 AND persona_id = $2 AND deleted_at IS NULL
+`
+
+type RevokeChannelRolesForPersonaParams struct {
+	ChannelID int64
+	PersonaID int64
+}
+
+// -------------------------------
+// 12. Revoke every role a persona holds in a channel (soft delete)
+// -------------------------------
+// Run when a persona leaves or is removed, so a former moderator can't keep
+// moderating (can_moderate reads channel_roles, not membership).
+func (q *Queries) RevokeChannelRolesForPersona(ctx context.Context, arg RevokeChannelRolesForPersonaParams) error {
+	_, err := q.db.ExecContext(ctx, revokeChannelRolesForPersona, arg.ChannelID, arg.PersonaID)
+	return err
+}
+
 const updateRole = `-- name: UpdateRole :one
 UPDATE roles SET name = $1, description = $2 WHERE id = $3 RETURNING id, name, description, created_at, updated_at, deleted_at
 `

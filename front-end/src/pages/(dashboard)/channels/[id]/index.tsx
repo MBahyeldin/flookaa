@@ -35,6 +35,7 @@ import handleChannelEvents from "./subscribe/handleChannelEvents";
 import type { PostEventPayload } from "@/types/Ws";
 import { isCurrentOwner, useAppStore } from "@/stores/AppStore";
 import { formatDateOnly } from "@/utils/formateDate";
+import ModerationSheet from "./ModerationSheet";
 
 export default function ChannelPage() {
   const { id: channelId } = useParams<{ id: string }>();
@@ -64,6 +65,8 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   );
 
   const [newPosts, setNewPosts] = useState<PostEventPayload[]>([]);
+  const [isManaging, setIsManaging] = useState(false);
+  const canModerate = channelData?.getChannel?.canModerate || false;
 
   const setOwner = useAppStore((state) => state.setOwner);
   const resetPage = useAppStore((state) => state.resetPage);
@@ -445,12 +448,15 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                   <Share2 className="h-4 w-4" />
                 </Button>
 
+                {/* Moderators manage join requests and members here; for
+                    everyone else there are no settings yet. */}
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled
-                  aria-label="Channel settings"
-                  title="Channel settings aren’t available yet"
+                  disabled={!canModerate}
+                  onClick={() => setIsManaging(true)}
+                  aria-label="Manage channel"
+                  title={canModerate ? "Manage channel" : "Channel settings aren’t available yet"}
                 >
                   <Settings className="h-4 w-4" />
                 </Button>
@@ -458,6 +464,14 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
             </div>
           </CardContent>
         </Card>
+
+        {canModerate && channelId && (
+          <ModerationSheet
+            channelId={channelId}
+            open={isManaging}
+            onOpenChange={setIsManaging}
+          />
+        )}
 
         <PostCreator />
 
