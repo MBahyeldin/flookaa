@@ -228,6 +228,53 @@ func (ns NullEventTargetTypeEnum) Value() (driver.Value, error) {
 	return string(ns.EventTargetTypeEnum), nil
 }
 
+type NotificationKindEnum string
+
+const (
+	NotificationKindEnumPostComment        NotificationKindEnum = "post_comment"
+	NotificationKindEnumCommentReply       NotificationKindEnum = "comment_reply"
+	NotificationKindEnumPostLike           NotificationKindEnum = "post_like"
+	NotificationKindEnumCommentLike        NotificationKindEnum = "comment_like"
+	NotificationKindEnumJoinRequest        NotificationKindEnum = "join_request"
+	NotificationKindEnumRequestApproved    NotificationKindEnum = "request_approved"
+	NotificationKindEnumRemovedFromChannel NotificationKindEnum = "removed_from_channel"
+)
+
+func (e *NotificationKindEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = NotificationKindEnum(s)
+	case string:
+		*e = NotificationKindEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for NotificationKindEnum: %T", src)
+	}
+	return nil
+}
+
+type NullNotificationKindEnum struct {
+	NotificationKindEnum NotificationKindEnum
+	Valid                bool // Valid is true if NotificationKindEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullNotificationKindEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.NotificationKindEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.NotificationKindEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullNotificationKindEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.NotificationKindEnum), nil
+}
+
 type OauthProvider string
 
 const (
@@ -505,6 +552,21 @@ type Interest struct {
 	CreatedAt sql.NullTime
 	UpdatedAt sql.NullTime
 	DeletedAt sql.NullTime
+}
+
+type Notification struct {
+	ID          int64
+	RecipientID int64
+	Kind        NotificationKindEnum
+	GroupKey    string
+	ObjectID    sql.NullString
+	ChannelID   int64
+	ActorID     sql.NullInt64
+	LastEventAt time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	ReadAt      sql.NullTime
+	DeletedAt   sql.NullTime
 }
 
 type Persona struct {

@@ -99,19 +99,19 @@ The notifier must not need Mongo. The resolvers already load the parent/target t
 - `shared/external/db/postgres/migrations/012_notifications.{up,down}.sql` as above. The down file drops the table and the enum.
 - `shared/external/db/postgres/queries/notification.sql`:
   - `UpsertNotification` (above)
-  - `SoftDeleteNotificationsByGroup(group_key)`: all recipients, used when a join-request recount hits zero
-  - `SoftDeleteNotification(recipient_id, group_key)`
+  - `SoftDeleteNotificationsByGroup(group_key, event_at)`: used whenever a recount reaches zero. For likes and comments the group has one recipient; for join requests it has every moderator
   - `SoftDeleteNotificationsByObject(object_id)`: the post/comment was deleted
   - `ListNotifications(recipient_id, cursor_updated_at, cursor_id, limit)`, with the access filter below
   - `CountUnreadNotifications(recipient_id)`, with the same access filter
   - `MarkNotificationsRead(recipient_id, ids[])`
   - `MarkAllNotificationsRead(recipient_id)`
-  - `ChannelModeratorIDs(channel_id)`: owner + persona `channel_roles` moderators. Reuse the query `CanModerate` already reads if one fits.
+  - `ListChannelModeratorIDs(channel_id)`: owner + channel moderators/Administrators. Global Administrators are left out.
   - Recount helpers that return `count` + `latest_actor_id` per group, batched with `ANY($1)` for a page:
-    - comment events by `target_id`
-    - like events by `object_id`
-    - pending join requests by `channel_id`
-    - all excluding the recipient as actor
+    - `RecountCommenters`: comment events by `target_id`
+    - `RecountLikers`: like events by `object_id`
+    - `RecountPendingJoinRequests`: pending join requests by `channel_id`
+    - all excluding the recipient as actor. A group missing from the result has a count of zero.
+  - Both soft-delete queries take the event time and move `last_event_at` forward (`GREATEST`), so a redelivered older create can't revive the row.
 - Run `make migrate-up` on a DB-backed sqlc target, then `make generate-models`. Never generate offline.
 
 **Access filter** (used by list and count): hide a row when its channel is private and the recipient isn't an active member (`left_at IS NULL AND status = 'active'`). Exceptions are `request_approved`, `removed_from_channel` and `join_request`, which are about membership itself. A persona removed from a private channel keeps its old rows, but they don't show while it lacks access.
