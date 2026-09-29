@@ -669,8 +669,6 @@ type RemoveUserFromChannelParams struct {
 // -------------------------------
 // 8. Remove user from channel (leave)
 // -------------------------------
-// Ends the current membership or pending request; earlier memberships keep
-// their left_at.
 func (q *Queries) RemoveUserFromChannel(ctx context.Context, arg RemoveUserFromChannelParams) (ChannelMember, error) {
 	row := q.db.QueryRowContext(ctx, removeUserFromChannel, arg.ChannelID, arg.PersonaID)
 	var i ChannelMember

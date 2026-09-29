@@ -319,8 +319,6 @@ type RevokeChannelRolesForPersonaParams struct {
 // -------------------------------
 // 12. Revoke every role a persona holds in a channel (soft delete)
 // -------------------------------
-// Run when a persona leaves or is removed, so a former moderator can't keep
-// moderating (can_moderate reads channel_roles, not membership).
 func (q *Queries) RevokeChannelRolesForPersona(ctx context.Context, arg RevokeChannelRolesForPersonaParams) error {
 	_, err := q.db.ExecContext(ctx, revokeChannelRolesForPersona, arg.ChannelID, arg.PersonaID)
 	return err
