@@ -8,6 +8,8 @@ package db
 import (
 	"context"
 	"database/sql"
+
+	"github.com/lib/pq"
 )
 
 const addUserToChannel = `-- name: AddUserToChannel :one
@@ -542,6 +544,47 @@ func (q *Queries) ListChannelMembers(ctx context.Context, channelID int64) ([]Li
 			&i.IsOwner,
 			&i.IsModerator,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listChannelSummaries = `-- name: ListChannelSummaries :many
+SELECT id, name, thumbnail
+FROM channels
+WHERE id = ANY($1::bigint[])
+  AND deleted_at IS NULL
+`
+
+type ListChannelSummariesRow struct {
+	ID        int64
+	Name      string
+	Thumbnail string
+}
+
+// -------------------------------
+// 15. Names and thumbnails of several channels
+// -------------------------------
+// For labelling lists (notifications) at read time. Metadata is visible to
+// every persona, private channels included.
+func (q *Queries) ListChannelSummaries(ctx context.Context, ids []int64) ([]ListChannelSummariesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listChannelSummaries, pq.Array(ids))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListChannelSummariesRow
+	for rows.Next() {
+		var i ListChannelSummariesRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.Thumbnail); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

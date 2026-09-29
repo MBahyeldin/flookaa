@@ -292,3 +292,14 @@ WHERE cm.channel_id = $1
   AND cm.left_at IS NULL
   AND cm.status = 'active'
 ORDER BY (c.owner_id = cm.persona_id) DESC, cm.joined_at;
+
+-- -------------------------------
+-- 15. Names and thumbnails of several channels
+-- -------------------------------
+-- For labelling lists (notifications) at read time. Metadata is visible to
+-- every persona, private channels included.
+-- name: ListChannelSummaries :many
+SELECT id, name, thumbnail
+FROM channels
+WHERE id = ANY(sqlc.arg(ids)::bigint[])
+  AND deleted_at IS NULL;

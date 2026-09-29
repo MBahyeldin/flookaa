@@ -36,12 +36,15 @@ type NotificationResponse struct {
 	Kind    string          `json:"kind"`
 	Subject SubjectResponse `json:"subject"`
 	// Scope is null for personal notifications (membership kinds).
-	Scope       *ScopeResponse  `json:"scope"`
-	Count       int64           `json:"count"`
-	LatestActor *ActorResponse  `json:"latest_actor"`
-	Data        json.RawMessage `json:"data,omitempty"`
-	Read        bool            `json:"read"`
-	UpdatedAt   string          `json:"updated_at"`
+	Scope       *ScopeResponse `json:"scope"`
+	Count       int64          `json:"count"`
+	LatestActor *ActorResponse `json:"latest_actor"`
+	// Channel is the channel it belongs to (scope or subject), looked up at
+	// read time because names change. Null for other kinds or a deleted one.
+	Channel   *ChannelResponse `json:"channel"`
+	Data      json.RawMessage  `json:"data,omitempty"`
+	Read      bool             `json:"read"`
+	UpdatedAt string           `json:"updated_at"`
 }
 
 // ListNotifications returns a page of the persona's notifications, newest
@@ -99,6 +102,7 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 
 	notifications := make([]NotificationResponse, 0, len(rows))
 	actorIDs := make(map[int64]struct{})
+	channelIDs := make(map[int64]struct{})
 	for _, row := range rows {
 		spec, err := sharednotifications.Lookup(row.Kind)
 		if err != nil {
@@ -139,6 +143,10 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 			actorIDs[actorID] = struct{}{}
 			n.LatestActor = &ActorResponse{ID: actorID}
 		}
+		if id := channelID(row); id != 0 {
+			channelIDs[id] = struct{}{}
+			n.Channel = &ChannelResponse{ID: id}
+		}
 		notifications = append(notifications, n)
 	}
 
@@ -147,9 +155,17 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	channels, err := h.resolveChannels(ctx, channelIDs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	for i := range notifications {
 		if a := notifications[i].LatestActor; a != nil {
 			notifications[i].LatestActor = actors[a.ID]
+		}
+		if ch := notifications[i].Channel; ch != nil {
+			notifications[i].Channel = channels[ch.ID]
 		}
 	}
 
