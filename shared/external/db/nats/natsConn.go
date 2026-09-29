@@ -25,14 +25,15 @@ var DefaultStreamNames = []string{USER_EVENTS_STREAM, CONTENT_EVENTS_STREAM, CHA
 const StreamMaxAge = 7 * 24 * time.Hour
 
 type Event struct {
-	Name       db.EventEnum           `json:"name"`
-	Action     db.EventActionEnum     `json:"action"`
-	TargetId   string                 `json:"target_id"`
-	TargetType db.EventTargetTypeEnum `json:"target_type"`
-	Owner      db.OwnerEnum           `json:"owner"`
-	OwnerID    int64                  `json:"owner_id"`
-	ActorID    int64                  `json:"actor_id"`
-	Timestamp  int64                  `json:"timestamp"`
+	Name        db.EventEnum           `json:"name"`
+	Action      db.EventActionEnum     `json:"action"`
+	TargetId    string                 `json:"target_id"`
+	TargetType  db.EventTargetTypeEnum `json:"target_type"`
+	Owner       db.OwnerEnum           `json:"owner"`
+	OwnerID     int64                  `json:"owner_id"`
+	ActorID     int64                  `json:"actor_id"`
+	RecipientID *int64                 `json:"recipient_id,omitempty"`
+	Timestamp   int64                  `json:"timestamp"`
 }
 
 type MessageType struct {

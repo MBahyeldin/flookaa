@@ -220,10 +220,13 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 	var streamName = nats.CONTENT_EVENTS_STREAM
 	subjectHelper := subject.New(&streamName, owner, string(db.EventEnumComment), string(db.EventActionEnumCreate))
 
+	natsEvent := models.EventMapper(event)
+	natsEvent.RecipientID = &parent.AuthorID
+
 	err = r.NATS.PublishMessage(
 		ctx,
 		subjectHelper.GetSubject(),
-		&nats.MessageType{Event: *models.EventMapper(event), Payload: comment},
+		&nats.MessageType{Event: *natsEvent, Payload: comment},
 	)
 
 	if err != nil {
@@ -309,12 +312,15 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 
 	subjectHelper := subject.New(&streamName, owner, string(db.EventEnumLike), string(action))
 
+	natsEvent := models.EventMapper(event)
+	natsEvent.RecipientID = &target.AuthorID
+
 	// The like is already stored; a failed publish only delays the counter
 	// until the next event on this target or the cache TTL.
 	if err := r.NATS.PublishMessage(
 		ctx,
 		subjectHelper.GetSubject(),
-		&nats.MessageType{Event: *models.EventMapper(event), Payload: nil},
+		&nats.MessageType{Event: *natsEvent, Payload: nil},
 	); err != nil {
 		log.Println("Warning: failed to publish like event to NATS:", err)
 	}
