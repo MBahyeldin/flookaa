@@ -82,10 +82,16 @@ func (q *Queries) CreateChannel(ctx context.Context, arg CreateChannelParams) (C
 	return i, err
 }
 
-const followChannel = `-- name: FollowChannel :one
+const followChannel = `-- name: FollowChannel :execrows
 INSERT INTO channel_followers (channel_id, persona_id)
-VALUES ($1, $2)
-RETURNING id, channel_id, persona_id, followed_at, unfollowed_at
+SELECT $1::bigint, $2::bigint
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM channel_followers cf
+    WHERE cf.channel_id = $1::bigint
+      AND cf.persona_id = $2::bigint
+      AND cf.unfollowed_at IS NULL
+)
 `
 
 type FollowChannelParams struct {
@@ -96,17 +102,14 @@ type FollowChannelParams struct {
 // -------------------------------
 // 9. Follow a channel
 // -------------------------------
-func (q *Queries) FollowChannel(ctx context.Context, arg FollowChannelParams) (ChannelFollower, error) {
-	row := q.db.QueryRowContext(ctx, followChannel, arg.ChannelID, arg.PersonaID)
-	var i ChannelFollower
-	err := row.Scan(
-		&i.ID,
-		&i.ChannelID,
-		&i.PersonaID,
-		&i.FollowedAt,
-		&i.UnfollowedAt,
-	)
-	return i, err
+// Inserts only when there is no active follow, so following twice is a
+// no-op (0 rows) rather than a second row.
+func (q *Queries) FollowChannel(ctx context.Context, arg FollowChannelParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, followChannel, arg.ChannelID, arg.PersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const getAllChannels = `-- name: GetAllChannels :many
@@ -733,11 +736,10 @@ func (q *Queries) ResolveJoinRequest(ctx context.Context, arg ResolveJoinRequest
 	return i, err
 }
 
-const unfollowChannel = `-- name: UnfollowChannel :one
+const unfollowChannel = `-- name: UnfollowChannel :execrows
 UPDATE channel_followers
 SET unfollowed_at = NOW()
-WHERE channel_id = $1 AND persona_id = $2
-RETURNING id, channel_id, persona_id, followed_at, unfollowed_at
+WHERE channel_id = $1 AND persona_id = $2 AND unfollowed_at IS NULL
 `
 
 type UnfollowChannelParams struct {
@@ -748,17 +750,14 @@ type UnfollowChannelParams struct {
 // -------------------------------
 // 10. Unfollow a channel
 // -------------------------------
-func (q *Queries) UnfollowChannel(ctx context.Context, arg UnfollowChannelParams) (ChannelFollower, error) {
-	row := q.db.QueryRowContext(ctx, unfollowChannel, arg.ChannelID, arg.PersonaID)
-	var i ChannelFollower
-	err := row.Scan(
-		&i.ID,
-		&i.ChannelID,
-		&i.PersonaID,
-		&i.FollowedAt,
-		&i.UnfollowedAt,
-	)
-	return i, err
+// Ends the current follow only; earlier follows keep their unfollowed_at.
+// 0 rows means the persona wasn't following.
+func (q *Queries) UnfollowChannel(ctx context.Context, arg UnfollowChannelParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, unfollowChannel, arg.ChannelID, arg.PersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const updateChannel = `-- name: UpdateChannel :one

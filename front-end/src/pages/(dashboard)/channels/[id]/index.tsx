@@ -26,7 +26,7 @@ import { Link, useParams } from "react-router-dom";
 import { useGetChannelQuery, useGetPostsLazyQuery } from "@/generated/graphql";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PostCreator } from "@/components/post-creator";
-import { joinChannel, leaveChannel } from "@/services/channels";
+import { joinChannel, leaveChannel, setFollowing } from "@/services/channels";
 import { toast } from "sonner";
 import { useWebsocketService } from "@/Websocket.context";
 import loadNewPosts from "./subscribe/loadNewPosts";
@@ -66,6 +66,8 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   const [newPosts, setNewPosts] = useState<PostEventPayload[]>([]);
   const [isManaging, setIsManaging] = useState(false);
   const [membersCount, setMembersCount] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [isFollowPending, setIsFollowPending] = useState(false);
   const canModerate = channelData?.getChannel?.canModerate || false;
 
   const setOwner = useAppStore((state) => state.setOwner);
@@ -166,9 +168,19 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     setIsJoined(true);
   };
 
-  const handleFollow = (e: React.MouseEvent) => {
+  const handleFollow = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsFollowing(!isFollowing);
+    if (!channelId || isFollowPending) return;
+    const next = !isFollowing;
+    setIsFollowPending(true);
+    const error = await setFollowing(channelId, next);
+    setIsFollowPending(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setIsFollowing(next);
+    setFollowersCount((n) => Math.max(0, n + (next ? 1 : -1)));
   };
 
   /*
@@ -225,6 +237,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     setIsJoined(channelData?.getChannel?.isMember || false);
     setIsFollowing(channelData?.getChannel?.isFollower || false);
     setMembersCount(channelData?.getChannel?.membersCount ?? 0);
+    setFollowersCount(channelData?.getChannel?.followersCount ?? 0);
     // Lets post and comment menus offer Delete on other personas' content.
     setCanModerate(channelData?.getChannel?.canModerate || false);
   }, [channelData, setCanModerate]);
@@ -356,7 +369,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                 <div className="flex items-center space-x-2">
                   <Heart className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">
-                    {channelData.getChannel.followersCount ?? 0}
+                    {followersCount}
                   </span>
                   <span className="text-muted-foreground">followers</span>
                 </div>
@@ -416,6 +429,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
 
                 <Button
                   onClick={handleFollow}
+                  disabled={isFollowPending}
                   variant={isFollowing ? "secondary" : "outline"}
                   className="flex items-center space-x-2"
                 >

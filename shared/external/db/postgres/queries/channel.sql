@@ -76,19 +76,28 @@ RETURNING *;
 -- -------------------------------
 -- 9. Follow a channel
 -- -------------------------------
--- name: FollowChannel :one
+-- Inserts only when there is no active follow, so following twice is a
+-- no-op (0 rows) rather than a second row.
+-- name: FollowChannel :execrows
 INSERT INTO channel_followers (channel_id, persona_id)
-VALUES ($1, $2)
-RETURNING *;
+SELECT sqlc.arg(channel_id)::bigint, sqlc.arg(persona_id)::bigint
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM channel_followers cf
+    WHERE cf.channel_id = sqlc.arg(channel_id)::bigint
+      AND cf.persona_id = sqlc.arg(persona_id)::bigint
+      AND cf.unfollowed_at IS NULL
+);
 
 -- -------------------------------
 -- 10. Unfollow a channel
 -- -------------------------------
--- name: UnfollowChannel :one
+-- Ends the current follow only; earlier follows keep their unfollowed_at.
+-- 0 rows means the persona wasn't following.
+-- name: UnfollowChannel :execrows
 UPDATE channel_followers
 SET unfollowed_at = NOW()
-WHERE channel_id = $1 AND persona_id = $2
-RETURNING *;
+WHERE channel_id = $1 AND persona_id = $2 AND unfollowed_at IS NULL;
 
 -- -------------------------------
 -- 9. Get All Channels
