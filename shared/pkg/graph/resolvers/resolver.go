@@ -188,6 +188,41 @@ func (r *Resolver) objectType(ctx context.Context, id string) (models.PostType, 
 	return doc.Type, nil
 }
 
+// maxThreadDepth bounds threadPostID, so a corrupt parentid cycle can't loop
+// forever.
+const maxThreadDepth = 32
+
+// threadPostID returns the id of the post at the top of obj's thread: obj
+// itself for a post, else the post its chain of parents leads to.
+func (r *Resolver) threadPostID(ctx context.Context, obj *models.PostGenericDocument) (string, error) {
+	type ref struct {
+		ID       string          `bson:"id"`
+		Type     models.PostType `bson:"type"`
+		ParentID *string         `bson:"parentid"`
+	}
+	cur := ref{ID: obj.ID, Type: obj.Type, ParentID: obj.ParentID}
+	for range maxThreadDepth {
+		if cur.Type == models.PostTypePost {
+			return cur.ID, nil
+		}
+		if cur.ParentID == nil {
+			return "", fmt.Errorf("comment %s has no parent", cur.ID)
+		}
+		parentID := *cur.ParentID
+		cur = ref{}
+		err := r.Objects.FindOne(ctx, bson.M{"id": parentID},
+			options.FindOne().SetProjection(bson.M{"id": 1, "type": 1, "parentid": 1}),
+		).Decode(&cur)
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return "", errObjectNotFound
+		}
+		if err != nil {
+			return "", fmt.Errorf("failed to load object %s: %w", parentID, err)
+		}
+	}
+	return "", fmt.Errorf("thread of %s is deeper than %d", obj.ID, maxThreadDepth)
+}
+
 // eventTargetType maps a stored object's type to the event target type.
 func eventTargetType(t models.PostType) db.EventTargetTypeEnum {
 	if t == models.PostTypePost {

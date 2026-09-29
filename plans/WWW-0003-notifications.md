@@ -12,7 +12,7 @@ buildable and is reviewed and committed by hand before the next one starts.
 | 3. `notifier/` service | done |
 | 4. Infrastructure (ansible) | done, not run yet |
 | 5. REST API | done |
-| 6. Frontend | pending (dropdown vs page still open) |
+| 6. Frontend (+ `post_id` in `data`) | 6a backend done; 6b frontend next |
 | 7. Docs | done |
 
 ## Decisions
@@ -96,7 +96,7 @@ CREATE TABLE notifications (
   scope_type     notification_scope_enum NULL,  -- NULL: personal, always visible
   scope_id       BIGINT NULL,
   actor_id       BIGINT NULL REFERENCES personas(id) ON DELETE SET NULL, -- single-actor kinds only; NULL for system
-  data           JSONB NULL,               -- only for kinds with no source to recount or look up (future news)
+  data           JSONB NULL,               -- facts fixed for the notification's life (post_id, a news title); never names/counts/editable text
   last_event_at  TIMESTAMPTZ NOT NULL,     -- newest event applied; guards replays
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -271,15 +271,36 @@ Uses `whatsapp` / `redis` as templates.
   - mark read (including another persona's id) and read-all;
   - bad input.
 
-### Step 6: Frontend
+### Step 6: Frontend (+ `post_id` in the API)
 
-- `src/types/notification.ts`, `src/services/notifications.ts` (via `apiFetch`)
-- `src/stores/notifications.ts` (Zustand): unread count, loaded pages
-- A bell with an unread badge in the dashboard header, and a dropdown or page listing notifications.
-  - Each item renders by `kind` and links by `subject` (post, comment, channel, persona).
-  - Opening one marks it read, and there's "Mark all read".
-- WS listener on `…notifications.create` / `…notifications.delete`: refetch the unread count, and the first page if the list is open.
-- Kinds the UI can't render yet aren't rendered. No disabled placeholders.
+Decisions (2026-09-29):
+
+| Topic | Decision |
+|---|---|
+| Surface | Bell opens a **popover** with the latest ~10 and "See all" → a **`/notifications` page** with infinite scroll (also the mobile view). |
+| Bell | **Top-right** next to the fixed theme toggle on desktop, and in the **mobile header** next to the sidebar trigger. Unread badge on both. |
+| Click | Opens the **exact post**: `/channels/<channel>?post=<post_id>` (+ `&comment=<comment_id>` for comment kinds). Membership kinds go to `/channels/<channel>`. |
+| Attention / read | **Badge only**, no toasts. A notification is read **when clicked**; "Mark all read" in the popover and page. |
+
+**6a. Backend: `post_id` stored in `notifications.data`**
+- `post_id` lives in the row's `data` (the user's call), not as a top-level API field. The API returns `data` as stored.
+- `shared/pkg/notifications.Data{PostID}` is the one definition of the `data` shape. Every field is optional.
+- The resolvers (`createComment`, `createLike`) find the thread's post with `threadPostID`, which walks `parentid` up `app.objects` from the parent/target they already load, capped at 32 levels. They send it as `nats.Event.post_id`. If the lookup fails, the error is logged and the event goes out without it; the comment or like is already stored.
+- The notifier writes `data = {"post_id": …}` for the four content kinds, and never for membership kinds.
+- The upsert keeps the stored data when a newer event has none: `data = COALESCE(EXCLUDED.data, notifications.data)`.
+- Rows written before this deploy have no `post_id`; the UI links them to the channel. Deploy: backend + notifier.
+- Verified with the notifier end-to-end harness (30 checks, including `data.post_id` stored, kept, and absent on membership rows). `threadPostID` wasn't run against Mongo: there was no local Mongo.
+
+**6b. Frontend**
+- **Data:** `src/types/notification.ts` and `src/services/notifications.ts` (list, unread count, read, read-all via `apiFetch`), plus `src/stores/NotificationStore.ts` (Zustand: unread count, first page for the popover).
+- **Realtime:** the default WS subscription (`subscribeToDefaultChannel`, currently a no-op callback) dispatches `notifications.create|delete` frames to the store. The store refetches the unread count, and the first page if it's loaded. It resets on persona change.
+- **Components:** `components/notifications/`:
+  - the bell with its badge;
+  - the popover list;
+  - one item renderer per kind ("Bob and 2 others liked your post", "Dee asked to join <channel>", …) with avatar and relative time;
+  - the `/notifications` page, which pages until `next_cursor` is null (pages can be short or empty).
+- **Deep link:** the channel page reads `?post=`, fetches that post with `GetPosts(ids: [post])`, and opens it in a dialog with comments expanded. Closing the dialog clears the query param. Scrolling to or highlighting the exact comment is **out of v1**: comments load lazily and replies start collapsed.
+- Kinds the UI can't render aren't rendered. No disabled placeholders.
 - `pnpm lint` + `pnpm build`. Remember `tsc-check` only fails on `.tsx` errors.
 
 ### Step 7: Docs
@@ -300,4 +321,4 @@ Uses `whatsapp` / `redis` as templates.
 
 ## Open questions (decide before the step that needs them)
 
-- Step 6: dropdown only, or also a full `/notifications` page?
+None.

@@ -222,6 +222,11 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 
 	natsEvent := models.EventMapper(event)
 	natsEvent.RecipientID = &parent.AuthorID
+	if postID, err := r.threadPostID(ctx, parent); err != nil {
+		log.Println("Warning: failed to find the thread's post:", err)
+	} else {
+		natsEvent.PostID = postID
+	}
 
 	err = r.NATS.PublishMessage(
 		ctx,
@@ -314,6 +319,11 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 
 	natsEvent := models.EventMapper(event)
 	natsEvent.RecipientID = &target.AuthorID
+	if postID, err := r.threadPostID(ctx, target); err != nil {
+		log.Println("Warning: failed to find the thread's post:", err)
+	} else {
+		natsEvent.PostID = postID
+	}
 
 	// The like is already stored; a failed publish only delays the counter
 	// until the next event on this target or the cache TTL.

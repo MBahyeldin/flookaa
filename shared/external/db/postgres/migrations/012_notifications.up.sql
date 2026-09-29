@@ -38,7 +38,9 @@ CREATE TABLE IF NOT EXISTS notifications (
     scope_type notification_scope_enum NULL,
     scope_id BIGINT NULL,
     actor_id BIGINT NULL REFERENCES personas(id) ON DELETE SET NULL,
-    -- Only for kinds with no source to recount or look up.
+    -- Facts fixed for the notification's life (ids like the thread's post_id,
+    -- a news item's title), shaped by shared/pkg/notifications.Data. Never
+    -- names, avatars, counts or editable text: those are looked up at read.
     data JSONB NULL,
     last_event_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

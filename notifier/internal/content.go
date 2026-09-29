@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"shared/pkg/db"
+	"shared/pkg/notifications"
 	"time"
 )
 
@@ -29,6 +30,7 @@ func (w *Worker) content(ctx context.Context, m message, eventAt time.Time) erro
 			kind:        kind,
 			subjectID:   e.TargetId,
 			scope:       channelScope(e.OwnerID),
+			data:        contentData(e.PostID),
 		}, e.ActorID, eventAt)
 
 	case e.Name == db.EventEnumLike && e.Action == db.EventActionEnumCreate:
@@ -41,6 +43,7 @@ func (w *Worker) content(ctx context.Context, m message, eventAt time.Time) erro
 			kind:        kind,
 			subjectID:   e.TargetId,
 			scope:       channelScope(e.OwnerID),
+			data:        contentData(e.PostID),
 		}, e.ActorID, eventAt)
 
 	case e.Name == db.EventEnumLike && e.Action == db.EventActionEnumDelete:
@@ -95,4 +98,13 @@ func likeKind(t db.EventTargetTypeEnum) (db.NotificationKindEnum, bool) {
 		return db.NotificationKindEnumCommentLike, true
 	}
 	return "", false
+}
+
+// contentData links a content notification to its post. Events published
+// before the backend set post_id have none; the UI then links to the channel.
+func contentData(postID string) *notifications.Data {
+	if postID == "" {
+		return nil
+	}
+	return &notifications.Data{PostID: postID}
 }

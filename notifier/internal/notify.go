@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -13,6 +14,8 @@ import (
 	"shared/pkg/subject"
 	"strconv"
 	"time"
+
+	"github.com/sqlc-dev/pqtype"
 )
 
 // scope is whose access rule decides whether the recipient may see a
@@ -35,6 +38,7 @@ type notification struct {
 	subjectID   string
 	scope       *scope
 	actorID     *int64
+	data        *notifications.Data
 }
 
 // notify upserts n for activity by sourceActorID at eventAt and tells the
@@ -62,6 +66,13 @@ func (w *Worker) notify(ctx context.Context, n notification, sourceActorID int64
 	}
 	if n.actorID != nil {
 		params.ActorID = sql.NullInt64{Int64: *n.actorID, Valid: true}
+	}
+	if n.data != nil {
+		raw, err := json.Marshal(n.data)
+		if err != nil {
+			return fmt.Errorf("marshal data for %s: %w", params.GroupKey, err)
+		}
+		params.Data = pqtype.NullRawMessage{RawMessage: raw, Valid: true}
 	}
 
 	id, err := w.q.UpsertNotification(ctx, params)

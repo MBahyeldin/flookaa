@@ -33,6 +33,7 @@ type Event struct {
 	OwnerID     int64                  `json:"owner_id"`
 	ActorID     int64                  `json:"actor_id"`
 	RecipientID *int64                 `json:"recipient_id,omitempty"`
+	PostID      string                 `json:"post_id,omitempty"`
 	Timestamp   int64                  `json:"timestamp"`
 }
 

@@ -616,7 +616,8 @@ VALUES (
 )
 ON CONFLICT (recipient_id, group_key) DO UPDATE
 SET actor_id = EXCLUDED.actor_id,
-    data = EXCLUDED.data,
+    -- A newer event without data (e.g. its post lookup failed) keeps the old.
+    data = COALESCE(EXCLUDED.data, notifications.data),
     last_event_at = EXCLUDED.last_event_at,
     updated_at = EXCLUDED.updated_at,
     read_at = NULL,
