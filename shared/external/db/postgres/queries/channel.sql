@@ -70,25 +70,34 @@ RETURNING *;
 -- name: RemoveUserFromChannel :one
 UPDATE channel_members
 SET left_at = NOW()
-WHERE channel_id = $1 AND persona_id = $2
+WHERE channel_id = $1 AND persona_id = $2 AND left_at IS NULL
 RETURNING *;
 
 -- -------------------------------
 -- 9. Follow a channel
 -- -------------------------------
--- name: FollowChannel :one
+-- Inserts only when there is no active follow, so following twice is a
+-- no-op (0 rows) rather than a second row.
+-- name: FollowChannel :execrows
 INSERT INTO channel_followers (channel_id, persona_id)
-VALUES ($1, $2)
-RETURNING *;
+SELECT sqlc.arg(channel_id)::bigint, sqlc.arg(persona_id)::bigint
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM channel_followers cf
+    WHERE cf.channel_id = sqlc.arg(channel_id)::bigint
+      AND cf.persona_id = sqlc.arg(persona_id)::bigint
+      AND cf.unfollowed_at IS NULL
+);
 
 -- -------------------------------
 -- 10. Unfollow a channel
 -- -------------------------------
--- name: UnfollowChannel :one
+-- Ends the current follow only; earlier follows keep their unfollowed_at.
+-- 0 rows means the persona wasn't following.
+-- name: UnfollowChannel :execrows
 UPDATE channel_followers
 SET unfollowed_at = NOW()
-WHERE channel_id = $1 AND persona_id = $2
-RETURNING *;
+WHERE channel_id = $1 AND persona_id = $2 AND unfollowed_at IS NULL;
 
 -- -------------------------------
 -- 9. Get All Channels
@@ -149,7 +158,20 @@ SELECT
         WHERE cf.channel_id = c.id 
           AND cf.persona_id = $1 
           AND cf.unfollowed_at IS NULL
-    ) AS is_follower
+    ) AS is_follower,
+    (
+        SELECT COUNT(*)
+        FROM channel_members cm
+        WHERE cm.channel_id = c.id
+          AND cm.left_at IS NULL AND cm.status = 'active'
+    )::int AS members_count,
+    -- DISTINCT: FollowChannel inserts a new row on every follow.
+    (
+        SELECT COUNT(DISTINCT cf.persona_id)
+        FROM channel_followers cf
+        WHERE cf.channel_id = c.id
+          AND cf.unfollowed_at IS NULL
+    )::int AS followers_count
 FROM channels c
 WHERE c.id = $2 AND c.deleted_at IS NULL;
 -- -------------------------------
@@ -228,3 +250,32 @@ WHERE channel_id = sqlc.arg(channel_id)::bigint
   AND left_at IS NULL
   AND status = 'pending'
 RETURNING *;
+
+-- -------------------------------
+-- 14. List active members (moderators only)
+-- -------------------------------
+-- name: ListChannelMembers :many
+SELECT
+    cm.persona_id,
+    cm.joined_at,
+    p.name,
+    p.first_name,
+    p.last_name,
+    p.thumbnail,
+    (c.owner_id = cm.persona_id)::boolean AS is_owner,
+    EXISTS (
+        SELECT 1
+        FROM channel_roles cr
+        JOIN roles r ON r.id = cr.role_id
+        WHERE cr.channel_id = cm.channel_id
+          AND cr.persona_id = cm.persona_id
+          AND cr.deleted_at IS NULL
+          AND r.name IN ('moderator', 'Administrator')
+    )::boolean AS is_moderator
+FROM channel_members cm
+JOIN channels c ON c.id = cm.channel_id
+JOIN personas p ON p.id = cm.persona_id
+WHERE cm.channel_id = $1
+  AND cm.left_at IS NULL
+  AND cm.status = 'active'
+ORDER BY (c.owner_id = cm.persona_id) DESC, cm.joined_at;

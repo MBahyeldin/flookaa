@@ -133,7 +133,7 @@ The frontend mirrors this: REST calls go through `src/lib/apiFetch.ts` and Apoll
 4. Proxy attaches JetStream consumers for those subjects and multiplexes events down the one socket.
 5. Frontend (`front-end/src/ws/index.tsx`, a singleton with a 5s `HEARTBEAT`) dispatches incoming frames to listeners keyed by the message `id`, then refetches details over REST/GraphQL — events carry IDs, not full payloads.
 
-Subject strings are built only through `shared/pkg/subject` — `{stream}.{ownerType}.{ownerID}.{event}.{action}` (stream segment omitted when `StreamName` is nil). Streams are declared in `shared/external/db/nats/natsConn.go` (`STREAM_USER_EVENTS`, `STREAM_CONTENT_EVENTS`).
+Subject strings are built only through `shared/pkg/subject` — `{stream}.{ownerType}.{ownerID}.{event}.{action}` (stream segment omitted when `StreamName` is nil). Streams are declared in `shared/external/db/nats/natsConn.go` (`STREAM_USER_EVENTS`, `STREAM_CONTENT_EVENTS`, `STREAM_CHANNEL_EVENTS`). Channel membership changes (`member`, `follower`, `join_request` × `create`/`delete`, payload `{persona_id, reason}`, `actor_id` = who made the change) go to `STREAM_CHANNEL_EVENTS` only — they are NATS events, not `events` rows. `/control` subscribes a channel's websockets to both the content and channel-events subjects.
 
 ### Channel access
 
@@ -146,7 +146,7 @@ Rules live in one place, `shared/pkg/access` (`LoadChannel` → `CanRead`/`CanWr
 | post / comment / like | active members | active members |
 | join | immediate (`status = 'active'`) | pending request; owner, channel moderators, or global Administrators approve via `/channels/:id/requests/...` |
 
-Membership is `channel_members` with `left_at IS NULL AND status = 'active'` — every membership query must filter on both. Non-readers get 404 / `channel not found`, never 403, so private channels don't leak existence of content. For existing objects (comments, likes) resolvers authorize and publish against the owner **stored on the Mongo document** (`loadObject` → `authorizeOwner`), never the client's `owner` input. Persona-owned content (`OwnerTypePersona`) is not restricted yet.
+Membership is `channel_members` with `left_at IS NULL AND status = 'active'` — every membership query must filter on both. Moderators list and remove members via `/channels/:id/members[/:persona_id/remove]` (the owner can't be removed); leaving or being removed also soft-deletes the persona's `channel_roles`, because `can_moderate` reads roles, not membership. Non-readers get 404 / `channel not found`, never 403, so private channels don't leak existence of content. For existing objects (comments, likes) resolvers authorize and publish against the owner **stored on the Mongo document** (`loadObject` → `authorizeOwner`), never the client's `owner` input. Only channel-owned content is supported: `authorizeOwner` refuses any other owner type (`PERSONA`, `PAGE`) as not found until those get access rules.
 
 ### Counters: Postgres is the source of truth, Redis is a cache
 
@@ -158,6 +158,8 @@ Every like/comment is a row in the Postgres `events` table (unlike = soft delete
 - "Liked by me" is one Postgres query per page (`GetLikedTargets`), not a Redis set.
 
 A new counter needs: the event written to `events` + published, a case in `counters.Count`, and a field in `ContentStore.writeMeta`/`getMeta`.
+
+Deletes are soft. `deletePost`/`deleteComment` (author or channel moderator) set `deletedat` on the Mongo document, soft-delete the events about the object via `events.object_id` (its own create event and the likes on it; `object_id` is NOT NULL, likes store the liked object), and publish `…post.delete` / `…comment.delete`. Every read of `app.objects` must filter `deletedat: nil`.
 
 Publishing uses `JetStream.Publish` (acknowledged), so a missing stream is an error. Only the backend runs `EnsureStreams` (creates streams, sets `MaxAge` 7d); the worker only `CheckStream`s.
 

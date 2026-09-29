@@ -13,6 +13,7 @@ import (
 	"shared/pkg/graph"
 	"shared/pkg/graph/directives"
 	"shared/pkg/graph/models"
+	"shared/pkg/subject"
 	"shared/util/keys"
 	"strconv"
 	"time"
@@ -20,7 +21,9 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func NewExecutableSchema(cfg graph.Config) graphql.ExecutableSchema {
@@ -40,10 +43,18 @@ type Resolver struct {
 
 var errObjectNotFound = errors.New("not found")
 
-// loadObject reads a post, comment or reply by id from app.objects.
+func newObjectID() string {
+	return primitive.NewObjectID().Hex()
+}
+
+var errNotAllowedToDelete = errors.New("only the author or a channel moderator can delete this")
+
+// loadObject reads a post, comment or reply by id from app.objects. Deleted
+// objects are not found, so nobody can comment on or like them either
+// ("deletedat": nil matches both null and the field missing on old documents).
 func (r *Resolver) loadObject(ctx context.Context, id string) (*models.PostGenericDocument, error) {
 	var doc models.PostGenericDocument
-	err := r.Objects.FindOne(ctx, bson.M{"id": id}).Decode(&doc)
+	err := r.Objects.FindOne(ctx, bson.M{"id": id, "deletedat": nil}).Decode(&doc)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return nil, errObjectNotFound
 	}
@@ -60,13 +71,12 @@ func (r *Resolver) loadObject(ctx context.Context, id string) (*models.PostGener
 // true) content owned by owner. Callers must pass the owner stored on the
 // object, never the client's owner input, when the object already exists.
 //
-// Only channel-owned content is restricted here; see shared/pkg/access.
+// Only channel-owned content is supported (rules in shared/pkg/access). Other
+// owner types (PERSONA, PAGE) have no access rules yet, so they are refused
+// rather than left open to every persona.
 func (r *Resolver) authorizeOwner(ctx context.Context, owner *models.Owner, personaID int64, write bool) error {
-	if owner == nil {
+	if owner == nil || owner.Type != models.OwnerTypeChannel {
 		return errObjectNotFound
-	}
-	if owner.Type != models.OwnerTypeChannel {
-		return nil
 	}
 	channel, err := access.LoadChannel(ctx, r.Queries, owner.ID, personaID)
 	if err != nil {
@@ -76,6 +86,106 @@ func (r *Resolver) authorizeOwner(ctx context.Context, owner *models.Owner, pers
 		return channel.Write()
 	}
 	return channel.Read()
+}
+
+// deleteObject soft-deletes a post or comment for its author or a moderator
+// of its channel. It also soft-deletes the events about the object (its own
+// create event and the likes on it), so recounts drop it, and publishes
+// <post|comment>.delete: the redis worker recounts the parent and clients
+// remove the object.
+func (r *Resolver) deleteObject(ctx context.Context, id string, postType models.PostType) error {
+	personaID, err := getPersonaIdFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("unauthenticated: %w", err)
+	}
+	obj, err := r.loadObject(ctx, id)
+	if err != nil {
+		return err
+	}
+	if obj.Type != postType || obj.Owner.Type != models.OwnerTypeChannel {
+		return errObjectNotFound
+	}
+	channel, err := access.LoadChannel(ctx, r.Queries, obj.Owner.ID, personaID)
+	if err != nil {
+		return err
+	}
+	if err := channel.Read(); err != nil {
+		return err
+	}
+	if obj.AuthorID != personaID && !channel.CanModerate {
+		return errNotAllowedToDelete
+	}
+
+	// The event of a comment points at its parent; read the parent's type
+	// before anything changes (it may itself be deleted already).
+	event := db.CreateEventParams{
+		Name:       db.EventEnumPost,
+		Action:     db.EventActionEnumDelete,
+		TargetID:   strconv.FormatInt(obj.Owner.ID, 10),
+		TargetType: db.EventTargetTypeEnumCHANNEL,
+		Owner:      db.OwnerEnumCHANNEL,
+		OwnerID:    obj.Owner.ID,
+		ActorID:    personaID,
+		ObjectID:   id,
+	}
+	if postType == models.PostTypeComment {
+		if obj.ParentID == nil {
+			return fmt.Errorf("comment %s has no parent", id)
+		}
+		parentType, err := r.objectType(ctx, *obj.ParentID)
+		if err != nil {
+			return err
+		}
+		event.Name = db.EventEnumComment
+		event.TargetID = *obj.ParentID
+		event.TargetType = eventTargetType(parentType)
+	}
+
+	now := time.Now()
+	res, err := r.Objects.UpdateOne(ctx,
+		bson.M{"id": id, "deletedat": nil},
+		bson.M{"$set": bson.M{"deletedat": now, "updatedat": now}},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to delete object %s: %w", id, err)
+	}
+	if res.ModifiedCount == 0 {
+		// Deleted by a concurrent request, which also did the rest.
+		return errObjectNotFound
+	}
+
+	// Its own event and the likes on it. The object is gone already; a
+	// failure here only leaves a counter one too high, so log instead of
+	// reporting a failed delete.
+	if _, err := r.Queries.SoftDeleteObjectEvents(ctx, id); err != nil {
+		log.Printf("Warning: deleted %s but not its event: %v", id, err)
+	}
+
+	var streamName = nats.CONTENT_EVENTS_STREAM
+	subjectHelper := subject.New(&streamName, obj.Owner, string(event.Name), string(event.Action))
+	if err := r.NATS.PublishMessage(
+		ctx,
+		subjectHelper.GetSubject(),
+		&nats.MessageType{Event: *models.EventMapper(event), Payload: map[string]any{"object_id": id}},
+	); err != nil {
+		log.Println("Warning: failed to publish delete event to NATS:", err)
+	}
+	return nil
+}
+
+// objectType returns the type of a post or comment, deleted or not.
+func (r *Resolver) objectType(ctx context.Context, id string) (models.PostType, error) {
+	var doc struct {
+		Type models.PostType `bson:"type"`
+	}
+	err := r.Objects.FindOne(ctx, bson.M{"id": id}, options.FindOne().SetProjection(bson.M{"type": 1})).Decode(&doc)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return "", errObjectNotFound
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to load object %s: %w", id, err)
+	}
+	return doc.Type, nil
 }
 
 // eventTargetType maps a stored object's type to the event target type.
@@ -174,6 +284,7 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 	pipeline = append(pipeline, bson.D{{Key: "$match", Value: bson.M{
 		"owner.id":   owner.ID,
 		"owner.type": owner.Type,
+		"deletedat":  nil,
 	}}})
 
 	if ids != nil && len(*ids) > 0 {
@@ -253,6 +364,7 @@ func getTotalPostsCountForChannel(ctx context.Context, channelID int64, r *query
 	pipeline = append(pipeline, bson.D{{Key: "$match", Value: bson.M{
 		"owner.id":   channelID,
 		"owner.type": models.OwnerTypeChannel,
+		"deletedat":  nil,
 	}}})
 
 	pipeline = append(pipeline, []bson.D{
@@ -324,7 +436,8 @@ func getComments(ctx context.Context, postID string, r *queryResolver, limit int
 
 	var pipeline = mongo.Pipeline{}
 	pipeline = append(pipeline, bson.D{{Key: "$match", Value: bson.M{
-		"parentid": postID,
+		"parentid":  postID,
+		"deletedat": nil,
 	}}})
 
 	pipeline = append(pipeline, []bson.D{

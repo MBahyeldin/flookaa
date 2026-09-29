@@ -187,11 +187,9 @@ type Mutation {
 
   createLike(input: LikeInput!): Boolean!
 
-  deletePost(id: ObjectId!, owner: OwnerInput!): Boolean!
+  deletePost(id: ObjectId!): Boolean!
 
-  deleteComment(id: ObjectId!, owner: OwnerInput!): Boolean!
-
-  deleteReply(id: ObjectId!, owner: OwnerInput!): Boolean!
+  deleteComment(id: ObjectId!): Boolean!
 }
 
 # Inputs
@@ -216,6 +214,7 @@ type Channel {
   followersCount: Int
   isMember: Boolean!
   isFollower: Boolean!
+  canModerate: Boolean!
 }
 
 # Queries

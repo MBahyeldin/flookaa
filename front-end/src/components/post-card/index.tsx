@@ -5,7 +5,6 @@ import {
   MessageCircle,
   Share2,
   MoreHorizontal,
-  Edit,
   Trash2,
   ChevronDown,
   ChevronUp,
@@ -19,7 +18,7 @@ import {
   DropdownMenuItem,
 } from "../ui/dropdown-menu";
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import { useCreateLikeMutation, type Post } from "@/generated/graphql";
+import { useCreateLikeMutation, useDeletePostMutation, type Post } from "@/generated/graphql";
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import { toast } from "sonner";
 import { PortableText as PortableTextReact } from "@portabletext/react";
@@ -48,6 +47,27 @@ export function Post({
   const { blockObjectsProvider } = useBlockObjectsProvider();
   const owner = useAppStore((state) => state.owner);
   const [createLike] = useCreateLikeMutation();
+  const [deletePost, { loading: isDeleting }] = useDeletePostMutation();
+  const canModerate = useAppStore((state) => state.canModerate);
+  const canDelete = post.authorId === persona?.id || canModerate;
+
+  const handleDelete = async () => {
+    if (!confirm("Delete this post? This can't be undone.")) return;
+    try {
+      await deletePost({ variables: { id: post._id } });
+    } catch (err) {
+      toast.error(
+        CombinedGraphQLErrors.is(err)
+          ? err.errors[0]?.message || "Couldn’t delete the post."
+          : "Couldn’t delete the post. Check your connection."
+      );
+      return;
+    }
+    // Other viewers remove it from the websocket event; removePost ignores
+    // the second call when that event reaches this tab too.
+    useAppStore.getState().removePost(post._id);
+    toast.success("Post deleted");
+  };
 
   const [liked, setLiked] = useState(post.personalizedMeta?.likedByPersona || false);
   const [localLikes, setLocalLikes] = useState(post.meta?.likesCount || 0);
@@ -168,19 +188,20 @@ export function Post({
             </div>
           </div>
 
-          {post.authorId === persona?.id && (
+          {canDelete && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" aria-label="Post options">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
+              {/* Edit was listed here but never wired up; it returns with post editing. */}
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  disabled={isDeleting}
+                  onClick={handleDelete}
+                >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
                 </DropdownMenuItem>

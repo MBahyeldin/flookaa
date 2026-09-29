@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Users,
   Heart,
-  Share2,
   Settings,
   UserPlus,
   HeartOff,
@@ -27,14 +26,16 @@ import { Link, useParams } from "react-router-dom";
 import { useGetChannelQuery, useGetPostsLazyQuery } from "@/generated/graphql";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PostCreator } from "@/components/post-creator";
-import { joinChannel, leaveChannel } from "@/services/channels";
+import { joinChannel, leaveChannel, setFollowing } from "@/services/channels";
 import { toast } from "sonner";
 import { useWebsocketService } from "@/Websocket.context";
 import loadNewPosts from "./subscribe/loadNewPosts";
 import handleChannelEvents from "./subscribe/handleChannelEvents";
-import type { PostEventPayload } from "@/types/Ws";
+import type { ChannelEventPayload, PostEventPayload, WsEventMessage } from "@/types/Ws";
+import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { isCurrentOwner, useAppStore } from "@/stores/AppStore";
 import { formatDateOnly } from "@/utils/formateDate";
+import ModerationSheet from "./ModerationSheet";
 
 export default function ChannelPage() {
   const { id: channelId } = useParams<{ id: string }>();
@@ -64,10 +65,16 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   );
 
   const [newPosts, setNewPosts] = useState<PostEventPayload[]>([]);
+  const [isManaging, setIsManaging] = useState(false);
+  const [membersCount, setMembersCount] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [isFollowPending, setIsFollowPending] = useState(false);
+  const canModerate = channelData?.getChannel?.canModerate || false;
 
   const setOwner = useAppStore((state) => state.setOwner);
   const resetPage = useAppStore((state) => state.resetPage);
   const addPosts = useAppStore((state) => state.addPosts);
+  const setCanModerate = useAppStore((state) => state.setCanModerate);
   const posts = useAppStore((s) => s.posts);
   const storeOwner = useAppStore((s) => s.owner);
   const [showLoadMore, setShowLoadMore] = useState(false);
@@ -139,6 +146,8 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
         return;
       }
       toast.success(isRequested ? "Join request cancelled" : "Successfully left channel");
+      // A cancelled request was never counted.
+      if (isJoined) setMembersCount((n) => Math.max(0, n - 1));
       setIsJoined(false);
       setIsRequested(false);
       return;
@@ -156,12 +165,23 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
       return;
     }
     toast.success("Successfully joined channel");
+    setMembersCount((n) => n + 1);
     setIsJoined(true);
   };
 
-  const handleFollow = (e: React.MouseEvent) => {
+  const handleFollow = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsFollowing(!isFollowing);
+    if (!channelId || isFollowPending) return;
+    const next = !isFollowing;
+    setIsFollowPending(true);
+    const error = await setFollowing(channelId, next);
+    setIsFollowPending(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setIsFollowing(next);
+    setFollowersCount((n) => Math.max(0, n + (next ? 1 : -1)));
   };
 
   /*
@@ -188,11 +208,45 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   useEffect(() => {
     if (!websocketService || !channelId) return;
 
+    /*
+     * Membership changes from other personas. Our own actions (actor_id is
+     * us) already updated this view when the request succeeded, so applying
+     * them again would count them twice.
+     */
+    const onMembershipEvent = (
+      event: WsEventMessage["event"],
+      payload: ChannelEventPayload
+    ) => {
+      const me = useUserProfileStore.getState().persona?.id;
+      if (me != null && Number(event.actor_id) === Number(me)) return;
+      const isMe = me != null && Number(payload.persona_id) === Number(me);
+      const delta = event.action === "create" ? 1 : event.action === "delete" ? -1 : 0;
+
+      switch (event.name) {
+        case "member":
+          setMembersCount((n) => Math.max(0, n + delta));
+          if (isMe && payload.reason === "approved") {
+            setIsJoined(true);
+            setIsRequested(false);
+          }
+          if (isMe && payload.reason === "removed") {
+            setIsJoined(false);
+            toast.info("You were removed from this channel.");
+          }
+          break;
+        case "follower":
+          setFollowersCount((n) => Math.max(0, n + delta));
+          break;
+        // join_request: nothing on this page tracks pending requests live yet.
+      }
+    };
+
     // subscribe
     const unsubscribe = websocketService.subscribeToChannelEvents(
       Number(channelId),
       handleChannelEvents({
         setNewPosts,
+        onMembershipEvent,
       })
     );
 
@@ -217,7 +271,11 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   useEffect(() => {
     setIsJoined(channelData?.getChannel?.isMember || false);
     setIsFollowing(channelData?.getChannel?.isFollower || false);
-  }, [channelData]);
+    setMembersCount(channelData?.getChannel?.membersCount ?? 0);
+    setFollowersCount(channelData?.getChannel?.followersCount ?? 0);
+    // Lets post and comment menus offer Delete on other personas' content.
+    setCanModerate(channelData?.getChannel?.canModerate || false);
+  }, [channelData, setCanModerate]);
 
 
   // Loading, failed and missing are three different things — collapsing them
@@ -339,14 +397,14 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                 <div className="flex items-center space-x-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">
-                    {channelData.getChannel.membersCount ?? 0}
+                    {membersCount}
                   </span>
                   <span className="text-muted-foreground">members</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Heart className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">
-                    {channelData.getChannel.followersCount ?? 0}
+                    {followersCount}
                   </span>
                   <span className="text-muted-foreground">followers</span>
                 </div>
@@ -406,6 +464,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
 
                 <Button
                   onClick={handleFollow}
+                  disabled={isFollowPending}
                   variant={isFollowing ? "secondary" : "outline"}
                   className="flex items-center space-x-2"
                 >
@@ -430,31 +489,31 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                   )}
                 </Button> */}
 
-                {/* Not wired up yet — disabled rather than silently inert, so
-                    they don't look clickable. Drop `disabled` once handled. */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled
-                  aria-label="Share channel"
-                  title="Sharing isn’t available yet"
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled
-                  aria-label="Channel settings"
-                  title="Channel settings aren’t available yet"
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
+                {/* Controls that don't apply to this persona, or aren't built
+                    yet, are left out rather than shown disabled. */}
+                {canModerate && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsManaging(true)}
+                    aria-label="Manage channel"
+                    title="Manage channel"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {canModerate && channelId && (
+          <ModerationSheet
+            channelId={channelId}
+            open={isManaging}
+            onOpenChange={setIsManaging}
+          />
+        )}
 
         <PostCreator />
 
@@ -462,11 +521,6 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-xl font-semibold">Recent Posts</h2>
-            {/* Sorting isn't implemented; disabled so it reads as inactive
-                instead of a button that does nothing when clicked. */}
-            <Button variant="outline" size="sm" disabled title="Sorting isn’t available yet">
-              Sort by Latest
-            </Button>
           </div>
 
           {newPosts.length ? (

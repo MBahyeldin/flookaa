@@ -1,7 +1,7 @@
 // Avatar from ../ui/avatar, not the raw Radix Root: the styled wrapper supplies
 // `overflow-hidden rounded-full`, without which the image isn't clipped to a circle.
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { useCreateLikeMutation, useGetCommentsLazyQuery, type Comment, type GetCommentsQuery, type GetCommentsQueryVariables, type SimpleInput } from "@/generated/graphql";
+import { useCreateLikeMutation, useDeleteCommentMutation, useGetCommentsLazyQuery, type Comment, type GetCommentsQuery, type GetCommentsQueryVariables, type SimpleInput } from "@/generated/graphql";
 import { ChevronDown, ChevronRight, Heart, Loader2, User2 } from "lucide-react";
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import { toast } from "sonner";
@@ -86,6 +86,27 @@ const CommentItem = React.memo(({
             setIsLiking(false);
         }
         setLiked(nextLiked);
+    };
+
+    const [deleteComment, { loading: isDeleting }] = useDeleteCommentMutation();
+    const canModerate = useAppStore((state) => state.canModerate);
+    const canDelete = isOwnComment || canModerate;
+
+    const handleDelete = async () => {
+        if (!comment || !confirm("Delete this comment? This can't be undone.")) return;
+        try {
+            await deleteComment({ variables: { id: comment._id } });
+        } catch (err) {
+            toast.error(
+                CombinedGraphQLErrors.is(err)
+                    ? err.errors[0]?.message || "Couldn’t delete the comment."
+                    : "Couldn’t delete the comment. Check your connection."
+            );
+            return;
+        }
+        // Top-level comments hang off the post, replies off a comment.
+        // removeComment ignores the websocket event's second call.
+        useAppStore.getState().removeComment(comment._id, comment.parentId, isReply ? "COMMENT" : "POST");
     };
 
     const formatedDate = useMemo(() => {
@@ -268,6 +289,15 @@ const CommentItem = React.memo(({
                         >
                             Reply
                         </button>
+                        {canDelete && (
+                            <button
+                                className="hover:text-destructive transition-colors disabled:opacity-60"
+                                onClick={handleDelete}
+                                disabled={isDeleting}
+                            >
+                                Delete
+                            </button>
+                        )}
                         {/* Boolean(...) not `count && count > 0 &&`: with a count of
                             0 that expression returns 0, and React renders a stray "0". */}
                         {Boolean(comment.meta.commentsCount) && (

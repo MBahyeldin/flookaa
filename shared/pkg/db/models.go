@@ -495,6 +495,7 @@ type Event struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	DeletedAt  sql.NullTime
+	ObjectID   string
 }
 
 type Interest struct {

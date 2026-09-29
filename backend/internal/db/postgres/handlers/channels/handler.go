@@ -1,11 +1,15 @@
 package channels
 
-import "shared/pkg/db"
+import (
+	"shared/external/db/nats"
+	"shared/pkg/db"
+)
 
 type Handler struct {
-	q *db.Queries
+	q    *db.Queries
+	nats *nats.NatsHelper
 }
 
-func NewHandler(q *db.Queries) *Handler {
-	return &Handler{q: q}
+func NewHandler(q *db.Queries, nats *nats.NatsHelper) *Handler {
+	return &Handler{q: q, nats: nats}
 }

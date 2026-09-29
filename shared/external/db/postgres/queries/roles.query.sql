@@ -83,3 +83,11 @@ JOIN roles r ON cr.role_id = r.id
 JOIN channel_members cm ON cm.channel_id = cr.channel_id AND cm.persona_id = $2 AND cm.left_at IS NULL AND cm.status = 'active'
 WHERE cr.channel_id = $1
   AND cr.deleted_at IS NULL;
+
+-- -------------------------------
+-- 12. Revoke every role a persona holds in a channel (soft delete)
+-- -------------------------------
+-- name: RevokeChannelRolesForPersona :exec
+UPDATE channel_roles
+SET deleted_at = NOW(), updated_at = NOW()
+WHERE channel_id = $1 AND persona_id = $2 AND deleted_at IS NULL;

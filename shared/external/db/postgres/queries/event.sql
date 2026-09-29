@@ -9,9 +9,10 @@ INSERT INTO events (
     target_type,
     owner,
     owner_id,
-    actor_id
+    actor_id,
+    object_id
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING *;
 
 -- -------------------------------
@@ -61,4 +62,13 @@ SET deleted_at = NOW(), updated_at = NOW()
 WHERE name = 'like'
   AND target_id = $1
   AND actor_id = $2
+  AND deleted_at IS NULL;
+
+--------------------------------
+-- 7. Soft delete the events of a deleted post or comment
+--------------------------------
+-- name: SoftDeleteObjectEvents :execrows
+UPDATE events
+SET deleted_at = NOW(), updated_at = NOW()
+WHERE object_id = $1
   AND deleted_at IS NULL;

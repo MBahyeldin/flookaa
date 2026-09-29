@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/apiFetch";
-import type { Channel } from "@/types/channel";
+import type { Channel, ChannelMember, JoinRequest } from "@/types/channel";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -55,4 +55,56 @@ export async function leaveChannel(channelId: string): Promise<Error | null> {
   } catch (err) {
     return err as Error | null;
   }
+}
+
+/** Follows or unfollows; both are no-ops when already in that state. */
+export async function setFollowing(channelId: string, following: boolean): Promise<Error | null> {
+  try {
+    const action = following ? "follow" : "unfollow";
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/channels/${action}/${channelId}`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!resp.ok) {
+      const body = await resp.json().catch(() => ({}));
+      return new Error(body.error || `Failed to ${action} channel`);
+    }
+    return null;
+  } catch (err) {
+    return err as Error;
+  }
+}
+
+// Moderation: owner, channel moderators and admins only.
+
+async function moderationRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const resp = await apiFetch(`${API_BASE_URL}/api/v1/channels/${path}`, {
+    credentials: "include",
+    ...init,
+  });
+  const body = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(body.error || "Request failed");
+  return body as T;
+}
+
+export async function listJoinRequests(channelId: string): Promise<JoinRequest[]> {
+  const body = await moderationRequest<{ requests: JoinRequest[] }>(`${channelId}/requests`);
+  return body.requests;
+}
+
+export async function resolveJoinRequest(
+  channelId: string,
+  personaId: number,
+  decision: "approve" | "reject"
+): Promise<void> {
+  await moderationRequest(`${channelId}/requests/${personaId}/${decision}`, { method: "POST" });
+}
+
+export async function listMembers(channelId: string): Promise<ChannelMember[]> {
+  const body = await moderationRequest<{ members: ChannelMember[] }>(`${channelId}/members`);
+  return body.members;
+}
+
+export async function removeMember(channelId: string, personaId: number): Promise<void> {
+  await moderationRequest(`${channelId}/members/${personaId}/remove`, { method: "POST" });
 }

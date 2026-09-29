@@ -73,6 +73,7 @@ type ComplexityRoot struct {
 
 	Channel struct {
 		BannerImageURL  func(childComplexity int) int
+		CanModerate     func(childComplexity int) int
 		CreatedAt       func(childComplexity int) int
 		Description     func(childComplexity int) int
 		FollowersCount  func(childComplexity int) int
@@ -153,9 +154,8 @@ type ComplexityRoot struct {
 		CreateComment func(childComplexity int, input models.CommentInput) int
 		CreateLike    func(childComplexity int, input models.LikeInput) int
 		CreatePost    func(childComplexity int, input models.PostInput) int
-		DeleteComment func(childComplexity int, id string, owner models.OwnerInput) int
-		DeletePost    func(childComplexity int, id string, owner models.OwnerInput) int
-		DeleteReply   func(childComplexity int, id string, owner models.OwnerInput) int
+		DeleteComment func(childComplexity int, id string) int
+		DeletePost    func(childComplexity int, id string) int
 	}
 
 	Owner struct {
@@ -377,6 +377,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Channel.BannerImageURL(childComplexity), true
+
+	case "Channel.canModerate":
+		if e.complexity.Channel.CanModerate == nil {
+			break
+		}
+
+		return e.complexity.Channel.CanModerate(childComplexity), true
 
 	case "Channel.createdAt":
 		if e.complexity.Channel.CreatedAt == nil {
@@ -795,7 +802,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteComment(childComplexity, args["id"].(string), args["owner"].(models.OwnerInput)), true
+		return e.complexity.Mutation.DeleteComment(childComplexity, args["id"].(string)), true
 
 	case "Mutation.deletePost":
 		if e.complexity.Mutation.DeletePost == nil {
@@ -807,19 +814,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeletePost(childComplexity, args["id"].(string), args["owner"].(models.OwnerInput)), true
-
-	case "Mutation.deleteReply":
-		if e.complexity.Mutation.DeleteReply == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_deleteReply_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.DeleteReply(childComplexity, args["id"].(string), args["owner"].(models.OwnerInput)), true
+		return e.complexity.Mutation.DeletePost(childComplexity, args["id"].(string)), true
 
 	case "Owner.id":
 		if e.complexity.Owner.ID == nil {
@@ -1695,11 +1690,9 @@ type Mutation {
 
   createLike(input: LikeInput!): Boolean!
 
-  deletePost(id: ObjectId!, owner: OwnerInput!): Boolean!
+  deletePost(id: ObjectId!): Boolean!
 
-  deleteComment(id: ObjectId!, owner: OwnerInput!): Boolean!
-
-  deleteReply(id: ObjectId!, owner: OwnerInput!): Boolean!
+  deleteComment(id: ObjectId!): Boolean!
 }
 
 # Inputs
@@ -1724,6 +1717,7 @@ type Channel {
   followersCount: Int
   isMember: Boolean!
   isFollower: Boolean!
+  canModerate: Boolean!
 }
 
 # Queries

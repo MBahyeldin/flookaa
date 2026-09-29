@@ -82,10 +82,16 @@ func (q *Queries) CreateChannel(ctx context.Context, arg CreateChannelParams) (C
 	return i, err
 }
 
-const followChannel = `-- name: FollowChannel :one
+const followChannel = `-- name: FollowChannel :execrows
 INSERT INTO channel_followers (channel_id, persona_id)
-VALUES ($1, $2)
-RETURNING id, channel_id, persona_id, followed_at, unfollowed_at
+SELECT $1::bigint, $2::bigint
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM channel_followers cf
+    WHERE cf.channel_id = $1::bigint
+      AND cf.persona_id = $2::bigint
+      AND cf.unfollowed_at IS NULL
+)
 `
 
 type FollowChannelParams struct {
@@ -96,17 +102,14 @@ type FollowChannelParams struct {
 // -------------------------------
 // 9. Follow a channel
 // -------------------------------
-func (q *Queries) FollowChannel(ctx context.Context, arg FollowChannelParams) (ChannelFollower, error) {
-	row := q.db.QueryRowContext(ctx, followChannel, arg.ChannelID, arg.PersonaID)
-	var i ChannelFollower
-	err := row.Scan(
-		&i.ID,
-		&i.ChannelID,
-		&i.PersonaID,
-		&i.FollowedAt,
-		&i.UnfollowedAt,
-	)
-	return i, err
+// Inserts only when there is no active follow, so following twice is a
+// no-op (0 rows) rather than a second row.
+func (q *Queries) FollowChannel(ctx context.Context, arg FollowChannelParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, followChannel, arg.ChannelID, arg.PersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const getAllChannels = `-- name: GetAllChannels :many
@@ -227,7 +230,20 @@ SELECT
         WHERE cf.channel_id = c.id 
           AND cf.persona_id = $1 
           AND cf.unfollowed_at IS NULL
-    ) AS is_follower
+    ) AS is_follower,
+    (
+        SELECT COUNT(*)
+        FROM channel_members cm
+        WHERE cm.channel_id = c.id
+          AND cm.left_at IS NULL AND cm.status = 'active'
+    )::int AS members_count,
+    -- DISTINCT: FollowChannel inserts a new row on every follow.
+    (
+        SELECT COUNT(DISTINCT cf.persona_id)
+        FROM channel_followers cf
+        WHERE cf.channel_id = c.id
+          AND cf.unfollowed_at IS NULL
+    )::int AS followers_count
 FROM channels c
 WHERE c.id = $2 AND c.deleted_at IS NULL
 `
@@ -238,20 +254,22 @@ type GetChannelParams struct {
 }
 
 type GetChannelRow struct {
-	ID          int64
-	Name        string
-	Description string
-	Thumbnail   string
-	Banner      string
-	OwnerID     int64
-	Visibility  ChannelVisibilityEnum
-	CreatedAt   sql.NullTime
-	UpdatedAt   sql.NullTime
-	DeletedAt   sql.NullTime
-	IsOwner     bool
-	IsMember    bool
-	IsPending   bool
-	IsFollower  bool
+	ID             int64
+	Name           string
+	Description    string
+	Thumbnail      string
+	Banner         string
+	OwnerID        int64
+	Visibility     ChannelVisibilityEnum
+	CreatedAt      sql.NullTime
+	UpdatedAt      sql.NullTime
+	DeletedAt      sql.NullTime
+	IsOwner        bool
+	IsMember       bool
+	IsPending      bool
+	IsFollower     bool
+	MembersCount   int32
+	FollowersCount int32
 }
 
 // -------------------------------
@@ -275,6 +293,8 @@ func (q *Queries) GetChannel(ctx context.Context, arg GetChannelParams) (GetChan
 		&i.IsMember,
 		&i.IsPending,
 		&i.IsFollower,
+		&i.MembersCount,
+		&i.FollowersCount,
 	)
 	return i, err
 }
@@ -445,6 +465,79 @@ func (q *Queries) GetFollowedChannelsForUser(ctx context.Context, personaID int6
 	return items, nil
 }
 
+const listChannelMembers = `-- name: ListChannelMembers :many
+SELECT
+    cm.persona_id,
+    cm.joined_at,
+    p.name,
+    p.first_name,
+    p.last_name,
+    p.thumbnail,
+    (c.owner_id = cm.persona_id)::boolean AS is_owner,
+    EXISTS (
+        SELECT 1
+        FROM channel_roles cr
+        JOIN roles r ON r.id = cr.role_id
+        WHERE cr.channel_id = cm.channel_id
+          AND cr.persona_id = cm.persona_id
+          AND cr.deleted_at IS NULL
+          AND r.name IN ('moderator', 'Administrator')
+    )::boolean AS is_moderator
+FROM channel_members cm
+JOIN channels c ON c.id = cm.channel_id
+JOIN personas p ON p.id = cm.persona_id
+WHERE cm.channel_id = $1
+  AND cm.left_at IS NULL
+  AND cm.status = 'active'
+ORDER BY (c.owner_id = cm.persona_id) DESC, cm.joined_at
+`
+
+type ListChannelMembersRow struct {
+	PersonaID   int64
+	JoinedAt    sql.NullTime
+	Name        string
+	FirstName   string
+	LastName    string
+	Thumbnail   sql.NullString
+	IsOwner     bool
+	IsModerator bool
+}
+
+// -------------------------------
+// 14. List active members (moderators only)
+// -------------------------------
+func (q *Queries) ListChannelMembers(ctx context.Context, channelID int64) ([]ListChannelMembersRow, error) {
+	rows, err := q.db.QueryContext(ctx, listChannelMembers, channelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListChannelMembersRow
+	for rows.Next() {
+		var i ListChannelMembersRow
+		if err := rows.Scan(
+			&i.PersonaID,
+			&i.JoinedAt,
+			&i.Name,
+			&i.FirstName,
+			&i.LastName,
+			&i.Thumbnail,
+			&i.IsOwner,
+			&i.IsModerator,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listChannels = `-- name: ListChannels :many
 SELECT id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at
 FROM channels
@@ -584,7 +677,7 @@ func (q *Queries) RemoveChannel(ctx context.Context, id int64) (Channel, error) 
 const removeUserFromChannel = `-- name: RemoveUserFromChannel :one
 UPDATE channel_members
 SET left_at = NOW()
-WHERE channel_id = $1 AND persona_id = $2
+WHERE channel_id = $1 AND persona_id = $2 AND left_at IS NULL
 RETURNING id, channel_id, persona_id, joined_at, left_at, status
 `
 
@@ -643,11 +736,10 @@ func (q *Queries) ResolveJoinRequest(ctx context.Context, arg ResolveJoinRequest
 	return i, err
 }
 
-const unfollowChannel = `-- name: UnfollowChannel :one
+const unfollowChannel = `-- name: UnfollowChannel :execrows
 UPDATE channel_followers
 SET unfollowed_at = NOW()
-WHERE channel_id = $1 AND persona_id = $2
-RETURNING id, channel_id, persona_id, followed_at, unfollowed_at
+WHERE channel_id = $1 AND persona_id = $2 AND unfollowed_at IS NULL
 `
 
 type UnfollowChannelParams struct {
@@ -658,17 +750,14 @@ type UnfollowChannelParams struct {
 // -------------------------------
 // 10. Unfollow a channel
 // -------------------------------
-func (q *Queries) UnfollowChannel(ctx context.Context, arg UnfollowChannelParams) (ChannelFollower, error) {
-	row := q.db.QueryRowContext(ctx, unfollowChannel, arg.ChannelID, arg.PersonaID)
-	var i ChannelFollower
-	err := row.Scan(
-		&i.ID,
-		&i.ChannelID,
-		&i.PersonaID,
-		&i.FollowedAt,
-		&i.UnfollowedAt,
-	)
-	return i, err
+// Ends the current follow only; earlier follows keep their unfollowed_at.
+// 0 rows means the persona wasn't following.
+func (q *Queries) UnfollowChannel(ctx context.Context, arg UnfollowChannelParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, unfollowChannel, arg.ChannelID, arg.PersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const updateChannel = `-- name: UpdateChannel :one

@@ -19,5 +19,6 @@ CREATE TABLE events (
     actor_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ NULL
+    deleted_at TIMESTAMPTZ NULL,
+    object_id varchar(255) NOT NULL
 );

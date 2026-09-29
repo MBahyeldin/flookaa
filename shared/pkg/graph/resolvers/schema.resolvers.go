@@ -36,10 +36,8 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 		return nil, fmt.Errorf("failed to marshal content: %w", err)
 	}
 
-	id := fmt.Sprintf("obj_%d_%d", personaId, time.Now().Unix())
-
 	object := &models.PostGenericDocument{
-		ID:       id,
+		ID:       newObjectID(),
 		Type:     models.PostTypePost,
 		ParentID: nil,
 		AuthorID: personaId,
@@ -88,6 +86,7 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 		Owner:      ownerType,
 		OwnerID:    int64(input.Owner.ID),
 		ActorID:    int64(personaId),
+		ObjectID:   object.ID,
 	}
 
 	_, err = r.Queries.CreateEvent(ctx, event)
@@ -141,7 +140,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 	}
 
 	object := &models.PostGenericDocument{
-		ID:                fmt.Sprintf("obj_%d_%d", personaId, time.Now().Unix()),
+		ID:                newObjectID(),
 		Type:              models.PostTypeComment,
 		ParentID:          &input.ParentID,
 		AuthorID:          personaId,
@@ -206,6 +205,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 		Owner:      db.OwnerEnum(owner.Type.String()),
 		OwnerID:    owner.ID,
 		ActorID:    int64(personaId),
+		ObjectID:   object.ID,
 	}
 
 	_, err = r.Queries.CreateEvent(ctx, event)
@@ -286,6 +286,7 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 		Owner:      db.OwnerEnum(owner.Type),
 		OwnerID:    owner.ID,
 		ActorID:    int64(personaId),
+		ObjectID:   input.TargetID,
 	}
 
 	switch action {
@@ -306,7 +307,7 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 
 	var streamName = nats.CONTENT_EVENTS_STREAM
 
-	subjectHelper := subject.New(&streamName, owner, string(db.EventEnumLike), string(db.EventActionEnumCreate))
+	subjectHelper := subject.New(&streamName, owner, string(db.EventEnumLike), string(action))
 
 	// The like is already stored; a failed publish only delays the counter
 	// until the next event on this target or the cache TTL.
@@ -322,18 +323,19 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 }
 
 // DeletePost is the resolver for the deletePost field.
-func (r *mutationResolver) DeletePost(ctx context.Context, id string, owner models.OwnerInput) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeletePost - deletePost"))
+func (r *mutationResolver) DeletePost(ctx context.Context, id string) (bool, error) {
+	if err := r.deleteObject(ctx, id, models.PostTypePost); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // DeleteComment is the resolver for the deleteComment field.
-func (r *mutationResolver) DeleteComment(ctx context.Context, id string, owner models.OwnerInput) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteComment - deleteComment"))
-}
-
-// DeleteReply is the resolver for the deleteReply field.
-func (r *mutationResolver) DeleteReply(ctx context.Context, id string, owner models.OwnerInput) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteReply - deleteReply"))
+func (r *mutationResolver) DeleteComment(ctx context.Context, id string) (bool, error) {
+	if err := r.deleteObject(ctx, id, models.PostTypeComment); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // GetPosts is the resolver for the getPosts field.
@@ -476,6 +478,9 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		Owner:          &ownerPersona,
 		IsMember:       channel.IsMember,
 		IsFollower:     channel.IsFollower,
+		MembersCount:   &channel.MembersCount,
+		FollowersCount: &channel.FollowersCount,
+		CanModerate:    channelAccess.CanModerate,
 	}, nil
 }
 

@@ -22,9 +22,8 @@ type MutationResolver interface {
 	CreatePost(ctx context.Context, input models.PostInput) (*models.PostGenericDocument, error)
 	CreateComment(ctx context.Context, input models.CommentInput) (*models.PostGenericDocument, error)
 	CreateLike(ctx context.Context, input models.LikeInput) (bool, error)
-	DeletePost(ctx context.Context, id string, owner models.OwnerInput) (bool, error)
-	DeleteComment(ctx context.Context, id string, owner models.OwnerInput) (bool, error)
-	DeleteReply(ctx context.Context, id string, owner models.OwnerInput) (bool, error)
+	DeletePost(ctx context.Context, id string) (bool, error)
+	DeleteComment(ctx context.Context, id string) (bool, error)
 }
 type QueryResolver interface {
 	GetPosts(ctx context.Context, owner models.OwnerInput, ids []string, limit *int32, offset *int32) ([]*models.Post, error)
@@ -77,11 +76,6 @@ func (ec *executionContext) field_Mutation_deleteComment_args(ctx context.Contex
 		return nil, err
 	}
 	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "owner", ec.unmarshalNOwnerInput2sharedᚋpkgᚋgraphᚋmodelsᚐOwnerInput)
-	if err != nil {
-		return nil, err
-	}
-	args["owner"] = arg1
 	return args, nil
 }
 
@@ -93,27 +87,6 @@ func (ec *executionContext) field_Mutation_deletePost_args(ctx context.Context, 
 		return nil, err
 	}
 	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "owner", ec.unmarshalNOwnerInput2sharedᚋpkgᚋgraphᚋmodelsᚐOwnerInput)
-	if err != nil {
-		return nil, err
-	}
-	args["owner"] = arg1
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_deleteReply_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNObjectId2string)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "owner", ec.unmarshalNOwnerInput2sharedᚋpkgᚋgraphᚋmodelsᚐOwnerInput)
-	if err != nil {
-		return nil, err
-	}
-	args["owner"] = arg1
 	return args, nil
 }
 
@@ -808,6 +781,35 @@ func (ec *executionContext) _Channel_isFollower(ctx context.Context, field graph
 }
 
 func (ec *executionContext) fieldContext_Channel_isFollower(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Channel_canModerate(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_canModerate,
+		func(ctx context.Context) (any, error) {
+			return obj.CanModerate, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_canModerate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Channel",
 		Field:      field,
@@ -1716,7 +1718,7 @@ func (ec *executionContext) _Mutation_deletePost(ctx context.Context, field grap
 		ec.fieldContext_Mutation_deletePost,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().DeletePost(ctx, fc.Args["id"].(string), fc.Args["owner"].(models.OwnerInput))
+			return ec.resolvers.Mutation().DeletePost(ctx, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalNBoolean2bool,
@@ -1757,7 +1759,7 @@ func (ec *executionContext) _Mutation_deleteComment(ctx context.Context, field g
 		ec.fieldContext_Mutation_deleteComment,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().DeleteComment(ctx, fc.Args["id"].(string), fc.Args["owner"].(models.OwnerInput))
+			return ec.resolvers.Mutation().DeleteComment(ctx, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalNBoolean2bool,
@@ -1784,47 +1786,6 @@ func (ec *executionContext) fieldContext_Mutation_deleteComment(ctx context.Cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteComment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_deleteReply(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_deleteReply,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().DeleteReply(ctx, fc.Args["id"].(string), fc.Args["owner"].(models.OwnerInput))
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_deleteReply(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_deleteReply_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3320,6 +3281,8 @@ func (ec *executionContext) fieldContext_Query_getChannel(ctx context.Context, f
 				return ec.fieldContext_Channel_isMember(ctx, field)
 			case "isFollower":
 				return ec.fieldContext_Channel_isFollower(ctx, field)
+			case "canModerate":
+				return ec.fieldContext_Channel_canModerate(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Channel", field.Name)
 		},
@@ -3887,6 +3850,11 @@ func (ec *executionContext) _Channel(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "canModerate":
+			out.Values[i] = ec._Channel_canModerate(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4168,13 +4136,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteComment":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteComment(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "deleteReply":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_deleteReply(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

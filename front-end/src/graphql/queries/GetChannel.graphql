@@ -18,6 +18,7 @@ query GetChannel($id: Int64!) {
     }
     isMember
     isFollower
+    canModerate
     membersCount
     followersCount
   }

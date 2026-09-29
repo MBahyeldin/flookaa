@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	"shared/external/db/nats"
 	"shared/pkg/access"
 	"shared/pkg/db"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,7 +44,7 @@ func (h *Handler) ListJoinRequests(c *gin.Context) {
 			FirstName:   row.FirstName,
 			LastName:    row.LastName,
 			Thumbnail:   row.Thumbnail.String,
-			RequestedAt: row.RequestedAt.Time.String(),
+			RequestedAt: row.RequestedAt.Time.Format(time.RFC3339),
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{"requests": requests})
@@ -82,6 +84,14 @@ func (h *Handler) resolveJoinRequest(c *gin.Context, status db.ChannelMembership
 		return
 	}
 
+	moderatorId, _ := auth.PersonaID(c)
+	ctx := c.Request.Context()
+	if status == db.ChannelMembershipStatusEnumActive {
+		h.publish(ctx, channelId, moderatorId, nats.EventJoinRequest, db.EventActionEnumDelete, requesterId, nats.ReasonApproved)
+		h.publish(ctx, channelId, moderatorId, nats.EventMember, db.EventActionEnumCreate, requesterId, nats.ReasonApproved)
+	} else {
+		h.publish(ctx, channelId, moderatorId, nats.EventJoinRequest, db.EventActionEnumDelete, requesterId, nats.ReasonRejected)
+	}
 	c.JSON(http.StatusOK, gin.H{"status": string(status)})
 }
 

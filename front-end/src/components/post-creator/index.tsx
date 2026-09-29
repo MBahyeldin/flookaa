@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ImageIcon, Smile, Calendar, User2, Loader2 } from "lucide-react";
+import { User2, Loader2 } from "lucide-react";
 import { useCreatePostMutation } from "@/generated/graphql";
 import { type PortableTextObject, type PortableTextSpan, type PortableTextTextBlock } from "@portabletext/editor";
 import { useActorRef } from "@xstate/react";
@@ -118,45 +118,8 @@ export function PostCreator() {
             setValue={setBlocks}
           />
 
-          {/* flex-wrap: this row doesn't fit a phone viewport in one line */}
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 pt-3 border-border">
-            <div className="flex flex-wrap items-center gap-2">
-              {/* These three have no handlers yet — disabled so they don't
-                  present as working controls. Drop `disabled` once wired. */}
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled
-                title="Adding photos isn’t available yet"
-                className="text-foreground hover:text-foreground/80"
-              >
-                <ImageIcon className="h-4 w-4 mr-1" />
-                Photo
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled
-                title="Emoji picker isn’t available yet"
-                className="text-foreground hover:text-foreground/80"
-              >
-                <Smile className="h-4 w-4 mr-1" />
-                Emoji
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled
-                title="Scheduling isn’t available yet"
-                className="text-foreground hover:text-foreground/80"
-              >
-                <Calendar className="h-4 w-4 mr-1" />
-                Schedule
-              </Button>
-            </div>
-
-            {/* ml-auto pins the counter + Post to the right even when the
-                left group wraps onto its own line. */}
+            {/* ml-auto keeps the counter + Post on the right. */}
             <div className="ml-auto flex items-center gap-2">
               <span
                 className={`text-sm ${

@@ -100,6 +100,7 @@ type Channel struct {
 	FollowersCount  *int32    `json:"followersCount,omitempty"`
 	IsMember        bool      `json:"isMember"`
 	IsFollower      bool      `json:"isFollower"`
+	CanModerate     bool      `json:"canModerate"`
 }
 
 type Comment struct {
