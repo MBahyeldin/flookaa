@@ -7,6 +7,8 @@ import AppLoader from "@/components/app-loader";
 import { ToggleTheme } from "@/components/toggle-theme";
 import VerifyEmailPage from "@/pages/verify-email";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
+import NotificationBell from "@/components/notifications/NotificationBell";
+import useNotificationsRealtime from "@/hooks/useNotificationsRealtime";
 
 export default function DashboardLayout({
   children,
@@ -17,6 +19,8 @@ export default function DashboardLayout({
 
   const { persona, user } = useUserProfileStore();
   const { isFetchCurrentPersonaLoading, isFetchAllPersonasLoading } = useLoading();
+  // Before the early returns: hooks must run on every render.
+  useNotificationsRealtime(user?.is_verified ? persona?.id : undefined);
 
   if (isFetchCurrentPersonaLoading || isFetchAllPersonasLoading) {
     return <AppLoader />;
@@ -48,8 +52,12 @@ export default function DashboardLayout({
         </main>
       </div>
 
-      {/* Fixed top-right ToggleTheme */}
-      <div className="fixed top-4 right-4 z-50">
+      {/*
+        Fixed top-right bell + ToggleTheme. On mobile this sits over the right
+        end of the sticky header, so the bell is reachable there too.
+      */}
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-4">
+        <NotificationBell />
         <ToggleTheme />
       </div>
     </SidebarProvider>

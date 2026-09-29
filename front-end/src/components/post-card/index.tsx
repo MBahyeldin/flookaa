@@ -37,12 +37,15 @@ import displayBlockComponents from "../portable-text/displayBlocks";
 export function Post({
   post,
   isNew = false,
+  initialShowComments = false,
 }: {
   post: Post;
   /** Arrived after the feed rendered — plays the entrance animation once. */
   isNew?: boolean;
+  /** Start with comments expanded (e.g. opened from a notification). */
+  initialShowComments?: boolean;
 }) {
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(initialShowComments);
   const { persona } = useUserProfileStore();
   const { blockObjectsProvider } = useBlockObjectsProvider();
   const owner = useAppStore((state) => state.owner);

@@ -8,6 +8,7 @@ import ChannelsPage from "@/pages/(dashboard)/channels";
 import CreateChannelPage from "@/pages/(dashboard)/channels/create";
 import VerifyEmailPage from "@/pages/verify-email";
 import PersonaManagerPage from "@/pages/(dashboard)/persona-manager";
+import NotificationsPage from "@/pages/(dashboard)/notifications";
 
 export default function AppRouter() {
   return (
@@ -31,6 +32,8 @@ export default function AppRouter() {
       <Route path="/verify-email" element={<VerifyEmailPage />} />
 
       <Route path="/persona-manager" element={<PersonaManagerPage />} />
+
+      <Route path="/notifications" element={<NotificationsPage />} />
     </Routes>
   );
 }

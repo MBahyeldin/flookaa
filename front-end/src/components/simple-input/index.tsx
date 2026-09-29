@@ -363,6 +363,7 @@ export default function SimpleInputComponent({ onSend, avatar }: {
                                     setCommentType("TEXT");
                                 }}
                                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                                          disabled={isSending}
                                 /* min-w-0: an <input> has an intrinsic default size
                                    (~20ch) that flex-1 alone won't shrink past. */
                                 className="flex-1 min-w-0 bg-transparent rounded-full px-4 py-2 text-sm border border-muted focus:outline-none focus:ring-2 focus:ring-primary/20"

@@ -15,6 +15,9 @@ export default class WebSocketService {
     private ws: WebSocket | null = null;
     private listeners = new Map<string, Set<MessageListener>>();
     private queuedMessages: WsMessage<any>[] = [];
+    // The default subscription (the persona's direct_messages, notifications
+    // and alerts). Stable, so feature code can listen to it by id.
+    private readonly defaultSubscriptionId = crypto.randomUUID();
 
     // 🔹 Singleton accessor
     public static getInstance(): WebSocketService {
@@ -109,10 +112,10 @@ export default class WebSocketService {
 
     // 🔹 Default subscription (optional)
     subscribeToDefaultChannel() {
-        const id = crypto.randomUUID();
+        const id = this.defaultSubscriptionId;
 
         // No-op: this subscription exists to register the default channel with
-        // the server. Feature-specific handlers subscribe separately.
+        // the server. Features listen through subscribeToDefaultEvents.
         const cb = () => {};
         this.subscribe(id, cb);
 
@@ -139,6 +142,13 @@ export default class WebSocketService {
                 if (set.size === 0) this.listeners.delete(id);
             }
         };
+    }
+
+    // 🔹 Frames of the default subscription (notifications, alerts, ...).
+    // The persona is fixed for the socket's life: switching persona reloads
+    // the page, which opens a new socket.
+    subscribeToDefaultEvents(callback: MessageListener) {
+        return this.subscribe(this.defaultSubscriptionId, callback);
     }
 
     // 🔹 Logical wrapper for channel events

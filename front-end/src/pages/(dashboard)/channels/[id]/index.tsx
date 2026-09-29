@@ -36,6 +36,7 @@ import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { isCurrentOwner, useAppStore } from "@/stores/AppStore";
 import { formatDateOnly } from "@/utils/formateDate";
 import ModerationSheet from "./ModerationSheet";
+import PostDialog from "./PostDialog";
 
 export default function ChannelPage() {
   const { id: channelId } = useParams<{ id: string }>();
@@ -563,6 +564,9 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
             </Button>
           </div>
         }
+
+        {/* ?post=<id> from a notification */}
+        <PostDialog channelId={channelId} isStoreOnThisChannel={isStoreOnThisChannel} />
       </div>
     </div >
   );

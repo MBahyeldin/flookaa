@@ -17,9 +17,12 @@ type EventType =
   | "member"
   | "follower"
   | "join_request"
+  // Per persona (STREAM_USER_EVENTS, default subscription); payload is
+  // NotificationPayload. Only the id: refetch over REST.
+  | "notifications"
   | "*";
 type EventActionType = "create" | "update" | "delete" | "*";
-type EventOwnerType = "CHANNEL" | "USER";
+type EventOwnerType = "CHANNEL" | "USER" | "PERSONA";
 
 type SubscribeChannelPayload = {
   event: EventType;
@@ -42,12 +45,14 @@ type Event = {
   owner: EventOwnerType;
   owner_id: number;
   actor_id: number;
+  /** Author of the target, on comment/like events (for the notifier). */
+  recipient_id?: number;
   timestamp: number;
 };
 
 type WsEventMessage = {
   event: Event;
-  payload: Comment | PostEventPayload | ChannelEventPayload;
+  payload: Comment | PostEventPayload | ChannelEventPayload | NotificationPayload;
 };
 
 /**
@@ -67,6 +72,11 @@ type ChannelEventPayload = {
     | "removed"
     | "followed"
     | "unfollowed";
+};
+
+/** Payload of notifications.create / notifications.delete. */
+type NotificationPayload = {
+  notification_id: number;
 };
 
 type PostEventPayload = {
@@ -90,6 +100,7 @@ export type {
   EventActionType,
   PostEventPayload,
   ChannelEventPayload,
+  NotificationPayload,
   EventOwnerType,
   WsEventMessage,
 };

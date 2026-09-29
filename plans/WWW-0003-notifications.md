@@ -12,7 +12,7 @@ buildable and is reviewed and committed by hand before the next one starts.
 | 3. `notifier/` service | done |
 | 4. Infrastructure (ansible) | done, not run yet |
 | 5. REST API | done |
-| 6. Frontend (+ `post_id` in `data`) | 6a backend done; 6b frontend next |
+| 6. Frontend (+ `post_id` in `data`, channel names) | done: 6a + channel names committed; 6b written, not committed |
 | 7. Docs | done |
 
 ## Decisions
@@ -291,17 +291,27 @@ Decisions (2026-09-29):
 - Rows written before this deploy have no `post_id`; the UI links them to the channel. Deploy: backend + notifier.
 - Verified with the notifier end-to-end harness (30 checks, including `data.post_id` stored, kept, and absent on membership rows). `threadPostID` wasn't run against Mongo: there was no local Mongo.
 
+**6a+. Backend: channel names at read time**
+- Notification text needs channel names. Names can be edited, so they can't go in `data`.
+- The list response gets `channel: {id, name, thumbnail} | null`: the scope channel for content kinds, the subject channel for membership kinds. It's looked up with one batched `ListChannelSummaries` query per page, like `latest_actor`, and is null for a deleted channel.
+
 **6b. Frontend**
-- **Data:** `src/types/notification.ts` and `src/services/notifications.ts` (list, unread count, read, read-all via `apiFetch`), plus `src/stores/NotificationStore.ts` (Zustand: unread count, first page for the popover).
-- **Realtime:** the default WS subscription (`subscribeToDefaultChannel`, currently a no-op callback) dispatches `notifications.create|delete` frames to the store. The store refetches the unread count, and the first page if it's loaded. It resets on persona change.
-- **Components:** `components/notifications/`:
-  - the bell with its badge;
-  - the popover list;
-  - one item renderer per kind ("Bob and 2 others liked your post", "Dee asked to join <channel>", …) with avatar and relative time;
-  - the `/notifications` page, which pages until `next_cursor` is null (pages can be short or empty).
-- **Deep link:** the channel page reads `?post=`, fetches that post with `GetPosts(ids: [post])`, and opens it in a dialog with comments expanded. Closing the dialog clears the query param. Scrolling to or highlighting the exact comment is **out of v1**: comments load lazily and replies start collapsed.
-- Kinds the UI can't render aren't rendered. No disabled placeholders.
-- `pnpm lint` + `pnpm build`. Remember `tsc-check` only fails on `.tsx` errors.
+- **Data:** `types/notification.ts` and `services/notifications.ts` (list, unread count, read, read-all via `apiFetch`).
+- **Store:** `stores/NotificationStore.ts` (Zustand) holds:
+  - `unreadCount`;
+  - `recent`, the popover's list, null until first opened;
+  - `version`, bumped on every realtime frame and on mark-all-read, so open lists reload;
+  - optimistic `markRead` / `markAllRead`;
+  - request counters so a stale response can't overwrite a newer one.
+- **Realtime:** `ws/index.tsx` gets a stable default-subscription id and `subscribeToDefaultEvents(cb)`. `hooks/useNotificationsRealtime` is mounted in `DashboardLayout`, before the early returns. It loads the unread count and refreshes on `notifications.*` frames; it's keyed by persona and resets on unmount. Switching persona reloads the page, so the socket is always the current persona's.
+- **Components** in `components/notifications/`:
+  - `describe.ts`: text and link per kind, or null for unknown kinds, which aren't rendered. Content kinds link to `/channels/<scope>?post=<data.post_id>` (plus `&comment=<id>` for comment subjects), or just the channel when `post_id` is missing. Membership kinds link to `/channels/<id>`.
+  - `NotificationItem`: avatar, text, relative time and an unread dot. Clicking marks it read and navigates.
+  - `NotificationBell`: the popover with the latest 10, "Mark all read" (only rendered when there's something unread) and "See all".
+- **Bell placement:** in the fixed top-right container next to `ToggleTheme`. On mobile that container sits over the right end of the sticky header, so one bell serves both and there's no second copy in the header.
+- **`/notifications` page:** a "Load more" button (the channel feed's pattern, not scroll-triggered). It keeps fetching through empty pages, up to 5, until something renderable arrives or `next_cursor` is null. It reloads from the top when `version` changes.
+- **Deep link:** `channels/[id]/PostDialog.tsx` reads `?post=`. Once the store is on the channel, it fetches the post with `GetPosts(ids: [post])`, adds it to the page store (so likes and comments stay live; it also appears in the feed), and opens it in a dialog with `Post initialShowComments`. A missing post shows "This post is no longer available". Closing the dialog removes `post` and `comment` from the URL. `?comment=` is carried but unused (out of v1).
+- **Checked:** `pnpm lint` on the changed files is clean, `pnpm build` passes, and `tsc -b` shows no errors in the changed files (its existing `.ts` errors are elsewhere). Not clicked through in a browser: the dev server needs the LXD dev backend and a login.
 
 ### Step 7: Docs
 
