@@ -146,7 +146,7 @@ Rules live in one place, `shared/pkg/access` (`LoadChannel` → `CanRead`/`CanWr
 | post / comment / like | active members | active members |
 | join | immediate (`status = 'active'`) | pending request; owner, channel moderators, or global Administrators approve via `/channels/:id/requests/...` |
 
-Membership is `channel_members` with `left_at IS NULL AND status = 'active'` — every membership query must filter on both. Non-readers get 404 / `channel not found`, never 403, so private channels don't leak existence of content. For existing objects (comments, likes) resolvers authorize and publish against the owner **stored on the Mongo document** (`loadObject` → `authorizeOwner`), never the client's `owner` input. Persona-owned content (`OwnerTypePersona`) is not restricted yet.
+Membership is `channel_members` with `left_at IS NULL AND status = 'active'` — every membership query must filter on both. Non-readers get 404 / `channel not found`, never 403, so private channels don't leak existence of content. For existing objects (comments, likes) resolvers authorize and publish against the owner **stored on the Mongo document** (`loadObject` → `authorizeOwner`), never the client's `owner` input. Only channel-owned content is supported: `authorizeOwner` refuses any other owner type (`PERSONA`, `PAGE`) as not found until those get access rules.
 
 ### Counters: Postgres is the source of truth, Redis is a cache
 

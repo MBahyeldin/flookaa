@@ -65,13 +65,12 @@ func (r *Resolver) loadObject(ctx context.Context, id string) (*models.PostGener
 // true) content owned by owner. Callers must pass the owner stored on the
 // object, never the client's owner input, when the object already exists.
 //
-// Only channel-owned content is restricted here; see shared/pkg/access.
+// Only channel-owned content is supported (rules in shared/pkg/access). Other
+// owner types (PERSONA, PAGE) have no access rules yet, so they are refused
+// rather than left open to every persona.
 func (r *Resolver) authorizeOwner(ctx context.Context, owner *models.Owner, personaID int64, write bool) error {
-	if owner == nil {
+	if owner == nil || owner.Type != models.OwnerTypeChannel {
 		return errObjectNotFound
-	}
-	if owner.Type != models.OwnerTypeChannel {
-		return nil
 	}
 	channel, err := access.LoadChannel(ctx, r.Queries, owner.ID, personaID)
 	if err != nil {
