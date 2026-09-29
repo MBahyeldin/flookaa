@@ -13,6 +13,8 @@ type Channel = {
   is_pending: boolean;
   is_follower: boolean;
   visibility: "public" | "private";
+  members_count: number;
+  followers_count: number;
 };
 
 /** A pending request to join a private channel (moderators only). */

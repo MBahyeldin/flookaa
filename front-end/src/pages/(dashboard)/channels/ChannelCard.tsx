@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import type { Channel } from "@/types/channel";
-import { joinChannel, leaveChannel } from "@/services/channels";
+import { joinChannel, leaveChannel, setFollowing as saveFollowing } from "@/services/channels";
 import { toast } from "sonner";
 
 interface ChannelCardProps {
@@ -20,8 +20,9 @@ export function ChannelCard({ channel }: ChannelCardProps) {
   const [pending, setPending] = useState(channel.is_pending || false);
   const [following, setFollowing] = useState(channel.is_follower || false);
   const isPrivate = channel.visibility === "private";
-  const [localMemberCount, setLocalMemberCount] = useState(200);
-  const [, setLocalFollowerCount] = useState(300);
+  const [localMemberCount, setLocalMemberCount] = useState(channel.members_count ?? 0);
+  const [localFollowerCount, setLocalFollowerCount] = useState(channel.followers_count ?? 0);
+  const [isFollowPending, setIsFollowPending] = useState(false);
 
   const handleJoin = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -33,7 +34,7 @@ export function ChannelCard({ channel }: ChannelCardProps) {
         return;
       }
       toast.success(pending ? "Join request cancelled" : "Successfully left channel");
-      if (joined) setLocalMemberCount((prev) => prev - 1);
+      if (joined) setLocalMemberCount((prev) => Math.max(0, prev - 1));
       setJoined(false);
       setPending(false);
       return;
@@ -54,10 +55,19 @@ export function ChannelCard({ channel }: ChannelCardProps) {
     setLocalMemberCount((prev) => prev + 1);
   };
 
-  const handleFollow = (e: React.MouseEvent) => {
+  const handleFollow = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setFollowing(!following);
-    setLocalFollowerCount((prev) => (following ? prev - 1 : prev + 1));
+    if (isFollowPending) return;
+    const next = !following;
+    setIsFollowPending(true);
+    const error = await saveFollowing(channel.id, next);
+    setIsFollowPending(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setFollowing(next);
+    setLocalFollowerCount((prev) => Math.max(0, prev + (next ? 1 : -1)));
   };
 
   return (
@@ -66,7 +76,7 @@ export function ChannelCard({ channel }: ChannelCardProps) {
         <Link to={`/channels/${channel.id}`}>
           <ImageWithFallback
             src={channel.thumbnail || "/placeholder.svg"}
-            alt={`${name} channel`}
+            alt={`${channel.name} channel`}
             className="w-full h-full object-cover transform hover:scale-105 transition-transform"
           />
         </Link>
@@ -106,7 +116,7 @@ export function ChannelCard({ channel }: ChannelCardProps) {
               </div>
               <div className="flex items-center space-x-1">
                 <Heart className="h-4 w-4" />
-                <span>200</span>
+                <span>{localFollowerCount.toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -136,6 +146,8 @@ export function ChannelCard({ channel }: ChannelCardProps) {
               variant={following ? "secondary" : "outline"}
               size="sm"
               onClick={handleFollow}
+              disabled={isFollowPending}
+              aria-label={following ? "Unfollow channel" : "Follow channel"}
               className="flex items-center space-x-1"
             >
               {following ? (
