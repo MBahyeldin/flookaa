@@ -14,6 +14,10 @@ import (
 // channel handles STREAM_CHANNEL_EVENTS: join requests notify the channel's
 // moderators, and approvals and removals notify the persona concerned.
 // Joins, leaves, follows, rejections and cancellations notify nobody.
+//
+// The subject is the channel and there is no scope: these are about the
+// recipient's own relationship to the channel, so they show even when the
+// recipient can't read it (e.g. just removed from a private channel).
 func (w *Worker) channel(ctx context.Context, m message, eventAt time.Time) error {
 	e := m.Event
 	var payload shared_nats.ChannelEventPayload
@@ -36,8 +40,7 @@ func (w *Worker) channel(ctx context.Context, m message, eventAt time.Time) erro
 			if err := w.notify(ctx, notification{
 				recipientID: moderatorID,
 				kind:        db.NotificationKindEnumJoinRequest,
-				key:         key,
-				channelID:   channelID,
+				subjectID:   key,
 			}, e.ActorID, eventAt); err != nil {
 				return err
 			}
@@ -53,8 +56,7 @@ func (w *Worker) channel(ctx context.Context, m message, eventAt time.Time) erro
 		return w.notify(ctx, notification{
 			recipientID: payload.PersonaID,
 			kind:        db.NotificationKindEnumRequestApproved,
-			key:         key,
-			channelID:   channelID,
+			subjectID:   key,
 			actorID:     &actorID,
 		}, e.ActorID, eventAt)
 
@@ -63,8 +65,7 @@ func (w *Worker) channel(ctx context.Context, m message, eventAt time.Time) erro
 		return w.notify(ctx, notification{
 			recipientID: payload.PersonaID,
 			kind:        db.NotificationKindEnumRemovedFromChannel,
-			key:         key,
-			channelID:   channelID,
+			subjectID:   key,
 			actorID:     &actorID,
 		}, e.ActorID, eventAt)
 	}

@@ -47,6 +47,10 @@ func NewWorker(nats *shared_nats.NatsHelper, q *db.Queries) *Worker {
 // Run attaches one durable consumer per source stream (a consumer cannot
 // span streams) and starts processing. Stop the returned ConsumeContexts on
 // shutdown.
+//
+// A future source on STREAM_USER_EVENTS (friend or follow requests) must use
+// specific FilterSubjects, never "STREAM_USER_EVENTS.>": the notifier
+// publishes its own notifications.* frames there and must not consume them.
 func (w *Worker) Run(ctx context.Context) ([]jetstream.ConsumeContext, error) {
 	sources := []struct {
 		stream  string
@@ -83,9 +87,6 @@ func (w *Worker) consume(ctx context.Context, stream, durable string, handle han
 		Durable:       durable,
 		FilterSubject: stream + ".>",
 		AckPolicy:     jetstream.AckExplicitPolicy,
-		// On first creation start from now: events published before the
-		// backend set recipient_id cannot be attributed. Afterwards the
-		// durable position is kept.
 		DeliverPolicy: jetstream.DeliverNewPolicy,
 		AckWait:       30 * time.Second,
 		MaxDeliver:    maxDeliver,

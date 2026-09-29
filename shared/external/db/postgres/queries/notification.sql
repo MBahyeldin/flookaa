@@ -9,9 +9,12 @@ INSERT INTO notifications (
     recipient_id,
     kind,
     group_key,
-    object_id,
-    channel_id,
+    subject_type,
+    subject_id,
+    scope_type,
+    scope_id,
     actor_id,
+    data,
     last_event_at,
     updated_at
 )
@@ -19,14 +22,18 @@ VALUES (
     sqlc.arg(recipient_id)::bigint,
     sqlc.arg(kind)::notification_kind_enum,
     sqlc.arg(group_key)::varchar,
-    sqlc.narg(object_id)::varchar,
-    sqlc.arg(channel_id)::bigint,
+    sqlc.arg(subject_type)::notification_subject_enum,
+    sqlc.arg(subject_id)::varchar,
+    sqlc.narg(scope_type)::notification_scope_enum,
+    sqlc.narg(scope_id)::bigint,
     sqlc.narg(actor_id)::bigint,
+    sqlc.narg(data)::jsonb,
     sqlc.arg(event_at)::timestamptz,
     sqlc.arg(event_at)::timestamptz
 )
 ON CONFLICT (recipient_id, group_key) DO UPDATE
 SET actor_id = EXCLUDED.actor_id,
+    data = EXCLUDED.data,
     last_event_at = EXCLUDED.last_event_at,
     updated_at = EXCLUDED.updated_at,
     read_at = NULL,
@@ -58,13 +65,26 @@ WHERE group_key = sqlc.arg(group_key)::varchar
   AND deleted_at IS NULL;
 
 -- -------------------------------
--- 3. Remove everything about a deleted post or comment
+-- 3. Remove everything about a subject that went away (deleted post, comment, ...)
 -- -------------------------------
--- name: SoftDeleteNotificationsByObject :many
+-- name: SoftDeleteNotificationsBySubject :many
 UPDATE notifications
 SET deleted_at = NOW(),
     last_event_at = GREATEST(last_event_at, sqlc.arg(event_at)::timestamptz)
-WHERE object_id = sqlc.arg(object_id)::varchar
+WHERE subject_type = sqlc.arg(subject_type)::notification_subject_enum
+  AND subject_id = sqlc.arg(subject_id)::varchar
+  AND deleted_at IS NULL
+RETURNING id, recipient_id;
+
+-- -------------------------------
+-- 3.1 Remove everything inside a scope that went away (deleted channel)
+-- -------------------------------
+-- name: SoftDeleteNotificationsByScope :many
+UPDATE notifications
+SET deleted_at = NOW(),
+    last_event_at = GREATEST(last_event_at, sqlc.arg(event_at)::timestamptz)
+WHERE scope_type = sqlc.arg(scope_type)::notification_scope_enum
+  AND scope_id = sqlc.arg(scope_id)::bigint
   AND deleted_at IS NULL
 RETURNING id, recipient_id;
 
@@ -72,13 +92,12 @@ RETURNING id, recipient_id;
 -- 4. A persona's notifications, newest first
 -- -------------------------------
 -- Keyset paged: pass the last row's (updated_at, id) as the cursor, or NULLs
--- for the first page. Content notifications of a private channel are hidden
--- while the persona is not an active member (same rule as access.CanRead);
--- membership kinds always show.
+-- for the first page. Visibility is one rule per scope type; rows without a
+-- scope are personal and always visible. CHANNEL mirrors access.CanRead:
+-- public, or the recipient is an active member.
 -- name: ListNotifications :many
 SELECT n.*
 FROM notifications n
-JOIN channels c ON c.id = n.channel_id AND c.deleted_at IS NULL
 WHERE n.recipient_id = sqlc.arg(recipient_id)::bigint
   AND n.deleted_at IS NULL
   AND (
@@ -86,15 +105,23 @@ WHERE n.recipient_id = sqlc.arg(recipient_id)::bigint
       OR (n.updated_at, n.id) < (sqlc.narg(cursor_updated_at)::timestamptz, sqlc.narg(cursor_id)::bigint)
   )
   AND (
-      n.kind IN ('join_request', 'request_approved', 'removed_from_channel')
-      OR c.visibility = 'public'
-      OR EXISTS (
+      n.scope_type IS NULL
+      OR (n.scope_type = 'CHANNEL' AND EXISTS (
           SELECT 1
-          FROM channel_members cm
-          WHERE cm.channel_id = n.channel_id
-            AND cm.persona_id = n.recipient_id
-            AND cm.left_at IS NULL AND cm.status = 'active'
-      )
+          FROM channels c
+          WHERE c.id = n.scope_id
+            AND c.deleted_at IS NULL
+            AND (
+                c.visibility = 'public'
+                OR EXISTS (
+                    SELECT 1
+                    FROM channel_members cm
+                    WHERE cm.channel_id = c.id
+                      AND cm.persona_id = n.recipient_id
+                      AND cm.left_at IS NULL AND cm.status = 'active'
+                )
+            )
+      ))
   )
 ORDER BY n.updated_at DESC, n.id DESC
 LIMIT sqlc.arg(page_size)::int;
@@ -102,24 +129,31 @@ LIMIT sqlc.arg(page_size)::int;
 -- -------------------------------
 -- 5. Unread badge
 -- -------------------------------
--- Same visibility filter as ListNotifications.
+-- Same visibility rules as ListNotifications.
 -- name: CountUnreadNotifications :one
 SELECT COUNT(*)
 FROM notifications n
-JOIN channels c ON c.id = n.channel_id AND c.deleted_at IS NULL
 WHERE n.recipient_id = sqlc.arg(recipient_id)::bigint
   AND n.deleted_at IS NULL
   AND n.read_at IS NULL
   AND (
-      n.kind IN ('join_request', 'request_approved', 'removed_from_channel')
-      OR c.visibility = 'public'
-      OR EXISTS (
+      n.scope_type IS NULL
+      OR (n.scope_type = 'CHANNEL' AND EXISTS (
           SELECT 1
-          FROM channel_members cm
-          WHERE cm.channel_id = n.channel_id
-            AND cm.persona_id = n.recipient_id
-            AND cm.left_at IS NULL AND cm.status = 'active'
-      )
+          FROM channels c
+          WHERE c.id = n.scope_id
+            AND c.deleted_at IS NULL
+            AND (
+                c.visibility = 'public'
+                OR EXISTS (
+                    SELECT 1
+                    FROM channel_members cm
+                    WHERE cm.channel_id = c.id
+                      AND cm.persona_id = n.recipient_id
+                      AND cm.left_at IS NULL AND cm.status = 'active'
+                )
+            )
+      ))
   );
 
 -- -------------------------------
@@ -206,3 +240,12 @@ WHERE channel_id = ANY(sqlc.arg(channel_ids)::bigint[])
   AND left_at IS NULL
   AND status = 'pending'
 GROUP BY channel_id;
+
+-- -------------------------------
+-- 10. Kinds the database knows
+-- -------------------------------
+-- Services check at startup that each one has a spec in
+-- shared/pkg/notifications, so a migration adding a kind can't go live
+-- without its behaviour.
+-- name: ListNotificationKinds :many
+SELECT unnest(enum_range(NULL::notification_kind_enum))::text AS kind;

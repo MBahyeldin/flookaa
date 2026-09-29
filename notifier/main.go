@@ -11,6 +11,7 @@ import (
 	"shared/external/db/nats"
 	"shared/external/db/postgres"
 	"shared/pkg/db"
+	"shared/pkg/notifications"
 	"syscall"
 )
 
@@ -39,7 +40,12 @@ func main() {
 	}
 	defer natsHelper.Close()
 
-	consumeCtxs, err := internal.NewWorker(natsHelper, db.New(pg)).Run(ctx)
+	q := db.New(pg)
+	if err := notifications.Check(ctx, q); err != nil {
+		log.Fatal(err)
+	}
+
+	consumeCtxs, err := internal.NewWorker(natsHelper, q).Run(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}

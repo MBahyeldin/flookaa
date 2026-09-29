@@ -9,25 +9,31 @@ import (
 	shared_nats "shared/external/db/nats"
 	"shared/pkg/db"
 	"shared/pkg/graph/models"
+	"shared/pkg/notifications"
 	"shared/pkg/subject"
 	"strconv"
 	"time"
 )
 
-// groupKey names the thing a notification is about, e.g. "post_like:<post
-// id>" or "join_request:<channel id>". Repeated activity on it updates one
-// row per recipient.
-func groupKey(kind db.NotificationKindEnum, key string) string {
-	return string(kind) + ":" + key
+// scope is whose access rule decides whether the recipient may see a
+// notification. A notification without one is personal, always visible.
+type scope struct {
+	typ db.NotificationScopeEnum
+	id  int64
 }
 
-// notification is one row to create or bring back to the top.
+// channelScope is the scope of content inside a channel.
+func channelScope(channelID int64) *scope {
+	return &scope{typ: db.NotificationScopeEnumCHANNEL, id: channelID}
+}
+
+// notification is one row to create or bring back to the top. Its subject
+// type comes from the kind's spec in shared/pkg/notifications.
 type notification struct {
 	recipientID int64
 	kind        db.NotificationKindEnum
-	key         string
-	objectID    string // post or comment; empty for membership kinds
-	channelID   int64
+	subjectID   string
+	scope       *scope
 	actorID     *int64
 }
 
@@ -37,14 +43,22 @@ func (w *Worker) notify(ctx context.Context, n notification, sourceActorID int64
 	if n.recipientID == sourceActorID {
 		return nil
 	}
+	spec, err := notifications.Lookup(n.kind)
+	if err != nil {
+		return err
+	}
 
 	params := db.UpsertNotificationParams{
 		RecipientID: n.recipientID,
 		Kind:        n.kind,
-		GroupKey:    groupKey(n.kind, n.key),
-		ObjectID:    sql.NullString{String: n.objectID, Valid: n.objectID != ""},
-		ChannelID:   n.channelID,
+		GroupKey:    notifications.GroupKey(n.kind, n.subjectID),
+		SubjectType: spec.Subject,
+		SubjectID:   n.subjectID,
 		EventAt:     eventAt,
+	}
+	if n.scope != nil {
+		params.ScopeType = db.NullNotificationScopeEnum{NotificationScopeEnum: n.scope.typ, Valid: true}
+		params.ScopeID = sql.NullInt64{Int64: n.scope.id, Valid: true}
 	}
 	if n.actorID != nil {
 		params.ActorID = sql.NullInt64{Int64: *n.actorID, Valid: true}
@@ -62,29 +76,38 @@ func (w *Worker) notify(ctx context.Context, n notification, sourceActorID int64
 	return nil
 }
 
-// removeIfEmpty soft-deletes the (kind, key) notifications once nobody but
-// the recipient is left in the recount, e.g. after the last unlike.
+// removeIfEmpty soft-deletes the (kind, subject) notifications once nobody
+// but the recipient is left in the recount, e.g. after the last unlike.
+// Single-actor kinds have no recount and are never removed this way.
 //
 // Content groups have one recipient (the author) and a join_request group's
 // recount is the same for every moderator, so one non-zero recount keeps the
 // whole group.
-func (w *Worker) removeIfEmpty(ctx context.Context, kind db.NotificationKindEnum, key string, sourceActorID int64, eventAt time.Time) error {
-	gk := groupKey(kind, key)
+func (w *Worker) removeIfEmpty(ctx context.Context, kind db.NotificationKindEnum, subjectID string, sourceActorID int64, eventAt time.Time) error {
+	spec, err := notifications.Lookup(kind)
+	if err != nil {
+		return err
+	}
+	if spec.Recount == nil {
+		return nil
+	}
+
+	gk := notifications.GroupKey(kind, subjectID)
 	recipients, err := w.q.ListNotificationRecipientsByGroup(ctx, gk)
 	if err != nil {
 		return fmt.Errorf("list recipients of %s: %w", gk, err)
 	}
-	for _, recipientID := range recipients {
-		count, err := w.recount(ctx, kind, key, recipientID)
-		if err != nil {
-			return err
-		}
-		if count > 0 {
-			return nil
-		}
-	}
 	if len(recipients) == 0 {
 		return nil
+	}
+	for _, recipientID := range recipients {
+		counts, err := spec.Recount(ctx, w.q, recipientID, []string{subjectID})
+		if err != nil {
+			return fmt.Errorf("recount %s: %w", gk, err)
+		}
+		if counts[subjectID].Count > 0 {
+			return nil
+		}
 	}
 
 	removed, err := w.q.SoftDeleteNotificationsByGroup(ctx, db.SoftDeleteNotificationsByGroupParams{
@@ -100,66 +123,21 @@ func (w *Worker) removeIfEmpty(ctx context.Context, kind db.NotificationKindEnum
 	return nil
 }
 
-// removeObject soft-deletes every notification about a deleted post or comment.
-func (w *Worker) removeObject(ctx context.Context, objectID string, sourceActorID int64, eventAt time.Time) error {
-	removed, err := w.q.SoftDeleteNotificationsByObject(ctx, db.SoftDeleteNotificationsByObjectParams{
-		ObjectID: objectID,
-		EventAt:  eventAt,
+// removeSubject soft-deletes every notification about a subject that went
+// away, e.g. a deleted post or comment.
+func (w *Worker) removeSubject(ctx context.Context, subjectType db.NotificationSubjectEnum, subjectID string, sourceActorID int64, eventAt time.Time) error {
+	removed, err := w.q.SoftDeleteNotificationsBySubject(ctx, db.SoftDeleteNotificationsBySubjectParams{
+		SubjectType: subjectType,
+		SubjectID:   subjectID,
+		EventAt:     eventAt,
 	})
 	if err != nil {
-		return fmt.Errorf("remove notifications about %s: %w", objectID, err)
+		return fmt.Errorf("remove notifications about %s %s: %w", subjectType, subjectID, err)
 	}
 	for _, r := range removed {
 		w.publish(ctx, db.EventActionEnumDelete, r.ID, r.RecipientID, sourceActorID)
 	}
 	return nil
-}
-
-// recount returns how many personas other than the recipient are behind an
-// aggregated notification. Single-actor kinds are never removed by a recount.
-func (w *Worker) recount(ctx context.Context, kind db.NotificationKindEnum, key string, recipientID int64) (int64, error) {
-	switch kind {
-	case db.NotificationKindEnumPostComment, db.NotificationKindEnumCommentReply:
-		rows, err := w.q.RecountCommenters(ctx, db.RecountCommentersParams{
-			TargetIds:   []string{key},
-			RecipientID: recipientID,
-		})
-		if err != nil || len(rows) == 0 {
-			return 0, wrapRecount(kind, key, err)
-		}
-		return rows[0].Count, nil
-	case db.NotificationKindEnumPostLike, db.NotificationKindEnumCommentLike:
-		rows, err := w.q.RecountLikers(ctx, db.RecountLikersParams{
-			ObjectIds:   []string{key},
-			RecipientID: recipientID,
-		})
-		if err != nil || len(rows) == 0 {
-			return 0, wrapRecount(kind, key, err)
-		}
-		return rows[0].Count, nil
-	case db.NotificationKindEnumJoinRequest:
-		channelID, err := strconv.ParseInt(key, 10, 64)
-		if err != nil {
-			return 0, wrapRecount(kind, key, err)
-		}
-		rows, err := w.q.RecountPendingJoinRequests(ctx, db.RecountPendingJoinRequestsParams{
-			ChannelIds:  []int64{channelID},
-			RecipientID: recipientID,
-		})
-		if err != nil || len(rows) == 0 {
-			return 0, wrapRecount(kind, key, err)
-		}
-		return rows[0].Count, nil
-	default:
-		return 1, nil
-	}
-}
-
-func wrapRecount(kind db.NotificationKindEnum, key string, err error) error {
-	if err == nil {
-		return nil
-	}
-	return fmt.Errorf("recount %s: %w", groupKey(kind, key), err)
 }
 
 // publish tells the recipient's browsers that notification id was created

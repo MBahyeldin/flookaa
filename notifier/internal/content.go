@@ -27,9 +27,8 @@ func (w *Worker) content(ctx context.Context, m message, eventAt time.Time) erro
 		return w.notify(ctx, notification{
 			recipientID: *e.RecipientID,
 			kind:        kind,
-			key:         e.TargetId,
-			objectID:    e.TargetId,
-			channelID:   e.OwnerID,
+			subjectID:   e.TargetId,
+			scope:       channelScope(e.OwnerID),
 		}, e.ActorID, eventAt)
 
 	case e.Name == db.EventEnumLike && e.Action == db.EventActionEnumCreate:
@@ -40,9 +39,8 @@ func (w *Worker) content(ctx context.Context, m message, eventAt time.Time) erro
 		return w.notify(ctx, notification{
 			recipientID: *e.RecipientID,
 			kind:        kind,
-			key:         e.TargetId,
-			objectID:    e.TargetId,
-			channelID:   e.OwnerID,
+			subjectID:   e.TargetId,
+			scope:       channelScope(e.OwnerID),
 		}, e.ActorID, eventAt)
 
 	case e.Name == db.EventEnumLike && e.Action == db.EventActionEnumDelete:
@@ -60,11 +58,11 @@ func (w *Worker) content(ctx context.Context, m message, eventAt time.Time) erro
 			log.Printf("notifier: ignoring %s.delete without object_id: %v", e.Name, err)
 			return nil
 		}
-		if err := w.removeObject(ctx, payload.ObjectID, e.ActorID, eventAt); err != nil {
-			return err
-		}
 		if e.Name == db.EventEnumPost {
-			return nil
+			return w.removeSubject(ctx, db.NotificationSubjectEnumPOST, payload.ObjectID, e.ActorID, eventAt)
+		}
+		if err := w.removeSubject(ctx, db.NotificationSubjectEnumCOMMENT, payload.ObjectID, e.ActorID, eventAt); err != nil {
+			return err
 		}
 		// The deleted comment's event is soft-deleted, so its parent may
 		// have no other commenters left. A comment event targets its parent.

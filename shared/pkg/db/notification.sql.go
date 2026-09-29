@@ -11,32 +11,40 @@ import (
 	"time"
 
 	"github.com/lib/pq"
+	"github.com/sqlc-dev/pqtype"
 )
 
 const countUnreadNotifications = `-- name: CountUnreadNotifications :one
 SELECT COUNT(*)
 FROM notifications n
-JOIN channels c ON c.id = n.channel_id AND c.deleted_at IS NULL
 WHERE n.recipient_id = $1::bigint
   AND n.deleted_at IS NULL
   AND n.read_at IS NULL
   AND (
-      n.kind IN ('join_request', 'request_approved', 'removed_from_channel')
-      OR c.visibility = 'public'
-      OR EXISTS (
+      n.scope_type IS NULL
+      OR (n.scope_type = 'CHANNEL' AND EXISTS (
           SELECT 1
-          FROM channel_members cm
-          WHERE cm.channel_id = n.channel_id
-            AND cm.persona_id = n.recipient_id
-            AND cm.left_at IS NULL AND cm.status = 'active'
-      )
+          FROM channels c
+          WHERE c.id = n.scope_id
+            AND c.deleted_at IS NULL
+            AND (
+                c.visibility = 'public'
+                OR EXISTS (
+                    SELECT 1
+                    FROM channel_members cm
+                    WHERE cm.channel_id = c.id
+                      AND cm.persona_id = n.recipient_id
+                      AND cm.left_at IS NULL AND cm.status = 'active'
+                )
+            )
+      ))
   )
 `
 
 // -------------------------------
 // 5. Unread badge
 // -------------------------------
-// Same visibility filter as ListNotifications.
+// Same visibility rules as ListNotifications.
 func (q *Queries) CountUnreadNotifications(ctx context.Context, recipientID int64) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countUnreadNotifications, recipientID)
 	var count int64
@@ -87,6 +95,39 @@ func (q *Queries) ListChannelModeratorIDs(ctx context.Context, channelID int64) 
 	return items, nil
 }
 
+const listNotificationKinds = `-- name: ListNotificationKinds :many
+SELECT unnest(enum_range(NULL::notification_kind_enum))::text AS kind
+`
+
+// -------------------------------
+// 10. Kinds the database knows
+// -------------------------------
+// Services check at startup that each one has a spec in
+// shared/pkg/notifications, so a migration adding a kind can't go live
+// without its behaviour.
+func (q *Queries) ListNotificationKinds(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listNotificationKinds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var kind string
+		if err := rows.Scan(&kind); err != nil {
+			return nil, err
+		}
+		items = append(items, kind)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listNotificationRecipientsByGroup = `-- name: ListNotificationRecipientsByGroup :many
 SELECT recipient_id
 FROM notifications
@@ -123,9 +164,8 @@ func (q *Queries) ListNotificationRecipientsByGroup(ctx context.Context, groupKe
 }
 
 const listNotifications = `-- name: ListNotifications :many
-SELECT n.id, n.recipient_id, n.kind, n.group_key, n.object_id, n.channel_id, n.actor_id, n.last_event_at, n.created_at, n.updated_at, n.read_at, n.deleted_at
+SELECT n.id, n.recipient_id, n.kind, n.group_key, n.subject_type, n.subject_id, n.scope_type, n.scope_id, n.actor_id, n.data, n.last_event_at, n.created_at, n.updated_at, n.read_at, n.deleted_at
 FROM notifications n
-JOIN channels c ON c.id = n.channel_id AND c.deleted_at IS NULL
 WHERE n.recipient_id = $1::bigint
   AND n.deleted_at IS NULL
   AND (
@@ -133,15 +173,23 @@ WHERE n.recipient_id = $1::bigint
       OR (n.updated_at, n.id) < ($2::timestamptz, $3::bigint)
   )
   AND (
-      n.kind IN ('join_request', 'request_approved', 'removed_from_channel')
-      OR c.visibility = 'public'
-      OR EXISTS (
+      n.scope_type IS NULL
+      OR (n.scope_type = 'CHANNEL' AND EXISTS (
           SELECT 1
-          FROM channel_members cm
-          WHERE cm.channel_id = n.channel_id
-            AND cm.persona_id = n.recipient_id
-            AND cm.left_at IS NULL AND cm.status = 'active'
-      )
+          FROM channels c
+          WHERE c.id = n.scope_id
+            AND c.deleted_at IS NULL
+            AND (
+                c.visibility = 'public'
+                OR EXISTS (
+                    SELECT 1
+                    FROM channel_members cm
+                    WHERE cm.channel_id = c.id
+                      AND cm.persona_id = n.recipient_id
+                      AND cm.left_at IS NULL AND cm.status = 'active'
+                )
+            )
+      ))
   )
 ORDER BY n.updated_at DESC, n.id DESC
 LIMIT $4::int
@@ -158,9 +206,9 @@ type ListNotificationsParams struct {
 // 4. A persona's notifications, newest first
 // -------------------------------
 // Keyset paged: pass the last row's (updated_at, id) as the cursor, or NULLs
-// for the first page. Content notifications of a private channel are hidden
-// while the persona is not an active member (same rule as access.CanRead);
-// membership kinds always show.
+// for the first page. Visibility is one rule per scope type; rows without a
+// scope are personal and always visible. CHANNEL mirrors access.CanRead:
+// public, or the recipient is an active member.
 func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsParams) ([]Notification, error) {
 	rows, err := q.db.QueryContext(ctx, listNotifications,
 		arg.RecipientID,
@@ -180,9 +228,12 @@ func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsPa
 			&i.RecipientID,
 			&i.Kind,
 			&i.GroupKey,
-			&i.ObjectID,
-			&i.ChannelID,
+			&i.SubjectType,
+			&i.SubjectID,
+			&i.ScopeType,
+			&i.ScopeID,
 			&i.ActorID,
+			&i.Data,
 			&i.LastEventAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -442,37 +493,86 @@ func (q *Queries) SoftDeleteNotificationsByGroup(ctx context.Context, arg SoftDe
 	return items, nil
 }
 
-const softDeleteNotificationsByObject = `-- name: SoftDeleteNotificationsByObject :many
+const softDeleteNotificationsByScope = `-- name: SoftDeleteNotificationsByScope :many
 UPDATE notifications
 SET deleted_at = NOW(),
     last_event_at = GREATEST(last_event_at, $1::timestamptz)
-WHERE object_id = $2::varchar
+WHERE scope_type = $2::notification_scope_enum
+  AND scope_id = $3::bigint
   AND deleted_at IS NULL
 RETURNING id, recipient_id
 `
 
-type SoftDeleteNotificationsByObjectParams struct {
-	EventAt  time.Time
-	ObjectID string
+type SoftDeleteNotificationsByScopeParams struct {
+	EventAt   time.Time
+	ScopeType NotificationScopeEnum
+	ScopeID   int64
 }
 
-type SoftDeleteNotificationsByObjectRow struct {
+type SoftDeleteNotificationsByScopeRow struct {
 	ID          int64
 	RecipientID int64
 }
 
 // -------------------------------
-// 3. Remove everything about a deleted post or comment
+// 3.1 Remove everything inside a scope that went away (deleted channel)
 // -------------------------------
-func (q *Queries) SoftDeleteNotificationsByObject(ctx context.Context, arg SoftDeleteNotificationsByObjectParams) ([]SoftDeleteNotificationsByObjectRow, error) {
-	rows, err := q.db.QueryContext(ctx, softDeleteNotificationsByObject, arg.EventAt, arg.ObjectID)
+func (q *Queries) SoftDeleteNotificationsByScope(ctx context.Context, arg SoftDeleteNotificationsByScopeParams) ([]SoftDeleteNotificationsByScopeRow, error) {
+	rows, err := q.db.QueryContext(ctx, softDeleteNotificationsByScope, arg.EventAt, arg.ScopeType, arg.ScopeID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []SoftDeleteNotificationsByObjectRow
+	var items []SoftDeleteNotificationsByScopeRow
 	for rows.Next() {
-		var i SoftDeleteNotificationsByObjectRow
+		var i SoftDeleteNotificationsByScopeRow
+		if err := rows.Scan(&i.ID, &i.RecipientID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const softDeleteNotificationsBySubject = `-- name: SoftDeleteNotificationsBySubject :many
+UPDATE notifications
+SET deleted_at = NOW(),
+    last_event_at = GREATEST(last_event_at, $1::timestamptz)
+WHERE subject_type = $2::notification_subject_enum
+  AND subject_id = $3::varchar
+  AND deleted_at IS NULL
+RETURNING id, recipient_id
+`
+
+type SoftDeleteNotificationsBySubjectParams struct {
+	EventAt     time.Time
+	SubjectType NotificationSubjectEnum
+	SubjectID   string
+}
+
+type SoftDeleteNotificationsBySubjectRow struct {
+	ID          int64
+	RecipientID int64
+}
+
+// -------------------------------
+// 3. Remove everything about a subject that went away (deleted post, comment, ...)
+// -------------------------------
+func (q *Queries) SoftDeleteNotificationsBySubject(ctx context.Context, arg SoftDeleteNotificationsBySubjectParams) ([]SoftDeleteNotificationsBySubjectRow, error) {
+	rows, err := q.db.QueryContext(ctx, softDeleteNotificationsBySubject, arg.EventAt, arg.SubjectType, arg.SubjectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SoftDeleteNotificationsBySubjectRow
+	for rows.Next() {
+		var i SoftDeleteNotificationsBySubjectRow
 		if err := rows.Scan(&i.ID, &i.RecipientID); err != nil {
 			return nil, err
 		}
@@ -492,9 +592,12 @@ INSERT INTO notifications (
     recipient_id,
     kind,
     group_key,
-    object_id,
-    channel_id,
+    subject_type,
+    subject_id,
+    scope_type,
+    scope_id,
     actor_id,
+    data,
     last_event_at,
     updated_at
 )
@@ -502,14 +605,18 @@ VALUES (
     $1::bigint,
     $2::notification_kind_enum,
     $3::varchar,
-    $4::varchar,
-    $5::bigint,
-    $6::bigint,
-    $7::timestamptz,
-    $7::timestamptz
+    $4::notification_subject_enum,
+    $5::varchar,
+    $6::notification_scope_enum,
+    $7::bigint,
+    $8::bigint,
+    $9::jsonb,
+    $10::timestamptz,
+    $10::timestamptz
 )
 ON CONFLICT (recipient_id, group_key) DO UPDATE
 SET actor_id = EXCLUDED.actor_id,
+    data = EXCLUDED.data,
     last_event_at = EXCLUDED.last_event_at,
     updated_at = EXCLUDED.updated_at,
     read_at = NULL,
@@ -522,9 +629,12 @@ type UpsertNotificationParams struct {
 	RecipientID int64
 	Kind        NotificationKindEnum
 	GroupKey    string
-	ObjectID    sql.NullString
-	ChannelID   int64
+	SubjectType NotificationSubjectEnum
+	SubjectID   string
+	ScopeType   NullNotificationScopeEnum
+	ScopeID     sql.NullInt64
 	ActorID     sql.NullInt64
+	Data        pqtype.NullRawMessage
 	EventAt     time.Time
 }
 
@@ -539,9 +649,12 @@ func (q *Queries) UpsertNotification(ctx context.Context, arg UpsertNotification
 		arg.RecipientID,
 		arg.Kind,
 		arg.GroupKey,
-		arg.ObjectID,
-		arg.ChannelID,
+		arg.SubjectType,
+		arg.SubjectID,
+		arg.ScopeType,
+		arg.ScopeID,
 		arg.ActorID,
+		arg.Data,
 		arg.EventAt,
 	)
 	var id int64

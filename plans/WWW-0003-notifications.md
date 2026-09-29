@@ -3,146 +3,205 @@
 Branch `WWW-0003`. Steps are applied one at a time; each step leaves the tree
 buildable and is reviewed and committed by hand before the next one starts.
 
+## Status
+
+| Step | State |
+|---|---|
+| 1. Event enrichment | done, committed |
+| 2. Schema + queries | done, committed. **Revised by step 3a** (012 was never applied anywhere, so it is rewritten in place) |
+| 3. `notifier/` service | done, committed. **Revised by step 3a** |
+| 3a. Generic subject/scope | done, not committed |
+| 4–7 | pending |
+
 ## Decisions
 
 | Topic | Decision |
 |---|---|
 | Producer | A new `notifier/` Go service in its own LXD container, a durable JetStream consumer. Nothing is written in the request path. |
 | Storage | Postgres `notifications` table, keyed by `recipient_id` → `personas(id)`. |
-| Grouping | One row per *thing* (`UNIQUE (recipient_id, group_key)`). Counts and "latest actor" are **recounted** from `events` / `channel_members` at read time, never stored. |
-| Scope | A persona sees only its own notifications; no cross-persona badges. |
+| Recipients | **Personas only.** Account-level alerts ("new login", "password changed") are user-level and go through email or a separate channel later, never this table. |
+| Generic, not channel-bound | A notification says **what it is about** (`subject_type` + `subject_id`) and, separately, **whose access rule decides whether the recipient may see it** (`scope_type` + `scope_id`, NULL = personal, always visible). Channels are one scope among future ones (persona walls, pages, groups). |
+| Kind | A Postgres enum (`notification_kind_enum`), as are subject and scope types. A new kind is a migration (`ALTER TYPE … ADD VALUE`) plus regeneration. Per-kind *behaviour* (recount, removal) lives in a registry of kinds in the notifier. |
+| Grouping | One row per *thing* (`UNIQUE (recipient_id, group_key)`). Counts and "latest actor" are **recounted** from their source tables at read time, never stored. |
+| Scope of the list | A persona sees only its own notifications; no cross-persona badges. |
 | Retention | Keep everything for now. |
 | Delivery | `STREAM_USER_EVENTS.PERSONA.<id>.notifications.<action>`, already in every persona's default subjects. Frames carry the notification id only; the browser refetches over REST. |
+| First deploy | Consumers start at new events (`DeliverNew`); no backfill. |
 | API | REST under `/api/v1/notifications`, persona tier. |
+| Not notifications | **Direct messages** keep their own per-conversation unread state on the existing `direct_messages` subject. At most, later, one "unread messages" row per conversation. **Broadcast news** for everyone goes in a future `announcements` table with a per-persona "read up to" marker, not N rows. Targeted news (a subset of personas) fits this table as normal rows with `actor_id = NULL`. |
 | Out of v1 | Mentions, "new post in your channel", email/WhatsApp/push, preferences, retention jobs. |
 
 ## v1 notification kinds
 
-| Kind | Triggered by | Recipient | `group_key` | Aggregated? |
+| Kind | Triggered by | Recipient | subject | scope | `group_key` | Aggregated / actor |
+|---|---|---|---|---|---|---|
+| `post_comment` | `CONTENT … comment.create`, target `POST` | post author | `POST:<post>` | `CHANNEL:<id>` | `post_comment:<post>` | yes: active comment events with `target_id = post` |
+| `comment_reply` | `CONTENT … comment.create`, target `COMMENT` | parent comment author | `COMMENT:<comment>` | `CHANNEL:<id>` | `comment_reply:<comment>` | yes: active comment events with `target_id = comment` |
+| `post_like` | `CONTENT … like.create`, target `POST` | post author | `POST:<post>` | `CHANNEL:<id>` | `post_like:<post>` | yes: active like events with `object_id = post` |
+| `comment_like` | `CONTENT … like.create`, target `COMMENT` | comment author | `COMMENT:<comment>` | `CHANNEL:<id>` | `comment_like:<comment>` | yes: active like events with `object_id = comment` |
+| `join_request` | `CHANNEL … join_request.create` | channel owner and every channel moderator | `CHANNEL:<id>` | — | `join_request:<id>` | yes: pending rows in `channel_members` |
+| `request_approved` | `CHANNEL … member.create`, reason `approved` | the approved persona | `CHANNEL:<id>` | — | `request_approved:<id>` | no: `actor_id` = moderator |
+| `removed_from_channel` | `CHANNEL … member.delete`, reason `removed` | the removed persona | `CHANNEL:<id>` | — | `removed_from_channel:<id>` | no: `actor_id` = moderator |
+
+Membership kinds have no scope. They are about the recipient's own
+relationship to the channel, so they show even when the recipient can't read
+it (e.g. right after being removed from a private channel).
+
+### How future kinds fit
+
+These aren't built in WWW-0003. The rows show that the model holds them without schema changes beyond enum values.
+
+| Kind | subject | scope | actor | Removed when |
 |---|---|---|---|---|
-| `post_comment` | `CONTENT … comment.create`, target type `POST` | post author | `post_comment:<post_id>` | yes: active comment events with `target_id = post` |
-| `comment_reply` | `CONTENT … comment.create`, target type `COMMENT` | parent comment author | `comment_reply:<comment_id>` | yes: active comment events with `target_id = comment` |
-| `post_like` | `CONTENT … like.create`, target type `POST` | post author | `post_like:<post_id>` | yes: active like events with `object_id = post` |
-| `comment_like` | `CONTENT … like.create`, target type `COMMENT` | comment author | `comment_like:<comment_id>` | yes: active like events with `object_id = comment` |
-| `join_request` | `CHANNEL … join_request.create` | channel owner and every channel moderator | `join_request:<channel_id>` | yes: pending rows in `channel_members` |
-| `request_approved` | `CHANNEL … member.create`, reason `approved` | the approved persona | `request_approved:<channel_id>` | no (single actor = moderator) |
-| `removed_from_channel` | `CHANNEL … member.delete`, reason `removed` | the removed persona | `removed_from_channel:<channel_id>` | no (single actor = moderator) |
+| `follow_request` / `friend_request` | `PERSONA:<requester>` | — | recount of pending requests | none pending (same pattern as `join_request`) |
+| `request_accepted` (friend/follow) | `PERSONA:<accepter>` | — | the accepter | never |
+| targeted `news` | `NEWS:<id>` | — | NULL | never; `data` holds what the UI shows |
+| a persona-wall like (when persona walls get access rules) | `POST:<post>` | `PERSONA:<wall owner>` | recount | recount = 0 |
+
+Adding a kind:
+1. A migration: `ALTER TYPE notification_kind_enum ADD VALUE '…'`, and subject/scope values if new. The new value can't be used in the same transaction, so keep it in its own migration.
+2. `make generate-models`.
+3. A spec in the notifier's registry of kinds.
+4. A handler for its source events.
+5. A scope rule in the visibility filter if the scope type is new.
+6. API/frontend rendering.
 
 Rules applied to every kind:
 
 - **Never notify yourself**: skip when `actor_id == recipient_id`.
-- Aggregated counts and actors exclude the recipient's own events. For example, your own comment on your post doesn't count.
-- A recount of zero means the notification is gone: the notifier soft-deletes the row (see step 3). A later event on the same thing revives it with the same `group_key`.
+- Aggregated counts and actors exclude the recipient's own activity. For example, your own comment on your post doesn't count.
+- A recount of zero means the notification is gone: the notifier soft-deletes the row. A later event on the same thing revives it with the same `group_key`.
 
-## Data model (migration 012)
+## Data model (migration 012, rewritten in step 3a)
 
 ```sql
 CREATE TYPE notification_kind_enum AS ENUM (
   'post_comment', 'comment_reply', 'post_like', 'comment_like',
   'join_request', 'request_approved', 'removed_from_channel'
 );
+-- What a notification is about.
+CREATE TYPE notification_subject_enum AS ENUM ('POST', 'COMMENT', 'CHANNEL', 'PERSONA');
+-- Whose access rule decides visibility. Only channels have rules today.
+CREATE TYPE notification_scope_enum AS ENUM ('CHANNEL');
 
 CREATE TABLE notifications (
   id             BIGSERIAL PRIMARY KEY,
   recipient_id   BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE,
   kind           notification_kind_enum NOT NULL,
   group_key      varchar(255) NOT NULL,
-  object_id      varchar(255) NULL,     -- post/comment the notification is about (content kinds)
-  channel_id     BIGINT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
-  actor_id       BIGINT NULL REFERENCES personas(id) ON DELETE SET NULL, -- single-actor kinds only
-  last_event_at  TIMESTAMPTZ NOT NULL,  -- timestamp of the newest event applied; guards replays
+  subject_type   notification_subject_enum NOT NULL,
+  subject_id     varchar(255) NOT NULL,   -- Mongo ObjectID hex or Postgres id as text
+  scope_type     notification_scope_enum NULL,  -- NULL: personal, always visible
+  scope_id       BIGINT NULL,
+  actor_id       BIGINT NULL REFERENCES personas(id) ON DELETE SET NULL, -- single-actor kinds only; NULL for system
+  data           JSONB NULL,               -- only for kinds with no source to recount or look up (future news)
+  last_event_at  TIMESTAMPTZ NOT NULL,     -- newest event applied; guards replays
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   read_at        TIMESTAMPTZ NULL,
   deleted_at     TIMESTAMPTZ NULL,
-  UNIQUE (recipient_id, group_key)
+  UNIQUE (recipient_id, group_key),
+  CHECK ((scope_type IS NULL) = (scope_id IS NULL))
 );
 
 CREATE INDEX idx_notifications_recipient_feed
   ON notifications (recipient_id, updated_at DESC, id DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_notifications_recipient_unread
   ON notifications (recipient_id) WHERE deleted_at IS NULL AND read_at IS NULL;
-CREATE INDEX idx_notifications_object
-  ON notifications (object_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_notifications_group_active
+  ON notifications (group_key) WHERE deleted_at IS NULL;
+CREATE INDEX idx_notifications_subject_active
+  ON notifications (subject_type, subject_id) WHERE deleted_at IS NULL;
 ```
+
+There are no foreign keys to `channels` or other subject/scope tables: they're polymorphic. When a subject disappears (post, comment, channel deleted), the notifier soft-deletes by `(subject_type, subject_id)`, and for channels also by `(scope_type, scope_id)`. The read queries don't join subject tables.
 
 Upserting a new event (idempotent, safe on replay):
 
 ```sql
-INSERT INTO notifications (recipient_id, kind, group_key, object_id, channel_id, actor_id, last_event_at, updated_at)
+INSERT INTO notifications (recipient_id, kind, group_key, subject_type, subject_id, scope_type, scope_id, actor_id, data, last_event_at, updated_at)
 VALUES (…, $event_ts, $event_ts)
 ON CONFLICT (recipient_id, group_key) DO UPDATE
-SET actor_id = EXCLUDED.actor_id, last_event_at = EXCLUDED.last_event_at,
+SET actor_id = EXCLUDED.actor_id, data = EXCLUDED.data, last_event_at = EXCLUDED.last_event_at,
     updated_at = EXCLUDED.updated_at, read_at = NULL, deleted_at = NULL
-WHERE notifications.last_event_at < EXCLUDED.last_event_at;
+WHERE notifications.last_event_at < EXCLUDED.last_event_at
+RETURNING id;
 ```
 
 The `WHERE` makes a replayed or out-of-order event a no-op. It can't mark a
 read notification unread again or move it back up the list. `updated_at` is
 the event time, not `NOW()`, so replays can't reorder the list either.
 
+**Visibility filter** (used by list and count). There is one rule per scope type, and no join on subject tables:
+
+```sql
+AND (
+  n.scope_type IS NULL
+  OR (n.scope_type = 'CHANNEL' AND EXISTS (
+        SELECT 1 FROM channels c
+        WHERE c.id = n.scope_id AND c.deleted_at IS NULL
+          AND (c.visibility = 'public' OR EXISTS (
+                SELECT 1 FROM channel_members cm
+                WHERE cm.channel_id = c.id AND cm.persona_id = n.recipient_id
+                  AND cm.left_at IS NULL AND cm.status = 'active'))))
+  -- later: OR (n.scope_type = 'PERSONA' AND <persona-wall rule>)
+)
+```
+
+This mirrors `access.CanRead`. A persona removed from a private channel keeps its old content rows, but they don't show while it lacks access.
+
 ## Steps
 
-### Step 1: Event enrichment (backend + shared)
+### Step 1: Event enrichment (backend + shared) — done
 
-The notifier must not need Mongo. The resolvers already load the parent/target through `loadObject`, so they know the author.
+- `nats.Event` has `RecipientID *int64 \`json:"recipient_id,omitempty"\``.
+- `createComment` sets it to the parent's author. `createLike` (create and delete) sets it to the target's author.
+- Delete and channel events are unchanged.
 
-- `shared/external/db/nats/natsConn.go`: add `RecipientID *int64 \`json:"recipient_id,omitempty"\`` to `nats.Event`. `EventID int64` isn't needed: dedupe comes from `group_key` + `last_event_at`.
-- `createComment`: set `RecipientID = parent.AuthorID`.
-- `likeObject` (create and delete): set `RecipientID = target.AuthorID`.
-- `deletePost` / `deleteComment`: no change. They already publish `object_id`.
-- Channel events: no change. The payload already has `persona_id` and `reason`, and `actor_id` is who made the change.
-- The frontend WS and the redis worker ignore the new field. No codegen is needed; this isn't a GraphQL schema change.
+### Step 2: Schema + queries (shared) — done, revised by 3a
 
-### Step 2: Schema + queries (shared)
+Migration 012, `schemas/notification.sql`, `queries/notification.sql`, generated with DB-backed sqlc against a throwaway local cluster.
 
-- `shared/external/db/postgres/migrations/012_notifications.{up,down}.sql` as above. The down file drops the table and the enum.
-- `shared/external/db/postgres/queries/notification.sql`:
-  - `UpsertNotification` (above)
-  - `SoftDeleteNotificationsByGroup(group_key, event_at)`: used whenever a recount reaches zero. For likes and comments the group has one recipient; for join requests it has every moderator
-  - `ListNotificationRecipientsByGroup(group_key)`: removal events don't name the recipient, so the notifier recounts for the recipients found here (added in step 3)
-  - `SoftDeleteNotificationsByObject(object_id)`: the post/comment was deleted
-  - `ListNotifications(recipient_id, cursor_updated_at, cursor_id, limit)`, with the access filter below
-  - `CountUnreadNotifications(recipient_id)`, with the same access filter
-  - `MarkNotificationsRead(recipient_id, ids[])`
-  - `MarkAllNotificationsRead(recipient_id)`
-  - `ListChannelModeratorIDs(channel_id)`: owner + channel moderators/Administrators. Global Administrators are left out.
-  - Recount helpers that return `count` + `latest_actor_id` per group, batched with `ANY($1)` for a page:
-    - `RecountCommenters`: comment events by `target_id`
-    - `RecountLikers`: like events by `object_id`
-    - `RecountPendingJoinRequests`: pending join requests by `channel_id`
-    - all excluding the recipient as actor. A group missing from the result has a count of zero.
-  - Both soft-delete queries take the event time and move `last_event_at` forward (`GREATEST`), so a redelivered older create can't revive the row.
-- Run `make migrate-up` on a DB-backed sqlc target, then `make generate-models`. Never generate offline.
+### Step 3: `notifier/` service — done, revised by 3a
 
-**Access filter** (used by list and count): hide a row when its channel is private and the recipient isn't an active member (`left_at IS NULL AND status = 'active'`). Exceptions are `request_approved`, `removed_from_channel` and `join_request`, which are about membership itself. A persona removed from a private channel keeps its old rows, but they don't show while it lacks access.
+`notifier/` module in `go.work`:
+- Two durable consumers, `notifier-content` and `notifier-channel`, both `DeliverNew`, explicit ack.
+- `Term` on unparseable messages, `NakWithDelay` backoff on errors.
+- Upsert + publish on create; recount-then-soft-delete on removal.
+- `ListNotificationRecipientsByGroup` was added for removal events that don't name the recipient.
+- Verified end to end against local Postgres + JetStream: 18 scenarios.
 
-### Step 3: `notifier/` service
+### Step 3a: Generic subject/scope (revises 2 and 3)
 
-New module `notifier` (module name `notifier`), added to `go.work`. It follows the redis worker's layout:
+012 was never applied anywhere, so it is rewritten in place. There is no 013.
 
-```
-notifier/
-  main.go               # load config, connect Postgres + NATS, run, graceful stop
-  internal/config/      # DATABASE_DSN, NATS_CONNECTION (envconfig, all-missing-in-one-error)
-  internal/worker.go    # consumers, dispatch, ack/nak/term
-  internal/content.go   # comment/like/delete handling
-  internal/channel.go   # join_request/member handling
-  deploy.bash           # linux/amd64 → gRPC@notifier:/home/gRPC/watched
-  README.md
-```
+**Shared:**
+- Migration 012 up/down and `schemas/notification.sql` as in the data model above. The down file drops the table and the three enums.
+- `queries/notification.sql`:
+  - `UpsertNotification`: subject/scope/data columns replace `object_id` / `channel_id`.
+  - `SoftDeleteNotificationsBySubject(subject_type, subject_id, event_at)` replaces `…ByObject`.
+  - `SoftDeleteNotificationsByScope(scope_type, scope_id, event_at)` is new, for a deleted channel. Its source event doesn't exist yet, so nothing calls it; that's noted for when channel deletion publishes.
+  - `ListNotifications` / `CountUnreadNotifications`: the visibility filter above replaces the `JOIN channels`.
+  - Unchanged: `SoftDeleteNotificationsByGroup`, `ListNotificationRecipientsByGroup`, `MarkNotificationsRead`, `MarkAllNotificationsRead`, `ListChannelModeratorIDs`, `RecountCommenters`, `RecountLikers`, `RecountPendingJoinRequests`.
+- Regenerate against a throwaway cluster (`make migrate-up` + `make generate-models`).
 
-- Two durable pull consumers (one consumer can't span streams), both explicit-ack:
-  - `notifier-content` on `STREAM_CONTENT_EVENTS.>`
-  - `notifier-channel` on `STREAM_CHANNEL_EVENTS.>`
-- Uses `CheckStream` only; the backend owns `EnsureStreams`.
-- Unparseable message → `Term`. DB/NATS error → `NakWithDelay` (same backoff as the redis worker). Success → `Ack`.
-- Ignore events the notifier doesn't use: `post.*`, `follower.*`, joins with reason `joined`, `left`, `cancelled`, `rejected`.
-- **Create path**: resolve recipient(s), skip self, `UpsertNotification`, then publish `STREAM_USER_EVENTS.PERSONA.<rid>.notifications.create` with `{id}` via `shared/pkg/subject`. The publish only runs if the upsert changed a row (`RETURNING id`); a replayed event publishes nothing.
-- **Remove path**: `like.delete`, `join_request.delete` (approved/rejected/cancelled), `post.delete` / `comment.delete`.
-  - Likes and join requests: recount the group. If it's zero, soft-delete that recipient's row (or every recipient's row for `join_request`). Then publish `…notifications.delete` `{id}` so open badges update.
-  - Post/comment deletes: `SoftDeleteNotificationsByObject(object_id)`. For `comment.delete` also recount the parent's `post_comment` / `comment_reply` group, because the deleted comment's event is now soft-deleted.
-- Nothing is a running total: every decision is a recount from Postgres, so duplicates and reordering converge like the counters do.
+**Notifier:**
+- `notification` struct: `subjectType/subjectID`, optional `scopeType/scopeID`, `actorID`, `data` replace `objectID/channelID`.
+- **Registry of kinds** in `shared/pkg/notifications` (moved up from step 5 so the notifier and API share it from the start): `Kinds map[db.NotificationKindEnum]Kind`, where `Kind{Subject, Recount}`.
+  - `Subject` is the subject type every row of that kind has, so callers pass only `subject_id`.
+  - `Recount` is batched by subject id. It's nil for single-actor kinds, which are never removed by a recount.
+  - `GroupKey(kind, subjectID)` builds the group key.
+  - `Check(ctx, q)` runs at notifier startup. It reads the real enum (`ListNotificationKinds`, `enum_range`) and refuses to start if any kind has no spec.
+  - The `switch` in the notifier's `recount` is gone.
+- `removeObject` → `removeSubject(subjectType, subjectID)`.
+- Content handler: subject `POST`/`COMMENT` from the target type, scope `CHANNEL:<owner_id>`.
+- Channel handler: subject `CHANNEL:<id>`, no scope.
+- A comment in the notifier that any future consumer of `STREAM_USER_EVENTS` must use specific `FilterSubjects`, so it never consumes the notifier's own `notifications.*` frames.
+
+**Verify:** rerun the end-to-end harness updated for the new columns, plus:
+- a scope-less row (`join_request`) stays visible to a non-member of a private channel;
+- a scoped row doesn't;
+- a deleted-post subject removes its rows.
 
 ### Step 4: Infrastructure (ansible)
 
@@ -165,12 +224,13 @@ Uses `whatsapp` / `redis` as templates.
 
 | Route | Returns |
 |---|---|
-| `GET /api/v1/notifications?cursor=&limit=` | page of `{id, kind, object_id, channel_id, count, latest_actor: {id, name, avatar}, read, updated_at}` + `next_cursor` |
+| `GET /api/v1/notifications?cursor=&limit=` | page of `{id, kind, subject: {type, id}, scope: {type, id} \| null, count, latest_actor: {id, name, avatar} \| null, data, read, updated_at}` + `next_cursor` |
 | `GET /api/v1/notifications/unread-count` | `{count}` |
 | `POST /api/v1/notifications/read` | body `{ids: []}` |
 | `POST /api/v1/notifications/read-all` | — |
 
-- For aggregated kinds, `count` and `latest_actor` come from the batched recount queries, one per kind present on the page. For single-actor kinds they come from `actor_id`.
+- For aggregated kinds, `count` and `latest_actor` come from the batched recount queries, one per kind present on the page. For single-actor kinds they come from `actor_id`, with `count = 1`. System kinds have `latest_actor = null`.
+- `shared/pkg/notifications.Kinds` (built in 3a) decides which recount a kind uses, batched per kind on a page. The backend also calls `notifications.Check` at startup.
 - Persona display data comes from the existing persona lookup/cache.
 - Rows whose recount returns zero between the notifier's cleanup and the read are dropped from the page. That's rare, and a notifier catch-up soft-deletes them.
 - Marking read only touches rows owned by the caller (`recipient_id = persona`).
@@ -179,14 +239,19 @@ Uses `whatsapp` / `redis` as templates.
 
 - `src/types/notification.ts`, `src/services/notifications.ts` (via `apiFetch`)
 - `src/stores/notifications.ts` (Zustand): unread count, loaded pages
-- A bell with an unread badge in the dashboard header, and a dropdown or page listing notifications. Each item links to its post/comment/channel; opening one marks it read, and there's "Mark all read".
+- A bell with an unread badge in the dashboard header, and a dropdown or page listing notifications.
+  - Each item renders by `kind` and links by `subject` (post, comment, channel, persona).
+  - Opening one marks it read, and there's "Mark all read".
 - WS listener on `…notifications.create` / `…notifications.delete`: refetch the unread count, and the first page if the list is open.
 - Kinds the UI can't render yet aren't rendered. No disabled placeholders.
 - `pnpm lint` + `pnpm build`. Remember `tsc-check` only fails on `.tsx` errors.
 
 ### Step 7: Docs
 
-- `CLAUDE.md`: add `notifier/` to the layout table, `go.work` list, deploy commands and the environment section. Also add an "Architecture notes → Notifications" section covering grouping, recount-at-read, replay guard and access filter.
+- `CLAUDE.md`:
+  - add `notifier/` to the layout table, `go.work` list, deploy commands and the environment section;
+  - add an "Architecture notes → Notifications" section covering subject vs scope, grouping, recount-at-read, the replay guard, the visibility filter, and how to add a kind;
+  - note that DMs and broadcasts are deliberately not notifications.
 - Root `README.md` architecture overview.
 - Fix the stale `-- Table: notifications` comment in migration 006. Only the comment changes, the migration SQL doesn't.
 
@@ -194,10 +259,9 @@ Uses `whatsapp` / `redis` as templates.
 
 1. Migration 012 (`make migrate-up` in prod).
 2. Backend (step 1 + step 5): enriched events + API. Harmless without the notifier.
-3. Container + notifier (steps 3–4). Its durable consumers start at the stream head, or should they start at `DeliverAll` to backfill the last 7 days? Decide at deploy. The recommendation is `DeliverAll` so the first deploy isn't empty, but it only has recipients for events published after step 1.
+3. Container + notifier (steps 3/3a + 4). Starts at new events only.
 4. Frontend (step 6).
 
 ## Open questions (decide before the step that needs them)
 
-- Step 3: should the notifier's consumers backfill (`DeliverAll`) or start new (`DeliverNew`) on first deploy?
 - Step 6: dropdown only, or also a full `/notifications` page?

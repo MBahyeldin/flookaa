@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sqlc-dev/pqtype"
 )
 
 type ChannelMembershipStatusEnum string
@@ -273,6 +274,91 @@ func (ns NullNotificationKindEnum) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.NotificationKindEnum), nil
+}
+
+type NotificationScopeEnum string
+
+const (
+	NotificationScopeEnumCHANNEL NotificationScopeEnum = "CHANNEL"
+)
+
+func (e *NotificationScopeEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = NotificationScopeEnum(s)
+	case string:
+		*e = NotificationScopeEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for NotificationScopeEnum: %T", src)
+	}
+	return nil
+}
+
+type NullNotificationScopeEnum struct {
+	NotificationScopeEnum NotificationScopeEnum
+	Valid                 bool // Valid is true if NotificationScopeEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullNotificationScopeEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.NotificationScopeEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.NotificationScopeEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullNotificationScopeEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.NotificationScopeEnum), nil
+}
+
+type NotificationSubjectEnum string
+
+const (
+	NotificationSubjectEnumPOST    NotificationSubjectEnum = "POST"
+	NotificationSubjectEnumCOMMENT NotificationSubjectEnum = "COMMENT"
+	NotificationSubjectEnumCHANNEL NotificationSubjectEnum = "CHANNEL"
+	NotificationSubjectEnumPERSONA NotificationSubjectEnum = "PERSONA"
+)
+
+func (e *NotificationSubjectEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = NotificationSubjectEnum(s)
+	case string:
+		*e = NotificationSubjectEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for NotificationSubjectEnum: %T", src)
+	}
+	return nil
+}
+
+type NullNotificationSubjectEnum struct {
+	NotificationSubjectEnum NotificationSubjectEnum
+	Valid                   bool // Valid is true if NotificationSubjectEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullNotificationSubjectEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.NotificationSubjectEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.NotificationSubjectEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullNotificationSubjectEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.NotificationSubjectEnum), nil
 }
 
 type OauthProvider string
@@ -559,9 +645,12 @@ type Notification struct {
 	RecipientID int64
 	Kind        NotificationKindEnum
 	GroupKey    string
-	ObjectID    sql.NullString
-	ChannelID   int64
+	SubjectType NotificationSubjectEnum
+	SubjectID   string
+	ScopeType   NullNotificationScopeEnum
+	ScopeID     sql.NullInt64
 	ActorID     sql.NullInt64
+	Data        pqtype.NullRawMessage
 	LastEventAt time.Time
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
