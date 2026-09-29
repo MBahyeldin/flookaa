@@ -36,10 +36,8 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 		return nil, fmt.Errorf("failed to marshal content: %w", err)
 	}
 
-	id := fmt.Sprintf("obj_%d_%d", personaId, time.Now().Unix())
-
 	object := &models.PostGenericDocument{
-		ID:       id,
+		ID:       newObjectID(),
 		Type:     models.PostTypePost,
 		ParentID: nil,
 		AuthorID: personaId,
@@ -141,7 +139,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 	}
 
 	object := &models.PostGenericDocument{
-		ID:                fmt.Sprintf("obj_%d_%d", personaId, time.Now().Unix()),
+		ID:                newObjectID(),
 		Type:              models.PostTypeComment,
 		ParentID:          &input.ParentID,
 		AuthorID:          personaId,
@@ -306,7 +304,7 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 
 	var streamName = nats.CONTENT_EVENTS_STREAM
 
-	subjectHelper := subject.New(&streamName, owner, string(db.EventEnumLike), string(db.EventActionEnumCreate))
+	subjectHelper := subject.New(&streamName, owner, string(db.EventEnumLike), string(action))
 
 	// The like is already stored; a failed publish only delays the counter
 	// until the next event on this target or the cache TTL.
