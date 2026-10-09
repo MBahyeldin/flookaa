@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A realtime social platform ("flookaa") built as a polyglot monorepo: several Go services in one `go.work` workspace, a Rust WebSocket proxy, a React/Vite frontend, and Ansible playbooks that provision everything into LXD containers. `README.md` at the root has the intended architecture overview; `notes.md` holds the running TODO list.
+A realtime social platform ("flookaa") built as a polyglot monorepo: several Go services in one `go.work` workspace, a Rust WebSocket proxy, a React/Vite frontend, and Ansible playbooks that provision everything into LXD containers. `README.md` at the root has the intended architecture overview; the TODO list lives in Jira (project `WWW` on flookaa.atlassian.net), not in `notes.md`.
 
 There are no tests anywhere in the repo (no `*_test.go`, no frontend test runner). Don't claim test coverage or invent test commands.
 
