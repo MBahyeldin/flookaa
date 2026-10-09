@@ -123,7 +123,7 @@ Tiers are applied at **group** level, so a new route inherits its group's tier:
 | User | `auth/info`, `auth/verify`, `users/*`, `persona/*` |
 | Persona | `channels/*`, `notifications/*`, `POST /query`, `POST /control` |
 
-**Content and channel actions belong to a persona, not a user**: authorship, membership, realtime subscriptions (Redis `persona:<id>:subjects`) are all keyed by `persona_id`; `user_id` is only for account and persona management. `/playground` is only mounted when `GIN_MODE` is not `release`.
+**Content and channel actions belong to a persona, not a user**: authorship, membership, realtime subscriptions (Redis `persona:<id>:subjects`) are all keyed by `persona_id`; `user_id` is only for account and persona management. A response about another persona never carries `user_id`, `is_default`, or any other field that ties it to the account or to the user's other personas; only your own account and persona endpoints return them. GraphQL never reads `user_id`. `/playground` is only mounted when `GIN_MODE` is not `release`.
 
 The frontend mirrors this: REST calls go through `src/lib/apiFetch.ts` and Apollo through an `ErrorLink` in `src/graphql/client.ts`. On 401 they clear `user` (App renders the public layout); on 403 `persona_required` they clear `persona` (DashboardLayout renders persona selection). No redirects.
 

@@ -231,18 +231,6 @@ func eventTargetType(t models.PostType) db.EventTargetTypeEnum {
 	return db.EventTargetTypeEnumCOMMENT
 }
 
-func getUserIdFromContext(ctx context.Context) (int64, error) {
-	ginCtx, ok := ctx.Value(keys.GinContextKey).(*gin.Context)
-	if !ok {
-		return 0, fmt.Errorf("failed to get gin.Context from context: %w", ctx.Err())
-	}
-	userId, ok := ginCtx.Value("user_id").(int64)
-	if !ok {
-		return 0, fmt.Errorf("failed to get userId from context: %w", ctx.Err())
-	}
-	return userId, nil
-}
-
 func getPersonaIdFromContext(ctx context.Context) (int64, error) {
 	ginCtx, ok := ctx.Value(keys.GinContextKey).(*gin.Context)
 	if !ok {
