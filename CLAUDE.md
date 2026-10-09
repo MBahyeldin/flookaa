@@ -239,3 +239,29 @@ Rust proxy: `GO_APP_URL`. Frontend: `VITE_API_BASE_URL`, `VITE_WEBSOCKET_BASE_UR
 - Older commits are prefixed with a ticket key (`WWW-0000 Fix linting issues`); recent ones use conventional-commit prefixes (`feat: ...`). Follow whatever the user asks for.
 - Never hand-edit generated output: `shared/pkg/db/`, `shared/pkg/graph/*.generated.go`, `shared/pkg/graph/models/models_gen.go`, `front-end/src/generated/graphql.ts`, `gRCP/*/app_service/`.
 - A backend change touching the GraphQL schema requires regenerating on both sides: `make generate-models` in `shared/`, then `pnpm codegen` in `front-end/` once the schema is deployed.
+
+## Tickets and releases
+
+Work is tracked in Jira, project `WWW` on flookaa.atlassian.net (Kanban). Keys are `WWW-<n>`, never zero-padded. Older `WWW-000N` branches and plans are history.
+
+**No plan, no work.** Never change code for a ticket until `plans/WWW-<n>-<slug>.md` exists for that ticket and the user has approved it. The plan is the first commit on the ticket branch. If a request has no ticket, ask which ticket it belongs to, or offer to create one, before starting.
+
+- **One ticket = one small task = one small plan = one squash PR.** Types are Task, Bug, and Epic (to group the Tasks of a big feature).
+- **Statuses**, in this order:
+  - Backlog → Need Specs (plan being written) → READY TO START (plan approved) → In Progress → In Review (code review + QA by the user) → READY TO DEPLOY (merged into the release branch) → Done (release merged to `main` and live).
+  - QA REVISION: QA failed; the ticket waits there until it's picked up and goes back to In Progress.
+  - REJECTED: won't do; only the user rejects.
+  - The workflow is strictly sequential.
+- **Releases** are named `<Pokemon>-v1NNN`, with NNN the Pokémon's 3-digit National Pokédex number.
+  - Multiples of 5 are planned releases (Charmeleon-v1005, Caterpie-v1010, …). The numbers in between are hotfixes, each with its own Pokémon.
+  - Only one release is open at a time. A ticket gets the open release as its fix version when it enters READY TO START.
+- **Branches:**
+  - The ticket branch `WWW-<n>-<slug>` is cut from `release/<pokemon>-v1NNN` and goes back into it by squash PR.
+  - The release branch goes to `main` by merge commit (not squash). `main` is then tagged `<pokemon>-v1NNN`.
+  - Deploy only from `main`.
+  - A hotfix branches from `main`, gets its own release, and is merged back into the open release branch.
+- **Who moves tickets:**
+  - Claude moves a ticket up to In Review, stating every transition in its reply.
+  - The user moves it to READY TO DEPLOY by merging the PR.
+  - Claude moves the release's tickets to Done and releases the version only after the user confirms the release is merged and deployed.
+  - Claude never commits, and never moves a ticket backwards or past a status without saying so.
