@@ -73,6 +73,10 @@ export function describeNotification(n: Notification): NotificationDescription |
         message: `You were removed from ${channelName(n)}`,
         href: `/channels/${n.subject.id}`,
       };
+    case "new_follower":
+      return { actor: actors(n), message: "followed you", href: `/personas/${n.subject.id}` };
+    case "follow_request":
+      return { actor: actors(n), message: "asked to follow you", href: `/personas/${n.subject.id}` };
     default:
       return null;
   }

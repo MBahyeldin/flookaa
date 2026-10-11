@@ -6,7 +6,9 @@ type NotificationKind =
   | "comment_like"
   | "join_request"
   | "request_approved"
-  | "removed_from_channel";
+  | "removed_from_channel"
+  | "new_follower"
+  | "follow_request";
 
 type NotificationActor = {
   id: number;
@@ -37,7 +39,7 @@ type Notification = {
   /** A string, not NotificationKind: the backend may add kinds first. */
   kind: string;
   subject: { type: "POST" | "COMMENT" | "CHANNEL" | "PERSONA"; id: string };
-  /** Null for personal (membership) notifications. */
+  /** Null for personal (membership, follow) notifications. */
   scope: { type: "CHANNEL"; id: number } | null;
   /** How many personas are behind it (1 for single-actor kinds). */
   count: number;

@@ -44,6 +44,8 @@ var Kinds = map[db.NotificationKindEnum]Kind{
 	db.NotificationKindEnumJoinRequest:        {Subject: db.NotificationSubjectEnumCHANNEL, Recount: recountPendingJoinRequests},
 	db.NotificationKindEnumRequestApproved:    {Subject: db.NotificationSubjectEnumCHANNEL},
 	db.NotificationKindEnumRemovedFromChannel: {Subject: db.NotificationSubjectEnumCHANNEL},
+	db.NotificationKindEnumNewFollower:        {Subject: db.NotificationSubjectEnumPERSONA, Recount: recountFollowers},
+	db.NotificationKindEnumFollowRequest:      {Subject: db.NotificationSubjectEnumPERSONA, Recount: recountPendingFollowRequests},
 }
 
 // GroupKey names the thing a notification is about, e.g. "post_like:<post
@@ -108,13 +110,9 @@ func recountLikers(ctx context.Context, q *db.Queries, recipientID int64, subjec
 // recountPendingJoinRequests: the subject is the channel, so subject ids are
 // channel ids.
 func recountPendingJoinRequests(ctx context.Context, q *db.Queries, recipientID int64, subjectIDs []string) (map[string]Count, error) {
-	channelIDs := make([]int64, 0, len(subjectIDs))
-	for _, s := range subjectIDs {
-		id, err := strconv.ParseInt(s, 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("notifications: channel id %q: %w", s, err)
-		}
-		channelIDs = append(channelIDs, id)
+	channelIDs, err := parseIDs(subjectIDs)
+	if err != nil {
+		return nil, err
 	}
 	rows, err := q.RecountPendingJoinRequests(ctx, db.RecountPendingJoinRequestsParams{ChannelIds: channelIDs, RecipientID: recipientID})
 	if err != nil {
@@ -125,4 +123,51 @@ func recountPendingJoinRequests(ctx context.Context, q *db.Queries, recipientID 
 		counts[strconv.FormatInt(r.ChannelID, 10)] = Count{Count: r.Count, LatestActorID: r.LatestActorID}
 	}
 	return counts, nil
+}
+
+// recountFollowers: the subject is the followed persona.
+func recountFollowers(ctx context.Context, q *db.Queries, recipientID int64, subjectIDs []string) (map[string]Count, error) {
+	personaIDs, err := parseIDs(subjectIDs)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.RecountFollowers(ctx, db.RecountFollowersParams{PersonaIds: personaIDs, RecipientID: recipientID})
+	if err != nil {
+		return nil, err
+	}
+	counts := make(map[string]Count, len(rows))
+	for _, r := range rows {
+		counts[strconv.FormatInt(r.PersonaID, 10)] = Count{Count: r.Count, LatestActorID: r.LatestActorID}
+	}
+	return counts, nil
+}
+
+// recountPendingFollowRequests: the subject is the persona being asked.
+func recountPendingFollowRequests(ctx context.Context, q *db.Queries, recipientID int64, subjectIDs []string) (map[string]Count, error) {
+	personaIDs, err := parseIDs(subjectIDs)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.RecountPendingFollowRequests(ctx, db.RecountPendingFollowRequestsParams{PersonaIds: personaIDs, RecipientID: recipientID})
+	if err != nil {
+		return nil, err
+	}
+	counts := make(map[string]Count, len(rows))
+	for _, r := range rows {
+		counts[strconv.FormatInt(r.PersonaID, 10)] = Count{Count: r.Count, LatestActorID: r.LatestActorID}
+	}
+	return counts, nil
+}
+
+// parseIDs reads subject ids of kinds whose subjects have numeric ids.
+func parseIDs(subjectIDs []string) ([]int64, error) {
+	ids := make([]int64, 0, len(subjectIDs))
+	for _, s := range subjectIDs {
+		id, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("notifications: subject id %q: %w", s, err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
 }

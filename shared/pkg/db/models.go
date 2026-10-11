@@ -239,6 +239,8 @@ const (
 	NotificationKindEnumJoinRequest        NotificationKindEnum = "join_request"
 	NotificationKindEnumRequestApproved    NotificationKindEnum = "request_approved"
 	NotificationKindEnumRemovedFromChannel NotificationKindEnum = "removed_from_channel"
+	NotificationKindEnumNewFollower        NotificationKindEnum = "new_follower"
+	NotificationKindEnumFollowRequest      NotificationKindEnum = "follow_request"
 )
 
 func (e *NotificationKindEnum) Scan(src interface{}) error {

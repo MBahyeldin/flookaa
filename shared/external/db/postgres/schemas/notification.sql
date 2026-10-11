@@ -6,7 +6,9 @@ CREATE TYPE notification_kind_enum AS ENUM (
     'comment_like',
     'join_request',
     'request_approved',
-    'removed_from_channel'
+    'removed_from_channel',
+    'new_follower',
+    'follow_request'
 );
 
 CREATE TYPE notification_subject_enum AS ENUM ('POST', 'COMMENT', 'CHANNEL', 'PERSONA');

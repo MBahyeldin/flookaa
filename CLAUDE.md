@@ -15,7 +15,7 @@ There are no tests anywhere in the repo (no `*_test.go`, no frontend test runner
 | `backend/` | Go, module `app` | Main HTTP service: REST (`/api/v1`), GraphQL (`/query`), and `/control` |
 | `shared/` | Go, module `shared` | Shared library: DB connections, SQL migrations/queries, generated sqlc + gqlgen code, subject helpers. Imported by every Go service except `whatsapp` |
 | `redis/` | Go, module `redis_worker` | NATS consumer that maintains Redis counter caches |
-| `notifier/` | Go, module `notifier` | NATS consumer that turns content/channel events into per-persona notifications in Postgres and pushes their ids over `STREAM_USER_EVENTS`. See "Notifications" below |
+| `notifier/` | Go, module `notifier` | NATS consumer that turns content/channel/follow events into per-persona notifications in Postgres and pushes their ids over `STREAM_USER_EVENTS`. See "Notifications" below |
 | `s3/` | Go, module `s3` | Separate upload service (images, audio) backed by S3 |
 | `whatsapp/` | Go, module `whatsapp` | Send-only WhatsApp REST service (whatsmeow, unofficial linked-device client). Standalone; see `whatsapp/README.md` |
 | `gRCP/server`, `gRCP/client` | Go | gRPC deploy agent: watches a directory, publishes binaries to `/opt/<svc>/<version>`, flips a `current` symlink, restarts systemd |
@@ -77,7 +77,7 @@ Each Go service has its own `deploy.bash` / `deploy.sh` that cross-compiles for 
 cd backend && ./deploy.bash     # -> gRPC@backend
 cd s3      && ./deploy.bash     # -> gRPC@s3
 cd redis   && ./deploy.bash     # -> gRPC@redis
-cd notifier && ./deploy.bash    # -> gRPC@notifier (needs migration 012 applied, or it refuses to start)
+cd notifier && ./deploy.bash    # -> gRPC@notifier (needs migration 015 applied, or it refuses to start)
 cd whatsapp && ./deploy.bash    # -> gRPC@whatsapp (CGO_ENABLED=0)
 cd front-end && ./deploy.sh     # pnpm build + scp dist/* to the nginx host
 cd nats    && ./deploy.sh       # Rust cross-build
@@ -195,7 +195,8 @@ The `notifier/` service writes them; the backend only reads them (`/api/v1/notif
 - **Replay guard**: `last_event_at` is the newest event applied. The upsert only changes a row for a newer event and returns no row otherwise (`sql.ErrNoRows` → nothing published). Soft-deletes move it forward too, so redelivered or out-of-order events can't mark a read row unread or revive a removed one.
 - **Visibility** (`ListNotifications` / `CountUnreadNotifications`): one SQL rule per scope type, mirroring `access.CanRead` for `CHANNEL`. A persona that loses access keeps its rows, but they don't show.
 - **Registry of kinds**: `shared/pkg/notifications.Kinds` maps each kind to its subject type and batched recount (nil = single actor, stored in `actor_id`). The notifier and the API both use it, and both call `notifications.Check` at startup, which fails if the database enum has a kind without a spec.
-- **Notifier**: durable consumers `notifier-content` / `notifier-channel` (`DeliverNew`, explicit ack, same backoff as the redis worker). It never notifies you about your own activity, and it takes the recipient of comments and likes from the event's `recipient_id` (set by the resolvers), so it doesn't read Mongo. It publishes `STREAM_USER_EVENTS.PERSONA.<id>.notifications.{create|delete}` with `{notification_id}`. A future consumer of `STREAM_USER_EVENTS` must use specific filter subjects, never `STREAM_USER_EVENTS.>`, or it would consume these frames.
+- **Notifier**: durable consumers `notifier-content` / `notifier-channel` / `notifier-user` (`DeliverNew`, explicit ack, same backoff as the redis worker). It never notifies you about your own activity, and it takes the recipient of comments and likes from the event's `recipient_id` (set by the resolvers), so it doesn't read Mongo. It publishes `STREAM_USER_EVENTS.PERSONA.<id>.notifications.{create|delete}` with `{notification_id}`. `notifier-user` reads `STREAM_USER_EVENTS` through specific filter subjects (`PERSONA.*.follower.*`, `PERSONA.*.follow_request.*`); any consumer there must do the same, never `STREAM_USER_EVENTS.>`, or it would consume these frames.
+- **Follow kinds** (`new_follower`, `follow_request`): personal, subject `PERSONA` = the followed persona, aggregated per persona and recounted from `persona_followers` (all active followers, or pending requests). Only `follower.create` with reason `followed` notifies; unfollows and cancels remove the row once nobody is left.
 - **`data`** (`shared/pkg/notifications.Data`) holds only facts that can't change for the notification's life. For example `post_id`, the post at the top of a content notification's thread: resolvers put it on the event and the notifier stores it. It never holds names, avatars, counts or editable text; those are looked up at read time like actors. Rows written before a field existed lack it, so readers treat every field as optional.
 - **`channel`** in the list response is looked up at read time (one batched `ListChannelSummaries` per page), like `latest_actor`: names change, so they're never stored.
 - **Frontend**:

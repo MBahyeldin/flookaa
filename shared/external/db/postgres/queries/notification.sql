@@ -242,6 +242,34 @@ WHERE channel_id = ANY(sqlc.arg(channel_ids)::bigint[])
   AND status = 'pending'
 GROUP BY channel_id;
 
+-- Active followers of personas (new_follower).
+-- name: RecountFollowers :many
+SELECT
+    pf.persona_id,
+    COUNT(*)::bigint AS count,
+    (ARRAY_AGG(pf.follower_persona_id ORDER BY pf.followed_at DESC, pf.follower_persona_id DESC))[1]::bigint AS latest_actor_id
+FROM persona_followers pf
+JOIN personas f ON f.id = pf.follower_persona_id AND f.deleted_at IS NULL
+WHERE pf.persona_id = ANY(sqlc.arg(persona_ids)::bigint[])
+  AND pf.follower_persona_id <> sqlc.arg(recipient_id)::bigint
+  AND pf.unfollowed_at IS NULL
+  AND pf.status = 'active'
+GROUP BY pf.persona_id;
+
+-- Pending follow requests to personas (follow_request).
+-- name: RecountPendingFollowRequests :many
+SELECT
+    pf.persona_id,
+    COUNT(*)::bigint AS count,
+    (ARRAY_AGG(pf.follower_persona_id ORDER BY pf.followed_at DESC, pf.follower_persona_id DESC))[1]::bigint AS latest_actor_id
+FROM persona_followers pf
+JOIN personas f ON f.id = pf.follower_persona_id AND f.deleted_at IS NULL
+WHERE pf.persona_id = ANY(sqlc.arg(persona_ids)::bigint[])
+  AND pf.follower_persona_id <> sqlc.arg(recipient_id)::bigint
+  AND pf.unfollowed_at IS NULL
+  AND pf.status = 'pending'
+GROUP BY pf.persona_id;
+
 -- -------------------------------
 -- 10. Kinds the database knows
 -- -------------------------------

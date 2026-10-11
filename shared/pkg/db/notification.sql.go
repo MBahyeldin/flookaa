@@ -351,6 +351,55 @@ func (q *Queries) RecountCommenters(ctx context.Context, arg RecountCommentersPa
 	return items, nil
 }
 
+const recountFollowers = `-- name: RecountFollowers :many
+SELECT
+    pf.persona_id,
+    COUNT(*)::bigint AS count,
+    (ARRAY_AGG(pf.follower_persona_id ORDER BY pf.followed_at DESC, pf.follower_persona_id DESC))[1]::bigint AS latest_actor_id
+FROM persona_followers pf
+JOIN personas f ON f.id = pf.follower_persona_id AND f.deleted_at IS NULL
+WHERE pf.persona_id = ANY($1::bigint[])
+  AND pf.follower_persona_id <> $2::bigint
+  AND pf.unfollowed_at IS NULL
+  AND pf.status = 'active'
+GROUP BY pf.persona_id
+`
+
+type RecountFollowersParams struct {
+	PersonaIds  []int64
+	RecipientID int64
+}
+
+type RecountFollowersRow struct {
+	PersonaID     int64
+	Count         int64
+	LatestActorID int64
+}
+
+// Active followers of personas (new_follower).
+func (q *Queries) RecountFollowers(ctx context.Context, arg RecountFollowersParams) ([]RecountFollowersRow, error) {
+	rows, err := q.db.QueryContext(ctx, recountFollowers, pq.Array(arg.PersonaIds), arg.RecipientID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RecountFollowersRow
+	for rows.Next() {
+		var i RecountFollowersRow
+		if err := rows.Scan(&i.PersonaID, &i.Count, &i.LatestActorID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const recountLikers = `-- name: RecountLikers :many
 SELECT
     object_id,
@@ -386,6 +435,55 @@ func (q *Queries) RecountLikers(ctx context.Context, arg RecountLikersParams) ([
 	for rows.Next() {
 		var i RecountLikersRow
 		if err := rows.Scan(&i.ObjectID, &i.Count, &i.LatestActorID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const recountPendingFollowRequests = `-- name: RecountPendingFollowRequests :many
+SELECT
+    pf.persona_id,
+    COUNT(*)::bigint AS count,
+    (ARRAY_AGG(pf.follower_persona_id ORDER BY pf.followed_at DESC, pf.follower_persona_id DESC))[1]::bigint AS latest_actor_id
+FROM persona_followers pf
+JOIN personas f ON f.id = pf.follower_persona_id AND f.deleted_at IS NULL
+WHERE pf.persona_id = ANY($1::bigint[])
+  AND pf.follower_persona_id <> $2::bigint
+  AND pf.unfollowed_at IS NULL
+  AND pf.status = 'pending'
+GROUP BY pf.persona_id
+`
+
+type RecountPendingFollowRequestsParams struct {
+	PersonaIds  []int64
+	RecipientID int64
+}
+
+type RecountPendingFollowRequestsRow struct {
+	PersonaID     int64
+	Count         int64
+	LatestActorID int64
+}
+
+// Pending follow requests to personas (follow_request).
+func (q *Queries) RecountPendingFollowRequests(ctx context.Context, arg RecountPendingFollowRequestsParams) ([]RecountPendingFollowRequestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, recountPendingFollowRequests, pq.Array(arg.PersonaIds), arg.RecipientID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RecountPendingFollowRequestsRow
+	for rows.Next() {
+		var i RecountPendingFollowRequestsRow
+		if err := rows.Scan(&i.PersonaID, &i.Count, &i.LatestActorID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
