@@ -228,6 +228,8 @@ const CommentItem = React.memo(({
                         <PersonaLink
                             personaId={comment.authorId}
                             anonymous={comment.author.anonymous}
+                            name={comment.author.fullName}
+                            thumbnail={comment.author?.profileImageUrl ?? undefined}
                             tabIndex={-1}
                             className="shrink-0"
                         >
@@ -243,6 +245,8 @@ const CommentItem = React.memo(({
                             <PersonaLink
                                 personaId={comment.authorId}
                                 anonymous={comment.author.anonymous}
+                                name={comment.author.fullName}
+                                thumbnail={comment.author?.profileImageUrl ?? undefined}
                                 className="font-medium text-sm truncate"
                             >
                                 {comment.author.fullName}

@@ -171,6 +171,8 @@ export function Post({
             <PersonaLink
               personaId={post.authorId}
               anonymous={post.author?.anonymous ?? true}
+              name={post.author?.fullName ?? ""}
+              thumbnail={post.author?.profileImageUrl ?? undefined}
               tabIndex={-1}
               className="shrink-0"
             >
@@ -182,7 +184,12 @@ export function Post({
             <div>
               <div className="flex flex-wrap items-center gap-x-2">
                 <h4 className="text-base font-medium">
-                  <PersonaLink personaId={post.authorId} anonymous={post.author?.anonymous ?? true}>
+                  <PersonaLink
+                    personaId={post.authorId}
+                    anonymous={post.author?.anonymous ?? true}
+                    name={post.author?.fullName ?? ""}
+                    thumbnail={post.author?.profileImageUrl ?? undefined}
+                  >
                     {post.author?.fullName}
                   </PersonaLink>
                 </h4>

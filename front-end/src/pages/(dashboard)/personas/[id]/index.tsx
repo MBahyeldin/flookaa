@@ -167,7 +167,7 @@ export default function PersonaProfilePage() {
                   <p className="pt-2 text-sm whitespace-pre-line break-words">{state.persona.bio}</p>
                 )}
               </div>
-              {String(state.persona.id) !== String(viewerId) && (
+              {String(state.persona.id) !== String(viewerId) && state.persona.followable && (
                 <FollowButton
                   personaId={state.persona.id}
                   name={fullName(state.persona)}

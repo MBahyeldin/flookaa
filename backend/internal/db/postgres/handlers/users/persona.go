@@ -373,6 +373,7 @@ func (h *Handler) ReadPersona(c *gin.Context) {
 		"following_count":   follow.FollowingCount,
 		"follow_status":     followStatus(follow.FollowStatus),
 		"requires_approval": follow.RequiresApproval,
+		"followable":        p.Privacy != db.PersonaPrivacyEnumOnlyMe,
 	})
 }
 

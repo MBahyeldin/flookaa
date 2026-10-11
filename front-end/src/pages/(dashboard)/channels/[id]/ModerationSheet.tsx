@@ -219,6 +219,8 @@ function PersonRow({
       <PersonaLink
         personaId={person.persona_id}
         anonymous={person.anonymous}
+        name={displayName(person)}
+        thumbnail={person.thumbnail || undefined}
         tabIndex={-1}
         className="shrink-0"
       >
@@ -232,6 +234,8 @@ function PersonRow({
           <PersonaLink
             personaId={person.persona_id}
             anonymous={person.anonymous}
+          name={displayName(person)}
+          thumbnail={person.thumbnail || undefined}
             className="truncate text-sm font-medium"
           >
             {displayName(person)}

@@ -41,6 +41,7 @@ export type PersonaProfile = PublicPersona & {
     followers_count: number;
     following_count: number;
     requires_approval: boolean;
+    followable: boolean;
 }
 
 /** A private persona the viewer can't see: only its id and the viewer's own follow. */
