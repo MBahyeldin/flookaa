@@ -18,9 +18,18 @@ import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { MoreHorizontal, Trash2, Plus } from "lucide-react";
 import CreatePersona from "@/pages/select-persona/CreatePersona";
 import { DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { setShowOnProfile } from "@/services/persona";
+import type { Persona } from "@/types/persona";
 
 export default function PersonaManagerPage() {
-  const { personas } = useUserProfileStore();
+  const { personas, updatePersonaInStore } = useUserProfileStore();
+
+  const toggleShowOnProfile = async (persona: Persona, showOnProfile: boolean) => {
+    if (await setShowOnProfile(persona.id, showOnProfile)) {
+      updatePersonaInStore({ ...persona, show_on_profile: showOnProfile });
+    }
+  };
 
   return (
     <div className="mx-auto max-w-5xl py-8 px-4">
@@ -47,6 +56,7 @@ export default function PersonaManagerPage() {
               <TableHead>Profile Name</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>Visibility</TableHead>
+              <TableHead>On my profile</TableHead>
               <TableHead className="w-[60px]" />
             </TableRow>
           </TableHeader>
@@ -84,6 +94,16 @@ export default function PersonaManagerPage() {
 
                 <TableCell className="capitalize">
                   {persona.privacy}
+                </TableCell>
+
+                <TableCell>
+                  {persona.privacy === "public" && (
+                    <Switch
+                      checked={persona.show_on_profile}
+                      onCheckedChange={(checked) => toggleShowOnProfile(persona, checked)}
+                      aria-label="Show on my profile"
+                    />
+                  )}
                 </TableCell>
 
                 {/* Hover Actions */}
@@ -125,7 +145,7 @@ export default function PersonaManagerPage() {
             {personas.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={7}
                   className="py-8 text-center text-muted-foreground"
                 >
                   No personas created yet

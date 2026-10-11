@@ -20,6 +20,7 @@ export class FormField {
     value?: unknown,
     values?: Record<string, unknown>
   ) => string | null;
+  public visibleWhen?: (values: Record<string, unknown>) => boolean;
 
   constructor({
     id,
@@ -37,6 +38,7 @@ export class FormField {
     value,
     name,
     validate = () => null,
+    visibleWhen,
   }: {
     id: string;
     label: string;
@@ -56,6 +58,7 @@ export class FormField {
       value?: unknown,
       values?: Record<string, unknown>
     ) => string | null;
+    visibleWhen?: (values: Record<string, unknown>) => boolean;
   }) {
     this.id = id;
     this.label = label;
@@ -72,6 +75,11 @@ export class FormField {
     this.name = name;
     this.width = this.geWidthClass(width);
     this.validate = validate;
+    this.visibleWhen = visibleWhen;
+  }
+
+  isVisible(values: Record<string, unknown>) {
+    return this.visibleWhen ? this.visibleWhen(values) : true;
   }
 
   geWidthClass(width: string) {

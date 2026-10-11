@@ -702,20 +702,21 @@ type Notification struct {
 }
 
 type Persona struct {
-	ID          int64
-	UserID      int64
-	Name        string
-	Description string
-	Slug        string
-	FirstName   string
-	LastName    string
-	Thumbnail   sql.NullString
-	Bio         sql.NullString
-	Privacy     PersonaPrivacyEnum
-	IsDefault   sql.NullBool
-	CreatedAt   sql.NullTime
-	UpdatedAt   sql.NullTime
-	DeletedAt   sql.NullTime
+	ID            int64
+	UserID        int64
+	Name          string
+	Description   string
+	Slug          string
+	FirstName     string
+	LastName      string
+	Thumbnail     sql.NullString
+	Bio           sql.NullString
+	Privacy       PersonaPrivacyEnum
+	IsDefault     sql.NullBool
+	ShowOnProfile bool
+	CreatedAt     sql.NullTime
+	UpdatedAt     sql.NullTime
+	DeletedAt     sql.NullTime
 }
 
 type PersonaFollower struct {

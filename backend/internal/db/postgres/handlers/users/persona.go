@@ -63,17 +63,18 @@ func (h *Handler) ListPersonas(c *gin.Context) {
 	var response []gin.H
 	for _, persona := range personas {
 		response = append(response, gin.H{
-			"id":          persona.ID,
-			"name":        persona.Name,
-			"description": persona.Description,
-			"bio":         persona.Bio.String,
-			"first_name":  persona.FirstName,
-			"last_name":   persona.LastName,
-			"thumbnail":   persona.Thumbnail.String,
-			"is_default":  persona.IsDefault.Bool,
-			"created_at":  persona.CreatedAt.Time,
-			"slug":        persona.Slug,
-			"privacy":     persona.Privacy,
+			"id":              persona.ID,
+			"name":            persona.Name,
+			"description":     persona.Description,
+			"bio":             persona.Bio.String,
+			"first_name":      persona.FirstName,
+			"last_name":       persona.LastName,
+			"thumbnail":       persona.Thumbnail.String,
+			"is_default":      persona.IsDefault.Bool,
+			"created_at":      persona.CreatedAt.Time,
+			"slug":            persona.Slug,
+			"privacy":         persona.Privacy,
+			"show_on_profile": persona.ShowOnProfile,
 		})
 	}
 
@@ -90,17 +91,25 @@ func (h *Handler) CreatePersona(c *gin.Context) {
 	}
 
 	var req struct {
-		Name        string `json:"name" binding:"required"`
-		Description string `json:"description" binding:"required"`
-		FirstName   string `json:"first_name" binding:"required"`
-		LastName    string `json:"last_name" binding:"required"`
-		Privacy     string `json:"privacy" binding:"required"`
-		Thumbnail   string `json:"thumbnail"`
-		Bio         string `json:"bio"`
+		Name          string `json:"name" binding:"required"`
+		Description   string `json:"description" binding:"required"`
+		FirstName     string `json:"first_name" binding:"required"`
+		LastName      string `json:"last_name" binding:"required"`
+		Privacy       string `json:"privacy" binding:"required"`
+		Thumbnail     string `json:"thumbnail"`
+		Bio           string `json:"bio"`
+		ShowOnProfile *bool  `json:"show_on_profile"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("%v", err.Error())})
+		return
+	}
+
+	privacy := getPersonaFromString(req.Privacy, db.PersonaPrivacyEnumPublic)
+	showOnProfile, ok := resolveShowOnProfile(privacy, req.ShowOnProfile, false)
+	if !ok {
+		showOnProfileRequiresPublic(c)
 		return
 	}
 
@@ -109,15 +118,16 @@ func (h *Handler) CreatePersona(c *gin.Context) {
 	slug := generateSlug(req.FirstName, req.LastName)
 
 	personaId, err := q.CreatePersona(ctx, db.CreatePersonaParams{
-		UserID:      userId,
-		Name:        req.Name,
-		Description: req.Description,
-		Bio:         sql.NullString{String: req.Bio, Valid: req.Bio != ""},
-		FirstName:   req.FirstName,
-		LastName:    req.LastName,
-		Slug:        slug,
-		Thumbnail:   sql.NullString{String: req.Thumbnail, Valid: req.Thumbnail != ""},
-		Privacy:     getPersonaFromString(req.Privacy, db.PersonaPrivacyEnumPublic),
+		UserID:        userId,
+		Name:          req.Name,
+		Description:   req.Description,
+		Bio:           sql.NullString{String: req.Bio, Valid: req.Bio != ""},
+		FirstName:     req.FirstName,
+		LastName:      req.LastName,
+		Slug:          slug,
+		Thumbnail:     sql.NullString{String: req.Thumbnail, Valid: req.Thumbnail != ""},
+		Privacy:       privacy,
+		ShowOnProfile: showOnProfile,
 	})
 	if err != nil {
 		fmt.Println("Error creating persona:", err)
@@ -196,13 +206,14 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 	}
 
 	var req struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-		FirstName   string `json:"first_name"`
-		LastName    string `json:"last_name"`
-		Thumbnail   string `json:"thumbnail"`
-		Bio         string `json:"bio"`
-		Privacy     string `json:"privacy"`
+		Name          string `json:"name"`
+		Description   string `json:"description"`
+		FirstName     string `json:"first_name"`
+		LastName      string `json:"last_name"`
+		Thumbnail     string `json:"thumbnail"`
+		Bio           string `json:"bio"`
+		Privacy       string `json:"privacy"`
+		ShowOnProfile *bool  `json:"show_on_profile"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -221,17 +232,25 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 		return
 	}
 
+	privacy := getPersonaFromString(req.Privacy, persona.Privacy)
+	showOnProfile, ok := resolveShowOnProfile(privacy, req.ShowOnProfile, persona.ShowOnProfile)
+	if !ok {
+		showOnProfileRequiresPublic(c)
+		return
+	}
+
 	updatedPersona, err := q.UpdatePersonaByIdAndUserId(ctx, db.UpdatePersonaByIdAndUserIdParams{
-		ID:          personaId,
-		UserID:      userId,
-		Name:        getStringOrDefault(req.Name, persona.Name),
-		Description: getStringOrDefault(req.Description, persona.Description),
-		Bio:         sql.NullString{String: getStringOrDefault(req.Bio, persona.Bio.String), Valid: req.Bio != ""},
-		FirstName:   getStringOrDefault(req.FirstName, persona.FirstName),
-		LastName:    getStringOrDefault(req.LastName, persona.LastName),
-		Thumbnail:   sql.NullString{String: getStringOrDefault(req.Thumbnail, persona.Thumbnail.String), Valid: req.Thumbnail != ""},
-		Slug:        persona.Slug,
-		Privacy:     getPersonaFromString(req.Privacy, persona.Privacy),
+		ID:            personaId,
+		UserID:        userId,
+		Name:          getStringOrDefault(req.Name, persona.Name),
+		Description:   getStringOrDefault(req.Description, persona.Description),
+		Bio:           sql.NullString{String: getStringOrDefault(req.Bio, persona.Bio.String), Valid: req.Bio != ""},
+		FirstName:     getStringOrDefault(req.FirstName, persona.FirstName),
+		LastName:      getStringOrDefault(req.LastName, persona.LastName),
+		Thumbnail:     sql.NullString{String: getStringOrDefault(req.Thumbnail, persona.Thumbnail.String), Valid: req.Thumbnail != ""},
+		Slug:          persona.Slug,
+		Privacy:       privacy,
+		ShowOnProfile: showOnProfile,
 	})
 
 	if err != nil {
@@ -243,17 +262,18 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"id":          updatedPersona.ID,
-		"name":        updatedPersona.Name,
-		"description": updatedPersona.Description,
-		"bio":         updatedPersona.Bio.String,
-		"first_name":  updatedPersona.FirstName,
-		"last_name":   updatedPersona.LastName,
-		"thumbnail":   updatedPersona.Thumbnail.String,
-		"is_default":  updatedPersona.IsDefault.Bool,
-		"created_at":  updatedPersona.CreatedAt.Time,
-		"slug":        updatedPersona.Slug,
-		"privacy":     updatedPersona.Privacy,
+		"id":              updatedPersona.ID,
+		"name":            updatedPersona.Name,
+		"description":     updatedPersona.Description,
+		"bio":             updatedPersona.Bio.String,
+		"first_name":      updatedPersona.FirstName,
+		"last_name":       updatedPersona.LastName,
+		"thumbnail":       updatedPersona.Thumbnail.String,
+		"is_default":      updatedPersona.IsDefault.Bool,
+		"created_at":      updatedPersona.CreatedAt.Time,
+		"slug":            updatedPersona.Slug,
+		"privacy":         updatedPersona.Privacy,
+		"show_on_profile": updatedPersona.ShowOnProfile,
 	})
 }
 
@@ -268,4 +288,19 @@ func getPersonaFromString(input string, defaultValue db.PersonaPrivacyEnum) db.P
 	default:
 		return defaultValue
 	}
+}
+
+// A non-public persona is never linked, so the flag clears when privacy changes.
+func resolveShowOnProfile(privacy db.PersonaPrivacyEnum, requested *bool, current bool) (bool, bool) {
+	if privacy != db.PersonaPrivacyEnumPublic {
+		return false, requested == nil || !*requested
+	}
+	if requested != nil {
+		return *requested, true
+	}
+	return current, true
+}
+
+func showOnProfileRequiresPublic(c *gin.Context) {
+	c.JSON(http.StatusBadRequest, gin.H{"error": "show_on_profile_requires_public"})
 }

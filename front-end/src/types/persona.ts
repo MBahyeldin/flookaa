@@ -14,6 +14,7 @@ export type Persona = {
     created_at: string;
 
     privacy: "public" | "private" | "only_me";
+    show_on_profile: boolean;
 
     joined_channels: Array<{
         id: string;

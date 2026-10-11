@@ -14,21 +14,22 @@ import (
 )
 
 const createPersona = `-- name: CreatePersona :one
-INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, privacy, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, NOW(), NOW())
-RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, created_at, updated_at, deleted_at
+INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, privacy, show_on_profile, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, $10, NOW(), NOW())
+RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at
 `
 
 type CreatePersonaParams struct {
-	UserID      int64
-	Name        string
-	Description string
-	FirstName   string
-	LastName    string
-	Thumbnail   sql.NullString
-	Bio         sql.NullString
-	Slug        string
-	Privacy     PersonaPrivacyEnum
+	UserID        int64
+	Name          string
+	Description   string
+	FirstName     string
+	LastName      string
+	Thumbnail     sql.NullString
+	Bio           sql.NullString
+	Slug          string
+	Privacy       PersonaPrivacyEnum
+	ShowOnProfile bool
 }
 
 // ------------------------------
@@ -45,6 +46,7 @@ func (q *Queries) CreatePersona(ctx context.Context, arg CreatePersonaParams) (P
 		arg.Bio,
 		arg.Slug,
 		arg.Privacy,
+		arg.ShowOnProfile,
 	)
 	var i Persona
 	err := row.Scan(
@@ -59,6 +61,7 @@ func (q *Queries) CreatePersona(ctx context.Context, arg CreatePersonaParams) (P
 		&i.Bio,
 		&i.Privacy,
 		&i.IsDefault,
+		&i.ShowOnProfile,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -67,7 +70,7 @@ func (q *Queries) CreatePersona(ctx context.Context, arg CreatePersonaParams) (P
 }
 
 const getDefaultPersonaByUserId = `-- name: GetDefaultPersonaByUserId :one
-SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, created_at, updated_at, deleted_at
+SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at
 FROM personas
 WHERE user_id = $1 AND is_default = TRUE
 LIMIT 1
@@ -91,6 +94,7 @@ func (q *Queries) GetDefaultPersonaByUserId(ctx context.Context, userID int64) (
 		&i.Bio,
 		&i.Privacy,
 		&i.IsDefault,
+		&i.ShowOnProfile,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -162,7 +166,7 @@ func (q *Queries) GetPersonaBasicInfo(ctx context.Context, id int64) (GetPersona
 }
 
 const getPersonaByIdAndUserId = `-- name: GetPersonaByIdAndUserId :one
-SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, created_at, updated_at, deleted_at
+SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at
 FROM personas
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 `
@@ -190,6 +194,7 @@ func (q *Queries) GetPersonaByIdAndUserId(ctx context.Context, arg GetPersonaByI
 		&i.Bio,
 		&i.Privacy,
 		&i.IsDefault,
+		&i.ShowOnProfile,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -320,7 +325,7 @@ func (q *Queries) GetPersonaStats(ctx context.Context, id int64) (GetPersonaStat
 }
 
 const getUserPersonasByUserId = `-- name: GetUserPersonasByUserId :many
-SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, created_at, updated_at, deleted_at
+SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at
 FROM personas
 WHERE user_id = $1 AND deleted_at IS NULL
 ORDER BY created_at DESC
@@ -350,6 +355,7 @@ func (q *Queries) GetUserPersonasByUserId(ctx context.Context, userID int64) ([]
 			&i.Bio,
 			&i.Privacy,
 			&i.IsDefault,
+			&i.ShowOnProfile,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -489,22 +495,24 @@ SET name = COALESCE($3, name),
     bio = COALESCE($8, bio),
     slug = COALESCE($9, slug),
     privacy = COALESCE($10, privacy),
+    show_on_profile = $11,
     updated_at = NOW()
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
-RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, created_at, updated_at, deleted_at
+RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at
 `
 
 type UpdatePersonaByIdAndUserIdParams struct {
-	ID          int64
-	UserID      int64
-	Name        string
-	Description string
-	FirstName   string
-	LastName    string
-	Thumbnail   sql.NullString
-	Bio         sql.NullString
-	Slug        string
-	Privacy     PersonaPrivacyEnum
+	ID            int64
+	UserID        int64
+	Name          string
+	Description   string
+	FirstName     string
+	LastName      string
+	Thumbnail     sql.NullString
+	Bio           sql.NullString
+	Slug          string
+	Privacy       PersonaPrivacyEnum
+	ShowOnProfile bool
 }
 
 // -------------------------------
@@ -522,6 +530,7 @@ func (q *Queries) UpdatePersonaByIdAndUserId(ctx context.Context, arg UpdatePers
 		arg.Bio,
 		arg.Slug,
 		arg.Privacy,
+		arg.ShowOnProfile,
 	)
 	var i Persona
 	err := row.Scan(
@@ -536,6 +545,7 @@ func (q *Queries) UpdatePersonaByIdAndUserId(ctx context.Context, arg UpdatePers
 		&i.Bio,
 		&i.Privacy,
 		&i.IsDefault,
+		&i.ShowOnProfile,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,

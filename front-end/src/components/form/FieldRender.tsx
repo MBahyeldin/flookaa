@@ -8,6 +8,7 @@ import CountrySelector from "../inputs/geo/CountrySelector";
 import StateSelector from "../inputs/geo/StateSelector";
 import CitySelector from "../inputs/geo/CitySelector";
 import SelectInput from "../inputs/select";
+import SwitchInput from "../inputs/switch";
 
 export default function FieldRender({
   field,
@@ -36,7 +37,7 @@ export default function FieldRender({
     shouldValidate?: boolean
   ) => Promise<FormikErrors<Record<string, unknown>>> | Promise<void>;
 }) {
-  if (!field.interfaceType) {
+  if (!field.interfaceType || !field.isVisible(values ?? {})) {
     return null;
   }
   return (
@@ -120,6 +121,15 @@ export default function FieldRender({
           setFieldValue={setFieldValue}
           stateId={values?.state_id as string}
           handleBlur={handleBlur}
+        />
+      )}
+      {field.interfaceType === "switch" && (
+        <SwitchInput
+          field={field}
+          error={error}
+          touched={touched}
+          value={value}
+          setFieldValue={setFieldValue}
         />
       )}
       {

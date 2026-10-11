@@ -35,6 +35,14 @@ export default function Form({
     initialValues,
   });
 
+  // A hidden field is not submitted, e.g. show_on_profile once privacy isn't public.
+  useEffect(() => {
+    form.groups
+      .flatMap((group) => group.fields)
+      .filter((f) => !f.isVisible(values) && values[f.id] !== undefined)
+      .forEach((f) => setFieldValue(f.id, undefined));
+  }, [form, values, setFieldValue]);
+
   useEffect(() => {
     if (status) {
       onStatusChange(status);

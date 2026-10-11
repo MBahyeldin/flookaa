@@ -36,6 +36,14 @@ const personaFormFields = [
     isRequired: true,
     width: "full",
   }),
+  new FormField({
+    id: "show_on_profile",
+    label: "Show on my profile",
+    type: "switch",
+    interfaceType: "switch",
+    width: "full",
+    visibleWhen: (values) => values.privacy === "public",
+  }),
 ];
 
 const profileFormFields = [

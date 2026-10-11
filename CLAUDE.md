@@ -164,6 +164,7 @@ Private and `only_me` personas can do everything a public one can (join, post, c
 - **Anonymous view**: `access.AnonymousName(personaID, channelID)` ("Quiet Otter 37"), the same within a channel and different across channels, and no thumbnail; the frontend draws a `GeneratedAvatarFallback` from the name. **Ids stay real**, so moderators act on anonymous members by `persona_id`.
 - There are no exceptions for moderators or global Administrators.
 - The rule is one SQL query, `ResolvePersonasForViewer(viewer_id, ids)` (fields + `visible`). Every response that shows another persona's name or avatar goes through it: GraphQL post/comment authors and the channel owner (`Resolver.resolvePersonas`), channel member and join-request lists (`access.VisiblePersonas` via `channels.Handler.anonymize`, non-public personas only).
+- **`show_on_profile`** (opt-in link from a public persona to its user's profile, default off) is public-only: a CHECK constraint enforces it, and a privacy change away from public clears it in the same update. Like `is_default`, it is account data, returned only by your own `/persona/list` and `/persona/update`.
 - **The Redis persona cache (`persona:<id>:info`) holds public personas only**: `SetPersonaInfo` skips the others and `GetPersonaInfo` drops a cached non-public entry. A cache hit is therefore visible to everyone and needs no query; only misses go to Postgres, one batch per page. `UpdatePersona` evicts the entry.
 
 ### Counters: Postgres is the source of truth, Redis is a cache

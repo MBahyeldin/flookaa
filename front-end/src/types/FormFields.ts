@@ -12,6 +12,7 @@ type FormFieldInterfaceTypes =
   | "select"
   | "radio"
   | "checkbox"
+  | "switch"
   | "date"
   | "file"
   | "pic"

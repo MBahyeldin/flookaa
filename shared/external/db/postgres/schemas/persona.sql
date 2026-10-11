@@ -36,12 +36,14 @@ CREATE TABLE personas (
 
     privacy persona_privacy_enum NOT NULL DEFAULT 'public',
     is_default BOOLEAN DEFAULT false,
+    show_on_profile BOOLEAN NOT NULL DEFAULT false,
 
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
     deleted_at TIMESTAMP WITHOUT TIME ZONE,
 
-    UNIQUE (user_id, slug)
+    UNIQUE (user_id, slug),
+    CONSTRAINT personas_show_on_profile_public CHECK (NOT show_on_profile OR privacy = 'public')
 );
 
 
