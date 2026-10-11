@@ -150,7 +150,7 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 		notifications = append(notifications, n)
 	}
 
-	actors, err := h.resolveActors(ctx, actorIDs)
+	actors, err := h.resolveActors(ctx, personaId, actorIDs)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -161,8 +161,15 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 		return
 	}
 	for i := range notifications {
+		var chID int64
+		if ch := notifications[i].Channel; ch != nil {
+			chID = ch.ID
+		}
 		if a := notifications[i].LatestActor; a != nil {
-			notifications[i].LatestActor = actors[a.ID]
+			notifications[i].LatestActor = nil
+			if resolved := actors[a.ID]; resolved != nil {
+				notifications[i].LatestActor = resolved.view(chID)
+			}
 		}
 		if ch := notifications[i].Channel; ch != nil {
 			notifications[i].Channel = channels[ch.ID]

@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import type { Notification } from "@/types/notification";
@@ -45,8 +46,14 @@ export default function NotificationItem({
       )}
     >
       <Avatar className="size-9 shrink-0">
-        <AvatarImage src={image} alt="" />
-        <AvatarFallback>{initials.toUpperCase()}</AvatarFallback>
+        {actor?.anonymous ? (
+          <GeneratedAvatarFallback name={actor.first_name} />
+        ) : (
+          <>
+            <AvatarImage src={image} alt="" />
+            <AvatarFallback>{initials.toUpperCase()}</AvatarFallback>
+          </>
+        )}
       </Avatar>
       <span className="min-w-0 flex-1">
         <span className="block break-words">

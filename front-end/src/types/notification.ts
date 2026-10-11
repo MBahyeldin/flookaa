@@ -13,6 +13,8 @@ type NotificationActor = {
   first_name: string;
   last_name: string;
   thumbnail: string;
+  /** Not visible to the recipient: a per-channel generated name, no thumbnail. */
+  anonymous: boolean;
 };
 
 type NotificationChannel = {
