@@ -120,8 +120,8 @@ Tiers are applied at **group** level, so a new route inherits its group's tier:
 | Tier | Routes |
 |---|---|
 | Public | `/api/v1/health`, `auth/register`, `auth/login`, `auth/logout`, `auth/google`, `auth/oauth2callback/*`, `geo/*` (used during signup) |
-| User | `auth/info`, `auth/verify`, `users/*`, `persona/*` |
-| Persona | `channels/*`, `notifications/*`, `POST /query`, `POST /control` |
+| User | `auth/info`, `auth/verify`, `users/*`, `persona/*` (except below) |
+| Persona | `channels/*`, `notifications/*`, `persona/:persona_id/*`, `POST /query`, `POST /control` |
 
 **Content and channel actions belong to a persona, not a user**: authorship, membership, realtime subscriptions (Redis `persona:<id>:subjects`) are all keyed by `persona_id`; `user_id` is only for account and persona management. A response about another persona never carries `user_id`, `is_default`, or any other field that ties it to the account or to the user's other personas; only your own account and persona endpoints return them. GraphQL never reads `user_id`. `/playground` is only mounted when `GIN_MODE` is not `release`.
 
@@ -165,6 +165,7 @@ Private and `only_me` personas can do everything a public one can (join, post, c
 - There are no exceptions for moderators or global Administrators.
 - The rule is one SQL query, `ResolvePersonasForViewer(viewer_id, ids)` (fields + `visible`). Every response that shows another persona's name or avatar goes through it: GraphQL post/comment authors and the channel owner (`Resolver.resolvePersonas`), channel member and join-request lists (`access.VisiblePersonas` via `channels.Handler.anonymize`, non-public personas only).
 - **`show_on_profile`** (opt-in link from a public persona to its user's profile, default off) is public-only: a CHECK constraint enforces it, and a privacy change away from public clears it in the same update. Like `is_default`, it is account data, returned only by your own `/persona/list` and `/persona/update`.
+- **Connected personas** (`GET /persona/:persona_id/connected`, `ListConnectedPersonas`): a persona that is public with `show_on_profile` on is **linked**. Only a linked source lists its user's other linked personas, and the source itself is not in the list. A source the viewer sees only anonymously is 404. A visible but unlinked source returns `[]`, since listing its siblings would tie it to them. The owner gets the same view as a visitor.
 - **The Redis persona cache (`persona:<id>:info`) holds public personas only**: `SetPersonaInfo` skips the others and `GetPersonaInfo` drops a cached non-public entry. A cache hit is therefore visible to everyone and needs no query; only misses go to Postgres, one batch per page. `UpdatePersona` evicts the entry.
 
 ### Counters: Postgres is the source of truth, Redis is a cache

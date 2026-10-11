@@ -151,3 +151,15 @@ SELECT
 FROM personas t
 WHERE t.id = ANY(sqlc.arg(ids)::bigint[])
   AND t.deleted_at IS NULL;
+
+-- -------------------------------
+-- 15. Connected personas of a linked persona
+-- -------------------------------
+-- name: ListConnectedPersonas :many
+SELECT p.id, p.name, p.first_name, p.last_name, p.slug, p.thumbnail, p.bio
+FROM personas s
+JOIN personas p ON p.user_id = s.user_id AND p.id <> s.id
+WHERE s.id = $1
+  AND s.deleted_at IS NULL AND s.privacy = 'public' AND s.show_on_profile
+  AND p.deleted_at IS NULL AND p.privacy = 'public' AND p.show_on_profile
+ORDER BY p.created_at, p.id;

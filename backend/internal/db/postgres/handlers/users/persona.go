@@ -8,6 +8,7 @@ import (
 	"hash/fnv"
 	"log"
 	"net/http"
+	"shared/pkg/access"
 	"shared/pkg/db"
 	"strconv"
 	"time"
@@ -303,4 +304,51 @@ func resolveShowOnProfile(privacy db.PersonaPrivacyEnum, requested *bool, curren
 
 func showOnProfileRequiresPublic(c *gin.Context) {
 	c.JSON(http.StatusBadRequest, gin.H{"error": "show_on_profile_requires_public"})
+}
+
+func (h *Handler) ConnectedPersonas(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	viewerID, ok := auth.PersonaID(c)
+	if !ok {
+		auth.PersonaRequired(c)
+		return
+	}
+
+	personaID, err := strconv.ParseInt(c.Param("persona_id"), 10, 64)
+	if err != nil || personaID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid persona_id parameter"})
+		return
+	}
+
+	visible, err := access.VisiblePersonas(ctx, h.q, viewerID, []int64{personaID})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve persona"})
+		return
+	}
+	if !visible[personaID] {
+		c.JSON(http.StatusNotFound, gin.H{"error": "persona not found"})
+		return
+	}
+
+	rows, err := h.q.ListConnectedPersonas(ctx, personaID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve connected personas"})
+		return
+	}
+
+	personas := make([]gin.H, 0, len(rows))
+	for _, p := range rows {
+		personas = append(personas, gin.H{
+			"id":         p.ID,
+			"name":       p.Name,
+			"first_name": p.FirstName,
+			"last_name":  p.LastName,
+			"slug":       p.Slug,
+			"thumbnail":  p.Thumbnail.String,
+			"bio":        p.Bio.String,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"personas": personas})
 }

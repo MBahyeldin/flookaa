@@ -373,6 +373,60 @@ func (q *Queries) GetUserPersonasByUserId(ctx context.Context, userID int64) ([]
 	return items, nil
 }
 
+const listConnectedPersonas = `-- name: ListConnectedPersonas :many
+SELECT p.id, p.name, p.first_name, p.last_name, p.slug, p.thumbnail, p.bio
+FROM personas s
+JOIN personas p ON p.user_id = s.user_id AND p.id <> s.id
+WHERE s.id = $1
+  AND s.deleted_at IS NULL AND s.privacy = 'public' AND s.show_on_profile
+  AND p.deleted_at IS NULL AND p.privacy = 'public' AND p.show_on_profile
+ORDER BY p.created_at, p.id
+`
+
+type ListConnectedPersonasRow struct {
+	ID        int64
+	Name      string
+	FirstName string
+	LastName  string
+	Slug      string
+	Thumbnail sql.NullString
+	Bio       sql.NullString
+}
+
+// -------------------------------
+// 15. Connected personas of a linked persona
+// -------------------------------
+func (q *Queries) ListConnectedPersonas(ctx context.Context, id int64) ([]ListConnectedPersonasRow, error) {
+	rows, err := q.db.QueryContext(ctx, listConnectedPersonas, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListConnectedPersonasRow
+	for rows.Next() {
+		var i ListConnectedPersonasRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.FirstName,
+			&i.LastName,
+			&i.Slug,
+			&i.Thumbnail,
+			&i.Bio,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const resolvePersonaByID = `-- name: ResolvePersonaByID :one
 SELECT id, first_name, last_name, thumbnail, bio, slug, privacy 
 FROM personas 

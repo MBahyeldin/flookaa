@@ -16,4 +16,9 @@ func AddPersonaRoutes(r *gin.RouterGroup, users *users.Handler) {
 		personaGroup.POST("/set-current-persona", users.SetCurrentPersona)
 		personaGroup.POST("/update/:persona_id", users.UpdatePersona)
 	}
+
+	viewGroup := personaGroup.Group("/:persona_id", auth.RequirePersona())
+	{
+		viewGroup.GET("/connected", users.ConnectedPersonas)
+	}
 }
