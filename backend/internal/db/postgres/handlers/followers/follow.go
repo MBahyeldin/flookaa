@@ -15,11 +15,15 @@ import (
 // Follow follows a public persona, or files a pending request for a private
 // one. Following again changes nothing and publishes nothing.
 func (h *Handler) Follow(c *gin.Context) {
-	ctx := c.Request.Context()
 	followerID, personaID, ok := targetParams(c)
 	if !ok {
 		return
 	}
+	h.follow(c, followerID, personaID)
+}
+
+func (h *Handler) follow(c *gin.Context, followerID, personaID int64) {
+	ctx := c.Request.Context()
 	if followerID == personaID {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot follow yourself"})
 		return

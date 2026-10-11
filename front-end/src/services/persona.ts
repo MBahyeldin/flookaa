@@ -112,6 +112,45 @@ export async function removeFollower(personaId: number, followerId: number): Pro
   await followersRequest(personaId, `followers/${followerId}/remove`, "POST");
 }
 
+/** Your private persona's follow-request link token; created once, replaced on reset. */
+export async function getInviteLink(personaId: number, reset = false): Promise<string> {
+  const body = await followersRequest<{ token: string }>(personaId, reset ? "invite-link/reset" : "invite-link", "POST");
+  return body.token;
+}
+
+export type InviteState =
+  | { visible: true; persona_id: number }
+  | { visible: false; follow_status: FollowStatus };
+
+export async function fetchInvite(token: string): Promise<InviteState | "not_found" | "unauthenticated" | null> {
+  try {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/persona/invite/${encodeURIComponent(token)}`, {
+      credentials: "include",
+    });
+    if (resp.status === 404) return "not_found";
+    if (resp.status === 401) return "unauthenticated";
+    if (!resp.ok) return null;
+    return (await resp.json()) as InviteState;
+  } catch (err) {
+    console.error("Error fetching invite:", err);
+    return null;
+  }
+}
+
+export async function requestViaInvite(token: string): Promise<FollowStatus | Error> {
+  try {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/persona/invite/${encodeURIComponent(token)}/request`, {
+      method: "POST",
+      credentials: "include",
+    });
+    const body = await resp.json().catch(() => ({}));
+    if (!resp.ok) return new Error(body.error || "Failed to request to follow");
+    return body.status as FollowStatus;
+  } catch (err) {
+    return err as Error;
+  }
+}
+
 export async function setShowOnProfile(personaId: string, showOnProfile: boolean): Promise<boolean> {
   try {
     const resp = await apiFetch(`${API_BASE_URL}/api/v1/persona/update/${personaId}`, {

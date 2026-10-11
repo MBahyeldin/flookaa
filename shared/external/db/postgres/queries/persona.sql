@@ -120,6 +120,7 @@ SET name = COALESCE($3, name),
     slug = COALESCE($9, slug),
     privacy = COALESCE($10, privacy),
     show_on_profile = $11,
+    invite_token = CASE WHEN COALESCE($10, privacy) = 'private' THEN invite_token END,
     updated_at = NOW()
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 RETURNING *;
@@ -280,3 +281,25 @@ UPDATE persona_followers
 SET unfollowed_at = NOW()
 WHERE persona_id = $1 AND follower_persona_id = $2
   AND status = 'active' AND unfollowed_at IS NULL;
+
+-- -------------------------------
+-- Follow-request link of a private persona
+-- -------------------------------
+-- name: EnsurePersonaInviteToken :one
+UPDATE personas
+SET invite_token = COALESCE(invite_token, sqlc.arg(token)::text)
+WHERE id = sqlc.arg(persona_id)::bigint AND privacy = 'private' AND deleted_at IS NULL
+RETURNING invite_token::text;
+
+-- name: ResetPersonaInviteToken :one
+UPDATE personas
+SET invite_token = sqlc.arg(token)::text
+WHERE id = sqlc.arg(persona_id)::bigint AND privacy = 'private' AND deleted_at IS NULL
+RETURNING invite_token::text;
+
+-- name: GetPersonaByInviteToken :one
+SELECT t.id
+FROM personas t
+WHERE t.invite_token = sqlc.arg(token)::text
+  AND t.privacy = 'private'
+  AND t.deleted_at IS NULL;

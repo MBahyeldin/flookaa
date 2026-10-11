@@ -8,22 +8,28 @@ import {
 } from "@/components/ui/card";
 import { useEffect } from "react";
 import { useAuth } from "@/Auth.context";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Form } from "@/models/Forms/Form";
 import FormComponent from "@/components/form";
 import { Button } from "@/components/ui/button";
 import OAuthProviders from "@/components/oauth-providers";
 
+// Only same-site paths, so `next` can't redirect to another origin.
+const safeNext = (next: string | null) =>
+  next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/";
+
 export default function SignupPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const next = safeNext(searchParams.get("next"));
   const { user, isAuthenticated, revalidateUser } = useAuth();
 
   // this should be handled by a route guard but just in case
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/");
+      navigate(next);
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, navigate, next]);
 
   const onStatusChange = (status: {
     success: boolean;
@@ -32,7 +38,7 @@ export default function SignupPage() {
     if (status && status.success) {
       localStorage.setItem("loginSuccess", "true");
       revalidateUser();
-      navigate("/");
+      navigate(next);
     }
   };
 

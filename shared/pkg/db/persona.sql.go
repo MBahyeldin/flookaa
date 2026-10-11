@@ -16,7 +16,7 @@ import (
 const createPersona = `-- name: CreatePersona :one
 INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, privacy, show_on_profile, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, $10, NOW(), NOW())
-RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at
+RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at, invite_token
 `
 
 type CreatePersonaParams struct {
@@ -65,8 +65,31 @@ func (q *Queries) CreatePersona(ctx context.Context, arg CreatePersonaParams) (P
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.InviteToken,
 	)
 	return i, err
+}
+
+const ensurePersonaInviteToken = `-- name: EnsurePersonaInviteToken :one
+UPDATE personas
+SET invite_token = COALESCE(invite_token, $1::text)
+WHERE id = $2::bigint AND privacy = 'private' AND deleted_at IS NULL
+RETURNING invite_token::text
+`
+
+type EnsurePersonaInviteTokenParams struct {
+	Token     string
+	PersonaID int64
+}
+
+// -------------------------------
+// Follow-request link of a private persona
+// -------------------------------
+func (q *Queries) EnsurePersonaInviteToken(ctx context.Context, arg EnsurePersonaInviteTokenParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, ensurePersonaInviteToken, arg.Token, arg.PersonaID)
+	var invite_token string
+	err := row.Scan(&invite_token)
+	return invite_token, err
 }
 
 const followPersona = `-- name: FollowPersona :execrows
@@ -96,7 +119,7 @@ func (q *Queries) FollowPersona(ctx context.Context, arg FollowPersonaParams) (i
 }
 
 const getDefaultPersonaByUserId = `-- name: GetDefaultPersonaByUserId :one
-SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at
+SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at, invite_token
 FROM personas
 WHERE user_id = $1 AND is_default = TRUE
 LIMIT 1
@@ -124,6 +147,7 @@ func (q *Queries) GetDefaultPersonaByUserId(ctx context.Context, userID int64) (
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.InviteToken,
 	)
 	return i, err
 }
@@ -225,7 +249,7 @@ func (q *Queries) GetPersonaBasicInfo(ctx context.Context, id int64) (GetPersona
 }
 
 const getPersonaByIdAndUserId = `-- name: GetPersonaByIdAndUserId :one
-SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at
+SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at, invite_token
 FROM personas
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 `
@@ -257,8 +281,24 @@ func (q *Queries) GetPersonaByIdAndUserId(ctx context.Context, arg GetPersonaByI
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.InviteToken,
 	)
 	return i, err
+}
+
+const getPersonaByInviteToken = `-- name: GetPersonaByInviteToken :one
+SELECT t.id
+FROM personas t
+WHERE t.invite_token = $1::text
+  AND t.privacy = 'private'
+  AND t.deleted_at IS NULL
+`
+
+func (q *Queries) GetPersonaByInviteToken(ctx context.Context, token string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getPersonaByInviteToken, token)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const getPersonaFollowInfo = `-- name: GetPersonaFollowInfo :one
@@ -433,7 +473,7 @@ func (q *Queries) GetPersonaStats(ctx context.Context, id int64) (GetPersonaStat
 }
 
 const getUserPersonasByUserId = `-- name: GetUserPersonasByUserId :many
-SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at
+SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at, invite_token
 FROM personas
 WHERE user_id = $1 AND deleted_at IS NULL
 ORDER BY created_at DESC
@@ -467,6 +507,7 @@ func (q *Queries) GetUserPersonasByUserId(ctx context.Context, userID int64) ([]
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.InviteToken,
 		); err != nil {
 			return nil, err
 		}
@@ -672,6 +713,25 @@ func (q *Queries) RemoveFollower(ctx context.Context, arg RemoveFollowerParams) 
 	return result.RowsAffected()
 }
 
+const resetPersonaInviteToken = `-- name: ResetPersonaInviteToken :one
+UPDATE personas
+SET invite_token = $1::text
+WHERE id = $2::bigint AND privacy = 'private' AND deleted_at IS NULL
+RETURNING invite_token::text
+`
+
+type ResetPersonaInviteTokenParams struct {
+	Token     string
+	PersonaID int64
+}
+
+func (q *Queries) ResetPersonaInviteToken(ctx context.Context, arg ResetPersonaInviteTokenParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, resetPersonaInviteToken, arg.Token, arg.PersonaID)
+	var invite_token string
+	err := row.Scan(&invite_token)
+	return invite_token, err
+}
+
 const resolveFollowRequest = `-- name: ResolveFollowRequest :one
 UPDATE persona_followers
 SET status = $1::persona_follow_status_enum,
@@ -853,9 +913,10 @@ SET name = COALESCE($3, name),
     slug = COALESCE($9, slug),
     privacy = COALESCE($10, privacy),
     show_on_profile = $11,
+    invite_token = CASE WHEN COALESCE($10, privacy) = 'private' THEN invite_token END,
     updated_at = NOW()
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
-RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at
+RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at, invite_token
 `
 
 type UpdatePersonaByIdAndUserIdParams struct {
@@ -906,6 +967,7 @@ func (q *Queries) UpdatePersonaByIdAndUserId(ctx context.Context, arg UpdatePers
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.InviteToken,
 	)
 	return i, err
 }

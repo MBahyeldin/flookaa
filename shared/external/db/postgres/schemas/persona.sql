@@ -41,10 +41,14 @@ CREATE TABLE personas (
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
     deleted_at TIMESTAMP WITHOUT TIME ZONE,
+    invite_token TEXT,
 
     UNIQUE (user_id, slug),
-    CONSTRAINT personas_show_on_profile_public CHECK (NOT show_on_profile OR privacy = 'public')
+    CONSTRAINT personas_show_on_profile_public CHECK (NOT show_on_profile OR privacy = 'public'),
+    CONSTRAINT personas_invite_token_private CHECK (invite_token IS NULL OR privacy = 'private')
 );
+
+CREATE UNIQUE INDEX personas_invite_token_key ON personas (invite_token) WHERE invite_token IS NOT NULL;
 
 
 -- =========================

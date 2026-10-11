@@ -16,6 +16,8 @@ func AddPersonaRoutes(r *gin.RouterGroup, users *users.Handler, followers *follo
 		personaGroup.POST("/create", users.CreatePersona)
 		personaGroup.POST("/set-current-persona", users.SetCurrentPersona)
 		personaGroup.POST("/update/:persona_id", users.UpdatePersona)
+		personaGroup.GET("/invite/:token", auth.RequirePersona(), followers.ReadInvite)
+		personaGroup.POST("/invite/:token/request", auth.RequirePersona(), followers.RequestViaInvite)
 	}
 
 	viewGroup := personaGroup.Group("/:persona_id", auth.RequirePersona())
@@ -31,5 +33,7 @@ func AddPersonaRoutes(r *gin.RouterGroup, users *users.Handler, followers *follo
 		viewGroup.POST("/requests/:follower_id/reject", followers.RejectRequest)
 		viewGroup.GET("/followers", followers.ListFollowers)
 		viewGroup.POST("/followers/:follower_id/remove", followers.RemoveFollower)
+		viewGroup.POST("/invite-link", followers.InviteLink)
+		viewGroup.POST("/invite-link/reset", followers.ResetInviteLink)
 	}
 }

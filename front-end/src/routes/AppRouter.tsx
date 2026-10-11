@@ -10,6 +10,7 @@ import VerifyEmailPage from "@/pages/verify-email";
 import PersonaManagerPage from "@/pages/(dashboard)/persona-manager";
 import NotificationsPage from "@/pages/(dashboard)/notifications";
 import PersonaProfilePage from "@/pages/(dashboard)/personas/[id]";
+import FollowInvitePage from "@/pages/(dashboard)/follow/[token]";
 
 export default function AppRouter() {
   return (
@@ -37,6 +38,8 @@ export default function AppRouter() {
       <Route path="/notifications" element={<NotificationsPage />} />
 
       <Route path="/personas/:id" element={<PersonaProfilePage />} />
+
+      <Route path="/follow/:token" element={<FollowInvitePage />} />
     </Routes>
   );
 }

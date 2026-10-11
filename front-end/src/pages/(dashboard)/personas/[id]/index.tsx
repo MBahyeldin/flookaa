@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { Lock, UserRoundX } from "lucide-react";
+import { UserRoundX } from "lucide-react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { FollowButton } from "@/components/follow-button";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
+import { LockedPersonaCard } from "@/components/locked-persona-card";
 import { personaPath } from "@/components/persona-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { useWebsocketService } from "@/Websocket.context";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import type { FollowStatus, LockedPersona, PersonaProfile, PublicPersona } from "@/types/persona";
 import FollowersSheet, { type FollowersTab } from "./FollowersSheet";
+import ShareInviteLink from "./ShareInviteLink";
 
 type State =
   | { status: "loading" }
@@ -27,6 +29,7 @@ export default function PersonaProfilePage() {
   const { id = "" } = useParams<{ id: string }>();
   // Visibility depends on who is looking, so a persona switch reloads.
   const viewerId = useUserProfileStore((s) => s.persona?.id);
+  const viewerPrivacy = useUserProfileStore((s) => s.persona?.privacy);
   const { websocketService } = useWebsocketService();
   const [state, setState] = useState<State>({ status: "loading" });
   const generation = useRef(0);
@@ -114,20 +117,15 @@ export default function PersonaProfilePage() {
       )}
 
       {state.status === "locked" && (
-        <Card className="rounded-xl border border-border/70 shadow-sm">
-          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <Lock className="h-10 w-10 text-muted-foreground" />
-            <p className="text-lg font-medium">This persona is private</p>
-            <p className="text-sm text-muted-foreground">Follow it to see its profile.</p>
-            <FollowButton
-              personaId={state.persona.id}
-              status={state.persona.follow_status ?? null}
-              requiresApproval
-              followLabel="Request to follow"
-              onChange={() => load(true)}
-            />
-          </CardContent>
-        </Card>
+        <LockedPersonaCard>
+          <FollowButton
+            personaId={state.persona.id}
+            status={state.persona.follow_status ?? null}
+            requiresApproval
+            followLabel="Request to follow"
+            onChange={() => load(true)}
+          />
+        </LockedPersonaCard>
       )}
 
       {state.status === "ready" && (
@@ -167,6 +165,7 @@ export default function PersonaProfilePage() {
                   <p className="pt-2 text-sm whitespace-pre-line break-words">{state.persona.bio}</p>
                 )}
               </div>
+              {isOwn && viewerPrivacy === "private" && <ShareInviteLink personaId={state.persona.id} />}
               {String(state.persona.id) !== String(viewerId) && state.persona.followable && (
                 <FollowButton
                   personaId={state.persona.id}
