@@ -261,6 +261,55 @@ func (q *Queries) GetPersonaByIdAndUserId(ctx context.Context, arg GetPersonaByI
 	return i, err
 }
 
+const getPersonaFollowInfo = `-- name: GetPersonaFollowInfo :one
+SELECT
+    (SELECT COUNT(*)
+     FROM persona_followers pf
+     JOIN personas f ON f.id = pf.follower_persona_id AND f.deleted_at IS NULL
+     WHERE pf.persona_id = t.id AND pf.status = 'active' AND pf.unfollowed_at IS NULL
+    )::bigint AS followers_count,
+    (SELECT COUNT(*)
+     FROM persona_followers pf
+     JOIN personas f ON f.id = pf.persona_id AND f.deleted_at IS NULL
+     WHERE pf.follower_persona_id = t.id AND pf.status = 'active' AND pf.unfollowed_at IS NULL
+    )::bigint AS following_count,
+    v.status AS follow_status,
+    (t.privacy = 'private')::boolean AS requires_approval
+FROM personas t
+LEFT JOIN persona_followers v
+    ON v.persona_id = t.id
+   AND v.follower_persona_id = $1::bigint
+   AND v.unfollowed_at IS NULL
+WHERE t.id = $2::bigint
+`
+
+type GetPersonaFollowInfoParams struct {
+	ViewerID  int64
+	PersonaID int64
+}
+
+type GetPersonaFollowInfoRow struct {
+	FollowersCount   int64
+	FollowingCount   int64
+	FollowStatus     NullPersonaFollowStatusEnum
+	RequiresApproval bool
+}
+
+// -------------------------------
+// 19. Follow counts of a persona and the viewer's follow
+// -------------------------------
+func (q *Queries) GetPersonaFollowInfo(ctx context.Context, arg GetPersonaFollowInfoParams) (GetPersonaFollowInfoRow, error) {
+	row := q.db.QueryRowContext(ctx, getPersonaFollowInfo, arg.ViewerID, arg.PersonaID)
+	var i GetPersonaFollowInfoRow
+	err := row.Scan(
+		&i.FollowersCount,
+		&i.FollowingCount,
+		&i.FollowStatus,
+		&i.RequiresApproval,
+	)
+	return i, err
+}
+
 const getPersonaFollowedChannels = `-- name: GetPersonaFollowedChannels :many
 SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at
 FROM channel_followers cf
@@ -433,30 +482,41 @@ func (q *Queries) GetUserPersonasByUserId(ctx context.Context, userID int64) ([]
 }
 
 const listConnectedPersonas = `-- name: ListConnectedPersonas :many
-SELECT p.id, p.name, p.first_name, p.last_name, p.slug, p.thumbnail, p.bio
+SELECT p.id, p.name, p.first_name, p.last_name, p.slug, p.thumbnail, p.bio,
+    pf.status AS follow_status
 FROM personas s
 JOIN personas p ON p.user_id = s.user_id AND p.id <> s.id
-WHERE s.id = $1
+LEFT JOIN persona_followers pf
+    ON pf.persona_id = p.id
+   AND pf.follower_persona_id = $1::bigint
+   AND pf.unfollowed_at IS NULL
+WHERE s.id = $2::bigint
   AND s.deleted_at IS NULL AND s.privacy = 'public' AND s.show_on_profile
   AND p.deleted_at IS NULL AND p.privacy = 'public' AND p.show_on_profile
 ORDER BY p.created_at, p.id
 `
 
+type ListConnectedPersonasParams struct {
+	ViewerID  int64
+	PersonaID int64
+}
+
 type ListConnectedPersonasRow struct {
-	ID        int64
-	Name      string
-	FirstName string
-	LastName  string
-	Slug      string
-	Thumbnail sql.NullString
-	Bio       sql.NullString
+	ID           int64
+	Name         string
+	FirstName    string
+	LastName     string
+	Slug         string
+	Thumbnail    sql.NullString
+	Bio          sql.NullString
+	FollowStatus NullPersonaFollowStatusEnum
 }
 
 // -------------------------------
 // 15. Connected personas of a linked persona
 // -------------------------------
-func (q *Queries) ListConnectedPersonas(ctx context.Context, id int64) ([]ListConnectedPersonasRow, error) {
-	rows, err := q.db.QueryContext(ctx, listConnectedPersonas, id)
+func (q *Queries) ListConnectedPersonas(ctx context.Context, arg ListConnectedPersonasParams) ([]ListConnectedPersonasRow, error) {
+	rows, err := q.db.QueryContext(ctx, listConnectedPersonas, arg.ViewerID, arg.PersonaID)
 	if err != nil {
 		return nil, err
 	}
@@ -472,6 +532,7 @@ func (q *Queries) ListConnectedPersonas(ctx context.Context, id int64) ([]ListCo
 			&i.Slug,
 			&i.Thumbnail,
 			&i.Bio,
+			&i.FollowStatus,
 		); err != nil {
 			return nil, err
 		}

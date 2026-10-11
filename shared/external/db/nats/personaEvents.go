@@ -14,3 +14,8 @@ type FollowEventPayload struct {
 	PersonaID int64  `json:"persona_id"`
 	Reason    string `json:"reason"`
 }
+
+// follow_counts.update: a persona's followers or following count changed.
+// It carries no payload, so viewers who may see the counts but not the
+// followers can subscribe to it (see /control owner PERSONA).
+const EventFollowCounts db.EventEnum = "follow_counts"

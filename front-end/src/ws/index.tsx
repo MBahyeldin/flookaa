@@ -1,5 +1,5 @@
  
-import type { SubscribeChannelPayload, SubscribeDefaultPayload, WsEventMessage, WsMessage } from "@/types/Ws";
+import type { SubscribeChannelPayload, SubscribeDefaultPayload, SubscribePersonaPayload, WsEventMessage, WsMessage } from "@/types/Ws";
 
 const WEBSOCKET_BASE_URL = import.meta.env.VITE_WEBSOCKET_BASE_URL;
 
@@ -177,6 +177,19 @@ export default class WebSocketService {
                 payload,
                 id,
             });
+        };
+    }
+
+    // The server serves only the persona's follow_counts events here.
+    subscribeToPersonaEvents(personaId: number, callback: MessageListener) {
+        const id = crypto.randomUUID();
+        const payload = { owner: "PERSONA" as const, owner_id: personaId };
+        this.sendMessage<SubscribePersonaPayload>({ type: "SUBSCRIBE", payload, id });
+
+        const unsubscribe = this.subscribe(id, callback);
+        return () => {
+            unsubscribe();
+            this.sendMessage({ type: "UNSUBSCRIBE", payload, id });
         };
     }
 }

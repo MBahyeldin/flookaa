@@ -31,6 +31,7 @@ type OwnerType string
 
 const (
 	OwnerTypeChannel OwnerType = "CHANNEL"
+	OwnerTypePersona OwnerType = "PERSONA"
 	OwnerTypeDefault OwnerType = "DEFAULT"
 )
 
@@ -75,6 +76,9 @@ func (h *Handler) Control(c *gin.Context) {
 
 	case OwnerTypeChannel:
 		h.channel(c, bodyData, personaIdInt64)
+
+	case OwnerTypePersona:
+		h.persona(c, bodyData, personaIdInt64)
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid owner type %s", bodyData.Payload.Owner)})
 		return

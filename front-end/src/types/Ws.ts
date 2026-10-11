@@ -20,6 +20,9 @@ type EventType =
   // Per persona (STREAM_USER_EVENTS, default subscription); payload is
   // NotificationPayload. Only the id: refetch over REST.
   | "notifications"
+  // Per persona (STREAM_USER_EVENTS, /control owner PERSONA); no payload.
+  // A profile's counts changed: refetch them.
+  | "follow_counts"
   | "*";
 type EventActionType = "create" | "update" | "delete" | "*";
 type EventOwnerType = "CHANNEL" | "USER" | "PERSONA";
@@ -28,6 +31,11 @@ type SubscribeChannelPayload = {
   event: EventType;
   event_action: EventActionType;
   owner: "CHANNEL";
+  owner_id: number;
+};
+
+type SubscribePersonaPayload = {
+  owner: "PERSONA";
   owner_id: number;
 };
 
@@ -95,6 +103,7 @@ export type {
   WsMessageType,
   SubscribeChannelPayload,
   SubscribeDefaultPayload,
+  SubscribePersonaPayload,
   Event,
   EventType,
   EventActionType,

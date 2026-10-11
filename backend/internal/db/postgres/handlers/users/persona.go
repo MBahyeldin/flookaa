@@ -342,15 +342,40 @@ func (h *Handler) ReadPersona(c *gin.Context) {
 		return
 	}
 
+	follow, err := h.q.GetPersonaFollowInfo(ctx, db.GetPersonaFollowInfoParams{
+		PersonaID: personaID,
+		ViewerID:  viewerID,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve persona"})
+		return
+	}
+
 	p := rows[0]
 	c.JSON(http.StatusOK, gin.H{
-		"id":         p.ID,
-		"first_name": p.FirstName,
-		"last_name":  p.LastName,
-		"slug":       p.Slug,
-		"thumbnail":  p.Thumbnail.String,
-		"bio":        p.Bio.String,
+		"id":                p.ID,
+		"first_name":        p.FirstName,
+		"last_name":         p.LastName,
+		"slug":              p.Slug,
+		"thumbnail":         p.Thumbnail.String,
+		"bio":               p.Bio.String,
+		"followers_count":   follow.FollowersCount,
+		"following_count":   follow.FollowingCount,
+		"follow_status":     followStatus(follow.FollowStatus),
+		"requires_approval": follow.RequiresApproval,
 	})
+}
+
+// A rejected request reads as pending, so the requester never learns of it.
+func followStatus(s db.NullPersonaFollowStatusEnum) *string {
+	if !s.Valid {
+		return nil
+	}
+	status := string(db.PersonaFollowStatusEnumPending)
+	if s.PersonaFollowStatusEnum == db.PersonaFollowStatusEnumActive {
+		status = string(db.PersonaFollowStatusEnumActive)
+	}
+	return &status
 }
 
 func (h *Handler) ConnectedPersonas(c *gin.Context) {
@@ -377,7 +402,10 @@ func (h *Handler) ConnectedPersonas(c *gin.Context) {
 		return
 	}
 
-	rows, err := h.q.ListConnectedPersonas(ctx, personaID)
+	rows, err := h.q.ListConnectedPersonas(ctx, db.ListConnectedPersonasParams{
+		PersonaID: personaID,
+		ViewerID:  viewerID,
+	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve connected personas"})
 		return
@@ -386,13 +414,14 @@ func (h *Handler) ConnectedPersonas(c *gin.Context) {
 	personas := make([]gin.H, 0, len(rows))
 	for _, p := range rows {
 		personas = append(personas, gin.H{
-			"id":         p.ID,
-			"name":       p.Name,
-			"first_name": p.FirstName,
-			"last_name":  p.LastName,
-			"slug":       p.Slug,
-			"thumbnail":  p.Thumbnail.String,
-			"bio":        p.Bio.String,
+			"id":            p.ID,
+			"name":          p.Name,
+			"first_name":    p.FirstName,
+			"last_name":     p.LastName,
+			"slug":          p.Slug,
+			"thumbnail":     p.Thumbnail.String,
+			"bio":           p.Bio.String,
+			"follow_status": followStatus(p.FollowStatus),
 		})
 	}
 

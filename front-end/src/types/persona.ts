@@ -30,4 +30,14 @@ export type PublicPersona = {
     slug: string;
     thumbnail?: string;
     bio?: string;
+    /** The viewer's follow; a rejected request reads as pending. */
+    follow_status?: FollowStatus;
+}
+
+export type FollowStatus = "active" | "pending" | null;
+
+export type PersonaProfile = PublicPersona & {
+    followers_count: number;
+    following_count: number;
+    requires_approval: boolean;
 }

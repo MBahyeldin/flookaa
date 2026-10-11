@@ -62,6 +62,7 @@ func (h *Handler) Follow(c *gin.Context) {
 	if n > 0 {
 		if active {
 			h.publish(ctx, personaID, followerID, nats.EventFollower, db.EventActionEnumCreate, nats.ReasonFollowed)
+			h.publishCounts(ctx, personaID, followerID)
 		} else {
 			h.publish(ctx, personaID, followerID, nats.EventFollowRequest, db.EventActionEnumCreate, nats.ReasonRequested)
 		}
@@ -92,6 +93,7 @@ func (h *Handler) Unfollow(c *gin.Context) {
 
 	if status == db.PersonaFollowStatusEnumActive {
 		h.publish(ctx, personaID, followerID, nats.EventFollower, db.EventActionEnumDelete, nats.ReasonUnfollowed)
+		h.publishCounts(ctx, personaID, followerID)
 	} else {
 		h.publish(ctx, personaID, followerID, nats.EventFollowRequest, db.EventActionEnumDelete, nats.ReasonCancelled)
 	}
