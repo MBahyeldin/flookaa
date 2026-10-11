@@ -2,6 +2,7 @@ package v1
 
 import (
 	"app/internal/db/postgres/handlers/channels"
+	"app/internal/db/postgres/handlers/followers"
 	"app/internal/db/postgres/handlers/geo"
 	"app/internal/db/postgres/handlers/notifications"
 	"app/internal/db/postgres/handlers/users"
@@ -14,6 +15,7 @@ import (
 type Handlers struct {
 	Users         *users.Handler
 	Channels      *channels.Handler
+	Followers     *followers.Handler
 	Geo           *geo.Handler
 	Notifications *notifications.Handler
 	Google        *oauthproviders.Google
@@ -26,7 +28,7 @@ func AddV1Group(r *gin.RouterGroup, h Handlers) *gin.RouterGroup {
 	AddHealthRoutes(v1Group)
 	AddGeoRoutes(v1Group, h.Geo)
 	AddChannelsGroups(v1Group, h.Channels)
-	AddPersonaRoutes(v1Group, h.Users)
+	AddPersonaRoutes(v1Group, h.Users, h.Followers)
 	AddNotificationsRoutes(v1Group, h.Notifications)
 	return v1Group
 }

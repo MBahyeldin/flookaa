@@ -2,12 +2,13 @@ package v1
 
 import (
 	"app/internal/auth"
+	"app/internal/db/postgres/handlers/followers"
 	"app/internal/db/postgres/handlers/users"
 
 	"github.com/gin-gonic/gin"
 )
 
-func AddPersonaRoutes(r *gin.RouterGroup, users *users.Handler) {
+func AddPersonaRoutes(r *gin.RouterGroup, users *users.Handler, followers *followers.Handler) {
 	personaGroup := r.Group("/persona", auth.RequireUser())
 	{
 		personaGroup.GET("/list", users.ListPersonas)
@@ -21,5 +22,7 @@ func AddPersonaRoutes(r *gin.RouterGroup, users *users.Handler) {
 	{
 		viewGroup.GET("", users.ReadPersona)
 		viewGroup.GET("/connected", users.ConnectedPersonas)
+		viewGroup.POST("/follow", followers.Follow)
+		viewGroup.POST("/unfollow", followers.Unfollow)
 	}
 }

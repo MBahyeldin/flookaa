@@ -69,6 +69,32 @@ func (q *Queries) CreatePersona(ctx context.Context, arg CreatePersonaParams) (P
 	return i, err
 }
 
+const followPersona = `-- name: FollowPersona :execrows
+INSERT INTO persona_followers (persona_id, follower_persona_id, status)
+VALUES ($1, $2, $3)
+ON CONFLICT (persona_id, follower_persona_id) DO UPDATE
+SET status = EXCLUDED.status, followed_at = NOW(), unfollowed_at = NULL
+WHERE persona_followers.unfollowed_at IS NOT NULL
+`
+
+type FollowPersonaParams struct {
+	PersonaID         int64
+	FollowerPersonaID int64
+	Status            PersonaFollowStatusEnum
+}
+
+// -------------------------------
+// 17. Follow a persona
+// -------------------------------
+// One row per pair: an earlier unfollow is revived, a live row is left alone.
+func (q *Queries) FollowPersona(ctx context.Context, arg FollowPersonaParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, followPersona, arg.PersonaID, arg.FollowerPersonaID, arg.Status)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const getDefaultPersonaByUserId = `-- name: GetDefaultPersonaByUserId :one
 SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at
 FROM personas
@@ -99,6 +125,39 @@ func (q *Queries) GetDefaultPersonaByUserId(ctx context.Context, userID int64) (
 		&i.UpdatedAt,
 		&i.DeletedAt,
 	)
+	return i, err
+}
+
+const getFollowTarget = `-- name: GetFollowTarget :one
+SELECT
+    t.privacy,
+    pf.status AS follow_status
+FROM personas t
+LEFT JOIN persona_followers pf
+    ON pf.persona_id = t.id
+   AND pf.follower_persona_id = $1::bigint
+   AND pf.unfollowed_at IS NULL
+WHERE t.id = $2::bigint
+  AND t.deleted_at IS NULL
+`
+
+type GetFollowTargetParams struct {
+	FollowerPersonaID int64
+	PersonaID         int64
+}
+
+type GetFollowTargetRow struct {
+	Privacy      PersonaPrivacyEnum
+	FollowStatus NullPersonaFollowStatusEnum
+}
+
+// -------------------------------
+// 16. Follow decision: target privacy and the live follow, if any
+// -------------------------------
+func (q *Queries) GetFollowTarget(ctx context.Context, arg GetFollowTargetParams) (GetFollowTargetRow, error) {
+	row := q.db.QueryRowContext(ctx, getFollowTarget, arg.FollowerPersonaID, arg.PersonaID)
+	var i GetFollowTargetRow
+	err := row.Scan(&i.Privacy, &i.FollowStatus)
 	return i, err
 }
 
@@ -537,6 +596,29 @@ func (q *Queries) ResolvePersonasForViewer(ctx context.Context, arg ResolvePerso
 		return nil, err
 	}
 	return items, nil
+}
+
+const unfollowPersona = `-- name: UnfollowPersona :one
+UPDATE persona_followers
+SET unfollowed_at = NOW()
+WHERE persona_id = $1 AND follower_persona_id = $2
+  AND unfollowed_at IS NULL AND status IN ('active', 'pending')
+RETURNING status
+`
+
+type UnfollowPersonaParams struct {
+	PersonaID         int64
+	FollowerPersonaID int64
+}
+
+// -------------------------------
+// 18. Unfollow a persona, or cancel a pending request
+// -------------------------------
+func (q *Queries) UnfollowPersona(ctx context.Context, arg UnfollowPersonaParams) (PersonaFollowStatusEnum, error) {
+	row := q.db.QueryRowContext(ctx, unfollowPersona, arg.PersonaID, arg.FollowerPersonaID)
+	var status PersonaFollowStatusEnum
+	err := row.Scan(&status)
+	return status, err
 }
 
 const updatePersonaByIdAndUserId = `-- name: UpdatePersonaByIdAndUserId :one

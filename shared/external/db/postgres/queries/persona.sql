@@ -163,3 +163,39 @@ WHERE s.id = $1
   AND s.deleted_at IS NULL AND s.privacy = 'public' AND s.show_on_profile
   AND p.deleted_at IS NULL AND p.privacy = 'public' AND p.show_on_profile
 ORDER BY p.created_at, p.id;
+
+-- -------------------------------
+-- 16. Follow decision: target privacy and the live follow, if any
+-- -------------------------------
+-- name: GetFollowTarget :one
+SELECT
+    t.privacy,
+    pf.status AS follow_status
+FROM personas t
+LEFT JOIN persona_followers pf
+    ON pf.persona_id = t.id
+   AND pf.follower_persona_id = sqlc.arg(follower_persona_id)::bigint
+   AND pf.unfollowed_at IS NULL
+WHERE t.id = sqlc.arg(persona_id)::bigint
+  AND t.deleted_at IS NULL;
+
+-- -------------------------------
+-- 17. Follow a persona
+-- -------------------------------
+-- One row per pair: an earlier unfollow is revived, a live row is left alone.
+-- name: FollowPersona :execrows
+INSERT INTO persona_followers (persona_id, follower_persona_id, status)
+VALUES ($1, $2, $3)
+ON CONFLICT (persona_id, follower_persona_id) DO UPDATE
+SET status = EXCLUDED.status, followed_at = NOW(), unfollowed_at = NULL
+WHERE persona_followers.unfollowed_at IS NOT NULL;
+
+-- -------------------------------
+-- 18. Unfollow a persona, or cancel a pending request
+-- -------------------------------
+-- name: UnfollowPersona :one
+UPDATE persona_followers
+SET unfollowed_at = NOW()
+WHERE persona_id = $1 AND follower_persona_id = $2
+  AND unfollowed_at IS NULL AND status IN ('active', 'pending')
+RETURNING status;
