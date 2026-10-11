@@ -14,6 +14,12 @@ import (
 // publish announces a follow change on the followed persona's subject. The
 // change is already stored, so a failed publish is logged, not returned.
 func (h *Handler) publish(ctx context.Context, personaID, followerID int64, event db.EventEnum, action db.EventActionEnum, reason string) {
+	h.publishBy(ctx, personaID, followerID, followerID, event, action, reason)
+}
+
+// publishBy is publish for a change made by someone other than the follower,
+// e.g. the followed persona approving or removing it.
+func (h *Handler) publishBy(ctx context.Context, personaID, actorID, followerID int64, event db.EventEnum, action db.EventActionEnum, reason string) {
 	streamName := nats.USER_EVENTS_STREAM
 	subj := subject.New(&streamName, &models.Owner{
 		ID:   personaID,
@@ -28,7 +34,7 @@ func (h *Handler) publish(ctx context.Context, personaID, followerID int64, even
 			TargetType: db.EventTargetTypeEnumPERSONA,
 			Owner:      db.OwnerEnumPERSONA,
 			OwnerID:    personaID,
-			ActorID:    followerID,
+			ActorID:    actorID,
 			Timestamp:  time.Now().UnixMilli(),
 		},
 		Payload: nats.FollowEventPayload{PersonaID: followerID, Reason: reason},

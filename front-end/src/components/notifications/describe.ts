@@ -76,7 +76,17 @@ export function describeNotification(n: Notification): NotificationDescription |
     case "new_follower":
       return { actor: actors(n), message: "followed you", href: `/personas/${n.subject.id}` };
     case "follow_request":
-      return { actor: actors(n), message: "asked to follow you", href: `/personas/${n.subject.id}` };
+      return {
+        actor: actors(n),
+        message: "asked to follow you",
+        href: `/personas/${n.subject.id}?followers=requests`,
+      };
+    case "follow_request_approved":
+      return {
+        actor: actorName(n) ?? "Someone",
+        message: "accepted your follow request",
+        href: `/personas/${n.subject.id}`,
+      };
     default:
       return null;
   }

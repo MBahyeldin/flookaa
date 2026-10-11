@@ -232,15 +232,16 @@ func (ns NullEventTargetTypeEnum) Value() (driver.Value, error) {
 type NotificationKindEnum string
 
 const (
-	NotificationKindEnumPostComment        NotificationKindEnum = "post_comment"
-	NotificationKindEnumCommentReply       NotificationKindEnum = "comment_reply"
-	NotificationKindEnumPostLike           NotificationKindEnum = "post_like"
-	NotificationKindEnumCommentLike        NotificationKindEnum = "comment_like"
-	NotificationKindEnumJoinRequest        NotificationKindEnum = "join_request"
-	NotificationKindEnumRequestApproved    NotificationKindEnum = "request_approved"
-	NotificationKindEnumRemovedFromChannel NotificationKindEnum = "removed_from_channel"
-	NotificationKindEnumNewFollower        NotificationKindEnum = "new_follower"
-	NotificationKindEnumFollowRequest      NotificationKindEnum = "follow_request"
+	NotificationKindEnumPostComment           NotificationKindEnum = "post_comment"
+	NotificationKindEnumCommentReply          NotificationKindEnum = "comment_reply"
+	NotificationKindEnumPostLike              NotificationKindEnum = "post_like"
+	NotificationKindEnumCommentLike           NotificationKindEnum = "comment_like"
+	NotificationKindEnumJoinRequest           NotificationKindEnum = "join_request"
+	NotificationKindEnumRequestApproved       NotificationKindEnum = "request_approved"
+	NotificationKindEnumRemovedFromChannel    NotificationKindEnum = "removed_from_channel"
+	NotificationKindEnumNewFollower           NotificationKindEnum = "new_follower"
+	NotificationKindEnumFollowRequest         NotificationKindEnum = "follow_request"
+	NotificationKindEnumFollowRequestApproved NotificationKindEnum = "follow_request_approved"
 )
 
 func (e *NotificationKindEnum) Scan(src interface{}) error {

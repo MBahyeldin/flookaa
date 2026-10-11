@@ -37,15 +37,16 @@ type Kind struct {
 }
 
 var Kinds = map[db.NotificationKindEnum]Kind{
-	db.NotificationKindEnumPostComment:        {Subject: db.NotificationSubjectEnumPOST, Recount: recountCommenters},
-	db.NotificationKindEnumCommentReply:       {Subject: db.NotificationSubjectEnumCOMMENT, Recount: recountCommenters},
-	db.NotificationKindEnumPostLike:           {Subject: db.NotificationSubjectEnumPOST, Recount: recountLikers},
-	db.NotificationKindEnumCommentLike:        {Subject: db.NotificationSubjectEnumCOMMENT, Recount: recountLikers},
-	db.NotificationKindEnumJoinRequest:        {Subject: db.NotificationSubjectEnumCHANNEL, Recount: recountPendingJoinRequests},
-	db.NotificationKindEnumRequestApproved:    {Subject: db.NotificationSubjectEnumCHANNEL},
-	db.NotificationKindEnumRemovedFromChannel: {Subject: db.NotificationSubjectEnumCHANNEL},
-	db.NotificationKindEnumNewFollower:        {Subject: db.NotificationSubjectEnumPERSONA, Recount: recountFollowers},
-	db.NotificationKindEnumFollowRequest:      {Subject: db.NotificationSubjectEnumPERSONA, Recount: recountPendingFollowRequests},
+	db.NotificationKindEnumPostComment:           {Subject: db.NotificationSubjectEnumPOST, Recount: recountCommenters},
+	db.NotificationKindEnumCommentReply:          {Subject: db.NotificationSubjectEnumCOMMENT, Recount: recountCommenters},
+	db.NotificationKindEnumPostLike:              {Subject: db.NotificationSubjectEnumPOST, Recount: recountLikers},
+	db.NotificationKindEnumCommentLike:           {Subject: db.NotificationSubjectEnumCOMMENT, Recount: recountLikers},
+	db.NotificationKindEnumJoinRequest:           {Subject: db.NotificationSubjectEnumCHANNEL, Recount: recountPendingJoinRequests},
+	db.NotificationKindEnumRequestApproved:       {Subject: db.NotificationSubjectEnumCHANNEL},
+	db.NotificationKindEnumRemovedFromChannel:    {Subject: db.NotificationSubjectEnumCHANNEL},
+	db.NotificationKindEnumNewFollower:           {Subject: db.NotificationSubjectEnumPERSONA, Recount: recountFollowers},
+	db.NotificationKindEnumFollowRequest:         {Subject: db.NotificationSubjectEnumPERSONA, Recount: recountPendingFollowRequests},
+	db.NotificationKindEnumFollowRequestApproved: {Subject: db.NotificationSubjectEnumPERSONA},
 }
 
 // GroupKey names the thing a notification is about, e.g. "post_like:<post

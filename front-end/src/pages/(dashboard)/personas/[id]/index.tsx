@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { UserRoundX } from "lucide-react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { FollowButton } from "@/components/follow-button";
@@ -12,6 +12,7 @@ import { fetchConnectedPersonas, fetchPersonaProfile } from "@/services/persona"
 import { useWebsocketService } from "@/Websocket.context";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import type { FollowStatus, PersonaProfile, PublicPersona } from "@/types/persona";
+import FollowersSheet, { type FollowersTab } from "./FollowersSheet";
 
 type State =
   | { status: "loading" }
@@ -28,6 +29,22 @@ export default function PersonaProfilePage() {
   const { websocketService } = useWebsocketService();
   const [state, setState] = useState<State>({ status: "loading" });
   const generation = useRef(0);
+  const isOwn = !!id && String(id) === String(viewerId);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sheetParam = searchParams.get("followers");
+  const sheetTab: FollowersTab | null =
+    isOwn && (sheetParam === "requests" || sheetParam === "followers") ? sheetParam : null;
+  const [followReload, setFollowReload] = useState(0);
+
+  const setSheetTab = (tab: FollowersTab | null) =>
+    setSearchParams(
+      (params) => {
+        if (tab) params.set("followers", tab);
+        else params.delete("followers");
+        return params;
+      },
+      { replace: true }
+    );
 
   // A background refetch (after a follow, or a live count change) keeps the
   // current view until the new data arrives.
@@ -53,6 +70,8 @@ export default function PersonaProfilePage() {
     if (!personaId || !websocketService) return;
     return websocketService.subscribeToPersonaEvents(personaId, (msg) => {
       if (msg.event.name === "follow_counts") load(true);
+      // Only your own profile receives these.
+      if (msg.event.name === "follower" || msg.event.name === "follow_request") setFollowReload((n) => n + 1);
     });
   }, [websocketService, id, load]);
 
@@ -98,8 +117,21 @@ export default function PersonaProfilePage() {
                 </h1>
                 <p className="text-sm text-muted-foreground">@{state.persona.slug}</p>
                 <p className="text-sm">
-                  <span className="font-medium">{state.persona.followers_count}</span>{" "}
-                  <span className="text-muted-foreground">followers</span>
+                  {isOwn ? (
+                    <button
+                      type="button"
+                      className="hover:underline"
+                      onClick={() => setSheetTab("followers")}
+                    >
+                      <span className="font-medium">{state.persona.followers_count}</span>{" "}
+                      <span className="text-muted-foreground">followers</span>
+                    </button>
+                  ) : (
+                    <>
+                      <span className="font-medium">{state.persona.followers_count}</span>{" "}
+                      <span className="text-muted-foreground">followers</span>
+                    </>
+                  )}
                   <span className="text-muted-foreground"> · </span>
                   <span className="font-medium">{state.persona.following_count}</span>{" "}
                   <span className="text-muted-foreground">following</span>
@@ -151,6 +183,17 @@ export default function PersonaProfilePage() {
                 ))}
               </ul>
             </section>
+          )}
+
+          {isOwn && (
+            <FollowersSheet
+              personaId={state.persona.id}
+              open={sheetTab !== null}
+              onOpenChange={(open) => setSheetTab(open ? "followers" : null)}
+              tab={sheetTab ?? "followers"}
+              onTabChange={setSheetTab}
+              reloadKey={followReload}
+            />
           )}
         </>
       )}

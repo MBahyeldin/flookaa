@@ -547,6 +547,157 @@ func (q *Queries) ListConnectedPersonas(ctx context.Context, arg ListConnectedPe
 	return items, nil
 }
 
+const listFollowers = `-- name: ListFollowers :many
+SELECT f.id AS persona_id, f.first_name, f.last_name, f.thumbnail, f.privacy,
+    pf.followed_at
+FROM persona_followers pf
+JOIN personas f ON f.id = pf.follower_persona_id AND f.deleted_at IS NULL
+WHERE pf.persona_id = $1 AND pf.status = 'active' AND pf.unfollowed_at IS NULL
+ORDER BY pf.followed_at DESC, f.id DESC
+`
+
+type ListFollowersRow struct {
+	PersonaID  int64
+	FirstName  string
+	LastName   string
+	Thumbnail  sql.NullString
+	Privacy    PersonaPrivacyEnum
+	FollowedAt sql.NullTime
+}
+
+// -------------------------------
+// 21. Active followers of a persona
+// -------------------------------
+func (q *Queries) ListFollowers(ctx context.Context, personaID int64) ([]ListFollowersRow, error) {
+	rows, err := q.db.QueryContext(ctx, listFollowers, personaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListFollowersRow
+	for rows.Next() {
+		var i ListFollowersRow
+		if err := rows.Scan(
+			&i.PersonaID,
+			&i.FirstName,
+			&i.LastName,
+			&i.Thumbnail,
+			&i.Privacy,
+			&i.FollowedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPendingFollowRequests = `-- name: ListPendingFollowRequests :many
+SELECT f.id AS persona_id, f.first_name, f.last_name, f.thumbnail, f.privacy,
+    pf.followed_at AS requested_at
+FROM persona_followers pf
+JOIN personas f ON f.id = pf.follower_persona_id AND f.deleted_at IS NULL
+WHERE pf.persona_id = $1 AND pf.status = 'pending' AND pf.unfollowed_at IS NULL
+ORDER BY pf.followed_at DESC, f.id DESC
+`
+
+type ListPendingFollowRequestsRow struct {
+	PersonaID   int64
+	FirstName   string
+	LastName    string
+	Thumbnail   sql.NullString
+	Privacy     PersonaPrivacyEnum
+	RequestedAt sql.NullTime
+}
+
+// -------------------------------
+// 20. Pending follow requests to a persona
+// -------------------------------
+func (q *Queries) ListPendingFollowRequests(ctx context.Context, personaID int64) ([]ListPendingFollowRequestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPendingFollowRequests, personaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPendingFollowRequestsRow
+	for rows.Next() {
+		var i ListPendingFollowRequestsRow
+		if err := rows.Scan(
+			&i.PersonaID,
+			&i.FirstName,
+			&i.LastName,
+			&i.Thumbnail,
+			&i.Privacy,
+			&i.RequestedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const removeFollower = `-- name: RemoveFollower :execrows
+UPDATE persona_followers
+SET unfollowed_at = NOW()
+WHERE persona_id = $1 AND follower_persona_id = $2
+  AND status = 'active' AND unfollowed_at IS NULL
+`
+
+type RemoveFollowerParams struct {
+	PersonaID         int64
+	FollowerPersonaID int64
+}
+
+// -------------------------------
+// 23. Remove an active follower
+// -------------------------------
+func (q *Queries) RemoveFollower(ctx context.Context, arg RemoveFollowerParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, removeFollower, arg.PersonaID, arg.FollowerPersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const resolveFollowRequest = `-- name: ResolveFollowRequest :one
+UPDATE persona_followers
+SET status = $1::persona_follow_status_enum,
+    followed_at = CASE WHEN $1::persona_follow_status_enum = 'active' THEN NOW() ELSE followed_at END
+WHERE persona_id = $2::bigint
+  AND follower_persona_id = $3::bigint
+  AND status = 'pending' AND unfollowed_at IS NULL
+RETURNING status
+`
+
+type ResolveFollowRequestParams struct {
+	Status            PersonaFollowStatusEnum
+	PersonaID         int64
+	FollowerPersonaID int64
+}
+
+// -------------------------------
+// 22. Approve or reject a pending follow request
+// -------------------------------
+func (q *Queries) ResolveFollowRequest(ctx context.Context, arg ResolveFollowRequestParams) (PersonaFollowStatusEnum, error) {
+	row := q.db.QueryRowContext(ctx, resolveFollowRequest, arg.Status, arg.PersonaID, arg.FollowerPersonaID)
+	var status PersonaFollowStatusEnum
+	err := row.Scan(&status)
+	return status, err
+}
+
 const resolvePersonaByID = `-- name: ResolvePersonaByID :one
 SELECT id, first_name, last_name, thumbnail, bio, slug, privacy 
 FROM personas 
@@ -602,6 +753,15 @@ SELECT
               AND pf.status = 'active'
               AND pf.unfollowed_at IS NULL
         ))
+        -- Following someone (or asking to) shows you to them.
+        OR EXISTS (
+            SELECT 1
+            FROM persona_followers pf
+            WHERE pf.persona_id = $1::bigint
+              AND pf.follower_persona_id = t.id
+              AND pf.status IN ('pending', 'active')
+              AND pf.unfollowed_at IS NULL
+        )
     )::boolean AS visible
 FROM personas t
 WHERE t.id = ANY($2::bigint[])

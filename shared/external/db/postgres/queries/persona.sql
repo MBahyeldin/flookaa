@@ -147,6 +147,15 @@ SELECT
               AND pf.status = 'active'
               AND pf.unfollowed_at IS NULL
         ))
+        -- Following someone (or asking to) shows you to them.
+        OR EXISTS (
+            SELECT 1
+            FROM persona_followers pf
+            WHERE pf.persona_id = sqlc.arg(viewer_id)::bigint
+              AND pf.follower_persona_id = t.id
+              AND pf.status IN ('pending', 'active')
+              AND pf.unfollowed_at IS NULL
+        )
     )::boolean AS visible
 FROM personas t
 WHERE t.id = ANY(sqlc.arg(ids)::bigint[])
@@ -228,3 +237,46 @@ LEFT JOIN persona_followers v
    AND v.follower_persona_id = sqlc.arg(viewer_id)::bigint
    AND v.unfollowed_at IS NULL
 WHERE t.id = sqlc.arg(persona_id)::bigint;
+
+-- -------------------------------
+-- 20. Pending follow requests to a persona
+-- -------------------------------
+-- name: ListPendingFollowRequests :many
+SELECT f.id AS persona_id, f.first_name, f.last_name, f.thumbnail, f.privacy,
+    pf.followed_at AS requested_at
+FROM persona_followers pf
+JOIN personas f ON f.id = pf.follower_persona_id AND f.deleted_at IS NULL
+WHERE pf.persona_id = $1 AND pf.status = 'pending' AND pf.unfollowed_at IS NULL
+ORDER BY pf.followed_at DESC, f.id DESC;
+
+-- -------------------------------
+-- 21. Active followers of a persona
+-- -------------------------------
+-- name: ListFollowers :many
+SELECT f.id AS persona_id, f.first_name, f.last_name, f.thumbnail, f.privacy,
+    pf.followed_at
+FROM persona_followers pf
+JOIN personas f ON f.id = pf.follower_persona_id AND f.deleted_at IS NULL
+WHERE pf.persona_id = $1 AND pf.status = 'active' AND pf.unfollowed_at IS NULL
+ORDER BY pf.followed_at DESC, f.id DESC;
+
+-- -------------------------------
+-- 22. Approve or reject a pending follow request
+-- -------------------------------
+-- name: ResolveFollowRequest :one
+UPDATE persona_followers
+SET status = sqlc.arg(status)::persona_follow_status_enum,
+    followed_at = CASE WHEN sqlc.arg(status)::persona_follow_status_enum = 'active' THEN NOW() ELSE followed_at END
+WHERE persona_id = sqlc.arg(persona_id)::bigint
+  AND follower_persona_id = sqlc.arg(follower_persona_id)::bigint
+  AND status = 'pending' AND unfollowed_at IS NULL
+RETURNING status;
+
+-- -------------------------------
+-- 23. Remove an active follower
+-- -------------------------------
+-- name: RemoveFollower :execrows
+UPDATE persona_followers
+SET unfollowed_at = NOW()
+WHERE persona_id = $1 AND follower_persona_id = $2
+  AND status = 'active' AND unfollowed_at IS NULL;

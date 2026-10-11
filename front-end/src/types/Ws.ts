@@ -23,6 +23,8 @@ type EventType =
   // Per persona (STREAM_USER_EVENTS, /control owner PERSONA); no payload.
   // A profile's counts changed: refetch them.
   | "follow_counts"
+  // Your own persona only (/control owner PERSONA); "follower" above too.
+  | "follow_request"
   | "*";
 type EventActionType = "create" | "update" | "delete" | "*";
 type EventOwnerType = "CHANNEL" | "USER" | "PERSONA";

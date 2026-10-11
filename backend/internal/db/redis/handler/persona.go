@@ -12,9 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// persona serves a profile's live counts. The subject is fixed here, whatever
-// the client asks for, so this owner type never exposes a persona's
-// notifications, messages or followers.
+// persona serves a profile's live counts. The subjects are fixed here,
+// whatever the client asks for; only the persona itself also gets its follow
+// changes, and never its notifications or messages.
 func (h *Handler) persona(c *gin.Context, wsMessage WsMessage, personaId int64) {
 	ownerID := wsMessage.Payload.OwnerID
 	if ownerID == 0 {
@@ -38,6 +38,13 @@ func (h *Handler) persona(c *gin.Context, wsMessage WsMessage, personaId int64) 
 	owner := &models.Owner{ID: ownerID, Type: models.OwnerTypePersona}
 	subjects := []*types.SubjectOffsets{
 		subject.New(&stream, owner, string(nats.EventFollowCounts), string(db.EventActionEnumUpdate)).GetSubjectWithOffsets(0),
+	}
+	if ownerID == personaId {
+		for _, event := range []db.EventEnum{nats.EventFollower, nats.EventFollowRequest} {
+			for _, action := range []db.EventActionEnum{db.EventActionEnumCreate, db.EventActionEnumDelete} {
+				subjects = append(subjects, subject.New(&stream, owner, string(event), string(action)).GetSubjectWithOffsets(0))
+			}
+		}
 	}
 
 	switch wsMessage.Type {

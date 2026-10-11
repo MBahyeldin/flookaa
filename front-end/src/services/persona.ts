@@ -1,5 +1,12 @@
 import { apiFetch } from "@/lib/apiFetch";
-import type { FollowStatus, Persona, PersonaProfile, PublicPersona } from "@/types/persona";
+import type {
+  ActiveFollower,
+  FollowRequest,
+  FollowStatus,
+  Persona,
+  PersonaProfile,
+  PublicPersona,
+} from "@/types/persona";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -69,6 +76,39 @@ export async function setPersonaFollowing(id: number, follow: boolean): Promise<
   } catch (err) {
     return err as Error;
   }
+}
+
+/** Your own persona's followers and requests; throws with the server's message. */
+async function followersRequest<T>(personaId: number, path: string, method = "GET"): Promise<T> {
+  const resp = await apiFetch(`${API_BASE_URL}/api/v1/persona/${personaId}/${path}`, {
+    method,
+    credentials: "include",
+  });
+  const body = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(body.error || "Request failed");
+  return body as T;
+}
+
+export async function listFollowRequests(personaId: number): Promise<FollowRequest[]> {
+  const body = await followersRequest<{ requests: FollowRequest[] }>(personaId, "requests");
+  return body.requests;
+}
+
+export async function resolveFollowRequest(
+  personaId: number,
+  followerId: number,
+  decision: "approve" | "reject"
+): Promise<void> {
+  await followersRequest(personaId, `requests/${followerId}/${decision}`, "POST");
+}
+
+export async function listFollowers(personaId: number): Promise<ActiveFollower[]> {
+  const body = await followersRequest<{ followers: ActiveFollower[] }>(personaId, "followers");
+  return body.followers;
+}
+
+export async function removeFollower(personaId: number, followerId: number): Promise<void> {
+  await followersRequest(personaId, `followers/${followerId}/remove`, "POST");
 }
 
 export async function setShowOnProfile(personaId: string, showOnProfile: boolean): Promise<boolean> {

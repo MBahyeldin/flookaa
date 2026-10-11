@@ -24,5 +24,12 @@ func AddPersonaRoutes(r *gin.RouterGroup, users *users.Handler, followers *follo
 		viewGroup.GET("/connected", users.ConnectedPersonas)
 		viewGroup.POST("/follow", followers.Follow)
 		viewGroup.POST("/unfollow", followers.Unfollow)
+
+		// The persona's own followers and requests only.
+		viewGroup.GET("/requests", followers.ListRequests)
+		viewGroup.POST("/requests/:follower_id/approve", followers.ApproveRequest)
+		viewGroup.POST("/requests/:follower_id/reject", followers.RejectRequest)
+		viewGroup.GET("/followers", followers.ListFollowers)
+		viewGroup.POST("/followers/:follower_id/remove", followers.RemoveFollower)
 	}
 }

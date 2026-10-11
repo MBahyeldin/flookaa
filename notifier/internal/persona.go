@@ -11,8 +11,9 @@ import (
 )
 
 // persona handles follow events on STREAM_USER_EVENTS: new followers and
-// follow requests notify the followed persona, and unfollows and cancelled
-// requests take the notification away once nobody is left.
+// follow requests notify the followed persona, an approval notifies the
+// requester, and unfollows, removals and resolved requests take the
+// notification away once nobody is left.
 //
 // The subject is the followed persona and there is no scope: it is about the
 // recipient itself, so it is always visible.
@@ -32,6 +33,15 @@ func (w *Worker) persona(ctx context.Context, m message, eventAt time.Time) erro
 			kind:        db.NotificationKindEnumNewFollower,
 			subjectID:   key,
 		}, payload.PersonaID, eventAt)
+
+	case e.Name == shared_nats.EventFollower && e.Action == db.EventActionEnumCreate && payload.Reason == shared_nats.ReasonApproved:
+		actorID := e.ActorID
+		return w.notify(ctx, notification{
+			recipientID: payload.PersonaID,
+			kind:        db.NotificationKindEnumFollowRequestApproved,
+			subjectID:   key,
+			actorID:     &actorID,
+		}, e.ActorID, eventAt)
 
 	case e.Name == shared_nats.EventFollower && e.Action == db.EventActionEnumDelete:
 		return w.removeIfEmpty(ctx, db.NotificationKindEnumNewFollower, key, e.ActorID, eventAt)

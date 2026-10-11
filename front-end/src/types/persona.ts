@@ -41,3 +41,16 @@ export type PersonaProfile = PublicPersona & {
     following_count: number;
     requires_approval: boolean;
 }
+
+/** Someone following, or asking to follow, your own persona. */
+export type Follower = {
+    persona_id: number;
+    first_name: string;
+    last_name: string;
+    thumbnail: string;
+    anonymous: boolean;
+}
+
+export type FollowRequest = Follower & { requested_at: string };
+
+export type ActiveFollower = Follower & { followed_at: string };
