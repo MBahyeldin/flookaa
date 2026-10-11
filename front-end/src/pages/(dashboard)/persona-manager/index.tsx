@@ -15,7 +15,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useUserProfileStore } from "@/stores/UserProfileStore";
-import { MoreHorizontal, Trash2, Plus } from "lucide-react";
+import { MoreHorizontal, Trash2, Plus, UserRound } from "lucide-react";
+import { Link } from "react-router-dom";
+import { personaPath } from "@/components/persona-link";
 import CreatePersona from "@/pages/select-persona/CreatePersona";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -120,6 +122,12 @@ export default function PersonaManagerPage() {
                       </DropdownMenuTrigger>
 
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link to={personaPath(persona.id)}>
+                            <UserRound className="mr-2 h-4 w-4" />
+                            View profile
+                          </Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive focus:text-destructive"
                           onClick={() => {

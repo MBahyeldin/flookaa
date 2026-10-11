@@ -11,6 +11,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
+import { PersonaLink } from "@/components/persona-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +23,7 @@ import {
 import type { ChannelMember, JoinRequest } from "@/types/channel";
 import { formatDateOnly } from "@/utils/formateDate";
 
-type Person = Pick<JoinRequest, "first_name" | "last_name" | "name" | "thumbnail">;
+type Person = Pick<JoinRequest, "persona_id" | "first_name" | "last_name" | "name" | "thumbnail" | "anonymous">;
 
 const displayName = (p: Person) =>
   `${p.first_name} ${p.last_name}`.trim() || p.name;
@@ -215,13 +216,26 @@ function PersonRow({
 }) {
   return (
     <li className="flex items-center gap-3 py-3">
-      <Avatar className="h-9 w-9 shrink-0">
-        <AvatarImage src={person.thumbnail || ""} />
-        <GeneratedAvatarFallback name={displayName(person)} />
-      </Avatar>
+      <PersonaLink
+        personaId={person.persona_id}
+        anonymous={person.anonymous}
+        tabIndex={-1}
+        className="shrink-0"
+      >
+        <Avatar className="h-9 w-9 shrink-0">
+          <AvatarImage src={person.thumbnail || ""} />
+          <GeneratedAvatarFallback name={displayName(person)} />
+        </Avatar>
+      </PersonaLink>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-medium">{displayName(person)}</span>
+          <PersonaLink
+            personaId={person.persona_id}
+            anonymous={person.anonymous}
+            className="truncate text-sm font-medium"
+          >
+            {displayName(person)}
+          </PersonaLink>
           {badge && <Badge variant="secondary">{badge}</Badge>}
         </div>
         <p className="truncate text-xs text-muted-foreground">{detail}</p>

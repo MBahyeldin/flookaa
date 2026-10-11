@@ -2,6 +2,7 @@
 // `overflow-hidden rounded-full`, without which the image isn't clipped to a circle.
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
+import { PersonaLink } from "@/components/persona-link";
 import { useCreateLikeMutation, useDeleteCommentMutation, useGetCommentsLazyQuery, type Comment, type GetCommentsQuery, type GetCommentsQueryVariables, type SimpleInput } from "@/generated/graphql";
 import { ChevronDown, ChevronRight, Heart, Loader2 } from "lucide-react";
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
@@ -224,15 +225,28 @@ const CommentItem = React.memo(({
                 <div className="bg-muted rounded-2xl px-3 py-2 sm:px-4 shadow-sm">
                     {/* Author row: avatar + name + handle */}
                     <div className="flex items-center gap-2 mb-1">
-                        <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
-                            <AvatarImage
-                                src={comment.author?.profileImageUrl ?? ""}
-                                className="h-full w-full rounded-full"
-                            />
-                            <GeneratedAvatarFallback name={comment.author.fullName} />
-                        </Avatar>
+                        <PersonaLink
+                            personaId={comment.authorId}
+                            anonymous={comment.author.anonymous}
+                            tabIndex={-1}
+                            className="shrink-0"
+                        >
+                            <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
+                                <AvatarImage
+                                    src={comment.author?.profileImageUrl ?? ""}
+                                    className="h-full w-full rounded-full"
+                                />
+                                <GeneratedAvatarFallback name={comment.author.fullName} />
+                            </Avatar>
+                        </PersonaLink>
                         <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-                            <span className="font-medium text-sm truncate">{comment.author.fullName}</span>
+                            <PersonaLink
+                                personaId={comment.authorId}
+                                anonymous={comment.author.anonymous}
+                                className="font-medium text-sm truncate"
+                            >
+                                {comment.author.fullName}
+                            </PersonaLink>
                             <span className="text-xs text-muted-foreground truncate">@{comment.author.username}</span>
                         </div>
                     </div>

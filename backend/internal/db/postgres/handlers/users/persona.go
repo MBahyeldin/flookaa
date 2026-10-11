@@ -306,6 +306,53 @@ func showOnProfileRequiresPublic(c *gin.Context) {
 	c.JSON(http.StatusBadRequest, gin.H{"error": "show_on_profile_requires_public"})
 }
 
+func personaIDParam(c *gin.Context) (int64, bool) {
+	personaID, err := strconv.ParseInt(c.Param("persona_id"), 10, 64)
+	if err != nil || personaID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid persona_id parameter"})
+		return 0, false
+	}
+	return personaID, true
+}
+
+func (h *Handler) ReadPersona(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	viewerID, ok := auth.PersonaID(c)
+	if !ok {
+		auth.PersonaRequired(c)
+		return
+	}
+
+	personaID, ok := personaIDParam(c)
+	if !ok {
+		return
+	}
+
+	rows, err := h.q.ResolvePersonasForViewer(ctx, db.ResolvePersonasForViewerParams{
+		Ids:      []int64{personaID},
+		ViewerID: viewerID,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve persona"})
+		return
+	}
+	if len(rows) == 0 || !rows[0].Visible {
+		c.JSON(http.StatusNotFound, gin.H{"error": "persona not found"})
+		return
+	}
+
+	p := rows[0]
+	c.JSON(http.StatusOK, gin.H{
+		"id":         p.ID,
+		"first_name": p.FirstName,
+		"last_name":  p.LastName,
+		"slug":       p.Slug,
+		"thumbnail":  p.Thumbnail.String,
+		"bio":        p.Bio.String,
+	})
+}
+
 func (h *Handler) ConnectedPersonas(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -315,9 +362,8 @@ func (h *Handler) ConnectedPersonas(c *gin.Context) {
 		return
 	}
 
-	personaID, err := strconv.ParseInt(c.Param("persona_id"), 10, 64)
-	if err != nil || personaID <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid persona_id parameter"})
+	personaID, ok := personaIDParam(c)
+	if !ok {
 		return
 	}
 

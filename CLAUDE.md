@@ -65,7 +65,7 @@ pnpm lint                   # eslint .
 pnpm codegen                # graphql-codegen -> src/generated/graphql.ts
 ```
 
-`pnpm codegen` introspects the **live** schema at `https://api.flookaa.com/query` (see `codegen.yml`), not a local file — it needs network access and the deployed schema to be current. `src/generated/graphql.ts` is generated; don't edit it.
+`pnpm codegen` reads the repo's schema files, `shared/external/graph/*.graphqls` (see `codegen.yml`), so it runs offline and matches the branch. `src/generated/graphql.ts` is generated; don't edit it.
 
 `tsc-check` is `! npx tsc -b | grep '.tsx'` — it only fails the build on errors in `.tsx` files. Type errors in `.ts` files pass. Keep that in mind when "the build is green".
 
@@ -121,7 +121,7 @@ Tiers are applied at **group** level, so a new route inherits its group's tier:
 |---|---|
 | Public | `/api/v1/health`, `auth/register`, `auth/login`, `auth/logout`, `auth/google`, `auth/oauth2callback/*`, `geo/*` (used during signup) |
 | User | `auth/info`, `auth/verify`, `users/*`, `persona/*` (except below) |
-| Persona | `channels/*`, `notifications/*`, `persona/:persona_id/*`, `POST /query`, `POST /control` |
+| Persona | `channels/*`, `notifications/*`, `persona/:persona_id`, `persona/:persona_id/*`, `POST /query`, `POST /control` |
 
 **Content and channel actions belong to a persona, not a user**: authorship, membership, realtime subscriptions (Redis `persona:<id>:subjects`) are all keyed by `persona_id`; `user_id` is only for account and persona management. A response about another persona never carries `user_id`, `is_default`, or any other field that ties it to the account or to the user's other personas; only your own account and persona endpoints return them. GraphQL never reads `user_id`. `/playground` is only mounted when `GIN_MODE` is not `release`.
 
@@ -166,6 +166,7 @@ Private and `only_me` personas can do everything a public one can (join, post, c
 - The rule is one SQL query, `ResolvePersonasForViewer(viewer_id, ids)` (fields + `visible`). Every response that shows another persona's name or avatar goes through it: GraphQL post/comment authors and the channel owner (`Resolver.resolvePersonas`), channel member and join-request lists (`access.VisiblePersonas` via `channels.Handler.anonymize`, non-public personas only).
 - **`show_on_profile`** (opt-in link from a public persona to its user's profile, default off) is public-only: a CHECK constraint enforces it, and a privacy change away from public clears it in the same update. Like `is_default`, it is account data, returned only by your own `/persona/list` and `/persona/update`.
 - **Connected personas** (`GET /persona/:persona_id/connected`, `ListConnectedPersonas`): a persona that is public with `show_on_profile` on is **linked**. Only a linked source lists its user's other linked personas, and the source itself is not in the list. A source the viewer sees only anonymously is 404. A visible but unlinked source returns `[]`, since listing its siblings would tie it to them. The owner gets the same view as a visitor.
+- **Profile page** (`/personas/:id`, `GET /persona/:persona_id`): the persona's public fields (`id`, names, `slug`, `thumbnail`, `bio`, never `name`, which is the owner's label) plus its connected personas. 404 when the viewer only sees it anonymously. Persona views carry `anonymous` (GraphQL `Persona`, channel member and join-request rows), and the frontend links only real names to the profile (`components/persona-link`).
 - **The Redis persona cache (`persona:<id>:info`) holds public personas only**: `SetPersonaInfo` skips the others and `GetPersonaInfo` drops a cached non-public entry. A cache hit is therefore visible to everyone and needs no query; only misses go to Postgres, one batch per page. `UpdatePersona` evicts the entry.
 
 ### Counters: Postgres is the source of truth, Redis is a cache
@@ -257,7 +258,7 @@ Rust proxy: `GO_APP_URL`. Frontend: `VITE_API_BASE_URL`, `VITE_WEBSOCKET_BASE_UR
 - Older commits are prefixed with a ticket key (`WWW-0000 Fix linting issues`); recent ones use conventional-commit prefixes (`feat: ...`). Follow whatever the user asks for.
 - Keep code comments minimal: no doc blocks restating the code, no rule tables or ticket narration in code. At most one short line where the *why* isn't obvious. Explanations go in the plan or this file.
 - Never hand-edit generated output: `shared/pkg/db/`, `shared/pkg/graph/*.generated.go`, `shared/pkg/graph/models/models_gen.go`, `front-end/src/generated/graphql.ts`, `gRCP/*/app_service/`.
-- A backend change touching the GraphQL schema requires regenerating on both sides: `make generate-models` in `shared/`, then `pnpm codegen` in `front-end/` once the schema is deployed.
+- A backend change touching the GraphQL schema requires regenerating on both sides: `make generate-models` in `shared/`, then `pnpm codegen` in `front-end/`. Deploy the backend before the frontend that queries the new fields.
 
 ## Tickets and releases
 

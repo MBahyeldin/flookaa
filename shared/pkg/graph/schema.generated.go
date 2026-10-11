@@ -670,6 +670,8 @@ func (ec *executionContext) fieldContext_Channel_owner(_ context.Context, field 
 				return ec.fieldContext_Persona_fullName(ctx, field)
 			case "profileImageUrl":
 				return ec.fieldContext_Persona_profileImageUrl(ctx, field)
+			case "anonymous":
+				return ec.fieldContext_Persona_anonymous(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Persona", field.Name)
 		},
@@ -970,6 +972,8 @@ func (ec *executionContext) fieldContext_Comment_author(_ context.Context, field
 				return ec.fieldContext_Persona_fullName(ctx, field)
 			case "profileImageUrl":
 				return ec.fieldContext_Persona_profileImageUrl(ctx, field)
+			case "anonymous":
+				return ec.fieldContext_Persona_anonymous(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Persona", field.Name)
 		},
@@ -1966,6 +1970,35 @@ func (ec *executionContext) fieldContext_Persona_profileImageUrl(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Persona_anonymous(ctx context.Context, field graphql.CollectedField, obj *models.Persona) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Persona_anonymous,
+		func(ctx context.Context) (any, error) {
+			return obj.Anonymous, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Persona_anonymous(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Persona",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PersonalizedMeta_likedByPersona(ctx context.Context, field graphql.CollectedField, obj *models.PersonalizedMeta) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2213,6 +2246,8 @@ func (ec *executionContext) fieldContext_Post_author(_ context.Context, field gr
 				return ec.fieldContext_Persona_fullName(ctx, field)
 			case "profileImageUrl":
 				return ec.fieldContext_Persona_profileImageUrl(ctx, field)
+			case "anonymous":
+				return ec.fieldContext_Persona_anonymous(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Persona", field.Name)
 		},
@@ -4235,6 +4270,11 @@ func (ec *executionContext) _Persona(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "profileImageUrl":
 			out.Values[i] = ec._Persona_profileImageUrl(ctx, field, obj)
+		case "anonymous":
+			out.Values[i] = ec._Persona_anonymous(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

@@ -24,6 +24,7 @@ type JoinRequest = {
   first_name: string;
   last_name: string;
   thumbnail: string;
+  anonymous: boolean;
   requested_at: string;
 };
 
@@ -34,6 +35,7 @@ type ChannelMember = {
   first_name: string;
   last_name: string;
   thumbnail: string;
+  anonymous: boolean;
   joined_at: string;
   is_owner: boolean;
   is_moderator: boolean;

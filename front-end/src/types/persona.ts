@@ -21,3 +21,13 @@ export type Persona = {
         name: string;
     }>;
 }
+
+/** Another persona as any viewer may see it: no account fields. */
+export type PublicPersona = {
+    id: number;
+    first_name: string;
+    last_name: string;
+    slug: string;
+    thumbnail?: string;
+    bio?: string;
+}

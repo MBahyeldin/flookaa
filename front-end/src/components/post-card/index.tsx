@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
+import { PersonaLink } from "@/components/persona-link";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import {
@@ -167,12 +168,24 @@ export function Post({
         {/* Post Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={post.author?.profileImageUrl || ""} />
-              <GeneratedAvatarFallback name={post.author?.fullName ?? ""} />
-            </Avatar>
+            <PersonaLink
+              personaId={post.authorId}
+              anonymous={post.author?.anonymous ?? true}
+              tabIndex={-1}
+              className="shrink-0"
+            >
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={post.author?.profileImageUrl || ""} />
+                <GeneratedAvatarFallback name={post.author?.fullName ?? ""} />
+              </Avatar>
+            </PersonaLink>
             <div>
-              <div className="flex flex-wrap items-center gap-x-2">                <h4 className="text-base font-medium">{post.author?.fullName}</h4>
+              <div className="flex flex-wrap items-center gap-x-2">
+                <h4 className="text-base font-medium">
+                  <PersonaLink personaId={post.authorId} anonymous={post.author?.anonymous ?? true}>
+                    {post.author?.fullName}
+                  </PersonaLink>
+                </h4>
                 <span className="text-sm text-muted-foreground">
                   @{post.author?.username}
                 </span>

@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/apiFetch";
-import type { Persona } from "@/types/persona";
+import type { Persona, PublicPersona } from "@/types/persona";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -28,6 +28,30 @@ export async function fetchUserPersonas(): Promise<Persona[]> {
   } catch (err) {
     console.error("Error fetching personas:", err);
     return [];
+  }
+}
+
+export async function fetchPersonaProfile(id: string): Promise<PublicPersona | "not_found" | null> {
+  try {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/persona/${id}`, { credentials: "include" });
+    if (resp.status === 404 || resp.status === 400) return "not_found";
+    if (!resp.ok) return null;
+    return (await resp.json()) as PublicPersona;
+  } catch (err) {
+    console.error("Error fetching persona:", err);
+    return null;
+  }
+}
+
+export async function fetchConnectedPersonas(id: string): Promise<PublicPersona[] | null> {
+  try {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/persona/${id}/connected`, { credentials: "include" });
+    if (!resp.ok) return null;
+    const data = (await resp.json()) as { personas: PublicPersona[] };
+    return data.personas;
+  } catch (err) {
+    console.error("Error fetching connected personas:", err);
+    return null;
   }
 }
 

@@ -249,6 +249,7 @@ type Persona struct {
 	Username        string  `json:"username"`
 	FullName        string  `json:"fullName"`
 	ProfileImageURL *string `json:"profileImageUrl,omitempty"`
+	Anonymous       bool    `json:"anonymous"`
 }
 
 type PersonalizedMeta struct {

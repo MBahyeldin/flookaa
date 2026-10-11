@@ -164,6 +164,7 @@ type ComplexityRoot struct {
 	}
 
 	Persona struct {
+		Anonymous       func(childComplexity int) int
 		FullName        func(childComplexity int) int
 		ID              func(childComplexity int) int
 		ProfileImageURL func(childComplexity int) int
@@ -829,6 +830,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Owner.Type(childComplexity), true
+
+	case "Persona.anonymous":
+		if e.complexity.Persona.Anonymous == nil {
+			break
+		}
+
+		return e.complexity.Persona.Anonymous(childComplexity), true
 
 	case "Persona.fullName":
 		if e.complexity.Persona.FullName == nil {
@@ -1581,6 +1589,7 @@ type Persona {
   username: String!
   fullName: String!
   profileImageUrl: String
+  anonymous: Boolean!
 }
 
 # Generic object for posts, comments, and replies

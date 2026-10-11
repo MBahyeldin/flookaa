@@ -291,7 +291,7 @@ func (r *Resolver) resolvePersonas(ctx context.Context, viewerID, channelID int6
 	for id, p := range personas {
 		if p == nil {
 			name := access.AnonymousName(id, channelID)
-			personas[id] = &models.Persona{ID: id, Username: name, FullName: name}
+			personas[id] = &models.Persona{ID: id, Username: name, FullName: name, Anonymous: true}
 		}
 	}
 	return personas, nil

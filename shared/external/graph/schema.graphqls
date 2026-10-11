@@ -78,6 +78,7 @@ type Persona {
   username: String!
   fullName: String!
   profileImageUrl: String
+  anonymous: Boolean!
 }
 
 # Generic object for posts, comments, and replies

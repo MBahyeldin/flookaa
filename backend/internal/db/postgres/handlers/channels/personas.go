@@ -13,6 +13,7 @@ type PersonaFields struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Thumbnail string `json:"thumbnail"`
+	Anonymous bool   `json:"anonymous"`
 }
 
 func (h *Handler) anonymize(c *gin.Context, channelID int64, ids []int64, fields []*PersonaFields) bool {
@@ -24,7 +25,7 @@ func (h *Handler) anonymize(c *gin.Context, channelID int64, ids []int64, fields
 	}
 	for i, id := range ids {
 		if !visible[id] {
-			*fields[i] = PersonaFields{FirstName: access.AnonymousName(id, channelID)}
+			*fields[i] = PersonaFields{FirstName: access.AnonymousName(id, channelID), Anonymous: true}
 		}
 	}
 	return true

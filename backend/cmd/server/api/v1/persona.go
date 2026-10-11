@@ -19,6 +19,7 @@ func AddPersonaRoutes(r *gin.RouterGroup, users *users.Handler) {
 
 	viewGroup := personaGroup.Group("/:persona_id", auth.RequirePersona())
 	{
+		viewGroup.GET("", users.ReadPersona)
 		viewGroup.GET("/connected", users.ConnectedPersonas)
 	}
 }
