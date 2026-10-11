@@ -273,7 +273,8 @@ Work is tracked in Jira, project `WWW` on flookaa.atlassian.net (Kanban). Keys a
   - Multiples of 5 are planned releases (Charmeleon-v1005, Caterpie-v1010, …). The numbers in between are hotfixes, each with its own Pokémon.
   - Only one release is open at a time. A ticket gets the open release as its fix version when it enters READY TO START.
 - **Branches:**
-  - The ticket branch `WWW-<n>-<slug>` is cut from `release/<pokemon>-v1NNN` and goes back into it by squash PR.
+  - Never use `/` in a branch name.
+  - The ticket branch `WWW-<n>-<slug>` is cut from `release-<pokemon>-v1NNN` and goes back into it by squash PR.
   - The release branch goes to `main` by merge commit (not squash). `main` is then tagged `<pokemon>-v1NNN`.
   - Deploy only from `main`.
   - A hotfix branches from `main`, gets its own release, and is merged back into the open release branch.
