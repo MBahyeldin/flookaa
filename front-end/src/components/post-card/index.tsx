@@ -9,7 +9,8 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar, AvatarImage } from "../ui/avatar";
+import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import {
@@ -168,9 +169,7 @@ export function Post({
           <div className="flex items-center space-x-3">
             <Avatar className="h-10 w-10">
               <AvatarImage src={post.author?.profileImageUrl || ""} />
-              <AvatarFallback>
-                {post.author?.fullName.slice(0, 2)}
-              </AvatarFallback>
+              <GeneratedAvatarFallback name={post.author?.fullName ?? ""} />
             </Avatar>
             <div>
               <div className="flex flex-wrap items-center gap-x-2">                <h4 className="text-base font-medium">{post.author?.fullName}</h4>

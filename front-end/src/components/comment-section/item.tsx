@@ -1,8 +1,9 @@
 // Avatar from ../ui/avatar, not the raw Radix Root: the styled wrapper supplies
 // `overflow-hidden rounded-full`, without which the image isn't clipped to a circle.
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar, AvatarImage } from "../ui/avatar";
+import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { useCreateLikeMutation, useDeleteCommentMutation, useGetCommentsLazyQuery, type Comment, type GetCommentsQuery, type GetCommentsQueryVariables, type SimpleInput } from "@/generated/graphql";
-import { ChevronDown, ChevronRight, Heart, Loader2, User2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Heart, Loader2 } from "lucide-react";
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -228,9 +229,7 @@ const CommentItem = React.memo(({
                                 src={comment.author?.profileImageUrl ?? ""}
                                 className="h-full w-full rounded-full"
                             />
-                            <AvatarFallback>
-                                <User2 className="h-4 w-4" />
-                            </AvatarFallback>
+                            <GeneratedAvatarFallback name={comment.author.fullName} />
                         </Avatar>
                         <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
                             <span className="font-medium text-sm truncate">{comment.author.fullName}</span>

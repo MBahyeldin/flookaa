@@ -243,26 +243,68 @@ func getPersonaIdFromContext(ctx context.Context) (int64, error) {
 	return personaId, nil
 }
 
-func (r *Resolver) resolvePersonaCached(ctx context.Context, personaID int64) (*models.Persona, error) {
-	cachedPersona, err := r.Persona.GetPersonaInfo(ctx, strconv.Itoa(int(personaID)))
-	if err != nil {
-		log.Println("redis get user error:", err)
-	}
-	if cachedPersona == nil {
-		q := r.Queries
-		persona, err := q.ResolvePersonaByID(ctx, personaID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get persona from postgres: %w", err)
+// resolvePersonas returns how viewerID sees each of ids in channelID, real or
+// anonymous. A cache hit is public, so it needs no visibility check.
+func (r *Resolver) resolvePersonas(ctx context.Context, viewerID, channelID int64, ids []int64) (map[int64]*models.Persona, error) {
+	personas := make(map[int64]*models.Persona, len(ids))
+	var misses []int64
+	for _, id := range ids {
+		if _, seen := personas[id]; seen {
+			continue
 		}
-		cachedPersona = &persona
-		_ = r.Persona.SetPersonaInfo(ctx, &persona)
+		cached, err := r.Persona.GetPersonaInfo(ctx, strconv.FormatInt(id, 10))
+		if err != nil {
+			log.Println("redis get persona error:", err)
+		}
+		if cached == nil {
+			personas[id] = nil
+			misses = append(misses, id)
+			continue
+		}
+		personas[id] = realPersona(cached.ID, cached.FirstName, cached.LastName, cached.Thumbnail.String)
 	}
+
+	if len(misses) > 0 {
+		rows, err := r.Queries.ResolvePersonasForViewer(ctx, db.ResolvePersonasForViewerParams{
+			Ids:      misses,
+			ViewerID: viewerID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve personas: %w", err)
+		}
+		for _, row := range rows {
+			_ = r.Persona.SetPersonaInfo(ctx, &db.ResolvePersonaByIDRow{
+				ID:        row.ID,
+				FirstName: row.FirstName,
+				LastName:  row.LastName,
+				Thumbnail: row.Thumbnail,
+				Bio:       row.Bio,
+				Slug:      row.Slug,
+				Privacy:   row.Privacy,
+			})
+			if row.Visible {
+				personas[row.ID] = realPersona(row.ID, row.FirstName, row.LastName, row.Thumbnail.String)
+			}
+		}
+	}
+
+	for id, p := range personas {
+		if p == nil {
+			name := access.AnonymousName(id, channelID)
+			personas[id] = &models.Persona{ID: id, Username: name, FullName: name}
+		}
+	}
+	return personas, nil
+}
+
+func realPersona(id int64, firstName, lastName, thumbnail string) *models.Persona {
+	name := firstName + " " + lastName
 	return &models.Persona{
-		ID:              cachedPersona.ID,
-		Username:        cachedPersona.FirstName + " " + cachedPersona.LastName,
-		FullName:        cachedPersona.FirstName + " " + cachedPersona.LastName,
-		ProfileImageURL: &cachedPersona.Thumbnail.String,
-	}, nil
+		ID:              id,
+		Username:        name,
+		FullName:        name,
+		ProfileImageURL: &thumbnail,
+	}
 }
 
 func (r *Resolver) resolvePostMetaCached(ctx context.Context, postID string) (*models.Meta, error) {
@@ -347,13 +389,6 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 		}
 		post := models.PostMapper(&p)
 
-		// Author lookup (from Redis or Postgres)
-		author, err := r.resolvePersonaCached(ctx, p.AuthorID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve author: %w", err)
-		}
-		post.Author = author
-
 		// post metadata lookup (from Redis or Postgres)
 		meta, err := r.resolvePostMetaCached(ctx, p.ID)
 		if err != nil {
@@ -364,8 +399,17 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 	}
 
 	postIDs := make([]string, len(posts))
+	authorIDs := make([]int64, len(posts))
 	for i, post := range posts {
 		postIDs[i] = post.ID
+		authorIDs[i] = post.AuthorID
+	}
+	authors, err := r.resolvePersonas(ctx, personaId, owner.ID, authorIDs)
+	if err != nil {
+		return nil, err
+	}
+	for _, post := range posts {
+		post.Author = authors[post.AuthorID]
 	}
 	liked, err := r.likedTargets(ctx, personaId, postIDs)
 	if err != nil {
@@ -435,7 +479,7 @@ func (r *Resolver) resolveCommentMetaCached(ctx context.Context, commentId strin
 	return meta, nil
 }
 
-func getComments(ctx context.Context, postID string, r *queryResolver, limit int32, offset int32) ([]*models.Comment, error) {
+func getComments(ctx context.Context, postID string, channelID int64, r *queryResolver, limit int32, offset int32) ([]*models.Comment, error) {
 	personaId, err := getPersonaIdFromContext(ctx)
 	if err != nil || personaId == 0 {
 		return nil, fmt.Errorf("failed to get personaId from context: %w", err)
@@ -482,14 +526,7 @@ func getComments(ctx context.Context, postID string, r *queryResolver, limit int
 			return nil, fmt.Errorf("failed to decode comment: %w", err)
 		}
 
-		// Author lookup (from Redis or Postgres)
-		author, err := r.resolvePersonaCached(ctx, commentsWithReplies.AuthorID)
-		if err != nil {
-			return nil, err
-		}
-
 		comment := models.CommentMapper(&commentsWithReplies)
-		comment.Author = author
 
 		meta, err := r.resolveCommentMetaCached(ctx, commentsWithReplies.ID)
 		if err != nil {
@@ -501,8 +538,17 @@ func getComments(ctx context.Context, postID string, r *queryResolver, limit int
 	}
 
 	ids := make([]string, len(comments))
+	authorIDs := make([]int64, len(comments))
 	for i, comment := range comments {
 		ids[i] = comment.ID
+		authorIDs[i] = comment.AuthorID
+	}
+	authors, err := r.resolvePersonas(ctx, personaId, channelID, authorIDs)
+	if err != nil {
+		return nil, err
+	}
+	for _, comment := range comments {
+		comment.Author = authors[comment.AuthorID]
 	}
 	liked, err := r.likedTargets(ctx, personaId, ids)
 	if err != nil {

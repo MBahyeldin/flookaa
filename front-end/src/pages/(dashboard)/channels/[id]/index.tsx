@@ -7,7 +7,6 @@ import {
   HeartOff,
   // Bell,
   // BellOff,
-  User2,
 } from "lucide-react";
 import { ImageWithFallback } from "@/components/image-with-fallback";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,7 +23,8 @@ import {
 import { Post } from "@/components/post-card";
 import { Link, useParams } from "react-router-dom";
 import { useGetChannelQuery, useGetPostsLazyQuery } from "@/generated/graphql";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { PostCreator } from "@/components/post-creator";
 import { joinChannel, leaveChannel, setFollowing } from "@/services/channels";
 import { toast } from "sonner";
@@ -431,9 +431,9 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                     <AvatarImage
                       src={channelData.getChannel.owner.profileImageUrl || ""}
                     />
-                    <AvatarFallback>
-                      <User2 className="h-3 w-3" />
-                    </AvatarFallback>
+                    <GeneratedAvatarFallback
+                      name={channelData.getChannel.owner.fullName}
+                    />
                   </Avatar>
                   <span className="truncate text-foreground">
                     {channelData.getChannel.owner.username}

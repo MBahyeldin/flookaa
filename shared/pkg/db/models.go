@@ -446,6 +446,49 @@ func (ns NullOwnerEnum) Value() (driver.Value, error) {
 	return string(ns.OwnerEnum), nil
 }
 
+type PersonaFollowStatusEnum string
+
+const (
+	PersonaFollowStatusEnumPending  PersonaFollowStatusEnum = "pending"
+	PersonaFollowStatusEnumActive   PersonaFollowStatusEnum = "active"
+	PersonaFollowStatusEnumRejected PersonaFollowStatusEnum = "rejected"
+)
+
+func (e *PersonaFollowStatusEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PersonaFollowStatusEnum(s)
+	case string:
+		*e = PersonaFollowStatusEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PersonaFollowStatusEnum: %T", src)
+	}
+	return nil
+}
+
+type NullPersonaFollowStatusEnum struct {
+	PersonaFollowStatusEnum PersonaFollowStatusEnum
+	Valid                   bool // Valid is true if PersonaFollowStatusEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPersonaFollowStatusEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.PersonaFollowStatusEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PersonaFollowStatusEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPersonaFollowStatusEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PersonaFollowStatusEnum), nil
+}
+
 type PersonaPrivacyEnum string
 
 const (
@@ -678,6 +721,7 @@ type Persona struct {
 type PersonaFollower struct {
 	PersonaID         int64
 	FollowerPersonaID int64
+	Status            PersonaFollowStatusEnum
 	FollowedAt        sql.NullTime
 	UnfollowedAt      sql.NullTime
 }

@@ -6,6 +6,12 @@ CREATE TYPE persona_privacy_enum AS ENUM (
 );
    
 
+CREATE TYPE persona_follow_status_enum AS ENUM (
+    'pending',
+    'active',
+    'rejected'
+);
+
 CREATE TYPE relationship_enum AS ENUM (
     'follower',
     'blocked',
@@ -100,6 +106,8 @@ CREATE TABLE persona_friend_group_members (
 CREATE TABLE persona_followers (
     persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
     follower_persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
+
+    status persona_follow_status_enum NOT NULL,
 
     followed_at TIMESTAMPTZ DEFAULT now(),
     unfollowed_at TIMESTAMPTZ,

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, User2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -9,7 +9,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -216,9 +217,7 @@ function PersonRow({
     <li className="flex items-center gap-3 py-3">
       <Avatar className="h-9 w-9 shrink-0">
         <AvatarImage src={person.thumbnail || ""} />
-        <AvatarFallback>
-          <User2 className="h-4 w-4" />
-        </AvatarFallback>
+        <GeneratedAvatarFallback name={displayName(person)} />
       </Avatar>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">

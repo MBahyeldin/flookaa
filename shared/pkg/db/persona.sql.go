@@ -9,6 +9,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/lib/pq"
 	"github.com/sqlc-dev/pqtype"
 )
 
@@ -399,6 +400,83 @@ func (q *Queries) ResolvePersonaByID(ctx context.Context, id int64) (ResolvePers
 		&i.Privacy,
 	)
 	return i, err
+}
+
+const resolvePersonasForViewer = `-- name: ResolvePersonasForViewer :many
+SELECT
+    t.id,
+    t.first_name,
+    t.last_name,
+    t.thumbnail,
+    t.bio,
+    t.slug,
+    t.privacy,
+    (
+        t.privacy = 'public'
+        OR t.user_id = (SELECT v.user_id FROM personas v WHERE v.id = $1::bigint)
+        OR (t.privacy = 'private' AND EXISTS (
+            SELECT 1
+            FROM persona_followers pf
+            WHERE pf.persona_id = t.id
+              AND pf.follower_persona_id = $1::bigint
+              AND pf.status = 'active'
+              AND pf.unfollowed_at IS NULL
+        ))
+    )::boolean AS visible
+FROM personas t
+WHERE t.id = ANY($2::bigint[])
+  AND t.deleted_at IS NULL
+`
+
+type ResolvePersonasForViewerParams struct {
+	ViewerID int64
+	Ids      []int64
+}
+
+type ResolvePersonasForViewerRow struct {
+	ID        int64
+	FirstName string
+	LastName  string
+	Thumbnail sql.NullString
+	Bio       sql.NullString
+	Slug      string
+	Privacy   PersonaPrivacyEnum
+	Visible   bool
+}
+
+// -------------------------------
+// 14. Resolve personas for a viewer
+// -------------------------------
+func (q *Queries) ResolvePersonasForViewer(ctx context.Context, arg ResolvePersonasForViewerParams) ([]ResolvePersonasForViewerRow, error) {
+	rows, err := q.db.QueryContext(ctx, resolvePersonasForViewer, arg.ViewerID, pq.Array(arg.Ids))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ResolvePersonasForViewerRow
+	for rows.Next() {
+		var i ResolvePersonasForViewerRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FirstName,
+			&i.LastName,
+			&i.Thumbnail,
+			&i.Bio,
+			&i.Slug,
+			&i.Privacy,
+			&i.Visible,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updatePersonaByIdAndUserId = `-- name: UpdatePersonaByIdAndUserId :one

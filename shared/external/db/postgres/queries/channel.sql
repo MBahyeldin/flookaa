@@ -244,7 +244,8 @@ SELECT
     p.name,
     p.first_name,
     p.last_name,
-    p.thumbnail
+    p.thumbnail,
+    p.privacy
 FROM channel_members cm
 JOIN personas p ON p.id = cm.persona_id
 WHERE cm.channel_id = $1
@@ -275,6 +276,7 @@ SELECT
     p.first_name,
     p.last_name,
     p.thumbnail,
+    p.privacy,
     (c.owner_id = cm.persona_id)::boolean AS is_owner,
     EXISTS (
         SELECT 1

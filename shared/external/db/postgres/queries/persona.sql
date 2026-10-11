@@ -122,3 +122,31 @@ SET name = COALESCE($3, name),
     updated_at = NOW()
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 RETURNING *;
+
+-- -------------------------------
+-- 14. Resolve personas for a viewer
+-- -------------------------------
+-- name: ResolvePersonasForViewer :many
+SELECT
+    t.id,
+    t.first_name,
+    t.last_name,
+    t.thumbnail,
+    t.bio,
+    t.slug,
+    t.privacy,
+    (
+        t.privacy = 'public'
+        OR t.user_id = (SELECT v.user_id FROM personas v WHERE v.id = sqlc.arg(viewer_id)::bigint)
+        OR (t.privacy = 'private' AND EXISTS (
+            SELECT 1
+            FROM persona_followers pf
+            WHERE pf.persona_id = t.id
+              AND pf.follower_persona_id = sqlc.arg(viewer_id)::bigint
+              AND pf.status = 'active'
+              AND pf.unfollowed_at IS NULL
+        ))
+    )::boolean AS visible
+FROM personas t
+WHERE t.id = ANY(sqlc.arg(ids)::bigint[])
+  AND t.deleted_at IS NULL;

@@ -159,10 +159,11 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 		return nil, fmt.Errorf("failed to insert object: %w", insertError)
 	}
 
-	author, err := r.resolvePersonaCached(ctx, personaId)
+	authors, err := r.resolvePersonas(ctx, personaId, owner.ID, []int64{personaId})
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve author: %w", err)
 	}
+	author := authors[personaId]
 
 	comment := models.Comment{
 		ID:         object.ID,
@@ -386,7 +387,7 @@ func (r *queryResolver) GetComments(ctx context.Context, parentID string, limit 
 	if err := r.authorizeOwner(ctx, parent.Owner, personaId, false); err != nil {
 		return nil, err
 	}
-	comments, err := getComments(ctx, parentID, r, *limit, *offset)
+	comments, err := getComments(ctx, parentID, parent.Owner.ID, r, *limit, *offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get comments: %w", err)
 	}
@@ -434,12 +435,12 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		channel = channelResult
 
 		// Owner lookup + cache
-		cachedPersona, err := r.resolvePersonaCached(ctx, channel.OwnerID)
+		owners, err := r.resolvePersonas(ctx, personaId, id, []int64{channel.OwnerID})
 		if err != nil {
 			channelErr = err
 			return
 		}
-		ownerPersona = *cachedPersona
+		ownerPersona = *owners[channel.OwnerID]
 	}()
 
 	if canRead {

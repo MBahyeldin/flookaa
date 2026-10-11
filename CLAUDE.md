@@ -150,6 +150,22 @@ Rules live in one place, `shared/pkg/access` (`LoadChannel` → `CanRead`/`CanWr
 
 Membership is `channel_members` with `left_at IS NULL AND status = 'active'` — every membership query must filter on both. Moderators list and remove members via `/channels/:id/members[/:persona_id/remove]` (the owner can't be removed); leaving or being removed also soft-deletes the persona's `channel_roles`, because `can_moderate` reads roles, not membership. Non-readers get 404 / `channel not found`, never 403, so private channels don't leak existence of content. For existing objects (comments, likes) resolvers authorize and publish against the owner **stored on the Mongo document** (`loadObject` → `authorizeOwner`), never the client's `owner` input. Only channel-owned content is supported: `authorizeOwner` refuses any other owner type (`PERSONA`, `PAGE`) as not found until those get access rules.
 
+### Persona access
+
+Private and `only_me` personas can do everything a public one can (join, post, comment, like). Persona privacy decides **which view** of a persona a viewer gets, not what the persona may do. Rules live in `shared/pkg/access/persona.go` (`VisiblePersonas`, one query per page):
+
+| Persona's privacy | Sees the real persona | Everyone else |
+|---|---|---|
+| `public` | everyone | — |
+| `private` | itself, its user's other personas, its approved followers | anonymous |
+| `only_me` | itself, its user's other personas | anonymous |
+
+- **Approved follower**: a `persona_followers` row with `status = 'active' AND unfollowed_at IS NULL`. `status` (`persona_follow_status_enum`: `pending`/`active`/`rejected`) has no default, so every insert states it.
+- **Anonymous view**: `access.AnonymousName(personaID, channelID)` ("Quiet Otter 37"), the same within a channel and different across channels, and no thumbnail; the frontend draws a `GeneratedAvatarFallback` from the name. **Ids stay real**, so moderators act on anonymous members by `persona_id`.
+- There are no exceptions for moderators or global Administrators.
+- The rule is one SQL query, `ResolvePersonasForViewer(viewer_id, ids)` (fields + `visible`). Every response that shows another persona's name or avatar goes through it: GraphQL post/comment authors and the channel owner (`Resolver.resolvePersonas`), channel member and join-request lists (`access.VisiblePersonas` via `channels.Handler.anonymize`, non-public personas only).
+- **The Redis persona cache (`persona:<id>:info`) holds public personas only**: `SetPersonaInfo` skips the others and `GetPersonaInfo` drops a cached non-public entry. A cache hit is therefore visible to everyone and needs no query; only misses go to Postgres, one batch per page. `UpdatePersona` evicts the entry.
+
 ### Counters: Postgres is the source of truth, Redis is a cache
 
 Every like/comment is a row in the Postgres `events` table (unlike = soft delete). Counts are always a recount of those rows (`shared/pkg/counters.Count`), never a running total:
@@ -237,6 +253,7 @@ Rust proxy: `GO_APP_URL`. Frontend: `VITE_API_BASE_URL`, `VITE_WEBSOCKET_BASE_UR
 ## Conventions
 
 - Older commits are prefixed with a ticket key (`WWW-0000 Fix linting issues`); recent ones use conventional-commit prefixes (`feat: ...`). Follow whatever the user asks for.
+- Keep code comments minimal: no doc blocks restating the code, no rule tables or ticket narration in code. At most one short line where the *why* isn't obvious. Explanations go in the plan or this file.
 - Never hand-edit generated output: `shared/pkg/db/`, `shared/pkg/graph/*.generated.go`, `shared/pkg/graph/models/models_gen.go`, `front-end/src/generated/graphql.ts`, `gRCP/*/app_service/`.
 - A backend change touching the GraphQL schema requires regenerating on both sides: `make generate-models` in `shared/`, then `pnpm codegen` in `front-end/` once the schema is deployed.
 

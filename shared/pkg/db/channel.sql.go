@@ -492,6 +492,7 @@ SELECT
     p.first_name,
     p.last_name,
     p.thumbnail,
+    p.privacy,
     (c.owner_id = cm.persona_id)::boolean AS is_owner,
     EXISTS (
         SELECT 1
@@ -518,6 +519,7 @@ type ListChannelMembersRow struct {
 	FirstName   string
 	LastName    string
 	Thumbnail   sql.NullString
+	Privacy     PersonaPrivacyEnum
 	IsOwner     bool
 	IsModerator bool
 }
@@ -541,6 +543,7 @@ func (q *Queries) ListChannelMembers(ctx context.Context, channelID int64) ([]Li
 			&i.FirstName,
 			&i.LastName,
 			&i.Thumbnail,
+			&i.Privacy,
 			&i.IsOwner,
 			&i.IsModerator,
 		); err != nil {
@@ -655,7 +658,8 @@ SELECT
     p.name,
     p.first_name,
     p.last_name,
-    p.thumbnail
+    p.thumbnail,
+    p.privacy
 FROM channel_members cm
 JOIN personas p ON p.id = cm.persona_id
 WHERE cm.channel_id = $1
@@ -671,6 +675,7 @@ type ListPendingJoinRequestsRow struct {
 	FirstName   string
 	LastName    string
 	Thumbnail   sql.NullString
+	Privacy     PersonaPrivacyEnum
 }
 
 // -------------------------------
@@ -692,6 +697,7 @@ func (q *Queries) ListPendingJoinRequests(ctx context.Context, channelID int64) 
 			&i.FirstName,
 			&i.LastName,
 			&i.Thumbnail,
+			&i.Privacy,
 		); err != nil {
 			return nil, err
 		}

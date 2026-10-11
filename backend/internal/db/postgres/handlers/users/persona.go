@@ -6,8 +6,10 @@ import (
 	"database/sql"
 	"fmt"
 	"hash/fnv"
+	"log"
 	"net/http"
 	"shared/pkg/db"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -235,6 +237,9 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update persona"})
 		return
+	}
+	if err := h.personas.DeletePersonaInfo(ctx, strconv.FormatInt(personaId, 10)); err != nil {
+		log.Println("redis delete persona error:", err)
 	}
 
 	c.JSON(http.StatusOK, gin.H{

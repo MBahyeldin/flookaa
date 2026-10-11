@@ -90,6 +90,7 @@ func StartServer(cfg config.Server) error {
 		signer,
 		email.NewSender(email.Config(cfg.SMTP)),
 		verification.NewService(q),
+		stores.Persona,
 	)
 	restHandlers := v1.Handlers{
 		Users:         usersHandler,

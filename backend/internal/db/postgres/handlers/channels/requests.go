@@ -15,11 +15,8 @@ import (
 )
 
 type JoinRequestResponse struct {
-	PersonaID   int64  `json:"persona_id"`
-	Name        string `json:"name"`
-	FirstName   string `json:"first_name"`
-	LastName    string `json:"last_name"`
-	Thumbnail   string `json:"thumbnail"`
+	PersonaID int64 `json:"persona_id"`
+	PersonaFields
 	RequestedAt string `json:"requested_at"`
 }
 
@@ -36,16 +33,27 @@ func (h *Handler) ListJoinRequests(c *gin.Context) {
 		return
 	}
 
-	requests := make([]JoinRequestResponse, 0, len(rows))
-	for _, row := range rows {
-		requests = append(requests, JoinRequestResponse{
-			PersonaID:   row.PersonaID,
-			Name:        row.Name,
-			FirstName:   row.FirstName,
-			LastName:    row.LastName,
-			Thumbnail:   row.Thumbnail.String,
+	requests := make([]JoinRequestResponse, len(rows))
+	var ids []int64
+	var fields []*PersonaFields
+	for i, row := range rows {
+		requests[i] = JoinRequestResponse{
+			PersonaID: row.PersonaID,
+			PersonaFields: PersonaFields{
+				Name:      row.Name,
+				FirstName: row.FirstName,
+				LastName:  row.LastName,
+				Thumbnail: row.Thumbnail.String,
+			},
 			RequestedAt: row.RequestedAt.Time.Format(time.RFC3339),
-		})
+		}
+		if row.Privacy != db.PersonaPrivacyEnumPublic {
+			ids = append(ids, row.PersonaID)
+			fields = append(fields, &requests[i].PersonaFields)
+		}
+	}
+	if !h.anonymize(c, channelId, ids, fields) {
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{"requests": requests})
 }
