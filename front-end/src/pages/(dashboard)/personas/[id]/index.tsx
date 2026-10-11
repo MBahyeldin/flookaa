@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { UserRoundX } from "lucide-react";
+import { Lock, UserRoundX } from "lucide-react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { FollowButton } from "@/components/follow-button";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
@@ -11,13 +11,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { fetchConnectedPersonas, fetchPersonaProfile } from "@/services/persona";
 import { useWebsocketService } from "@/Websocket.context";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
-import type { FollowStatus, PersonaProfile, PublicPersona } from "@/types/persona";
+import type { FollowStatus, LockedPersona, PersonaProfile, PublicPersona } from "@/types/persona";
 import FollowersSheet, { type FollowersTab } from "./FollowersSheet";
 
 type State =
   | { status: "loading" }
   | { status: "not_found" }
   | { status: "error" }
+  | { status: "locked"; persona: LockedPersona }
   | { status: "ready"; persona: PersonaProfile; connected: PublicPersona[] };
 
 const fullName = (p: PublicPersona) => `${p.first_name} ${p.last_name}`.trim();
@@ -51,13 +52,14 @@ export default function PersonaProfilePage() {
   const load = useCallback(async (background = false) => {
     const gen = ++generation.current;
     if (!background) setState({ status: "loading" });
-    const [persona, connected] = await Promise.all([
-      fetchPersonaProfile(id),
-      fetchConnectedPersonas(id),
-    ]);
+    const persona = await fetchPersonaProfile(id);
+    const connected = persona && persona !== "not_found" && !persona.locked
+      ? await fetchConnectedPersonas(id)
+      : null;
     if (gen !== generation.current) return;
     if (persona === "not_found") setState({ status: "not_found" });
     else if (persona === null) setState({ status: "error" });
+    else if (persona.locked) setState({ status: "locked", persona });
     else setState({ status: "ready", persona, connected: connected ?? [] });
   }, [id]);
 
@@ -65,15 +67,23 @@ export default function PersonaProfilePage() {
     load();
   }, [load, viewerId]);
 
+  // A locked persona can't be subscribed to, but an approval also updates the
+  // viewer's own counts.
+  const locked = state.status === "locked";
   useEffect(() => {
-    const personaId = Number(id);
+    const personaId = Number(locked ? viewerId : id);
     if (!personaId || !websocketService) return;
+    if (locked) {
+      return websocketService.subscribeToPersonaEvents(personaId, (msg) => {
+        if (msg.event.name === "follow_counts") load(true);
+      });
+    }
     return websocketService.subscribeToPersonaEvents(personaId, (msg) => {
       if (msg.event.name === "follow_counts") load(true);
       // Only your own profile receives these.
       if (msg.event.name === "follower" || msg.event.name === "follow_request") setFollowReload((n) => n + 1);
     });
-  }, [websocketService, id, load]);
+  }, [websocketService, id, viewerId, locked, load]);
 
   const setConnectedStatus = (personaId: number, follow_status: FollowStatus) =>
     setState((s) =>
@@ -101,6 +111,23 @@ export default function PersonaProfilePage() {
             Retry
           </Button>
         </div>
+      )}
+
+      {state.status === "locked" && (
+        <Card className="rounded-xl border border-border/70 shadow-sm">
+          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+            <Lock className="h-10 w-10 text-muted-foreground" />
+            <p className="text-lg font-medium">This persona is private</p>
+            <p className="text-sm text-muted-foreground">Follow it to see its profile.</p>
+            <FollowButton
+              personaId={state.persona.id}
+              status={state.persona.follow_status ?? null}
+              requiresApproval
+              followLabel="Request to follow"
+              onChange={() => load(true)}
+            />
+          </CardContent>
+        </Card>
       )}
 
       {state.status === "ready" && (

@@ -3,6 +3,7 @@ import type {
   ActiveFollower,
   FollowRequest,
   FollowStatus,
+  LockedPersona,
   Persona,
   PersonaProfile,
   PublicPersona,
@@ -38,12 +39,12 @@ export async function fetchUserPersonas(): Promise<Persona[]> {
   }
 }
 
-export async function fetchPersonaProfile(id: string): Promise<PersonaProfile | "not_found" | null> {
+export async function fetchPersonaProfile(id: string): Promise<PersonaProfile | LockedPersona | "not_found" | null> {
   try {
     const resp = await apiFetch(`${API_BASE_URL}/api/v1/persona/${id}`, { credentials: "include" });
     if (resp.status === 404 || resp.status === 400) return "not_found";
     if (!resp.ok) return null;
-    return (await resp.json()) as PersonaProfile;
+    return (await resp.json()) as PersonaProfile | LockedPersona;
   } catch (err) {
     console.error("Error fetching persona:", err);
     return null;

@@ -337,7 +337,7 @@ func (h *Handler) ReadPersona(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve persona"})
 		return
 	}
-	if len(rows) == 0 || !rows[0].Visible {
+	if len(rows) == 0 || (!rows[0].Visible && rows[0].Privacy != db.PersonaPrivacyEnumPrivate) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "persona not found"})
 		return
 	}
@@ -352,8 +352,18 @@ func (h *Handler) ReadPersona(c *gin.Context) {
 	}
 
 	p := rows[0]
+	if !p.Visible {
+		c.JSON(http.StatusOK, gin.H{
+			"id":            p.ID,
+			"locked":        true,
+			"follow_status": followStatus(follow.FollowStatus),
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"id":                p.ID,
+		"locked":            false,
 		"first_name":        p.FirstName,
 		"last_name":         p.LastName,
 		"slug":              p.Slug,

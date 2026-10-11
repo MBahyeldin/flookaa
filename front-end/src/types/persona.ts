@@ -37,9 +37,17 @@ export type PublicPersona = {
 export type FollowStatus = "active" | "pending" | null;
 
 export type PersonaProfile = PublicPersona & {
+    locked: false;
     followers_count: number;
     following_count: number;
     requires_approval: boolean;
+}
+
+/** A private persona the viewer can't see: only its id and the viewer's own follow. */
+export type LockedPersona = {
+    id: number;
+    locked: true;
+    follow_status: FollowStatus;
 }
 
 /** Someone following, or asking to follow, your own persona. */

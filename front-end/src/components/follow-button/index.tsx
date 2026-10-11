@@ -12,12 +12,14 @@ export function FollowButton({
   name,
   status,
   requiresApproval = false,
+  followLabel = "Follow",
   onChange,
 }: {
   personaId: number;
-  name: string;
+  name?: string;
   status: FollowStatus;
   requiresApproval?: boolean;
+  followLabel?: string;
   onChange: (status: FollowStatus) => void;
 }) {
   const [busy, setBusy] = useState(false);
@@ -38,7 +40,7 @@ export function FollowButton({
       follow &&
       viewerPrivacy &&
       viewerPrivacy !== "public" &&
-      !confirm(`Follow ${name}? ${name} will see who you are.`)
+      !confirm(name ? `Follow ${name}? ${name} will see who you are.` : "Follow this persona? It will see who you are.")
     ) {
       return;
     }
@@ -59,7 +61,7 @@ export function FollowButton({
       disabled={busy}
       onClick={handleClick}
     >
-      {status ? LABELS[status] : "Follow"}
+      {status ? LABELS[status] : followLabel}
     </Button>
   );
 }
