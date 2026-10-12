@@ -329,6 +329,10 @@ func (ec *executionContext) fieldContext_Blocks_image(_ context.Context, field g
 				return ec.fieldContext_ImageBlock_width(ctx, field)
 			case "height":
 				return ec.fieldContext_ImageBlock_height(ctx, field)
+			case "size":
+				return ec.fieldContext_ImageBlock_size(ctx, field)
+			case "align":
+				return ec.fieldContext_ImageBlock_align(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ImageBlock", field.Name)
 		},
@@ -627,6 +631,64 @@ func (ec *executionContext) fieldContext_ImageBlock_height(_ context.Context, fi
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImageBlock_size(ctx context.Context, field graphql.CollectedField, obj *models.ImageBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImageBlock_size,
+		func(ctx context.Context) (any, error) {
+			return obj.Size, nil
+		},
+		nil,
+		ec.marshalOImageSize2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐImageSize,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImageBlock_size(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImageBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ImageSize does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImageBlock_align(ctx context.Context, field graphql.CollectedField, obj *models.ImageBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImageBlock_align,
+		func(ctx context.Context) (any, error) {
+			return obj.Align, nil
+		},
+		nil,
+		ec.marshalOImageAlign2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐImageAlign,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImageBlock_align(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImageBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ImageAlign does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1171,7 +1233,7 @@ func (ec *executionContext) unmarshalInputImageBlockInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"_type", "_key", "src", "alt", "caption", "width", "height"}
+	fieldsInOrder := [...]string{"_type", "_key", "src", "alt", "caption", "width", "height", "size", "align"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -1227,6 +1289,20 @@ func (ec *executionContext) unmarshalInputImageBlockInput(ctx context.Context, o
 				return it, err
 			}
 			it.Height = data
+		case "size":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("size"))
+			data, err := ec.unmarshalOImageSize2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐImageSize(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Size = data
+		case "align":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("align"))
+			data, err := ec.unmarshalOImageAlign2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐImageAlign(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Align = data
 		}
 	}
 
@@ -1656,6 +1732,10 @@ func (ec *executionContext) _ImageBlock(ctx context.Context, sel ast.SelectionSe
 			out.Values[i] = ec._ImageBlock_width(ctx, field, obj)
 		case "height":
 			out.Values[i] = ec._ImageBlock_height(ctx, field, obj)
+		case "size":
+			out.Values[i] = ec._ImageBlock_size(ctx, field, obj)
+		case "align":
+			out.Values[i] = ec._ImageBlock_align(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2160,6 +2240,22 @@ func (ec *executionContext) unmarshalOBreakBlockInput2ᚖsharedᚋpkgᚋgraphᚋ
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalOImageAlign2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐImageAlign(ctx context.Context, v any) (*models.ImageAlign, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(models.ImageAlign)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOImageAlign2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐImageAlign(ctx context.Context, sel ast.SelectionSet, v *models.ImageAlign) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
 func (ec *executionContext) marshalOImageBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐImageBlock(ctx context.Context, sel ast.SelectionSet, v *models.ImageBlock) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -2173,6 +2269,22 @@ func (ec *executionContext) unmarshalOImageBlockInput2ᚖsharedᚋpkgᚋgraphᚋ
 	}
 	res, err := ec.unmarshalInputImageBlockInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOImageSize2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐImageSize(ctx context.Context, v any) (*models.ImageSize, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(models.ImageSize)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOImageSize2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐImageSize(ctx context.Context, sel ast.SelectionSet, v *models.ImageSize) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) marshalOLinkMarkDef2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐLinkMarkDef(ctx context.Context, sel ast.SelectionSet, v *models.LinkMarkDef) graphql.Marshaler {

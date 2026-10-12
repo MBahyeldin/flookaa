@@ -21,6 +21,8 @@ export class FormField {
     values?: Record<string, unknown>
   ) => string | null;
   public visibleWhen?: (values: Record<string, unknown>) => boolean;
+  // Pic fields only: the sibling fields that receive the picked file's size.
+  public dimensions?: { width: string; height: string };
 
   constructor({
     id,
@@ -39,12 +41,13 @@ export class FormField {
     name,
     validate = () => null,
     visibleWhen,
+    dimensions,
   }: {
     id: string;
     label: string;
     type: string;
     placeholder?: string;
-    interfaceType: FormFieldInterfaceTypes;
+    interfaceType?: FormFieldInterfaceTypes;
     value?: string;
     error?: string;
     touched?: boolean;
@@ -59,6 +62,7 @@ export class FormField {
       values?: Record<string, unknown>
     ) => string | null;
     visibleWhen?: (values: Record<string, unknown>) => boolean;
+    dimensions?: { width: string; height: string };
   }) {
     this.id = id;
     this.label = label;
@@ -76,6 +80,7 @@ export class FormField {
     this.width = this.geWidthClass(width);
     this.validate = validate;
     this.visibleWhen = visibleWhen;
+    this.dimensions = dimensions;
   }
 
   isVisible(values: Record<string, unknown>) {

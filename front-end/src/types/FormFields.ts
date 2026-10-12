@@ -56,6 +56,7 @@ export type FormFieldProps = {
   name?: string;
   type?: string;
   value?: unknown;
+  values?: Record<string, unknown>;
 };
 
 export type FormGroup = {

@@ -24,7 +24,7 @@ export function InsertBlockObjectForm(
     }) => void;
   }
 ) {
-  const { setFieldValue, handleSubmit } = useFormik({
+  const { values, setFieldValue, handleSubmit } = useFormik({
     initialValues: {
       placement: "auto",
       ...props.defaultValues,
@@ -48,6 +48,8 @@ export function InsertBlockObjectForm(
           key={field.id}
           field={field}
           setFieldValue={setFieldValue}
+          value={(values as Record<string, unknown>)[field.name!]}
+          values={values}
         />
       ))}
       <SelectField

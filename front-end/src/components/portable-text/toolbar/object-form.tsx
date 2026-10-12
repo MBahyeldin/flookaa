@@ -11,7 +11,7 @@ export function ObjectForm(
     onSubmit: ({ value }: { value: { [key: string]: unknown } }) => void;
   }
 ) {
-  const { setFieldValue, handleSubmit } = useFormik({
+  const { values, setFieldValue, handleSubmit } = useFormik({
     initialValues: {
       ...props.defaultValues,
     },
@@ -34,6 +34,7 @@ export function ObjectForm(
           field={field}
           setFieldValue={setFieldValue}
           value={props.defaultValues ? props.defaultValues[field.name!] : null}
+          values={values}
         />
       ))}
       <Button className="self-end" type="submit" size="sm">

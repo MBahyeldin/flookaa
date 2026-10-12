@@ -136,13 +136,15 @@ type CommentInput struct {
 }
 
 type ImageBlock struct {
-	Type    BlockType `json:"_type"`
-	Key     string    `json:"_key"`
-	Src     string    `json:"src"`
-	Alt     *string   `json:"alt,omitempty"`
-	Caption *string   `json:"caption,omitempty"`
-	Width   *int32    `json:"width,omitempty"`
-	Height  *int32    `json:"height,omitempty"`
+	Type    BlockType   `json:"_type"`
+	Key     string      `json:"_key"`
+	Src     string      `json:"src"`
+	Alt     *string     `json:"alt,omitempty"`
+	Caption *string     `json:"caption,omitempty"`
+	Width   *int32      `json:"width,omitempty"`
+	Height  *int32      `json:"height,omitempty"`
+	Size    *ImageSize  `json:"size,omitempty"`
+	Align   *ImageAlign `json:"align,omitempty"`
 }
 
 func (ImageBlock) IsBlock()                {}
@@ -150,13 +152,15 @@ func (this ImageBlock) GetType() BlockType { return this.Type }
 func (this ImageBlock) GetKey() string     { return this.Key }
 
 type ImageBlockInput struct {
-	Type    BlockType `json:"_type"`
-	Key     string    `json:"_key"`
-	Src     string    `json:"src"`
-	Alt     *string   `json:"alt,omitempty"`
-	Caption *string   `json:"caption,omitempty"`
-	Width   *int32    `json:"width,omitempty"`
-	Height  *int32    `json:"height,omitempty"`
+	Type    BlockType   `json:"_type"`
+	Key     string      `json:"_key"`
+	Src     string      `json:"src"`
+	Alt     *string     `json:"alt,omitempty"`
+	Caption *string     `json:"caption,omitempty"`
+	Width   *int32      `json:"width,omitempty"`
+	Height  *int32      `json:"height,omitempty"`
+	Size    *ImageSize  `json:"size,omitempty"`
+	Align   *ImageAlign `json:"align,omitempty"`
 }
 
 type LikeInput struct {
@@ -372,6 +376,124 @@ func (e *BlockType) UnmarshalJSON(b []byte) error {
 }
 
 func (e BlockType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type ImageAlign string
+
+const (
+	ImageAlignLeft   ImageAlign = "left"
+	ImageAlignCenter ImageAlign = "center"
+	ImageAlignRight  ImageAlign = "right"
+)
+
+var AllImageAlign = []ImageAlign{
+	ImageAlignLeft,
+	ImageAlignCenter,
+	ImageAlignRight,
+}
+
+func (e ImageAlign) IsValid() bool {
+	switch e {
+	case ImageAlignLeft, ImageAlignCenter, ImageAlignRight:
+		return true
+	}
+	return false
+}
+
+func (e ImageAlign) String() string {
+	return string(e)
+}
+
+func (e *ImageAlign) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ImageAlign(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ImageAlign", str)
+	}
+	return nil
+}
+
+func (e ImageAlign) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ImageAlign) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ImageAlign) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type ImageSize string
+
+const (
+	ImageSizeXs ImageSize = "xs"
+	ImageSizeS  ImageSize = "s"
+	ImageSizeM  ImageSize = "m"
+	ImageSizeL  ImageSize = "l"
+	ImageSizeXl ImageSize = "xl"
+)
+
+var AllImageSize = []ImageSize{
+	ImageSizeXs,
+	ImageSizeS,
+	ImageSizeM,
+	ImageSizeL,
+	ImageSizeXl,
+}
+
+func (e ImageSize) IsValid() bool {
+	switch e {
+	case ImageSizeXs, ImageSizeS, ImageSizeM, ImageSizeL, ImageSizeXl:
+		return true
+	}
+	return false
+}
+
+func (e ImageSize) String() string {
+	return string(e)
+}
+
+func (e *ImageSize) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ImageSize(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ImageSize", str)
+	}
+	return nil
+}
+
+func (e ImageSize) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ImageSize) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ImageSize) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

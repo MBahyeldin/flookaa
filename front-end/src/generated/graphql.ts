@@ -144,13 +144,20 @@ export type CommentInput = {
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
+export type ImageAlign =
+  | 'center'
+  | 'left'
+  | 'right';
+
 export type ImageBlock = Block & {
   __typename?: 'ImageBlock';
   _key: Scalars['ID']['output'];
   _type: BlockType;
+  align?: Maybe<ImageAlign>;
   alt?: Maybe<Scalars['String']['output']>;
   caption?: Maybe<Scalars['String']['output']>;
   height?: Maybe<Scalars['Int']['output']>;
+  size?: Maybe<ImageSize>;
   src: Scalars['String']['output'];
   width?: Maybe<Scalars['Int']['output']>;
 };
@@ -158,12 +165,21 @@ export type ImageBlock = Block & {
 export type ImageBlockInput = {
   _key: Scalars['ID']['input'];
   _type: BlockType;
+  align?: InputMaybe<ImageAlign>;
   alt?: InputMaybe<Scalars['String']['input']>;
   caption?: InputMaybe<Scalars['String']['input']>;
   height?: InputMaybe<Scalars['Int']['input']>;
+  size?: InputMaybe<ImageSize>;
   src: Scalars['String']['input'];
   width?: InputMaybe<Scalars['Int']['input']>;
 };
+
+export type ImageSize =
+  | 'l'
+  | 'm'
+  | 's'
+  | 'xl'
+  | 'xs';
 
 export type LikeInput = {
   liked: Scalars['Boolean']['input'];

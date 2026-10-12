@@ -27,5 +27,7 @@ func parseImage(in *models.ImageBlockInput) (*models.Blocks, error) {
 			Caption: in.Caption,
 			Width:   in.Width,
 			Height:  in.Height,
+			Size:    in.Size,
+			Align:   in.Align,
 		}}, nil
 }

@@ -111,10 +111,12 @@ type ComplexityRoot struct {
 	}
 
 	ImageBlock struct {
+		Align   func(childComplexity int) int
 		Alt     func(childComplexity int) int
 		Caption func(childComplexity int) int
 		Height  func(childComplexity int) int
 		Key     func(childComplexity int) int
+		Size    func(childComplexity int) int
 		Src     func(childComplexity int) int
 		Type    func(childComplexity int) int
 		Width   func(childComplexity int) int
@@ -596,6 +598,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Comment.UpdatedAt(childComplexity), true
 
+	case "ImageBlock.align":
+		if e.complexity.ImageBlock.Align == nil {
+			break
+		}
+
+		return e.complexity.ImageBlock.Align(childComplexity), true
+
 	case "ImageBlock.alt":
 		if e.complexity.ImageBlock.Alt == nil {
 			break
@@ -623,6 +632,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ImageBlock.Key(childComplexity), true
+
+	case "ImageBlock.size":
+		if e.complexity.ImageBlock.Size == nil {
+			break
+		}
+
+		return e.complexity.ImageBlock.Size(childComplexity), true
 
 	case "ImageBlock.src":
 		if e.complexity.ImageBlock.Src == nil {
@@ -1327,6 +1343,20 @@ enum BlockType {
   break
 }
 
+enum ImageSize {
+  xs
+  s
+  m
+  l
+  xl
+}
+
+enum ImageAlign {
+  left
+  center
+  right
+}
+
 enum StyleType {
   normal
   h1
@@ -1366,6 +1396,8 @@ type ImageBlock implements Block {
   caption: String
   width: Int
   height: Int
+  size: ImageSize
+  align: ImageAlign
 }
 
 type BreakBlock implements Block {
@@ -1435,6 +1467,8 @@ input ImageBlockInput {
   caption: String
   width: Int
   height: Int
+  size: ImageSize
+  align: ImageAlign
 }
 
 input BreakBlockInput {

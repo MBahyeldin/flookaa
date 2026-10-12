@@ -71,6 +71,7 @@ export default function FieldRender({
           handleBlur={handleBlur}
           touched={touched}
           setTouched={setTouched}
+          values={values}
         />
       )}
       {/* Profile Picture Input */}

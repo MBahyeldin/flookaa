@@ -3,14 +3,34 @@ import type { FormFieldProps } from "@/types/FormFields";
 import { useState } from "react";
 import { toast } from "sonner";
 
+// Mirrors maxImageSide in shared/util/portableText/block-objects/image.go.
+const MAX_SIDE = 4096;
+
+async function measure(file: File) {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const { width, height } = bitmap;
+    bitmap.close();
+    const scale = Math.min(1, MAX_SIDE / Math.max(width, height));
+    return {
+      width: Math.max(1, Math.round(width * scale)),
+      height: Math.max(1, Math.round(height * scale)),
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 export default function useInputImage({
   initValue,
   setFieldValue,
   id,
+  dimensions,
 }: {
   initValue: string;
   setFieldValue: FormFieldProps["setFieldValue"];
   id: string;
+  dimensions?: { width: string; height: string };
 }) {
   const [url, setUrl] = useState<string | null>(initValue);
   // Exposed so the picture inputs can show progress; uploads here go through
@@ -28,7 +48,10 @@ export default function useInputImage({
       const reader = new FileReader();
       reader.onload = () => setUrl(reader.result as string);
       reader.readAsDataURL(file);
-      const url = await uploadFile(file);
+      const [url, size] = await Promise.all([
+        uploadFile(file),
+        dimensions ? measure(file) : undefined,
+      ]);
 
       setFieldValue(
         id,
@@ -37,6 +60,11 @@ export default function useInputImage({
         // use some AI to validate image content?
         false
       );
+      // Set together with src so a failed upload keeps the old pair.
+      if (dimensions) {
+        setFieldValue(dimensions.width, size?.width, false);
+        setFieldValue(dimensions.height, size?.height, false);
+      }
     } catch (error) {
       console.error("Image upload failed:", error);
       setUrl(null);

@@ -52,6 +52,20 @@ enum BlockType {
   break
 }
 
+enum ImageSize {
+  xs
+  s
+  m
+  l
+  xl
+}
+
+enum ImageAlign {
+  left
+  center
+  right
+}
+
 enum StyleType {
   normal
   h1
@@ -91,6 +105,8 @@ type ImageBlock implements Block {
   caption: String
   width: Int
   height: Int
+  size: ImageSize
+  align: ImageAlign
 }
 
 type BreakBlock implements Block {
@@ -160,6 +176,8 @@ input ImageBlockInput {
   caption: String
   width: Int
   height: Int
+  size: ImageSize
+  align: ImageAlign
 }
 
 input BreakBlockInput {
