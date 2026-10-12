@@ -48,18 +48,18 @@ export function BlockObjectButton(props: {
           <TooltipContent>Insert {props.schemaType.title}</TooltipContent>
         </Tooltip>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogTitle>
           {props.schemaType.title ?? props.schemaType.name}
         </DialogTitle>
         <InsertBlockObjectForm
           fields={props.schemaType.fields}
           defaultValues={props.schemaType.defaultValues}
-          onSubmit={({ value, placement }) => {
+          onSubmit={({ value }) => {
             send({
               type: "insert",
               value: { ...value },
-              placement,
+              placement: "auto",
             });
             send({ type: "close dialog" });
           }}

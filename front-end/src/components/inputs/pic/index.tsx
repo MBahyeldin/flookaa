@@ -54,7 +54,7 @@ export default function PicInput({
               <img
                 src={url}
                 alt="Thumbnail preview"
-                className="w-full h-auto rounded"
+                className="w-full h-auto max-h-48 object-contain rounded"
               />
             </CardContent>
           </Card>

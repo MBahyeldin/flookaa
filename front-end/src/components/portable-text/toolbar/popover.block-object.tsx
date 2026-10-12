@@ -107,7 +107,7 @@ export function BlockObjectPopover(props: {
               </TooltipTrigger>
               <TooltipContent>Edit</TooltipContent>
             </Tooltip>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogTitle>
                 {" "}
                 {blockObject.schemaType.title ?? blockObject.schemaType.name}

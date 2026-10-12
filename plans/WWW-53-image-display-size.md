@@ -60,7 +60,7 @@ jump while images load.
 3. **Every image is a block.** There's no wrap or inline option, and text
    never flows beside an image.
 4. **The caption has no options.** It sits directly under the image, as
-   wide as the image, with its text starting at the image's left edge. To
+   wide as the image, with its text centred. To
    make this work, the `figure` is sized to the picture as it's actually
    drawn:
    - The `figure` gets the size's width and the alignment's margins. The
@@ -142,7 +142,7 @@ Postgres) and `pnpm codegen` in `front-end/`.
       class, and `img` is `block max-w-full max-h-[70vh] w-auto h-auto
       rounded-md`, as today.
     - `figcaption`, only when the caption isn't empty:
-      `mt-1 text-sm text-muted-foreground break-words`.
+      `mt-1 text-center text-sm text-muted-foreground break-words`.
   - `examples`: `m` centred with a caption, `s` right-aligned with a
     caption, and `xl`. All with dimensions.
 - **`models/Forms/FormField.ts`**: an optional

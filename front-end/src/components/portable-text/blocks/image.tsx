@@ -134,7 +134,7 @@ function ImageView({ value }: { value: ImageValue }) {
         decoding="async"
       />
       {value.caption ? (
-        <figcaption className="mt-1 text-sm text-muted-foreground break-words">
+        <figcaption className="mt-1 text-center text-sm text-muted-foreground break-words">
           {value.caption}
         </figcaption>
       ) : null}
