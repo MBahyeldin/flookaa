@@ -545,6 +545,49 @@ func (q *Queries) RecountPendingJoinRequests(ctx context.Context, arg RecountPen
 	return items, nil
 }
 
+const softDeleteNotificationForRecipient = `-- name: SoftDeleteNotificationForRecipient :many
+UPDATE notifications
+SET deleted_at = NOW(),
+    last_event_at = $1::timestamptz
+WHERE recipient_id = $2::bigint
+  AND group_key = $3::varchar
+  AND deleted_at IS NULL
+  AND last_event_at < $1::timestamptz
+RETURNING id
+`
+
+type SoftDeleteNotificationForRecipientParams struct {
+	EventAt     time.Time
+	RecipientID int64
+	GroupKey    string
+}
+
+// -------------------------------
+// One recipient's row of a group, unless a newer event already touched it
+// -------------------------------
+func (q *Queries) SoftDeleteNotificationForRecipient(ctx context.Context, arg SoftDeleteNotificationForRecipientParams) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, softDeleteNotificationForRecipient, arg.EventAt, arg.RecipientID, arg.GroupKey)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const softDeleteNotificationsByGroup = `-- name: SoftDeleteNotificationsByGroup :many
 UPDATE notifications
 SET deleted_at = NOW(),

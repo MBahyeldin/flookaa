@@ -148,6 +148,14 @@ SELECT
               AND pf.status = 'active'
               AND pf.unfollowed_at IS NULL
         ))
+        -- A pending invitation shows the inviter to the invitee.
+        OR (t.privacy = 'private' AND EXISTS (
+            SELECT 1
+            FROM persona_follow_invitations i
+            WHERE i.persona_id = t.id
+              AND i.invitee_persona_id = sqlc.arg(viewer_id)::bigint
+              AND i.status = 'pending'
+        ))
         -- Following someone (or asking to) shows you to them.
         OR EXISTS (
             SELECT 1
@@ -185,7 +193,13 @@ ORDER BY p.created_at, p.id;
 -- name: GetFollowTarget :one
 SELECT
     t.privacy,
-    pf.status AS follow_status
+    pf.status AS follow_status,
+    EXISTS (
+        SELECT 1 FROM persona_follow_invitations i
+        WHERE i.persona_id = t.id
+          AND i.invitee_persona_id = sqlc.arg(follower_persona_id)::bigint
+          AND i.status = 'pending'
+    )::boolean AS invited
 FROM personas t
 LEFT JOIN persona_followers pf
     ON pf.persona_id = t.id
@@ -231,8 +245,30 @@ SELECT
      WHERE pf.follower_persona_id = t.id AND pf.status = 'active' AND pf.unfollowed_at IS NULL
     )::bigint AS following_count,
     v.status AS follow_status,
-    (t.privacy = 'private')::boolean AS requires_approval
+    (t.privacy = 'private')::boolean AS requires_approval,
+    EXISTS (
+        SELECT 1 FROM persona_follow_invitations i
+        WHERE i.persona_id = sqlc.arg(viewer_id)::bigint AND i.invitee_persona_id = t.id
+          AND (i.status = 'pending'
+               OR (i.status = 'rejected' AND i.responded_at >= NOW() - INTERVAL '30 days'))
+    )::boolean AS invited,
+    EXISTS (
+        SELECT 1 FROM persona_follow_invitations i
+        WHERE i.persona_id = t.id AND i.invitee_persona_id = sqlc.arg(viewer_id)::bigint
+          AND i.status = 'pending'
+    )::boolean AS invited_you,
+    COALESCE(
+        vp.privacy <> 'only_me'
+        AND vp.user_id <> t.user_id
+        AND NOT EXISTS (
+            SELECT 1 FROM persona_followers f
+            WHERE f.persona_id = vp.id AND f.follower_persona_id = t.id
+              AND f.status = 'active' AND f.unfollowed_at IS NULL
+        ),
+        false
+    )::boolean AS can_invite
 FROM personas t
+LEFT JOIN personas vp ON vp.id = sqlc.arg(viewer_id)::bigint AND vp.deleted_at IS NULL
 LEFT JOIN persona_followers v
     ON v.persona_id = t.id
    AND v.follower_persona_id = sqlc.arg(viewer_id)::bigint
@@ -303,3 +339,68 @@ FROM personas t
 WHERE t.invite_token = sqlc.arg(token)::text
   AND t.privacy = 'private'
   AND t.deleted_at IS NULL;
+
+-- -------------------------------
+-- Follow invitations
+-- -------------------------------
+-- name: GetInviteTarget :one
+SELECT
+    a.privacy AS inviter_privacy,
+    (a.user_id = b.user_id)::boolean AS same_user,
+    pf.status AS follow_status
+FROM personas a
+JOIN personas b ON b.id = sqlc.arg(invitee_persona_id)::bigint AND b.deleted_at IS NULL
+LEFT JOIN persona_followers pf
+    ON pf.persona_id = a.id
+   AND pf.follower_persona_id = b.id
+   AND pf.unfollowed_at IS NULL
+WHERE a.id = sqlc.arg(persona_id)::bigint
+  AND a.deleted_at IS NULL;
+
+-- A live invitation, or a rejection still in its 30-day cooldown, is left alone.
+-- name: InvitePersona :execrows
+INSERT INTO persona_follow_invitations (persona_id, invitee_persona_id, status)
+VALUES ($1, $2, 'pending')
+ON CONFLICT (persona_id, invitee_persona_id) DO UPDATE
+SET status = 'pending', invited_at = NOW(), responded_at = NULL
+WHERE persona_follow_invitations.status IN ('accepted', 'cancelled')
+   OR (persona_follow_invitations.status = 'rejected'
+       AND persona_follow_invitations.responded_at < NOW() - INTERVAL '30 days');
+
+-- name: CancelInvitation :execrows
+UPDATE persona_follow_invitations
+SET status = 'cancelled', responded_at = NOW()
+WHERE persona_id = $1 AND invitee_persona_id = $2 AND status = 'pending';
+
+-- name: CancelInvitationsFrom :many
+UPDATE persona_follow_invitations
+SET status = 'cancelled', responded_at = NOW()
+WHERE persona_id = $1 AND status = 'pending'
+RETURNING invitee_persona_id;
+
+-- name: RejectInvitation :execrows
+UPDATE persona_follow_invitations
+SET status = 'rejected', responded_at = NOW()
+WHERE persona_id = $1 AND invitee_persona_id = $2 AND status = 'pending';
+
+-- Accepting makes the invitee an active follower from any earlier state.
+-- name: AcceptInvitation :one
+WITH accepted AS (
+    UPDATE persona_follow_invitations i
+    SET status = 'accepted', responded_at = NOW()
+    FROM personas p
+    WHERE i.persona_id = sqlc.arg(persona_id)::bigint
+      AND i.invitee_persona_id = sqlc.arg(invitee_persona_id)::bigint
+      AND i.status = 'pending'
+      AND p.id = i.persona_id AND p.deleted_at IS NULL AND p.privacy <> 'only_me'
+    RETURNING i.persona_id, i.invitee_persona_id
+)
+INSERT INTO persona_followers (persona_id, follower_persona_id, status)
+SELECT persona_id, invitee_persona_id, 'active' FROM accepted
+ON CONFLICT (persona_id, follower_persona_id) DO UPDATE
+SET status = 'active',
+    followed_at = CASE
+        WHEN persona_followers.status = 'active' AND persona_followers.unfollowed_at IS NULL
+        THEN persona_followers.followed_at ELSE NOW() END,
+    unfollowed_at = NULL
+RETURNING persona_id;

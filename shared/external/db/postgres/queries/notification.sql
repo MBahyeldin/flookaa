@@ -278,3 +278,16 @@ GROUP BY pf.persona_id;
 -- without its behaviour.
 -- name: ListNotificationKinds :many
 SELECT unnest(enum_range(NULL::notification_kind_enum))::text AS kind;
+
+-- -------------------------------
+-- One recipient's row of a group, unless a newer event already touched it
+-- -------------------------------
+-- name: SoftDeleteNotificationForRecipient :many
+UPDATE notifications
+SET deleted_at = NOW(),
+    last_event_at = sqlc.arg(event_at)::timestamptz
+WHERE recipient_id = sqlc.arg(recipient_id)::bigint
+  AND group_key = sqlc.arg(group_key)::varchar
+  AND deleted_at IS NULL
+  AND last_event_at < sqlc.arg(event_at)::timestamptz
+RETURNING id;

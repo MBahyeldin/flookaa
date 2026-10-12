@@ -53,9 +53,16 @@ New in this ticket:
   `ResolvePersonasForViewer`. Once the invitation is rejected or cancelled, A
   is hidden from B again. Accepting keeps A visible, because B is now an
   approved follower.
-- **A persona that becomes `only_me`** loses its pending invitations: the
-  privacy update sets them to `cancelled` in the same statement. This follows
-  the pattern of `invite_token` and `show_on_profile`.
+- **A persona that becomes `only_me`** loses its pending invitations.
+  `UpdatePersona` then calls `CancelInvitationsFrom` and publishes
+  `follow_invitation.delete` for each invitee, so their notifications go
+  away. It's a separate statement because it has to publish. If it fails,
+  nothing leaks: accepting refuses an `only_me` inviter, and the visibility
+  clause only applies to private inviters.
+- **Following an inviter.** If B presses Follow on an A that has a pending
+  invitation to B, that accepts the invitation. Otherwise a private A would
+  get a pending request from B on top of A's own invitation.
+  `GetFollowTarget` returns `invited` for this.
 
 ## Data
 
@@ -103,8 +110,10 @@ New queries in `queries/persona.sql`, with matching edits to `schemas/persona.sq
   unlike `FollowPersona`, which leaves a live row alone.
 - **`ResolvePersonasForViewer`**: adds
   `OR (t.privacy = 'private' AND EXISTS (pending invitation from t to viewer))`.
-- **`UpdatePersonaByIdAndUserId`** (or a CTE next to it): cancels pending
-  invitations when the persona's privacy becomes `only_me`.
+- **`CancelInvitationsFrom(persona)`**: cancels every pending invitation
+  from the persona and returns the invitees.
+- **`GetFollowTarget`** and **`GetPersonaFollowInfo`**: the extra fields
+  listed below.
 
 ## API
 
@@ -161,9 +170,10 @@ own subjects gain `follow_invitation.*`, which only the persona itself gets.
   key is `follow_invitation:<A>`, so there's one row per inviter.
 - `follow_invitation.delete` (any reason): soft-delete B's row for that
   inviter. `removeSubject` would also remove other personas' rows about A, so
-  this adds a small `removeOne(recipient, kind, subjectID)` and a query that
-  soft-deletes by `(recipient_id, group_key)`, while still moving
-  `last_event_at` forward.
+  this adds a small `removeOne(recipient, kind, subjectID)` and the query
+  `SoftDeleteNotificationForRecipient`. It only deletes a row whose
+  `last_event_at` is older than the event, so a replayed delete can't remove
+  a newer invitation.
 - `follower.create` with reason `invited`: A gets
   `follow_invitation_accepted`. It's single-actor (B), with subject `PERSONA` = B.
 - The existing `ReasonFollowed` case is unchanged. An accepted invitation

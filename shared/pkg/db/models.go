@@ -232,16 +232,18 @@ func (ns NullEventTargetTypeEnum) Value() (driver.Value, error) {
 type NotificationKindEnum string
 
 const (
-	NotificationKindEnumPostComment           NotificationKindEnum = "post_comment"
-	NotificationKindEnumCommentReply          NotificationKindEnum = "comment_reply"
-	NotificationKindEnumPostLike              NotificationKindEnum = "post_like"
-	NotificationKindEnumCommentLike           NotificationKindEnum = "comment_like"
-	NotificationKindEnumJoinRequest           NotificationKindEnum = "join_request"
-	NotificationKindEnumRequestApproved       NotificationKindEnum = "request_approved"
-	NotificationKindEnumRemovedFromChannel    NotificationKindEnum = "removed_from_channel"
-	NotificationKindEnumNewFollower           NotificationKindEnum = "new_follower"
-	NotificationKindEnumFollowRequest         NotificationKindEnum = "follow_request"
-	NotificationKindEnumFollowRequestApproved NotificationKindEnum = "follow_request_approved"
+	NotificationKindEnumPostComment              NotificationKindEnum = "post_comment"
+	NotificationKindEnumCommentReply             NotificationKindEnum = "comment_reply"
+	NotificationKindEnumPostLike                 NotificationKindEnum = "post_like"
+	NotificationKindEnumCommentLike              NotificationKindEnum = "comment_like"
+	NotificationKindEnumJoinRequest              NotificationKindEnum = "join_request"
+	NotificationKindEnumRequestApproved          NotificationKindEnum = "request_approved"
+	NotificationKindEnumRemovedFromChannel       NotificationKindEnum = "removed_from_channel"
+	NotificationKindEnumNewFollower              NotificationKindEnum = "new_follower"
+	NotificationKindEnumFollowRequest            NotificationKindEnum = "follow_request"
+	NotificationKindEnumFollowRequestApproved    NotificationKindEnum = "follow_request_approved"
+	NotificationKindEnumFollowInvitation         NotificationKindEnum = "follow_invitation"
+	NotificationKindEnumFollowInvitationAccepted NotificationKindEnum = "follow_invitation_accepted"
 )
 
 func (e *NotificationKindEnum) Scan(src interface{}) error {
@@ -492,6 +494,50 @@ func (ns NullPersonaFollowStatusEnum) Value() (driver.Value, error) {
 	return string(ns.PersonaFollowStatusEnum), nil
 }
 
+type PersonaInvitationStatusEnum string
+
+const (
+	PersonaInvitationStatusEnumPending   PersonaInvitationStatusEnum = "pending"
+	PersonaInvitationStatusEnumAccepted  PersonaInvitationStatusEnum = "accepted"
+	PersonaInvitationStatusEnumRejected  PersonaInvitationStatusEnum = "rejected"
+	PersonaInvitationStatusEnumCancelled PersonaInvitationStatusEnum = "cancelled"
+)
+
+func (e *PersonaInvitationStatusEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PersonaInvitationStatusEnum(s)
+	case string:
+		*e = PersonaInvitationStatusEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PersonaInvitationStatusEnum: %T", src)
+	}
+	return nil
+}
+
+type NullPersonaInvitationStatusEnum struct {
+	PersonaInvitationStatusEnum PersonaInvitationStatusEnum
+	Valid                       bool // Valid is true if PersonaInvitationStatusEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPersonaInvitationStatusEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.PersonaInvitationStatusEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PersonaInvitationStatusEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPersonaInvitationStatusEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PersonaInvitationStatusEnum), nil
+}
+
 type PersonaPrivacyEnum string
 
 const (
@@ -721,6 +767,14 @@ type Persona struct {
 	UpdatedAt     sql.NullTime
 	DeletedAt     sql.NullTime
 	InviteToken   sql.NullString
+}
+
+type PersonaFollowInvitation struct {
+	PersonaID        int64
+	InviteePersonaID int64
+	Status           PersonaInvitationStatusEnum
+	InvitedAt        time.Time
+	RespondedAt      sql.NullTime
 }
 
 type PersonaFollower struct {

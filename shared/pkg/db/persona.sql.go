@@ -13,6 +13,90 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
+const acceptInvitation = `-- name: AcceptInvitation :one
+WITH accepted AS (
+    UPDATE persona_follow_invitations i
+    SET status = 'accepted', responded_at = NOW()
+    FROM personas p
+    WHERE i.persona_id = $1::bigint
+      AND i.invitee_persona_id = $2::bigint
+      AND i.status = 'pending'
+      AND p.id = i.persona_id AND p.deleted_at IS NULL AND p.privacy <> 'only_me'
+    RETURNING i.persona_id, i.invitee_persona_id
+)
+INSERT INTO persona_followers (persona_id, follower_persona_id, status)
+SELECT persona_id, invitee_persona_id, 'active' FROM accepted
+ON CONFLICT (persona_id, follower_persona_id) DO UPDATE
+SET status = 'active',
+    followed_at = CASE
+        WHEN persona_followers.status = 'active' AND persona_followers.unfollowed_at IS NULL
+        THEN persona_followers.followed_at ELSE NOW() END,
+    unfollowed_at = NULL
+RETURNING persona_id
+`
+
+type AcceptInvitationParams struct {
+	PersonaID        int64
+	InviteePersonaID int64
+}
+
+// Accepting makes the invitee an active follower from any earlier state.
+func (q *Queries) AcceptInvitation(ctx context.Context, arg AcceptInvitationParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, acceptInvitation, arg.PersonaID, arg.InviteePersonaID)
+	var persona_id int64
+	err := row.Scan(&persona_id)
+	return persona_id, err
+}
+
+const cancelInvitation = `-- name: CancelInvitation :execrows
+UPDATE persona_follow_invitations
+SET status = 'cancelled', responded_at = NOW()
+WHERE persona_id = $1 AND invitee_persona_id = $2 AND status = 'pending'
+`
+
+type CancelInvitationParams struct {
+	PersonaID        int64
+	InviteePersonaID int64
+}
+
+func (q *Queries) CancelInvitation(ctx context.Context, arg CancelInvitationParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, cancelInvitation, arg.PersonaID, arg.InviteePersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const cancelInvitationsFrom = `-- name: CancelInvitationsFrom :many
+UPDATE persona_follow_invitations
+SET status = 'cancelled', responded_at = NOW()
+WHERE persona_id = $1 AND status = 'pending'
+RETURNING invitee_persona_id
+`
+
+func (q *Queries) CancelInvitationsFrom(ctx context.Context, personaID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, cancelInvitationsFrom, personaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var invitee_persona_id int64
+		if err := rows.Scan(&invitee_persona_id); err != nil {
+			return nil, err
+		}
+		items = append(items, invitee_persona_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const createPersona = `-- name: CreatePersona :one
 INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, privacy, show_on_profile, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, $10, NOW(), NOW())
@@ -155,7 +239,13 @@ func (q *Queries) GetDefaultPersonaByUserId(ctx context.Context, userID int64) (
 const getFollowTarget = `-- name: GetFollowTarget :one
 SELECT
     t.privacy,
-    pf.status AS follow_status
+    pf.status AS follow_status,
+    EXISTS (
+        SELECT 1 FROM persona_follow_invitations i
+        WHERE i.persona_id = t.id
+          AND i.invitee_persona_id = $1::bigint
+          AND i.status = 'pending'
+    )::boolean AS invited
 FROM personas t
 LEFT JOIN persona_followers pf
     ON pf.persona_id = t.id
@@ -173,6 +263,7 @@ type GetFollowTargetParams struct {
 type GetFollowTargetRow struct {
 	Privacy      PersonaPrivacyEnum
 	FollowStatus NullPersonaFollowStatusEnum
+	Invited      bool
 }
 
 // -------------------------------
@@ -181,7 +272,43 @@ type GetFollowTargetRow struct {
 func (q *Queries) GetFollowTarget(ctx context.Context, arg GetFollowTargetParams) (GetFollowTargetRow, error) {
 	row := q.db.QueryRowContext(ctx, getFollowTarget, arg.FollowerPersonaID, arg.PersonaID)
 	var i GetFollowTargetRow
-	err := row.Scan(&i.Privacy, &i.FollowStatus)
+	err := row.Scan(&i.Privacy, &i.FollowStatus, &i.Invited)
+	return i, err
+}
+
+const getInviteTarget = `-- name: GetInviteTarget :one
+SELECT
+    a.privacy AS inviter_privacy,
+    (a.user_id = b.user_id)::boolean AS same_user,
+    pf.status AS follow_status
+FROM personas a
+JOIN personas b ON b.id = $1::bigint AND b.deleted_at IS NULL
+LEFT JOIN persona_followers pf
+    ON pf.persona_id = a.id
+   AND pf.follower_persona_id = b.id
+   AND pf.unfollowed_at IS NULL
+WHERE a.id = $2::bigint
+  AND a.deleted_at IS NULL
+`
+
+type GetInviteTargetParams struct {
+	InviteePersonaID int64
+	PersonaID        int64
+}
+
+type GetInviteTargetRow struct {
+	InviterPrivacy PersonaPrivacyEnum
+	SameUser       bool
+	FollowStatus   NullPersonaFollowStatusEnum
+}
+
+// -------------------------------
+// Follow invitations
+// -------------------------------
+func (q *Queries) GetInviteTarget(ctx context.Context, arg GetInviteTargetParams) (GetInviteTargetRow, error) {
+	row := q.db.QueryRowContext(ctx, getInviteTarget, arg.InviteePersonaID, arg.PersonaID)
+	var i GetInviteTargetRow
+	err := row.Scan(&i.InviterPrivacy, &i.SameUser, &i.FollowStatus)
 	return i, err
 }
 
@@ -314,8 +441,30 @@ SELECT
      WHERE pf.follower_persona_id = t.id AND pf.status = 'active' AND pf.unfollowed_at IS NULL
     )::bigint AS following_count,
     v.status AS follow_status,
-    (t.privacy = 'private')::boolean AS requires_approval
+    (t.privacy = 'private')::boolean AS requires_approval,
+    EXISTS (
+        SELECT 1 FROM persona_follow_invitations i
+        WHERE i.persona_id = $1::bigint AND i.invitee_persona_id = t.id
+          AND (i.status = 'pending'
+               OR (i.status = 'rejected' AND i.responded_at >= NOW() - INTERVAL '30 days'))
+    )::boolean AS invited,
+    EXISTS (
+        SELECT 1 FROM persona_follow_invitations i
+        WHERE i.persona_id = t.id AND i.invitee_persona_id = $1::bigint
+          AND i.status = 'pending'
+    )::boolean AS invited_you,
+    COALESCE(
+        vp.privacy <> 'only_me'
+        AND vp.user_id <> t.user_id
+        AND NOT EXISTS (
+            SELECT 1 FROM persona_followers f
+            WHERE f.persona_id = vp.id AND f.follower_persona_id = t.id
+              AND f.status = 'active' AND f.unfollowed_at IS NULL
+        ),
+        false
+    )::boolean AS can_invite
 FROM personas t
+LEFT JOIN personas vp ON vp.id = $1::bigint AND vp.deleted_at IS NULL
 LEFT JOIN persona_followers v
     ON v.persona_id = t.id
    AND v.follower_persona_id = $1::bigint
@@ -333,6 +482,9 @@ type GetPersonaFollowInfoRow struct {
 	FollowingCount   int64
 	FollowStatus     NullPersonaFollowStatusEnum
 	RequiresApproval bool
+	Invited          bool
+	InvitedYou       bool
+	CanInvite        bool
 }
 
 // -------------------------------
@@ -346,6 +498,9 @@ func (q *Queries) GetPersonaFollowInfo(ctx context.Context, arg GetPersonaFollow
 		&i.FollowingCount,
 		&i.FollowStatus,
 		&i.RequiresApproval,
+		&i.Invited,
+		&i.InvitedYou,
+		&i.CanInvite,
 	)
 	return i, err
 }
@@ -522,6 +677,30 @@ func (q *Queries) GetUserPersonasByUserId(ctx context.Context, userID int64) ([]
 	return items, nil
 }
 
+const invitePersona = `-- name: InvitePersona :execrows
+INSERT INTO persona_follow_invitations (persona_id, invitee_persona_id, status)
+VALUES ($1, $2, 'pending')
+ON CONFLICT (persona_id, invitee_persona_id) DO UPDATE
+SET status = 'pending', invited_at = NOW(), responded_at = NULL
+WHERE persona_follow_invitations.status IN ('accepted', 'cancelled')
+   OR (persona_follow_invitations.status = 'rejected'
+       AND persona_follow_invitations.responded_at < NOW() - INTERVAL '30 days')
+`
+
+type InvitePersonaParams struct {
+	PersonaID        int64
+	InviteePersonaID int64
+}
+
+// A live invitation, or a rejection still in its 30-day cooldown, is left alone.
+func (q *Queries) InvitePersona(ctx context.Context, arg InvitePersonaParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, invitePersona, arg.PersonaID, arg.InviteePersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const listConnectedPersonas = `-- name: ListConnectedPersonas :many
 SELECT p.id, p.name, p.first_name, p.last_name, p.slug, p.thumbnail, p.bio,
     pf.status AS follow_status
@@ -690,6 +869,25 @@ func (q *Queries) ListPendingFollowRequests(ctx context.Context, personaID int64
 	return items, nil
 }
 
+const rejectInvitation = `-- name: RejectInvitation :execrows
+UPDATE persona_follow_invitations
+SET status = 'rejected', responded_at = NOW()
+WHERE persona_id = $1 AND invitee_persona_id = $2 AND status = 'pending'
+`
+
+type RejectInvitationParams struct {
+	PersonaID        int64
+	InviteePersonaID int64
+}
+
+func (q *Queries) RejectInvitation(ctx context.Context, arg RejectInvitationParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, rejectInvitation, arg.PersonaID, arg.InviteePersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const removeFollower = `-- name: RemoveFollower :execrows
 UPDATE persona_followers
 SET unfollowed_at = NOW()
@@ -812,6 +1010,14 @@ SELECT
               AND pf.follower_persona_id = $1::bigint
               AND pf.status = 'active'
               AND pf.unfollowed_at IS NULL
+        ))
+        -- A pending invitation shows the inviter to the invitee.
+        OR (t.privacy = 'private' AND EXISTS (
+            SELECT 1
+            FROM persona_follow_invitations i
+            WHERE i.persona_id = t.id
+              AND i.invitee_persona_id = $1::bigint
+              AND i.status = 'pending'
         ))
         -- Following someone (or asking to) shows you to them.
         OR EXISTS (
