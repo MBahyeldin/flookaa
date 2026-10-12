@@ -144,29 +144,15 @@ export type CommentInput = {
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
-/** MarkDef for comments */
-export type CommentMarkDef = MarkDef & {
-  __typename?: 'CommentMarkDef';
-  _key: Scalars['ID']['output'];
-  _type: MarkDefType;
-  text: Scalars['String']['output'];
-};
-
-export type CommentMarkDefInput = {
-  _key: Scalars['ID']['input'];
-  _type: MarkDefType;
-  text: Scalars['String']['input'];
-};
-
 export type ImageBlock = Block & {
   __typename?: 'ImageBlock';
   _key: Scalars['ID']['output'];
   _type: BlockType;
   alt?: Maybe<Scalars['String']['output']>;
   caption?: Maybe<Scalars['String']['output']>;
-  height?: Maybe<Scalars['String']['output']>;
+  height?: Maybe<Scalars['Int']['output']>;
   src: Scalars['String']['output'];
-  width?: Maybe<Scalars['String']['output']>;
+  width?: Maybe<Scalars['Int']['output']>;
 };
 
 export type ImageBlockInput = {
@@ -174,9 +160,9 @@ export type ImageBlockInput = {
   _type: BlockType;
   alt?: InputMaybe<Scalars['String']['input']>;
   caption?: InputMaybe<Scalars['String']['input']>;
-  height?: InputMaybe<Scalars['String']['input']>;
+  height?: InputMaybe<Scalars['Int']['input']>;
   src: Scalars['String']['input'];
-  width?: InputMaybe<Scalars['String']['input']>;
+  width?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type LikeInput = {
@@ -214,18 +200,15 @@ export type MarkDef = {
 
 /** Oneof input for markDefs */
 export type MarkDefInput = {
-  comment?: InputMaybe<CommentMarkDefInput>;
   link?: InputMaybe<LinkMarkDefInput>;
 };
 
 export type MarkDefType =
-  | 'comment'
   | 'link';
 
 /** Union of all possible markDefs */
 export type MarkDefs = {
   __typename?: 'MarkDefs';
-  comment?: Maybe<CommentMarkDef>;
   link?: Maybe<LinkMarkDef>;
 };
 

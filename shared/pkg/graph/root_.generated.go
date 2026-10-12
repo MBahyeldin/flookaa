@@ -110,12 +110,6 @@ type ComplexityRoot struct {
 		UpdatedAt         func(childComplexity int) int
 	}
 
-	CommentMarkDef struct {
-		Key  func(childComplexity int) int
-		Text func(childComplexity int) int
-		Type func(childComplexity int) int
-	}
-
 	ImageBlock struct {
 		Alt     func(childComplexity int) int
 		Caption func(childComplexity int) int
@@ -134,8 +128,7 @@ type ComplexityRoot struct {
 	}
 
 	MarkDefs struct {
-		Comment func(childComplexity int) int
-		Link    func(childComplexity int) int
+		Link func(childComplexity int) int
 	}
 
 	Media struct {
@@ -603,27 +596,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Comment.UpdatedAt(childComplexity), true
 
-	case "CommentMarkDef._key":
-		if e.complexity.CommentMarkDef.Key == nil {
-			break
-		}
-
-		return e.complexity.CommentMarkDef.Key(childComplexity), true
-
-	case "CommentMarkDef.text":
-		if e.complexity.CommentMarkDef.Text == nil {
-			break
-		}
-
-		return e.complexity.CommentMarkDef.Text(childComplexity), true
-
-	case "CommentMarkDef._type":
-		if e.complexity.CommentMarkDef.Type == nil {
-			break
-		}
-
-		return e.complexity.CommentMarkDef.Type(childComplexity), true
-
 	case "ImageBlock.alt":
 		if e.complexity.ImageBlock.Alt == nil {
 			break
@@ -700,13 +672,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.LinkMarkDef.Type(childComplexity), true
-
-	case "MarkDefs.comment":
-		if e.complexity.MarkDefs.Comment == nil {
-			break
-		}
-
-		return e.complexity.MarkDefs.Comment(childComplexity), true
 
 	case "MarkDefs.link":
 		if e.complexity.MarkDefs.Link == nil {
@@ -1201,7 +1166,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputBlockInput,
 		ec.unmarshalInputBreakBlockInput,
 		ec.unmarshalInputCommentInput,
-		ec.unmarshalInputCommentMarkDefInput,
 		ec.unmarshalInputImageBlockInput,
 		ec.unmarshalInputLikeInput,
 		ec.unmarshalInputLinkMarkDefInput,
@@ -1335,7 +1299,6 @@ interface MarkDef {
 
 enum MarkDefType {
   link
-  comment
 }
 
 """
@@ -1349,20 +1312,10 @@ type LinkMarkDef implements MarkDef {
 }
 
 """
-MarkDef for comments
-"""
-type CommentMarkDef implements MarkDef {
-  _key: ID!
-  _type: MarkDefType!
-  text: String!
-}
-
-"""
 Union of all possible markDefs
 """
 type MarkDefs {
   link: LinkMarkDef
-  comment: CommentMarkDef
 }
 
 """
@@ -1411,8 +1364,8 @@ type ImageBlock implements Block {
   src: String!
   alt: String
   caption: String
-  width: String # tailwind css classes only, sanitized
-  height: String # tailwind css classes only, sanitized
+  width: Int
+  height: Int
 }
 
 type BreakBlock implements Block {
@@ -1454,18 +1407,11 @@ input LinkMarkDefInput {
   title: String
 }
 
-input CommentMarkDefInput {
-  _key: ID!
-  _type: MarkDefType!
-  text: String!
-}
-
 """
 Oneof input for markDefs
 """
 input MarkDefInput @oneof {
   link: LinkMarkDefInput
-  comment: CommentMarkDefInput
 }
 
 """
@@ -1487,8 +1433,8 @@ input ImageBlockInput {
   src: String!
   alt: String
   caption: String
-  width: String
-  height: String
+  width: Int
+  height: Int
 }
 
 input BreakBlockInput {

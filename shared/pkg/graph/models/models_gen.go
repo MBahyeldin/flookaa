@@ -135,31 +135,14 @@ type CommentInput struct {
 	AllowedPersonaIds []int64      `json:"allowedPersonaIds"`
 }
 
-// MarkDef for comments
-type CommentMarkDef struct {
-	Key  string      `json:"_key"`
-	Type MarkDefType `json:"_type"`
-	Text string      `json:"text"`
-}
-
-func (CommentMarkDef) IsMarkDef()                {}
-func (this CommentMarkDef) GetKey() string       { return this.Key }
-func (this CommentMarkDef) GetType() MarkDefType { return this.Type }
-
-type CommentMarkDefInput struct {
-	Key  string      `json:"_key"`
-	Type MarkDefType `json:"_type"`
-	Text string      `json:"text"`
-}
-
 type ImageBlock struct {
 	Type    BlockType `json:"_type"`
 	Key     string    `json:"_key"`
 	Src     string    `json:"src"`
 	Alt     *string   `json:"alt,omitempty"`
 	Caption *string   `json:"caption,omitempty"`
-	Width   *string   `json:"width,omitempty"`
-	Height  *string   `json:"height,omitempty"`
+	Width   *int32    `json:"width,omitempty"`
+	Height  *int32    `json:"height,omitempty"`
 }
 
 func (ImageBlock) IsBlock()                {}
@@ -172,8 +155,8 @@ type ImageBlockInput struct {
 	Src     string    `json:"src"`
 	Alt     *string   `json:"alt,omitempty"`
 	Caption *string   `json:"caption,omitempty"`
-	Width   *string   `json:"width,omitempty"`
-	Height  *string   `json:"height,omitempty"`
+	Width   *int32    `json:"width,omitempty"`
+	Height  *int32    `json:"height,omitempty"`
 }
 
 type LikeInput struct {
@@ -204,14 +187,12 @@ type LinkMarkDefInput struct {
 
 // Oneof input for markDefs
 type MarkDefInput struct {
-	Link    *LinkMarkDefInput    `json:"link,omitempty"`
-	Comment *CommentMarkDefInput `json:"comment,omitempty"`
+	Link *LinkMarkDefInput `json:"link,omitempty"`
 }
 
 // Union of all possible markDefs
 type MarkDefs struct {
-	Link    *LinkMarkDef    `json:"link,omitempty"`
-	Comment *CommentMarkDef `json:"comment,omitempty"`
+	Link *LinkMarkDef `json:"link,omitempty"`
 }
 
 type Media struct {
@@ -454,18 +435,16 @@ func (e ListItemType) MarshalJSON() ([]byte, error) {
 type MarkDefType string
 
 const (
-	MarkDefTypeLink    MarkDefType = "link"
-	MarkDefTypeComment MarkDefType = "comment"
+	MarkDefTypeLink MarkDefType = "link"
 )
 
 var AllMarkDefType = []MarkDefType{
 	MarkDefTypeLink,
-	MarkDefTypeComment,
 }
 
 func (e MarkDefType) IsValid() bool {
 	switch e {
-	case MarkDefTypeLink, MarkDefTypeComment:
+	case MarkDefTypeLink:
 		return true
 	}
 	return false

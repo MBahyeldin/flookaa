@@ -181,8 +181,6 @@ func (ec *executionContext) fieldContext_BlockBlock_markDefs(_ context.Context, 
 			switch field.Name {
 			case "link":
 				return ec.fieldContext_MarkDefs_link(ctx, field)
-			case "comment":
-				return ec.fieldContext_MarkDefs_comment(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type MarkDefs", field.Name)
 		},
@@ -431,93 +429,6 @@ func (ec *executionContext) fieldContext_BreakBlock__key(_ context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _CommentMarkDef__key(ctx context.Context, field graphql.CollectedField, obj *models.CommentMarkDef) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_CommentMarkDef__key,
-		func(ctx context.Context) (any, error) {
-			return obj.Key, nil
-		},
-		nil,
-		ec.marshalNID2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_CommentMarkDef__key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "CommentMarkDef",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _CommentMarkDef__type(ctx context.Context, field graphql.CollectedField, obj *models.CommentMarkDef) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_CommentMarkDef__type,
-		func(ctx context.Context) (any, error) {
-			return obj.Type, nil
-		},
-		nil,
-		ec.marshalNMarkDefType2sharedᚋpkgᚋgraphᚋmodelsᚐMarkDefType,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_CommentMarkDef__type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "CommentMarkDef",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type MarkDefType does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _CommentMarkDef_text(ctx context.Context, field graphql.CollectedField, obj *models.CommentMarkDef) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_CommentMarkDef_text,
-		func(ctx context.Context) (any, error) {
-			return obj.Text, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_CommentMarkDef_text(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "CommentMarkDef",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _ImageBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.ImageBlock) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -673,7 +584,7 @@ func (ec *executionContext) _ImageBlock_width(ctx context.Context, field graphql
 			return obj.Width, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		ec.marshalOInt2ᚖint32,
 		true,
 		false,
 	)
@@ -686,7 +597,7 @@ func (ec *executionContext) fieldContext_ImageBlock_width(_ context.Context, fie
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -702,7 +613,7 @@ func (ec *executionContext) _ImageBlock_height(ctx context.Context, field graphq
 			return obj.Height, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		ec.marshalOInt2ᚖint32,
 		true,
 		false,
 	)
@@ -715,7 +626,7 @@ func (ec *executionContext) fieldContext_ImageBlock_height(_ context.Context, fi
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -871,43 +782,6 @@ func (ec *executionContext) fieldContext_MarkDefs_link(_ context.Context, field 
 				return ec.fieldContext_LinkMarkDef_title(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type LinkMarkDef", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _MarkDefs_comment(ctx context.Context, field graphql.CollectedField, obj *models.MarkDefs) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_MarkDefs_comment,
-		func(ctx context.Context) (any, error) {
-			return obj.Comment, nil
-		},
-		nil,
-		ec.marshalOCommentMarkDef2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCommentMarkDef,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_MarkDefs_comment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "MarkDefs",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "_key":
-				return ec.fieldContext_CommentMarkDef__key(ctx, field)
-			case "_type":
-				return ec.fieldContext_CommentMarkDef__type(ctx, field)
-			case "text":
-				return ec.fieldContext_CommentMarkDef_text(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type CommentMarkDef", field.Name)
 		},
 	}
 	return fc, nil
@@ -1290,47 +1164,6 @@ func (ec *executionContext) unmarshalInputBreakBlockInput(ctx context.Context, o
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputCommentMarkDefInput(ctx context.Context, obj any) (models.CommentMarkDefInput, error) {
-	var it models.CommentMarkDefInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"_key", "_type", "text"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "_key":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_key"))
-			data, err := ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Key = data
-		case "_type":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_type"))
-			data, err := ec.unmarshalNMarkDefType2sharedᚋpkgᚋgraphᚋmodelsᚐMarkDefType(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Type = data
-		case "text":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("text"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Text = data
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputImageBlockInput(ctx context.Context, obj any) (models.ImageBlockInput, error) {
 	var it models.ImageBlockInput
 	asMap := map[string]any{}
@@ -1382,14 +1215,14 @@ func (ec *executionContext) unmarshalInputImageBlockInput(ctx context.Context, o
 			it.Caption = data
 		case "width":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("width"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Width = data
 		case "height":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("height"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -1455,7 +1288,7 @@ func (ec *executionContext) unmarshalInputMarkDefInput(ctx context.Context, obj 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"link", "comment"}
+	fieldsInOrder := [...]string{"link"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -1486,32 +1319,6 @@ func (ec *executionContext) unmarshalInputMarkDefInput(ctx context.Context, obj 
 				it.Link = nil
 			} else {
 				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.LinkMarkDefInput`, tmp)
-				return it, graphql.ErrorOnPath(ctx, err)
-			}
-		case "comment":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("comment"))
-			directive0 := func(ctx context.Context) (any, error) {
-				return ec.unmarshalOCommentMarkDefInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCommentMarkDefInput(ctx, v)
-			}
-
-			directive1 := func(ctx context.Context) (any, error) {
-				if ec.directives.Oneof == nil {
-					var zeroVal *models.CommentMarkDefInput
-					return zeroVal, errors.New("directive oneof is not implemented")
-				}
-				return ec.directives.Oneof(ctx, obj, directive0)
-			}
-
-			tmp, err := directive1(ctx)
-			if err != nil {
-				return it, graphql.ErrorOnPath(ctx, err)
-			}
-			if data, ok := tmp.(*models.CommentMarkDefInput); ok {
-				it.Comment = data
-			} else if tmp == nil {
-				it.Comment = nil
-			} else {
-				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.CommentMarkDefInput`, tmp)
 				return it, graphql.ErrorOnPath(ctx, err)
 			}
 		}
@@ -1659,13 +1466,6 @@ func (ec *executionContext) _MarkDef(ctx context.Context, sel ast.SelectionSet, 
 			return graphql.Null
 		}
 		return ec._LinkMarkDef(ctx, sel, obj)
-	case models.CommentMarkDef:
-		return ec._CommentMarkDef(ctx, sel, &obj)
-	case *models.CommentMarkDef:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._CommentMarkDef(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -1822,55 +1622,6 @@ func (ec *executionContext) _BreakBlock(ctx context.Context, sel ast.SelectionSe
 	return out
 }
 
-var commentMarkDefImplementors = []string{"CommentMarkDef", "MarkDef"}
-
-func (ec *executionContext) _CommentMarkDef(ctx context.Context, sel ast.SelectionSet, obj *models.CommentMarkDef) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, commentMarkDefImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("CommentMarkDef")
-		case "_key":
-			out.Values[i] = ec._CommentMarkDef__key(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "_type":
-			out.Values[i] = ec._CommentMarkDef__type(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "text":
-			out.Values[i] = ec._CommentMarkDef_text(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var imageBlockImplementors = []string{"ImageBlock", "Block"}
 
 func (ec *executionContext) _ImageBlock(ctx context.Context, sel ast.SelectionSet, obj *models.ImageBlock) graphql.Marshaler {
@@ -1992,8 +1743,6 @@ func (ec *executionContext) _MarkDefs(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = graphql.MarshalString("MarkDefs")
 		case "link":
 			out.Values[i] = ec._MarkDefs_link(ctx, field, obj)
-		case "comment":
-			out.Values[i] = ec._MarkDefs_comment(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2408,21 +2157,6 @@ func (ec *executionContext) unmarshalOBreakBlockInput2ᚖsharedᚋpkgᚋgraphᚋ
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputBreakBlockInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOCommentMarkDef2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCommentMarkDef(ctx context.Context, sel ast.SelectionSet, v *models.CommentMarkDef) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._CommentMarkDef(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalOCommentMarkDefInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCommentMarkDefInput(ctx context.Context, v any) (*models.CommentMarkDefInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputCommentMarkDefInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

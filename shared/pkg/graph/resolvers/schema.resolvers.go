@@ -31,9 +31,9 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 	if err := r.authorizeOwner(ctx, &models.Owner{ID: input.Owner.ID, Type: input.Owner.Type}, personaId, true); err != nil {
 		return nil, err
 	}
-	rawContent, err := json.Marshal(input.Content)
+	content, rawContent, err := portabletext.ParseContent(*input.Content)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal content: %w", err)
+		return nil, err
 	}
 
 	object := &models.PostGenericDocument{
@@ -46,8 +46,8 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 			ID:   input.Owner.ID,
 			Type: input.Owner.Type,
 		},
-		Content:           portabletext.ParseContent(*input.Content),
-		RawContent:        string(rawContent),
+		Content:           content,
+		RawContent:        rawContent,
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		Privacy:           models.Privacy(input.Privacy.String()),

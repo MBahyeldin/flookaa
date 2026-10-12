@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,7 +11,8 @@ import { useActorRef } from "@xstate/react";
 import { playgroundMachine } from "../portable-text/toolbar/machine";
 import { editorIdGenerator } from "../portable-text/editor-id-generator";
 import PortableText from "../portable-text";
-import { useBlockObjectsProvider } from "@/BlockObjectsProvider.context";
+import { CombinedGraphQLErrors } from "@apollo/client/errors";
+import { toast } from "sonner";
 import normalizeBlocks from "@/utils/normalizeBlocks";
 import { useAppStore } from "@/stores/AppStore";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
@@ -37,10 +38,6 @@ export function PostCreator() {
     },
   });
   const owner = useAppStore((state) => state.owner);
-  const { blockObjectsProvider } = useBlockObjectsProvider();
-  const types = useMemo(() => {
-    return blockObjectsProvider?.getBlockTypes() || [];
-  }, [blockObjectsProvider]);
 
   /* Counts characters across the blocks' spans, not the number of blocks —
      an emptied editor still contains one block with a zero-length span. */
@@ -64,7 +61,7 @@ export function PostCreator() {
         return;
       }
 
-      const normalizedBlocks = normalizeBlocks(blocks, types);
+      const normalizedBlocks = normalizeBlocks(blocks);
 
       await createPost({
         variables: {
@@ -84,6 +81,11 @@ export function PostCreator() {
     } catch (error) {
       // Without this the draft was cleared even when the mutation failed.
       console.error("Failed to publish post:", error);
+      toast.error(
+        CombinedGraphQLErrors.is(error)
+          ? error.errors[0]?.message || "Couldn’t publish the post."
+          : "Couldn’t publish the post. Check your connection."
+      );
     } finally {
       isPostingRef.current = false;
       setIsPosting(false);

@@ -231,7 +231,7 @@ Only `config` packages call `os.Getenv`. A new dependency means a constructor pa
 ### Data split
 
 - **Postgres** (sqlc): users, personas, roles, channels, memberships, geo, verification, events, notifications.
-- **MongoDB** (`app.objects`): posts, comments, replies as portable-text documents.
+- **MongoDB** (`app.objects`): posts, comments, replies as portable-text documents. A post stores `content` (parsed and validated by `portabletext.ParseContent`) and `rawContent`, marshalled from `content` so the two can't drift. Everything renders from `rawContent`; comments are plain `SimpleInput` strings.
 - **Neo4j**: not wired into any binary for now (planned for friends-of-friends recommendations); `shared/external/db/neo` keeps a `Connect` for when it returns.
 - **Redis**: sessions, subscription lists, per-subject offsets, content counters, persona cache.
 
@@ -247,7 +247,16 @@ It breaks several repo-wide patterns on purpose — keep it that way:
 
 ### Frontend conventions
 
-`@/` aliases `src/` (both `vite.config.ts` and tsconfig). Data access splits three ways: `src/services/*.ts` for REST, Apollo + `.graphql` documents in `src/graphql/` for content (hooks come from `src/generated/graphql.ts` after `pnpm codegen`), and the WS singleton for realtime. Zustand stores in `src/stores/` hold client-only state; React contexts at `src/*.context.tsx` provide auth, theme, dialogs, websocket. Components are shadcn-style under `src/components/ui/`. Post editing uses `@portabletext/editor` — the renderers and schema live in `src/components/portable-text/`.
+`@/` aliases `src/` (both `vite.config.ts` and tsconfig). Data access splits three ways: `src/services/*.ts` for REST, Apollo + `.graphql` documents in `src/graphql/` for content (hooks come from `src/generated/graphql.ts` after `pnpm codegen`), and the WS singleton for realtime. Zustand stores in `src/stores/` hold client-only state; React contexts at `src/*.context.tsx` provide auth, theme, dialogs, websocket. Components are shadcn-style under `src/components/ui/`. Post editing uses `@portabletext/editor`, with the schema and renderers in `src/components/portable-text/`. Custom blocks are registered once in `portable-text/blocks/` (`defineBlock`, the `blocks` list), and `PostContent` is the only way to show a post body: it skips blocks it doesn't know or that fail their schema, and wraps the body in a `data-theme` scope.
+
+#### Adding a Portable Text block
+
+1. Pick the `_type` name and fields with care: they're permanent. Fields may be added, never renamed, retyped or removed; a retired block stays registered and only leaves the insert menu.
+2. GraphQL (`shared/external/graph/portableText.graphqls`): a `BlockType` value, output type, input type, and a `Blocks` / `BlockInput @oneof` field.
+3. Go (`shared/util/portableText/block-objects/`): a `parse` function that validates the block, and its case in `ParseBlock`.
+4. `make generate-models` in `shared/`, then `pnpm codegen` in `front-end/`.
+5. A `defineBlock` file in `front-end/src/components/portable-text/blocks/` (meta, `fields`, a zod `schema` mirroring the Go checks, `View`, `Editor` if it differs, `examples`), added to `blocks`.
+6. Colours from semantic tokens only (`bg-card`, `text-primary`…), so a persona theme on the wrapper restyles the block, and no outer margins: the wrapper spaces blocks.
 
 Dev-mode requests are proxied, not direct: `/api`, `/query`, `/ws` go to `VITE_API_BASE_URL` / `VITE_WEBSOCKET_BASE_URL` (default `https://lxd-development-app`) with `secure: false` and `cookieDomainRewrite: "localhost"`.
 

@@ -275,6 +275,12 @@ and `content` is nil.
    - `src/BlockObjectsProvider.context.tsx` and its provider in `main.tsx`
    - every `useBlockObjectsProvider()` call: `editor.tsx`, `post-creator`,
      `post-card`
+   - Found while implementing:
+     - `backend/util/portableText/`, a stale copy of the parsers from the
+       `init` commit. Nothing imported it, and it stopped compiling once the
+       comment annotation left GraphQL.
+     - `portable-text/renderBlock.tsx`, an unused render function with its
+       own hard-coded image case.
 10. **Docs** (CLAUDE.md):
     - "Frontend conventions": the line about `components/portable-text/`
       covers `blocks/` and `PostContent`.
