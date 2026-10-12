@@ -261,6 +261,9 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 	if err := h.personas.DeletePersonaInfo(ctx, strconv.FormatInt(personaId, 10)); err != nil {
 		log.Println("redis delete persona error:", err)
 	}
+	if updatedPersona.Privacy == db.PersonaPrivacyEnumOnlyMe {
+		h.invitations.CancelInvitationsFrom(ctx, personaId)
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"id":              updatedPersona.ID,
@@ -374,7 +377,19 @@ func (h *Handler) ReadPersona(c *gin.Context) {
 		"follow_status":     followStatus(follow.FollowStatus),
 		"requires_approval": follow.RequiresApproval,
 		"followable":        p.Privacy != db.PersonaPrivacyEnumOnlyMe,
+		"invite_status":     inviteStatus(follow.Invited),
+		"invited_you":       follow.InvitedYou,
+		"can_invite":        follow.CanInvite,
 	})
+}
+
+// A rejected invitation in its cooldown reads as pending too.
+func inviteStatus(invited bool) *string {
+	if !invited {
+		return nil
+	}
+	status := string(db.PersonaInvitationStatusEnumPending)
+	return &status
 }
 
 // A rejected request reads as pending, so the requester never learns of it.

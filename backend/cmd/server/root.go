@@ -86,17 +86,19 @@ func StartServer(cfg config.Server) error {
 		return err
 	}
 
+	followersHandler := followers.NewHandler(q, natsHelper)
 	usersHandler := users.NewHandler(
 		q,
 		signer,
 		email.NewSender(email.Config(cfg.SMTP)),
 		verification.NewService(q),
 		stores.Persona,
+		followersHandler,
 	)
 	restHandlers := v1.Handlers{
 		Users:         usersHandler,
 		Channels:      channels.NewHandler(q, natsHelper),
-		Followers:     followers.NewHandler(q, natsHelper),
+		Followers:     followersHandler,
 		Geo:           geo.NewHandler(q),
 		Notifications: notifications.NewHandler(q, stores.Persona),
 		Google: oauthproviders.NewGoogle(

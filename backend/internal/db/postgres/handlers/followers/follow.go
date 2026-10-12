@@ -42,6 +42,19 @@ func (h *Handler) follow(c *gin.Context, followerID, personaID int64) {
 		return
 	}
 
+	// Following a persona that invited you accepts the invitation.
+	if target.Invited && !(target.FollowStatus.Valid && target.FollowStatus.PersonaFollowStatusEnum == db.PersonaFollowStatusEnumActive) {
+		err := h.accept(ctx, personaID, followerID)
+		if err == nil {
+			respond(c, true)
+			return
+		}
+		if !errors.Is(err, sql.ErrNoRows) {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to follow persona"})
+			return
+		}
+	}
+
 	// A rejected request answers pending so it can't be re-sent.
 	if target.FollowStatus.Valid {
 		respond(c, target.FollowStatus.PersonaFollowStatusEnum == db.PersonaFollowStatusEnumActive)

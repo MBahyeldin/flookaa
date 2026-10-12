@@ -8,8 +8,19 @@ import "shared/pkg/db"
 // source of truth. They reuse EventFollower and the Reason* values.
 const EventFollowRequest db.EventEnum = "follow_request"
 
+// follow_invitation goes to the invitee's subject,
+// {stream}.PERSONA.{invitee}.follow_invitation.{create|delete}, with the
+// inviter as the payload's PersonaID.
+const EventFollowInvitation db.EventEnum = "follow_invitation"
+
+const (
+	ReasonInvited  = "invited"
+	ReasonAccepted = "accepted"
+)
+
 // FollowEventPayload is the payload of persona follow events. PersonaID is
-// the follower; the event's ActorID is who made the change.
+// the follower, or the inviter for follow_invitation; the event's ActorID is
+// who made the change.
 type FollowEventPayload struct {
 	PersonaID int64  `json:"persona_id"`
 	Reason    string `json:"reason"`

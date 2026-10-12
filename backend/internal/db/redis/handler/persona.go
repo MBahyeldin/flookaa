@@ -40,7 +40,7 @@ func (h *Handler) persona(c *gin.Context, wsMessage WsMessage, personaId int64) 
 		subject.New(&stream, owner, string(nats.EventFollowCounts), string(db.EventActionEnumUpdate)).GetSubjectWithOffsets(0),
 	}
 	if ownerID == personaId {
-		for _, event := range []db.EventEnum{nats.EventFollower, nats.EventFollowRequest} {
+		for _, event := range []db.EventEnum{nats.EventFollower, nats.EventFollowRequest, nats.EventFollowInvitation} {
 			for _, action := range []db.EventActionEnum{db.EventActionEnumCreate, db.EventActionEnumDelete} {
 				subjects = append(subjects, subject.New(&stream, owner, string(event), string(action)).GetSubjectWithOffsets(0))
 			}

@@ -2,6 +2,7 @@ package followers
 
 import (
 	"app/internal/auth"
+	"context"
 	"database/sql"
 	"errors"
 	"net/http"
@@ -120,11 +121,16 @@ func (h *Handler) resolveRequest(c *gin.Context, status db.PersonaFollowStatusEn
 		return
 	}
 
-	_, err := h.q.ResolveFollowRequest(ctx, db.ResolveFollowRequestParams{
-		Status:            status,
-		PersonaID:         personaID,
-		FollowerPersonaID: followerID,
-	})
+	var err error
+	if status == db.PersonaFollowStatusEnumActive {
+		err = h.approve(ctx, personaID, followerID)
+	} else {
+		_, err = h.q.ResolveFollowRequest(ctx, db.ResolveFollowRequestParams{
+			Status:            status,
+			PersonaID:         personaID,
+			FollowerPersonaID: followerID,
+		})
+	}
 	if errors.Is(err, sql.ErrNoRows) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "no pending follow request"})
 		return
@@ -134,14 +140,26 @@ func (h *Handler) resolveRequest(c *gin.Context, status db.PersonaFollowStatusEn
 		return
 	}
 
-	if status == db.PersonaFollowStatusEnumActive {
-		h.publishBy(ctx, personaID, personaID, followerID, nats.EventFollowRequest, db.EventActionEnumDelete, nats.ReasonApproved)
-		h.publishBy(ctx, personaID, personaID, followerID, nats.EventFollower, db.EventActionEnumCreate, nats.ReasonApproved)
-		h.publishCounts(ctx, personaID, followerID)
-	} else {
+	if status == db.PersonaFollowStatusEnumRejected {
 		h.publishBy(ctx, personaID, personaID, followerID, nats.EventFollowRequest, db.EventActionEnumDelete, nats.ReasonRejected)
 	}
 	c.JSON(http.StatusOK, gin.H{"status": status})
+}
+
+// approve turns a pending request into an active follow. sql.ErrNoRows means
+// there was no pending request.
+func (h *Handler) approve(ctx context.Context, personaID, followerID int64) error {
+	if _, err := h.q.ResolveFollowRequest(ctx, db.ResolveFollowRequestParams{
+		Status:            db.PersonaFollowStatusEnumActive,
+		PersonaID:         personaID,
+		FollowerPersonaID: followerID,
+	}); err != nil {
+		return err
+	}
+	h.publishBy(ctx, personaID, personaID, followerID, nats.EventFollowRequest, db.EventActionEnumDelete, nats.ReasonApproved)
+	h.publishBy(ctx, personaID, personaID, followerID, nats.EventFollower, db.EventActionEnumCreate, nats.ReasonApproved)
+	h.publishCounts(ctx, personaID, followerID)
+	return nil
 }
 
 // RemoveFollower ends someone's follow without telling them; they may follow again.
