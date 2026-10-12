@@ -281,6 +281,8 @@ and `content` is nil.
        comment annotation left GraphQL.
      - `portable-text/renderBlock.tsx`, an unused render function with its
        own hard-coded image case.
+     - The `shiki` and `prettier` dependencies, used only by
+       `highlight-json-machine.ts`.
 10. **Docs** (CLAUDE.md):
     - "Frontend conventions": the line about `components/portable-text/`
       covers `blocks/` and `PostContent`.
