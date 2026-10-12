@@ -14,8 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Invite asks another persona to follow the acting one. A pending request
-// from that persona is approved instead.
+// Invite asks another persona to follow the acting one, which must be private.
+// A pending request from that persona is approved instead.
 func (h *Handler) Invite(c *gin.Context) {
 	ctx := c.Request.Context()
 	inviterID, inviteeID, ok := targetParams(c)
@@ -39,7 +39,7 @@ func (h *Handler) Invite(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to invite persona"})
 		return
 	}
-	if target.InviterPrivacy == db.PersonaPrivacyEnumOnlyMe {
+	if target.InviterPrivacy != db.PersonaPrivacyEnumPrivate {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot_invite"})
 		return
 	}
@@ -161,7 +161,7 @@ func (h *Handler) RejectInvitation(c *gin.Context) {
 }
 
 // CancelInvitationsFrom withdraws everything a persona has sent, e.g. when it
-// becomes only_me.
+// stops being private.
 func (h *Handler) CancelInvitationsFrom(ctx context.Context, inviterID int64) {
 	invitees, err := h.q.CancelInvitationsFrom(ctx, inviterID)
 	if err != nil {
@@ -174,7 +174,7 @@ func (h *Handler) CancelInvitationsFrom(ctx context.Context, inviterID int64) {
 }
 
 // accept makes the invitee an active follower of the inviter. sql.ErrNoRows
-// means there was no pending invitation from a persona that may still invite.
+// means there was no pending invitation from a persona that is still private.
 func (h *Handler) accept(ctx context.Context, inviterID, inviteeID int64) error {
 	if _, err := h.q.AcceptInvitation(ctx, db.AcceptInvitationParams{
 		PersonaID:        inviterID,

@@ -261,7 +261,7 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 	if err := h.personas.DeletePersonaInfo(ctx, strconv.FormatInt(personaId, 10)); err != nil {
 		log.Println("redis delete persona error:", err)
 	}
-	if updatedPersona.Privacy == db.PersonaPrivacyEnumOnlyMe {
+	if updatedPersona.Privacy != db.PersonaPrivacyEnumPrivate {
 		h.invitations.CancelInvitationsFrom(ctx, personaId)
 	}
 

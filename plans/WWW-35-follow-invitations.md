@@ -23,8 +23,10 @@ New in this ticket:
 
 ## Rules
 
-- **Who can invite.** A public or private persona can invite. An `only_me`
-  persona can't: 400 `cannot_invite`, and the button is hidden.
+- **Who can invite.** Only a private persona. A public persona can just be
+  followed, so its invitation would only be a notification. A public or
+  `only_me` inviter gets 400 `cannot_invite`, and the button is hidden. The
+  invitee can be any persona A sees, public ones included.
 - **Whom A can invite.** Only a persona that A sees (`ResolvePersonasForViewer`
   with viewer A). A can't invite itself or its user's other personas. All of
   these get 404.
@@ -53,12 +55,12 @@ New in this ticket:
   `ResolvePersonasForViewer`. Once the invitation is rejected or cancelled, A
   is hidden from B again. Accepting keeps A visible, because B is now an
   approved follower.
-- **A persona that becomes `only_me`** loses its pending invitations.
+- **A persona that stops being private** loses its pending invitations.
   `UpdatePersona` then calls `CancelInvitationsFrom` and publishes
   `follow_invitation.delete` for each invitee, so their notifications go
   away. It's a separate statement because it has to publish. If it fails,
-  nothing leaks: accepting refuses an `only_me` inviter, and the visibility
-  clause only applies to private inviters.
+  nothing leaks: accepting refuses an inviter that isn't private, and the
+  visibility clause only applies to private inviters.
 - **Following an inviter.** If B presses Follow on an A that has a pending
   invitation to B, that accepts the invitation. Otherwise a private A would
   get a pending request from B on top of A's own invitation.
@@ -123,7 +125,7 @@ All endpoints are Persona tier, in `followers.Handler` (new file `invitations.go
 
 | Endpoint | Result |
 |---|---|
-| `POST /persona/:persona_id/invite` | The table above. Errors: 404 for an unseen, own-user or missing B; 400 `cannot_invite` if A is `only_me`. |
+| `POST /persona/:persona_id/invite` | The table above. Errors: 404 for an unseen, own-user or missing B; 400 `cannot_invite` if A isn't private. |
 | `POST /persona/:persona_id/uninvite` | Cancels a pending invitation: 200. If there's none: 400 `not_invited`. A rejected one also answers 400 `not_invited`, so A can't tell "rejected" from "never invited". |
 
 **Invitee B**, where `:persona_id` must be B (the acting persona), otherwise
@@ -131,7 +133,7 @@ All endpoints are Persona tier, in `followers.Handler` (new file `invitations.go
 
 | Endpoint | Result |
 |---|---|
-| `POST /persona/:persona_id/invitations/:inviter_id/accept` | 200 `{"status":"active"}`. 404 if there's no pending invitation, or if the inviter is now `only_me` or deleted. |
+| `POST /persona/:persona_id/invitations/:inviter_id/accept` | 200 `{"status":"active"}`. 404 if there's no pending invitation, or if the inviter is no longer private, or deleted. |
 | `POST /persona/:persona_id/invitations/:inviter_id/reject` | 200 `{"status":"rejected"}`. 404 if there's no pending invitation. |
 
 **`GET /persona/:persona_id`** (profile and card) gets three viewer-relative fields:
@@ -141,7 +143,7 @@ All endpoints are Persona tier, in `followers.Handler` (new file `invitations.go
 - `invited_you`: `true` while this persona has a pending invitation to the
   viewer.
 - `can_invite`: this is a derived boolean, not stored. It's true when the
-  viewer isn't `only_me`, the target is another user's persona, and the
+  viewer is private, the target is another user's persona, and the
   target doesn't actively follow the viewer. The frontend hides the button
   whenever it's false.
 
@@ -238,7 +240,7 @@ refuses to start until every kind in the database enum has a spec.
   30 days. A is hidden from B again.
 - A invites a B that has a pending request to A. The request is approved, B
   gets "accepted your follow request", and no invitation row is created.
-- An `only_me` A sees no invite button and the endpoint refuses it. A sees no
+- A public or `only_me` A sees no invite button and the endpoint refuses it. A sees no
   invite button on its own user's personas.
 - A cancels a pending invitation. B's notification disappears and A can
   invite again at once.

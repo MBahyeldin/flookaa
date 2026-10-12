@@ -258,7 +258,7 @@ SELECT
           AND i.status = 'pending'
     )::boolean AS invited_you,
     COALESCE(
-        vp.privacy <> 'only_me'
+        vp.privacy = 'private'
         AND vp.user_id <> t.user_id
         AND NOT EXISTS (
             SELECT 1 FROM persona_followers f
@@ -392,7 +392,7 @@ WITH accepted AS (
     WHERE i.persona_id = sqlc.arg(persona_id)::bigint
       AND i.invitee_persona_id = sqlc.arg(invitee_persona_id)::bigint
       AND i.status = 'pending'
-      AND p.id = i.persona_id AND p.deleted_at IS NULL AND p.privacy <> 'only_me'
+      AND p.id = i.persona_id AND p.deleted_at IS NULL AND p.privacy = 'private'
     RETURNING i.persona_id, i.invitee_persona_id
 )
 INSERT INTO persona_followers (persona_id, follower_persona_id, status)
