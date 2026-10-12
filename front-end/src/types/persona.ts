@@ -42,7 +42,14 @@ export type PersonaProfile = PublicPersona & {
     following_count: number;
     requires_approval: boolean;
     followable: boolean;
+    /** Your invitation to this persona to follow you. */
+    invite_status: InviteStatus;
+    /** This persona invited you to follow it. */
+    invited_you: boolean;
+    can_invite: boolean;
 }
+
+export type InviteStatus = "pending" | null;
 
 /** A private persona the viewer can't see: only its id and the viewer's own follow. */
 export type LockedPersona = {

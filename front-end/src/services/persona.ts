@@ -112,6 +112,33 @@ export async function removeFollower(personaId: number, followerId: number): Pro
   await followersRequest(personaId, `followers/${followerId}/remove`, "POST");
 }
 
+/** Invites a persona to follow you; "following" when it already does or had asked to. */
+export async function invitePersona(id: number): Promise<"invited" | "following" | Error> {
+  try {
+    const body = await followersRequest<{ status: "invited" | "following" }>(id, "invite", "POST");
+    return body.status;
+  } catch (err) {
+    return err as Error;
+  }
+}
+
+export async function uninvitePersona(id: number): Promise<void | Error> {
+  try {
+    await followersRequest(id, "uninvite", "POST");
+  } catch (err) {
+    return err as Error;
+  }
+}
+
+/** Your answer to another persona's invitation to follow it. */
+export async function respondToInvitation(
+  personaId: number,
+  inviterId: number,
+  decision: "accept" | "reject"
+): Promise<void> {
+  await followersRequest(personaId, `invitations/${inviterId}/${decision}`, "POST");
+}
+
 /** Your private persona's follow-request link token; created once, replaced on reset. */
 export async function getInviteLink(personaId: number, reset = false): Promise<string> {
   const body = await followersRequest<{ token: string }>(personaId, reset ? "invite-link/reset" : "invite-link", "POST");

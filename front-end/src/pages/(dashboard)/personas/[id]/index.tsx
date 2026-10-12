@@ -2,14 +2,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { UserRoundX } from "lucide-react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 import { FollowButton } from "@/components/follow-button";
+import { InviteButton } from "@/components/invite-button";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { LockedPersonaCard } from "@/components/locked-persona-card";
 import { personaPath } from "@/components/persona-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchConnectedPersonas, fetchPersonaProfile } from "@/services/persona";
+import { fetchConnectedPersonas, fetchPersonaProfile, respondToInvitation } from "@/services/persona";
 import { useWebsocketService } from "@/Websocket.context";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import type { FollowStatus, LockedPersona, PersonaProfile, PublicPersona } from "@/types/persona";
@@ -88,6 +90,15 @@ export default function PersonaProfilePage() {
     });
   }, [websocketService, id, viewerId, locked, load]);
 
+  // Invitations to you arrive on your own subjects, not the profile's.
+  const visitingOther = state.status === "ready" && !isOwn;
+  useEffect(() => {
+    if (!visitingOther || !viewerId || !websocketService) return;
+    return websocketService.subscribeToPersonaEvents(Number(viewerId), (msg) => {
+      if (msg.event.name === "follow_invitation") load(true);
+    });
+  }, [websocketService, viewerId, visitingOther, load]);
+
   const setConnectedStatus = (personaId: number, follow_status: FollowStatus) =>
     setState((s) =>
       s.status === "ready"
@@ -130,6 +141,14 @@ export default function PersonaProfilePage() {
 
       {state.status === "ready" && (
         <>
+          {state.persona.invited_you && viewerId && (
+            <InvitationBanner
+              viewerId={Number(viewerId)}
+              inviterId={state.persona.id}
+              name={fullName(state.persona)}
+              onDone={() => load(true)}
+            />
+          )}
           <Card className="rounded-xl border border-border/70 shadow-sm">
             <CardContent className="flex flex-col items-center gap-4 p-6 text-center sm:flex-row sm:items-start sm:text-left">
               <Avatar className="h-24 w-24 shrink-0">
@@ -172,6 +191,14 @@ export default function PersonaProfilePage() {
                   name={fullName(state.persona)}
                   status={state.persona.follow_status ?? null}
                   requiresApproval={state.persona.requires_approval}
+                  onChange={() => load(true)}
+                />
+              )}
+              {!isOwn && state.persona.can_invite && (
+                <InviteButton
+                  personaId={state.persona.id}
+                  name={fullName(state.persona)}
+                  status={state.persona.invite_status ?? null}
                   onChange={() => load(true)}
                 />
               )}
@@ -224,6 +251,50 @@ export default function PersonaProfilePage() {
         </>
       )}
     </div>
+  );
+}
+
+function InvitationBanner({
+  viewerId,
+  inviterId,
+  name,
+  onDone,
+}: {
+  viewerId: number;
+  inviterId: number;
+  name: string;
+  onDone: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+
+  const respond = async (decision: "accept" | "reject") => {
+    setBusy(true);
+    try {
+      await respondToInvitation(viewerId, inviterId, decision);
+      onDone();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card className="mb-4 rounded-xl border border-primary/40 shadow-sm">
+      <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm">
+          <span className="font-medium">{name}</span> invited you to follow them.
+        </p>
+        <div className="flex gap-2">
+          <Button size="sm" disabled={busy} onClick={() => respond("accept")}>
+            Accept
+          </Button>
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => respond("reject")}>
+            Decline
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -87,6 +87,18 @@ export function describeNotification(n: Notification): NotificationDescription |
         message: "accepted your follow request",
         href: `/personas/${n.subject.id}`,
       };
+    case "follow_invitation":
+      return {
+        actor: actorName(n) ?? "Someone",
+        message: "invited you to follow them",
+        href: `/personas/${n.subject.id}`,
+      };
+    case "follow_invitation_accepted":
+      return {
+        actor: actorName(n) ?? "Someone",
+        message: "accepted your invitation and follows you",
+        href: `/personas/${n.subject.id}`,
+      };
     default:
       return null;
   }

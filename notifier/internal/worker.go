@@ -60,6 +60,7 @@ func (w *Worker) Run(ctx context.Context) ([]jetstream.ConsumeContext, error) {
 		{user, "notifier-user", []string{
 			user + ".PERSONA.*." + string(shared_nats.EventFollower) + ".*",
 			user + ".PERSONA.*." + string(shared_nats.EventFollowRequest) + ".*",
+			user + ".PERSONA.*." + string(shared_nats.EventFollowInvitation) + ".*",
 		}, w.persona},
 	}
 

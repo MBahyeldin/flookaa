@@ -13,7 +13,8 @@ import (
 // persona handles follow events on STREAM_USER_EVENTS: new followers and
 // follow requests notify the followed persona, an approval notifies the
 // requester, and unfollows, removals and resolved requests take the
-// notification away once nobody is left.
+// notification away once nobody is left. An invitation notifies the invitee
+// until it is answered or cancelled, and its acceptance notifies the inviter.
 //
 // The subject is the followed persona and there is no scope: it is about the
 // recipient itself, so it is always visible.
@@ -42,6 +43,27 @@ func (w *Worker) persona(ctx context.Context, m message, eventAt time.Time) erro
 			subjectID:   key,
 			actorID:     &actorID,
 		}, e.ActorID, eventAt)
+
+	case e.Name == shared_nats.EventFollower && e.Action == db.EventActionEnumCreate && payload.Reason == shared_nats.ReasonInvited:
+		inviteeID := payload.PersonaID
+		return w.notify(ctx, notification{
+			recipientID: e.OwnerID,
+			kind:        db.NotificationKindEnumFollowInvitationAccepted,
+			subjectID:   strconv.FormatInt(inviteeID, 10),
+			actorID:     &inviteeID,
+		}, inviteeID, eventAt)
+
+	case e.Name == shared_nats.EventFollowInvitation && e.Action == db.EventActionEnumCreate:
+		inviterID := payload.PersonaID
+		return w.notify(ctx, notification{
+			recipientID: e.OwnerID,
+			kind:        db.NotificationKindEnumFollowInvitation,
+			subjectID:   strconv.FormatInt(inviterID, 10),
+			actorID:     &inviterID,
+		}, inviterID, eventAt)
+
+	case e.Name == shared_nats.EventFollowInvitation && e.Action == db.EventActionEnumDelete:
+		return w.removeOne(ctx, e.OwnerID, db.NotificationKindEnumFollowInvitation, strconv.FormatInt(payload.PersonaID, 10), e.ActorID, eventAt)
 
 	case e.Name == shared_nats.EventFollower && e.Action == db.EventActionEnumDelete:
 		return w.removeIfEmpty(ctx, db.NotificationKindEnumNewFollower, key, e.ActorID, eventAt)

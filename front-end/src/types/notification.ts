@@ -9,7 +9,9 @@ type NotificationKind =
   | "removed_from_channel"
   | "new_follower"
   | "follow_request"
-  | "follow_request_approved";
+  | "follow_request_approved"
+  | "follow_invitation"
+  | "follow_invitation_accepted";
 
 type NotificationActor = {
   id: number;

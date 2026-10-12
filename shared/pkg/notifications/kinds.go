@@ -47,6 +47,9 @@ var Kinds = map[db.NotificationKindEnum]Kind{
 	db.NotificationKindEnumNewFollower:           {Subject: db.NotificationSubjectEnumPERSONA, Recount: recountFollowers},
 	db.NotificationKindEnumFollowRequest:         {Subject: db.NotificationSubjectEnumPERSONA, Recount: recountPendingFollowRequests},
 	db.NotificationKindEnumFollowRequestApproved: {Subject: db.NotificationSubjectEnumPERSONA},
+	// The subject is the inviter, and the invitee for an accepted invitation.
+	db.NotificationKindEnumFollowInvitation:         {Subject: db.NotificationSubjectEnumPERSONA},
+	db.NotificationKindEnumFollowInvitationAccepted: {Subject: db.NotificationSubjectEnumPERSONA},
 }
 
 // GroupKey names the thing a notification is about, e.g. "post_like:<post

@@ -25,6 +25,7 @@ type EventType =
   | "follow_counts"
   // Your own persona only (/control owner PERSONA); "follower" above too.
   | "follow_request"
+  | "follow_invitation"
   | "*";
 type EventActionType = "create" | "update" | "delete" | "*";
 type EventOwnerType = "CHANNEL" | "USER" | "PERSONA";

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FollowButton } from "@/components/follow-button";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
+import { InviteButton } from "@/components/invite-button";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,6 +10,7 @@ import { fetchPersonaProfile } from "@/services/persona";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import type {
   FollowStatus,
+  InviteStatus,
   LockedPersona,
   PersonaProfile,
 } from "@/types/persona";
@@ -68,6 +70,14 @@ export function PersonaCard({
     setFetched((f) =>
       f && f !== "loading" && f !== "not_found" ? { ...f, follow_status } : f,
     );
+  const setInvite = (status: InviteStatus | "following") =>
+    setFetched((f) =>
+      f && f !== "loading" && f !== "not_found" && !f.locked
+        ? status === "following"
+          ? { ...f, invite_status: null, can_invite: false }
+          : { ...f, invite_status: status }
+        : f,
+    );
 
   return (
     <div className="flex flex-col gap-3">
@@ -96,6 +106,14 @@ export function PersonaCard({
             status={full.follow_status ?? null}
             requiresApproval={full.requires_approval}
             onChange={setStatus}
+          />
+        )}
+        {!isOwn && full?.can_invite && (
+          <InviteButton
+            personaId={personaId}
+            name={displayName}
+            status={full.invite_status ?? null}
+            onChange={setInvite}
           />
         )}
         {!isOwn && locked && (
