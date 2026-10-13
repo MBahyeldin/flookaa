@@ -249,6 +249,10 @@ It breaks several repo-wide patterns on purpose — keep it that way:
 
 `@/` aliases `src/` (both `vite.config.ts` and tsconfig). Data access splits three ways: `src/services/*.ts` for REST, Apollo + `.graphql` documents in `src/graphql/` for content (hooks come from `src/generated/graphql.ts` after `pnpm codegen`), and the WS singleton for realtime. Zustand stores in `src/stores/` hold client-only state; React contexts at `src/*.context.tsx` provide auth, theme, dialogs, websocket. Components are shadcn-style under `src/components/ui/`. Post editing uses `@portabletext/editor`, with the schema and renderers in `src/components/portable-text/`. Custom blocks are registered once in `portable-text/blocks/` (`defineBlock`, the `blocks` list), and `PostContent` is the only way to show a post body: it skips blocks it doesn't know or that fail their schema, and wraps the body in a `data-theme` scope.
 
+#### Theme palettes
+
+`data-theme="<id>"` on any element re-colours everything inside it; ids are `themes/palettes.ts` (`tide` is the default and `:root`). Palettes in `src/themes.css` set only knobs (`--sea-h`, `--primary-h`, `--gradient-*`, `--dark-*`…); `index.css` derives the shadcn tokens from them in `:root, [data-theme]` and `.dark, .dark [data-theme]`, because a custom property resolves where it's declared and a nested palette would otherwise inherit `:root`'s tokens. A new token that depends on a knob goes in those derivation blocks, not on `:root` alone. Light/dark stays the global `.dark` class; each palette has its own dark knobs. Status colours (`success`, `warning`, `destructive` + `-foreground`) are shared and text-safe. Check contrast on `/dev/themes` (dev builds only) after touching any colour.
+
 #### Adding a Portable Text block
 
 1. Pick the `_type` name and fields with care: they're permanent. Fields may be added, never renamed, retyped or removed; a retired block stays registered and only leaves the insert menu.

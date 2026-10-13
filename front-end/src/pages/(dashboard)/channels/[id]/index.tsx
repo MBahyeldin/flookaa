@@ -361,7 +361,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
             {/* Navy scrim rather than flat black, so the banner sits in the
                 same colour family as the rest of the theme. It also keeps the
                 thumbnail readable against a busy photo. */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[oklch(0.22_0.05_258)]/80 via-[oklch(0.22_0.05_258)]/25 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-scrim/80 via-scrim/25 to-transparent" />
           </div>
 
           <CardContent className="p-4 sm:p-6">

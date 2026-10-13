@@ -1,0 +1,127 @@
+/* Knobs per palette; index.css derives the tokens. Ids match themes/palettes.ts. */
+
+[data-theme="tide"] {
+  --sea-h: 237;
+  --sea-c: 1;
+  --navy-h: 258;
+  --navy-c: 1;
+  --primary-c: 0.130;
+  --primary-h: 252;
+  --gradient-c: 0.130;
+  --gradient-from-h: 268;
+  --gradient-to-h: 212;
+  --glow-h: 196;
+  --deep-h: 255;
+}
+.dark [data-theme="tide"], .dark[data-theme="tide"] {
+  --dark-h: 258;
+  --dark-glow-h: 215;
+  --dark-tint: 0;
+  --primary-c: 0.062;
+  --primary-h: 247.961;
+}
+
+[data-theme="forest"] {
+  --sea-h: 150;
+  --sea-c: 1;
+  --navy-h: 165;
+  --navy-c: 1;
+  --primary-c: 0.120;
+  --primary-h: 152;
+  --gradient-c: 0.120;
+  --gradient-from-h: 165;
+  --gradient-to-h: 135;
+  --glow-h: 120;
+  --deep-h: 165;
+}
+.dark [data-theme="forest"], .dark[data-theme="forest"] {
+  --dark-h: 160;
+  --dark-glow-h: 130;
+  --dark-tint: 1;
+  --primary-c: 0.130;
+  --primary-h: 152;
+}
+
+[data-theme="ember"] {
+  --sea-h: 70;
+  --sea-c: 1;
+  --navy-h: 45;
+  --navy-c: 1;
+  --primary-c: 0.150;
+  --primary-h: 45;
+  --gradient-c: 0.150;
+  --gradient-from-h: 35;
+  --gradient-to-h: 60;
+  --glow-h: 95;
+  --deep-h: 40;
+}
+.dark [data-theme="ember"], .dark[data-theme="ember"] {
+  --dark-h: 50;
+  --dark-glow-h: 70;
+  --dark-tint: 1;
+  --primary-c: 0.130;
+  --primary-h: 50;
+}
+
+[data-theme="plum"] {
+  --sea-h: 305;
+  --sea-c: 1;
+  --navy-h: 300;
+  --navy-c: 1;
+  --primary-c: 0.150;
+  --primary-h: 305;
+  --gradient-c: 0.150;
+  --gradient-from-h: 315;
+  --gradient-to-h: 285;
+  --glow-h: 340;
+  --deep-h: 285;
+}
+.dark [data-theme="plum"], .dark[data-theme="plum"] {
+  --dark-h: 305;
+  --dark-glow-h: 280;
+  --dark-tint: 1;
+  --primary-c: 0.130;
+  --primary-h: 305;
+}
+
+[data-theme="rose"] {
+  --sea-h: 10;
+  --sea-c: 1;
+  --navy-h: 0;
+  --navy-c: 1;
+  --primary-c: 0.170;
+  --primary-h: 5;
+  --gradient-c: 0.170;
+  --gradient-from-h: 355;
+  --gradient-to-h: 20;
+  --glow-h: 40;
+  --deep-h: 345;
+}
+.dark [data-theme="rose"], .dark[data-theme="rose"] {
+  --dark-h: 5;
+  --dark-glow-h: 20;
+  --dark-tint: 1;
+  --primary-c: 0.140;
+  --primary-h: 5;
+}
+
+[data-theme="slate"] {
+  --sea-h: 250;
+  --sea-c: 0.35;
+  --navy-h: 255;
+  --navy-c: 0.5;
+  --primary-c: 0.050;
+  --primary-h: 255;
+  --gradient-c: 0.050;
+  --gradient-from-h: 260;
+  --gradient-to-h: 235;
+  --glow-h: 220;
+  --deep-h: 260;
+}
+.dark [data-theme="slate"], .dark[data-theme="slate"] {
+  --dark-h: 255;
+  --dark-glow-h: 235;
+  --dark-tint: 0.5;
+  --primary-c: 0.040;
+  --primary-h: 255;
+}

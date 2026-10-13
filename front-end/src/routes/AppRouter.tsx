@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import Signup from "../pages/sign-up";
 import Login from "../pages/login";
@@ -11,6 +12,8 @@ import PersonaManagerPage from "@/pages/(dashboard)/persona-manager";
 import NotificationsPage from "@/pages/(dashboard)/notifications";
 import PersonaProfilePage from "@/pages/(dashboard)/personas/[id]";
 import FollowInvitePage from "@/pages/(dashboard)/follow/[token]";
+
+const DevThemesPage = import.meta.env.DEV ? lazy(() => import("@/pages/dev-themes")) : () => null;
 
 export default function AppRouter() {
   return (
@@ -40,6 +43,8 @@ export default function AppRouter() {
       <Route path="/personas/:id" element={<PersonaProfilePage />} />
 
       <Route path="/follow/:token" element={<FollowInvitePage />} />
+
+      {import.meta.env.DEV && <Route path="/dev/themes" element={<Suspense><DevThemesPage /></Suspense>} />}
     </Routes>
   );
 }
