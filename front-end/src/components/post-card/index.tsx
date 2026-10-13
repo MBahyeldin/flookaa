@@ -9,9 +9,6 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { Avatar, AvatarImage } from "../ui/avatar";
-import { GeneratedAvatarFallback } from "@/components/generated-avatar";
-import { PersonaLink } from "@/components/persona-link";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import {
@@ -28,8 +25,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useAppStore } from "@/stores/AppStore";
 import useAudioContext from "@/hooks/useAudioContext";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
-import formatDate, { formatRelativeDate } from "@/utils/formateDate";
 import PostContent from "../portable-text/PostContent";
+import { PostHeader } from "./PostHeader";
 
 
 
@@ -155,72 +152,33 @@ export function Post({
       }`}
     >
       <CardContent className="p-4 sm:p-6">
-        {/* Post Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <PersonaLink
-              personaId={post.authorId}
-              anonymous={post.author?.anonymous ?? true}
-              name={post.author?.fullName ?? ""}
-              thumbnail={post.author?.profileImageUrl ?? undefined}
-              tabIndex={-1}
-              className="shrink-0"
-            >
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={post.author?.profileImageUrl || ""} />
-                <GeneratedAvatarFallback name={post.author?.fullName ?? ""} />
-              </Avatar>
-            </PersonaLink>
-            <div>
-              <div className="flex flex-wrap items-center gap-x-2">
-                <h4 className="text-base font-medium">
-                  <PersonaLink
-                    personaId={post.authorId}
-                    anonymous={post.author?.anonymous ?? true}
-                    name={post.author?.fullName ?? ""}
-                    thumbnail={post.author?.profileImageUrl ?? undefined}
+        <PostHeader
+          authorId={post.authorId}
+          author={post.author}
+          createdAt={post.createdAt}
+          actions={
+            canDelete && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" aria-label="Post options">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                {/* Edit was listed here but never wired up; it returns with post editing. */}
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    disabled={isDeleting}
+                    onClick={handleDelete}
                   >
-                    {post.author?.fullName}
-                  </PersonaLink>
-                </h4>
-                <span className="text-sm text-muted-foreground">
-                  @{post.author?.username}
-                </span>
-              </div>
-              {post.createdAt && (
-                <p className="text-sm text-muted-foreground">
-                  <time
-                    dateTime={post.createdAt}
-                    title={formatDate(post.createdAt)}
-                  >
-                    {formatRelativeDate(post.createdAt)}
-                  </time>
-                </p>
-              )}
-            </div>
-          </div>
-
-          {canDelete && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" aria-label="Post options">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              {/* Edit was listed here but never wired up; it returns with post editing. */}
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  disabled={isDeleting}
-                  onClick={handleDelete}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+          }
+        />
 
         {/* Post Content */}
         <PostContent rawContent={post.rawContent} />

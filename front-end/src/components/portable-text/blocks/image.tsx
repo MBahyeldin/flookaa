@@ -14,7 +14,7 @@ const sizes = ["xs", "s", "m", "l", "xl"] as const;
 const aligns = ["left", "center", "right"] as const;
 
 const imageSchema = z.object({
-  src: z.string().refine((src) => safeUrl(src, ["http", "https"])),
+  src: z.string().refine((src) => safeUrl(src, ["http", "https"]), "must be an http(s) link"),
   alt: z.string().optional(),
   caption: z.string().optional(),
   width: side,
