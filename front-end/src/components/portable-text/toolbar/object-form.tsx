@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/button";
-import type { ToolbarBlockObjectSchemaType } from "@portabletext/toolbar";
 import type { FormField } from "@/models/Forms/FormField";
 import FieldRender from "@/components/form/FieldRender";
 import { useFormik } from "formik";
 
 export function ObjectForm(
-  props: Pick<ToolbarBlockObjectSchemaType, "fields" | "defaultValues"> & {
+  props: {
+    // Registry FormFields for blocks, toolbar fields for annotations.
+    fields: ReadonlyArray<unknown>;
+    defaultValues?: { [key: string]: unknown };
     submitLabel: string;
-  } & {
     onSubmit: ({ value }: { value: { [key: string]: unknown } }) => void;
   }
 ) {
@@ -15,9 +16,7 @@ export function ObjectForm(
     initialValues: {
       ...props.defaultValues,
     },
-    onSubmit: (values) => {
-
-      const { ...value } = values;
+    onSubmit: (value) => {
       props.onSubmit({ value });
     },
   });
@@ -33,11 +32,11 @@ export function ObjectForm(
           key={field.id}
           field={field}
           setFieldValue={setFieldValue}
-          value={props.defaultValues ? props.defaultValues[field.name!] : null}
+          value={(values as Record<string, unknown>)[field.name!]}
           values={values}
         />
       ))}
-      <Button className="self-end" type="submit" size="sm">
+      <Button className="self-end max-md:min-h-11" type="submit" size="sm">
         {props.submitLabel}
       </Button>
     </form>

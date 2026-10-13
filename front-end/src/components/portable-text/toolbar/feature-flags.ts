@@ -21,6 +21,7 @@ export type EditorFeatureFlags = {
   linkPlugin: boolean;
   oneLinePlugin: boolean;
   markdownPlugin: boolean;
+  slashMenuPlugin: boolean;
 };
 
 export const defaultEditorFeatureFlags: EditorFeatureFlags = {
@@ -33,6 +34,7 @@ export const defaultEditorFeatureFlags: EditorFeatureFlags = {
   linkPlugin: false,
   oneLinePlugin: false,
   markdownPlugin: false,
+  slashMenuPlugin: true,
 };
 
 export const EditorFeatureFlagsContext = createContext<EditorFeatureFlags>(

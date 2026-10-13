@@ -56,7 +56,7 @@ import { blockByName } from "../blocks";
 import { DecoratorButton } from "./button.decorator";
 import { AnnotationButton } from "./button.annotation";
 import { ListButton } from "./button.list";
-import { BlockObjectButton } from "./button.block-object";
+import { InsertBlockButton } from "./button.insert-block";
 import { BlockObjectPopover } from "./popover.block-object";
 
 const extendDecorator: ExtendDecoratorSchemaType = (decorator) => {
@@ -229,9 +229,7 @@ const extendBlockObject: ExtendBlockObjectSchemaType = (blockObject) => {
   };
 };
 
-export function PortableTextToolbar(props: {
-  children?: React.ReactNode;
-}) {
+export function PortableTextToolbar(props: { children?: React.ReactNode }) {
   const toolbarSchema = useToolbarSchema({
     extendDecorator,
     extendAnnotation,
@@ -289,38 +287,24 @@ export function PortableTextToolbar(props: {
           ))}
         </>
       ) : null}
-      {blockObjects.length ? (
-        <>
-          <Separator
-            orientation="vertical"
-            className="mx-0.5 self-center data-[orientation=vertical]:h-5"
-          />
-          {blockObjects.map((blockObject) => (
-            <BlockObjectButton
-              key={blockObject.name}
-              schemaType={blockObject}
-            />
-          ))}
-        </>
-      ) : null}
-      {blockObjects.length ? (
-        <BlockObjectPopover schemaTypes={blockObjects} />
-      ) : null}
     </>
   );
+
+  const insertButton = blockObjects.length ? (
+    <InsertBlockButton className="ml-auto shrink-0" />
+  ) : null;
 
   const hasOverflow =
     isMobile &&
     (overflowDecorators.length > 0 ||
       annotations.length > 0 ||
-      lists.length > 0 ||
-      blockObjects.length > 0);
+      lists.length > 0);
 
   return (
     // No border/rounding of its own: the parent is the bordered surface, and
     // this only needs a divider under it. overflow-x-auto stays as a safety
     // net for very narrow screens even with the overflow menu in place.
-    <div className="flex min-w-0 items-center gap-1 overflow-x-auto border-b border-border bg-background px-2 py-1">
+    <div className="flex min-w-0 items-center gap-1 overflow-x-auto border-b border-border bg-background px-2 py-1 max-md:[&_button]:min-h-11 max-md:[&_button]:min-w-11">
       {/*
         The paragraph-style picker is block-scoped: it restyles the whole line,
         while everything to its right applies to the highlighted characters
@@ -347,31 +331,47 @@ export function PortableTextToolbar(props: {
       ) : null}
 
       {isMobile ? (
-        hasOverflow ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="ml-auto shrink-0"
-                aria-label="More formatting tools"
+        <>
+          {insertButton}
+          {hasOverflow ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  aria-label="More formatting tools"
+                >
+                  <MoreHorizontalIcon className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-auto p-2 [&_button]:min-h-11 [&_button]:min-w-11"
               >
-                <MoreHorizontalIcon className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-auto p-2">
-              <div className="flex flex-wrap items-center gap-1">
-                {overflowDecorators.map((decorator) => (
-                  <DecoratorButton key={decorator.name} schemaType={decorator} />
-                ))}
-                {secondaryGroups}
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null
+                <div className="flex flex-wrap items-center gap-1">
+                  {overflowDecorators.map((decorator) => (
+                    <DecoratorButton
+                      key={decorator.name}
+                      schemaType={decorator}
+                    />
+                  ))}
+                  {secondaryGroups}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+        </>
       ) : (
-        secondaryGroups
+        <>
+          {secondaryGroups}
+          {insertButton}
+        </>
       )}
+
+      {blockObjects.length ? (
+        <BlockObjectPopover schemaTypes={blockObjects} />
+      ) : null}
 
       {props.children}
     </div>

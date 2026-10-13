@@ -1,132 +1,104 @@
 import { useBlockObjectPopover } from "@portabletext/toolbar";
 import type { ToolbarBlockObjectSchemaType } from "@portabletext/toolbar";
 import { PencilIcon, TrashIcon } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { useState, type RefObject } from "react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { ObjectForm } from "./object-form";
 import {
   Popover,
   PopoverAnchor,
   PopoverContent,
 } from "@/components/ui/popover";
-import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
+import { BlockSurface } from "./block-surface";
+import { ObjectForm } from "./object-form";
 
 export function BlockObjectPopover(props: {
   schemaTypes: ReadonlyArray<ToolbarBlockObjectSchemaType>;
 }) {
   const blockObjectPopover = useBlockObjectPopover(props);
   const blockObject = blockObjectPopover.snapshot.context.blockObjects.at(0);
-
-  const [boundingClientRect, setBoundingClientRect] = useState<
-    DOMRect | undefined
-  >();
-  useEffect(() => {
-    const rect =
-      blockObjectPopover.snapshot.context.elementRef.current?.getBoundingClientRect();
-    setBoundingClientRect(rect);
-  }, [blockObjectPopover.snapshot.context.elementRef]);
-
-  window.onscroll = () => {
-    blockObjectPopover.send({ type: "close" });
-  };
+  const elementRef = blockObjectPopover.snapshot.context
+    .elementRef as RefObject<HTMLElement | null>;
+  // Keyed by block so a stale edit never opens on the next selected block.
+  const [editingKey, setEditingKey] = useState<string | null>(null);
 
   if (
     blockObjectPopover.snapshot.matches("disabled") ||
-    blockObjectPopover.snapshot.matches({ enabled: "inactive" })
+    blockObjectPopover.snapshot.matches({ enabled: "inactive" }) ||
+    !blockObject
   ) {
     return null;
   }
 
-  if (!blockObject) {
-    return null;
-  }
-  if (
-    blockObjectPopover.snapshot.context.elementRef.current?.closest(
-      '[data-slate-editor="true"]'
-    )
-  ) {
-    (
-      blockObjectPopover.snapshot.context.elementRef.current.closest(
-        '[data-slate-editor="true"]'
-      )! as HTMLElement
-    ).onscroll = () => {
-      blockObjectPopover.send({ type: "close" });
-    };
+  const title = blockObject.schemaType.title ?? blockObject.schemaType.name;
+  const editing = editingKey === blockObject.value._key;
+  const close = () => {
+    setEditingKey(null);
+    blockObjectPopover.send({ type: "close" });
+  };
+
+  if (editing) {
+    return (
+      <BlockSurface
+        open
+        onOpenChange={(isOpen) => {
+          if (!isOpen) close();
+        }}
+        title={title}
+        anchor={elementRef}
+      >
+        <ObjectForm
+          key={blockObject.value._key}
+          submitLabel="Save"
+          fields={blockObject.schemaType.fields}
+          defaultValues={blockObject.value}
+          onSubmit={({ value }) => {
+            blockObjectPopover.send({
+              type: "edit",
+              at: blockObject.at,
+              props: value,
+            });
+            close();
+          }}
+        />
+      </BlockSurface>
+    );
   }
 
   return (
     <Popover
-      open={true}
-      onOpenChange={(isOpen: boolean) => {
-        if (!isOpen) {
-          blockObjectPopover.send({ type: "close" });
-        }
+      open
+      onOpenChange={(isOpen) => {
+        if (!isOpen) close();
       }}
     >
-      <PopoverAnchor
-        style={{
-          position: "fixed",
-          top: boundingClientRect ? boundingClientRect.top + 40 : -9999,
-          left: boundingClientRect
-            ? boundingClientRect.left + boundingClientRect.width
-            : -9999,
-        }}
-        key={boundingClientRect?.top + "-" + boundingClientRect?.left}
-      ></PopoverAnchor>
+      <PopoverAnchor virtualRef={elementRef as RefObject<HTMLElement>} />
       <PopoverContent
-        side="right"
-        align="center"
-        className={cn("flex gap-2 p-2 w-fit")}
+        side="top"
+        align="end"
+        hideWhenDetached
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        className="flex w-fit gap-2 p-2"
       >
         {blockObject.schemaType.fields.length > 0 ? (
-          <Dialog
-            onOpenChange={(isOpen) => {
-              if (!isOpen) {
-                blockObjectPopover.send({ type: "close" });
-              }
-            }}
-          >
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DialogTrigger asChild>
-                  <Button aria-label="Edit" variant="secondary" size="sm">
-                    <PencilIcon className="size-3" />
-                  </Button>
-                </DialogTrigger>
-              </TooltipTrigger>
-              <TooltipContent>Edit</TooltipContent>
-            </Tooltip>
-            <DialogContent className="max-h-[90vh] overflow-y-auto">
-              <DialogTitle>
-                {" "}
-                {blockObject.schemaType.title ?? blockObject.schemaType.name}
-              </DialogTitle>
-              <ObjectForm
-                submitLabel="Save"
-                fields={blockObject.schemaType.fields}
-                defaultValues={blockObject.value}
-                onSubmit={({ value }) => {
-                  blockObjectPopover.send({
-                    type: "edit",
-                    at: blockObject.at,
-                    props: value,
-                  });
-                  blockObjectPopover.send({ type: "close" });
-                }}
-              />
-            </DialogContent>
-          </Dialog>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="Edit"
+                variant="secondary"
+                size="sm"
+                className="max-md:size-11"
+                onClick={() => setEditingKey(blockObject.value._key)}
+              >
+                <PencilIcon className="size-3" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit</TooltipContent>
+          </Tooltip>
         ) : null}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -134,6 +106,7 @@ export function BlockObjectPopover(props: {
               aria-label="Remove"
               variant="destructive"
               size="sm"
+              className="max-md:size-11"
               onClick={() => {
                 blockObjectPopover.send({ type: "remove", at: blockObject.at });
               }}

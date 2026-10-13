@@ -34,6 +34,7 @@ import { ErrorScreen } from "./toolbar/error-screen";
 import { LinkAnnotationSchema, playgroundSchemaDefinition } from "./schema";
 import { PortableTextToolbar } from "./toolbar/portable-text-toolbar";
 import { EmojiPickerPlugin } from "./toolbar/plugin-emoji";
+import { SlashMenuPlugin } from "./toolbar/plugin.slash-menu";
 import { CodeEditorPlugin } from "./toolbar/plugin.code-editor";
 import { LinkPlugin } from "./toolbar/plugin.link";
 import { ImageDeserializerPlugin } from "./toolbar/plugin.image-deserializer";
@@ -167,6 +168,7 @@ export default function Editor(props: {
               <MarkdownShortcutsPlugin {...markdownShortcutsPluginProps} />
             ) : null}
             {featureFlags.oneLinePlugin ? <OneLinePlugin /> : null}
+            {featureFlags.slashMenuPlugin ? <SlashMenuPlugin /> : null}
             <div className="flex gap-2 items-center">
               <ErrorBoundary
                 fallbackProps={{ area: "PortableTextEditable" }}
@@ -381,7 +383,7 @@ const styleMap: Map<string, (props: BlockStyleRenderProps) => JSX.Element> =
     [
       "blockquote",
       (props) => (
-        <blockquote className="my-1 pl-2 py-1 border-muted border-l-4">
+        <blockquote className="my-1 ps-2 py-1 border-muted border-s-4">
           {props.children}
         </blockquote>
       ),
