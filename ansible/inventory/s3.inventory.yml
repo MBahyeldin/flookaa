@@ -39,6 +39,7 @@ all:
     storage_dirs:
       - "/opt/storage"
       - "/opt/storage/audio"
+      - "/opt/storage/variants"
       - "/opt/tmp"
 
     alloy_monitor_service: "s3"

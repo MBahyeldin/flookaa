@@ -6,13 +6,14 @@
   vars_files:
     - universe.yml
   roles:
-    - init_container
+    # - init_container
 
   tasks:
     - name: Install required packages
       ansible.builtin.apt:
         name:
           - ffmpeg
+          - libvips42t64
         state: present
         update_cache: true
 

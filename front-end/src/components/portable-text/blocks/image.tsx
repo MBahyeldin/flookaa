@@ -98,6 +98,37 @@ const sizeClass: Record<(typeof sizes)[number], string> = {
   xl: "w-full",
 };
 
+const sizeFraction: Record<(typeof sizes)[number], number> = {
+  xs: 0.25,
+  s: 0.4,
+  m: 0.6,
+  l: 0.8,
+  xl: 1,
+};
+
+// Mirrors imaging.Widths in s3; s3 resizes /files/<key>?w= on request.
+const variantWidths = [320, 640, 1280, 1920];
+const s3Base = import.meta.env.VITE_S3_BUCKET_BASE_URL || "";
+
+function isS3File(src: string) {
+  const path = s3Base && src.startsWith(s3Base) ? src.slice(s3Base.length) : src;
+  return /^\/files\/[^/?#]+$/.test(path);
+}
+
+// 56rem is the widest post column (the channel feed's max-w-4xl).
+function responsive({ src, width, size }: ImageValue) {
+  if (!isS3File(src)) return {};
+  const widths = width === undefined ? variantWidths : variantWidths.filter((w) => w < width);
+  const candidates = widths.map((w) => `${src}?w=${w}&fmt=webp ${w}w`);
+  if (width !== undefined) candidates.push(`${src} ${width}w`);
+  if (candidates.length < 2) return {};
+  const f = sizeFraction[size ?? "xl"];
+  return {
+    srcSet: candidates.join(", "),
+    sizes: `(min-width: 56rem) ${f * 56}rem, ${f * 100}vw`,
+  };
+}
+
 const alignClass: Record<(typeof aligns)[number], string> = {
   left: "mr-auto",
   center: "mx-auto",
@@ -127,6 +158,7 @@ function ImageView({ value }: { value: ImageValue }) {
           known ? "w-full h-auto" : "max-w-full max-h-[70vh] w-auto h-auto"
         )}
         src={value.src}
+        {...responsive(value)}
         alt={value.alt ?? ""}
         width={width}
         height={height}

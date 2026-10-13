@@ -5,7 +5,8 @@ import (
 	"path/filepath"
 	"s3/cmd/server/api"
 	audio_handler "s3/internal/handlers/audio"
-	"s3/internal/handlers/uploads"
+	"s3/internal/handlers/files"
+	"s3/internal/imaging"
 	"shared/util/envconfig"
 	"shared/util/token"
 
@@ -23,6 +24,11 @@ func StartServer() {
 	if err != nil {
 		log.Fatal("JWT_SECRET_KEY: ", err)
 	}
+
+	if err := imaging.Startup(); err != nil {
+		log.Fatal("libvips: ", err)
+	}
+	defer imaging.Shutdown()
 
 	r := gin.Default()
 
@@ -44,19 +50,10 @@ func StartServer() {
 
 	api.AddApiGroup(r, signer)
 
-	r.GET("/files/:storageKey", FilesHandler)
+	r.GET("/files/:storageKey", files.Serve)
 	r.GET("/audio/:storageKey", AudioHandler)
 
 	log.Fatal(r.Run(":8080"))
-}
-
-// serve files from the "files" directory
-// /files/storageKey
-func FilesHandler(c *gin.Context) {
-	storageKey := c.Param("storageKey")
-	filePath := filepath.Join(uploads.STORAGE_DIR, storageKey)
-
-	c.File(filePath)
 }
 
 // serve audio files from the "files" directory
