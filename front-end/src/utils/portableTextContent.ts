@@ -19,12 +19,20 @@ type Blocks = PortableTextTextBlock<PortableTextSpan | PortableTextObject>[];
  * clearing the field.
  */
 
-/** Total number of characters across every text span. */
+/** Total number of characters across every text span and callout. */
 export function portableTextLength(blocks: Blocks | undefined): number {
   if (!blocks?.length) return 0;
 
   return blocks.reduce((total, block) => {
-    // Block objects (images, breaks) carry no text of their own.
+    if (block._type === "callout") {
+      const { title, description } = block as { title?: unknown; description?: unknown };
+      return (
+        total +
+        (typeof title === "string" ? title.length : 0) +
+        (typeof description === "string" ? description.length : 0)
+      );
+    }
+    // Other block objects (images, breaks) carry no text of their own.
     if (block._type !== "block") return total;
 
     const children = (block.children ?? []) as { text?: unknown }[];

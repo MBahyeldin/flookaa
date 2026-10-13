@@ -61,14 +61,24 @@ type ComplexityRoot struct {
 	}
 
 	Blocks struct {
-		Block func(childComplexity int) int
-		Break func(childComplexity int) int
-		Image func(childComplexity int) int
+		Block   func(childComplexity int) int
+		Break   func(childComplexity int) int
+		Callout func(childComplexity int) int
+		Image   func(childComplexity int) int
 	}
 
 	BreakBlock struct {
 		Key  func(childComplexity int) int
 		Type func(childComplexity int) int
+	}
+
+	CalloutBlock struct {
+		Description func(childComplexity int) int
+		Icon        func(childComplexity int) int
+		Key         func(childComplexity int) int
+		Title       func(childComplexity int) int
+		Tone        func(childComplexity int) int
+		Type        func(childComplexity int) int
 	}
 
 	Channel struct {
@@ -346,6 +356,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Blocks.Break(childComplexity), true
 
+	case "Blocks.callout":
+		if e.complexity.Blocks.Callout == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Callout(childComplexity), true
+
 	case "Blocks.image":
 		if e.complexity.Blocks.Image == nil {
 			break
@@ -366,6 +383,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.BreakBlock.Type(childComplexity), true
+
+	case "CalloutBlock.description":
+		if e.complexity.CalloutBlock.Description == nil {
+			break
+		}
+
+		return e.complexity.CalloutBlock.Description(childComplexity), true
+
+	case "CalloutBlock.icon":
+		if e.complexity.CalloutBlock.Icon == nil {
+			break
+		}
+
+		return e.complexity.CalloutBlock.Icon(childComplexity), true
+
+	case "CalloutBlock._key":
+		if e.complexity.CalloutBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.CalloutBlock.Key(childComplexity), true
+
+	case "CalloutBlock.title":
+		if e.complexity.CalloutBlock.Title == nil {
+			break
+		}
+
+		return e.complexity.CalloutBlock.Title(childComplexity), true
+
+	case "CalloutBlock.tone":
+		if e.complexity.CalloutBlock.Tone == nil {
+			break
+		}
+
+		return e.complexity.CalloutBlock.Tone(childComplexity), true
+
+	case "CalloutBlock._type":
+		if e.complexity.CalloutBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.CalloutBlock.Type(childComplexity), true
 
 	case "Channel.bannerImageUrl":
 		if e.complexity.Channel.BannerImageURL == nil {
@@ -1181,6 +1240,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputBlockBlockInput,
 		ec.unmarshalInputBlockInput,
 		ec.unmarshalInputBreakBlockInput,
+		ec.unmarshalInputCalloutBlockInput,
 		ec.unmarshalInputCommentInput,
 		ec.unmarshalInputImageBlockInput,
 		ec.unmarshalInputLikeInput,
@@ -1341,6 +1401,7 @@ enum BlockType {
   block
   image
   break
+  callout
 }
 
 enum ImageSize {
@@ -1355,6 +1416,25 @@ enum ImageAlign {
   left
   center
   right
+}
+
+enum CalloutTone {
+  info
+  success
+  warning
+  error
+}
+
+enum CalloutIcon {
+  info
+  check
+  alert
+  error
+  lightbulb
+  star
+  heart
+  megaphone
+  none
 }
 
 enum StyleType {
@@ -1405,6 +1485,15 @@ type BreakBlock implements Block {
   _key: ID!
 }
 
+type CalloutBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  tone: CalloutTone
+  icon: CalloutIcon
+  title: String
+  description: String!
+}
+
 """
 Union of all possible blocks
 """
@@ -1412,6 +1501,7 @@ type Blocks {
   block: BlockBlock
   image: ImageBlock
   break: BreakBlock
+  callout: CalloutBlock
 }
 
 """
@@ -1476,6 +1566,15 @@ input BreakBlockInput {
   _key: ID!
 }
 
+input CalloutBlockInput {
+  _type: BlockType!
+  _key: ID!
+  tone: CalloutTone
+  icon: CalloutIcon
+  title: String
+  description: String!
+}
+
 """
 Oneof input for blocks
 """
@@ -1483,6 +1582,7 @@ input BlockInput @oneof {
   block: BlockBlockInput
   image: ImageBlockInput
   break: BreakBlockInput
+  callout: CalloutBlockInput
 }
 
 input PortableTextInput {

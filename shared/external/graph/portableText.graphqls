@@ -50,6 +50,7 @@ enum BlockType {
   block
   image
   break
+  callout
 }
 
 enum ImageSize {
@@ -64,6 +65,25 @@ enum ImageAlign {
   left
   center
   right
+}
+
+enum CalloutTone {
+  info
+  success
+  warning
+  error
+}
+
+enum CalloutIcon {
+  info
+  check
+  alert
+  error
+  lightbulb
+  star
+  heart
+  megaphone
+  none
 }
 
 enum StyleType {
@@ -114,6 +134,15 @@ type BreakBlock implements Block {
   _key: ID!
 }
 
+type CalloutBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  tone: CalloutTone
+  icon: CalloutIcon
+  title: String
+  description: String!
+}
+
 """
 Union of all possible blocks
 """
@@ -121,6 +150,7 @@ type Blocks {
   block: BlockBlock
   image: ImageBlock
   break: BreakBlock
+  callout: CalloutBlock
 }
 
 """
@@ -185,6 +215,15 @@ input BreakBlockInput {
   _key: ID!
 }
 
+input CalloutBlockInput {
+  _type: BlockType!
+  _key: ID!
+  tone: CalloutTone
+  icon: CalloutIcon
+  title: String
+  description: String!
+}
+
 """
 Oneof input for blocks
 """
@@ -192,6 +231,7 @@ input BlockInput @oneof {
   block: BlockBlockInput
   image: ImageBlockInput
   break: BreakBlockInput
+  callout: CalloutBlockInput
 }
 
 input PortableTextInput {

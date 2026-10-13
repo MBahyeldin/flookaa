@@ -375,6 +375,49 @@ func (ec *executionContext) fieldContext_Blocks_break(_ context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Blocks_callout(ctx context.Context, field graphql.CollectedField, obj *models.Blocks) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Blocks_callout,
+		func(ctx context.Context) (any, error) {
+			return obj.Callout, nil
+		},
+		nil,
+		ec.marshalOCalloutBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCalloutBlock,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Blocks_callout(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Blocks",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_type":
+				return ec.fieldContext_CalloutBlock__type(ctx, field)
+			case "_key":
+				return ec.fieldContext_CalloutBlock__key(ctx, field)
+			case "tone":
+				return ec.fieldContext_CalloutBlock_tone(ctx, field)
+			case "icon":
+				return ec.fieldContext_CalloutBlock_icon(ctx, field)
+			case "title":
+				return ec.fieldContext_CalloutBlock_title(ctx, field)
+			case "description":
+				return ec.fieldContext_CalloutBlock_description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CalloutBlock", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _BreakBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.BreakBlock) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -428,6 +471,180 @@ func (ec *executionContext) fieldContext_BreakBlock__key(_ context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalloutBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.CalloutBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalloutBlock__type,
+		func(ctx context.Context) (any, error) {
+			return obj.Type, nil
+		},
+		nil,
+		ec.marshalNBlockType2sharedᚋpkgᚋgraphᚋmodelsᚐBlockType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalloutBlock__type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalloutBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type BlockType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalloutBlock__key(ctx context.Context, field graphql.CollectedField, obj *models.CalloutBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalloutBlock__key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalloutBlock__key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalloutBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalloutBlock_tone(ctx context.Context, field graphql.CollectedField, obj *models.CalloutBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalloutBlock_tone,
+		func(ctx context.Context) (any, error) {
+			return obj.Tone, nil
+		},
+		nil,
+		ec.marshalOCalloutTone2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCalloutTone,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalloutBlock_tone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalloutBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CalloutTone does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalloutBlock_icon(ctx context.Context, field graphql.CollectedField, obj *models.CalloutBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalloutBlock_icon,
+		func(ctx context.Context) (any, error) {
+			return obj.Icon, nil
+		},
+		nil,
+		ec.marshalOCalloutIcon2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCalloutIcon,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalloutBlock_icon(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalloutBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CalloutIcon does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalloutBlock_title(ctx context.Context, field graphql.CollectedField, obj *models.CalloutBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalloutBlock_title,
+		func(ctx context.Context) (any, error) {
+			return obj.Title, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalloutBlock_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalloutBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalloutBlock_description(ctx context.Context, field graphql.CollectedField, obj *models.CalloutBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalloutBlock_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalloutBlock_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalloutBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -879,6 +1096,8 @@ func (ec *executionContext) fieldContext_PortableText_blocks(_ context.Context, 
 				return ec.fieldContext_Blocks_image(ctx, field)
 			case "break":
 				return ec.fieldContext_Blocks_break(ctx, field)
+			case "callout":
+				return ec.fieldContext_Blocks_callout(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Blocks", field.Name)
 		},
@@ -1101,7 +1320,7 @@ func (ec *executionContext) unmarshalInputBlockInput(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"block", "image", "break"}
+	fieldsInOrder := [...]string{"block", "image", "break", "callout"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -1186,6 +1405,32 @@ func (ec *executionContext) unmarshalInputBlockInput(ctx context.Context, obj an
 				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.BreakBlockInput`, tmp)
 				return it, graphql.ErrorOnPath(ctx, err)
 			}
+		case "callout":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callout"))
+			directive0 := func(ctx context.Context) (any, error) {
+				return ec.unmarshalOCalloutBlockInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCalloutBlockInput(ctx, v)
+			}
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.Oneof == nil {
+					var zeroVal *models.CalloutBlockInput
+					return zeroVal, errors.New("directive oneof is not implemented")
+				}
+				return ec.directives.Oneof(ctx, obj, directive0)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*models.CalloutBlockInput); ok {
+				it.Callout = data
+			} else if tmp == nil {
+				it.Callout = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.CalloutBlockInput`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
 		}
 	}
 
@@ -1220,6 +1465,68 @@ func (ec *executionContext) unmarshalInputBreakBlockInput(ctx context.Context, o
 				return it, err
 			}
 			it.Key = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCalloutBlockInput(ctx context.Context, obj any) (models.CalloutBlockInput, error) {
+	var it models.CalloutBlockInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"_type", "_key", "tone", "icon", "title", "description"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "_type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_type"))
+			data, err := ec.unmarshalNBlockType2sharedᚋpkgᚋgraphᚋmodelsᚐBlockType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		case "_key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_key"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "tone":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tone"))
+			data, err := ec.unmarshalOCalloutTone2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCalloutTone(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tone = data
+		case "icon":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("icon"))
+			data, err := ec.unmarshalOCalloutIcon2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCalloutIcon(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Icon = data
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
 		}
 	}
 
@@ -1512,6 +1819,13 @@ func (ec *executionContext) _Block(ctx context.Context, sel ast.SelectionSet, ob
 			return graphql.Null
 		}
 		return ec._ImageBlock(ctx, sel, obj)
+	case models.CalloutBlock:
+		return ec._CalloutBlock(ctx, sel, &obj)
+	case *models.CalloutBlock:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CalloutBlock(ctx, sel, obj)
 	case models.BreakBlock:
 		return ec._BreakBlock(ctx, sel, &obj)
 	case *models.BreakBlock:
@@ -1631,6 +1945,8 @@ func (ec *executionContext) _Blocks(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Blocks_image(ctx, field, obj)
 		case "break":
 			out.Values[i] = ec._Blocks_break(ctx, field, obj)
+		case "callout":
+			out.Values[i] = ec._Blocks_callout(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -1672,6 +1988,61 @@ func (ec *executionContext) _BreakBlock(ctx context.Context, sel ast.SelectionSe
 			}
 		case "_key":
 			out.Values[i] = ec._BreakBlock__key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var calloutBlockImplementors = []string{"CalloutBlock", "Block"}
+
+func (ec *executionContext) _CalloutBlock(ctx context.Context, sel ast.SelectionSet, obj *models.CalloutBlock) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, calloutBlockImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CalloutBlock")
+		case "_type":
+			out.Values[i] = ec._CalloutBlock__type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "_key":
+			out.Values[i] = ec._CalloutBlock__key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tone":
+			out.Values[i] = ec._CalloutBlock_tone(ctx, field, obj)
+		case "icon":
+			out.Values[i] = ec._CalloutBlock_icon(ctx, field, obj)
+		case "title":
+			out.Values[i] = ec._CalloutBlock_title(ctx, field, obj)
+		case "description":
+			out.Values[i] = ec._CalloutBlock_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -2238,6 +2609,53 @@ func (ec *executionContext) unmarshalOBreakBlockInput2ᚖsharedᚋpkgᚋgraphᚋ
 	}
 	res, err := ec.unmarshalInputBreakBlockInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOCalloutBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCalloutBlock(ctx context.Context, sel ast.SelectionSet, v *models.CalloutBlock) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CalloutBlock(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOCalloutBlockInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCalloutBlockInput(ctx context.Context, v any) (*models.CalloutBlockInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputCalloutBlockInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOCalloutIcon2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCalloutIcon(ctx context.Context, v any) (*models.CalloutIcon, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(models.CalloutIcon)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOCalloutIcon2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCalloutIcon(ctx context.Context, sel ast.SelectionSet, v *models.CalloutIcon) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalOCalloutTone2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCalloutTone(ctx context.Context, v any) (*models.CalloutTone, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(models.CalloutTone)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOCalloutTone2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCalloutTone(ctx context.Context, sel ast.SelectionSet, v *models.CalloutTone) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOImageAlign2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐImageAlign(ctx context.Context, v any) (*models.ImageAlign, error) {

@@ -63,6 +63,7 @@ export type BlockBlockInput = {
 export type BlockInput = {
   block?: InputMaybe<BlockBlockInput>;
   break?: InputMaybe<BreakBlockInput>;
+  callout?: InputMaybe<CalloutBlockInput>;
   image?: InputMaybe<ImageBlockInput>;
 };
 
@@ -70,6 +71,7 @@ export type BlockInput = {
 export type BlockType =
   | 'block'
   | 'break'
+  | 'callout'
   | 'image';
 
 /** Union of all possible blocks */
@@ -77,6 +79,7 @@ export type Blocks = {
   __typename?: 'Blocks';
   block?: Maybe<BlockBlock>;
   break?: Maybe<BreakBlock>;
+  callout?: Maybe<CalloutBlock>;
   image?: Maybe<ImageBlock>;
 };
 
@@ -90,6 +93,42 @@ export type BreakBlockInput = {
   _key: Scalars['ID']['input'];
   _type: BlockType;
 };
+
+export type CalloutBlock = Block & {
+  __typename?: 'CalloutBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  description: Scalars['String']['output'];
+  icon?: Maybe<CalloutIcon>;
+  title?: Maybe<Scalars['String']['output']>;
+  tone?: Maybe<CalloutTone>;
+};
+
+export type CalloutBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  description: Scalars['String']['input'];
+  icon?: InputMaybe<CalloutIcon>;
+  title?: InputMaybe<Scalars['String']['input']>;
+  tone?: InputMaybe<CalloutTone>;
+};
+
+export type CalloutIcon =
+  | 'alert'
+  | 'check'
+  | 'error'
+  | 'heart'
+  | 'info'
+  | 'lightbulb'
+  | 'megaphone'
+  | 'none'
+  | 'star';
+
+export type CalloutTone =
+  | 'error'
+  | 'info'
+  | 'success'
+  | 'warning';
 
 export type Channel = {
   __typename?: 'Channel';

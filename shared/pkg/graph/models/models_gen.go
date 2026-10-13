@@ -58,16 +58,18 @@ type BlockBlockInput struct {
 
 // Oneof input for blocks
 type BlockInput struct {
-	Block *BlockBlockInput `json:"block,omitempty"`
-	Image *ImageBlockInput `json:"image,omitempty"`
-	Break *BreakBlockInput `json:"break,omitempty"`
+	Block   *BlockBlockInput   `json:"block,omitempty"`
+	Image   *ImageBlockInput   `json:"image,omitempty"`
+	Break   *BreakBlockInput   `json:"break,omitempty"`
+	Callout *CalloutBlockInput `json:"callout,omitempty"`
 }
 
 // Union of all possible blocks
 type Blocks struct {
-	Block *BlockBlock `json:"block,omitempty"`
-	Image *ImageBlock `json:"image,omitempty"`
-	Break *BreakBlock `json:"break,omitempty"`
+	Block   *BlockBlock   `json:"block,omitempty"`
+	Image   *ImageBlock   `json:"image,omitempty"`
+	Break   *BreakBlock   `json:"break,omitempty"`
+	Callout *CalloutBlock `json:"callout,omitempty"`
 }
 
 type BreakBlock struct {
@@ -82,6 +84,28 @@ func (this BreakBlock) GetKey() string     { return this.Key }
 type BreakBlockInput struct {
 	Type BlockType `json:"_type"`
 	Key  string    `json:"_key"`
+}
+
+type CalloutBlock struct {
+	Type        BlockType    `json:"_type"`
+	Key         string       `json:"_key"`
+	Tone        *CalloutTone `json:"tone,omitempty"`
+	Icon        *CalloutIcon `json:"icon,omitempty"`
+	Title       *string      `json:"title,omitempty"`
+	Description string       `json:"description"`
+}
+
+func (CalloutBlock) IsBlock()                {}
+func (this CalloutBlock) GetType() BlockType { return this.Type }
+func (this CalloutBlock) GetKey() string     { return this.Key }
+
+type CalloutBlockInput struct {
+	Type        BlockType    `json:"_type"`
+	Key         string       `json:"_key"`
+	Tone        *CalloutTone `json:"tone,omitempty"`
+	Icon        *CalloutIcon `json:"icon,omitempty"`
+	Title       *string      `json:"title,omitempty"`
+	Description string       `json:"description"`
 }
 
 type Channel struct {
@@ -327,20 +351,22 @@ type SpanInput struct {
 type BlockType string
 
 const (
-	BlockTypeBlock BlockType = "block"
-	BlockTypeImage BlockType = "image"
-	BlockTypeBreak BlockType = "break"
+	BlockTypeBlock   BlockType = "block"
+	BlockTypeImage   BlockType = "image"
+	BlockTypeBreak   BlockType = "break"
+	BlockTypeCallout BlockType = "callout"
 )
 
 var AllBlockType = []BlockType{
 	BlockTypeBlock,
 	BlockTypeImage,
 	BlockTypeBreak,
+	BlockTypeCallout,
 }
 
 func (e BlockType) IsValid() bool {
 	switch e {
-	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak:
+	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout:
 		return true
 	}
 	return false
@@ -376,6 +402,134 @@ func (e *BlockType) UnmarshalJSON(b []byte) error {
 }
 
 func (e BlockType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type CalloutIcon string
+
+const (
+	CalloutIconInfo      CalloutIcon = "info"
+	CalloutIconCheck     CalloutIcon = "check"
+	CalloutIconAlert     CalloutIcon = "alert"
+	CalloutIconError     CalloutIcon = "error"
+	CalloutIconLightbulb CalloutIcon = "lightbulb"
+	CalloutIconStar      CalloutIcon = "star"
+	CalloutIconHeart     CalloutIcon = "heart"
+	CalloutIconMegaphone CalloutIcon = "megaphone"
+	CalloutIconNone      CalloutIcon = "none"
+)
+
+var AllCalloutIcon = []CalloutIcon{
+	CalloutIconInfo,
+	CalloutIconCheck,
+	CalloutIconAlert,
+	CalloutIconError,
+	CalloutIconLightbulb,
+	CalloutIconStar,
+	CalloutIconHeart,
+	CalloutIconMegaphone,
+	CalloutIconNone,
+}
+
+func (e CalloutIcon) IsValid() bool {
+	switch e {
+	case CalloutIconInfo, CalloutIconCheck, CalloutIconAlert, CalloutIconError, CalloutIconLightbulb, CalloutIconStar, CalloutIconHeart, CalloutIconMegaphone, CalloutIconNone:
+		return true
+	}
+	return false
+}
+
+func (e CalloutIcon) String() string {
+	return string(e)
+}
+
+func (e *CalloutIcon) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = CalloutIcon(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid CalloutIcon", str)
+	}
+	return nil
+}
+
+func (e CalloutIcon) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *CalloutIcon) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e CalloutIcon) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type CalloutTone string
+
+const (
+	CalloutToneInfo    CalloutTone = "info"
+	CalloutToneSuccess CalloutTone = "success"
+	CalloutToneWarning CalloutTone = "warning"
+	CalloutToneError   CalloutTone = "error"
+)
+
+var AllCalloutTone = []CalloutTone{
+	CalloutToneInfo,
+	CalloutToneSuccess,
+	CalloutToneWarning,
+	CalloutToneError,
+}
+
+func (e CalloutTone) IsValid() bool {
+	switch e {
+	case CalloutToneInfo, CalloutToneSuccess, CalloutToneWarning, CalloutToneError:
+		return true
+	}
+	return false
+}
+
+func (e CalloutTone) String() string {
+	return string(e)
+}
+
+func (e *CalloutTone) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = CalloutTone(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid CalloutTone", str)
+	}
+	return nil
+}
+
+func (e CalloutTone) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *CalloutTone) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e CalloutTone) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
