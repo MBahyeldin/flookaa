@@ -12,7 +12,7 @@ func parseAccordion(in *models.AccordionBlockInput) (*models.Blocks, error) {
 	if err := requireKey("accordion", in.Key); err != nil {
 		return nil, err
 	}
-	if err := checkTitle("accordion", in.Key, in.Title); err != nil {
+	if err := checkTitle("accordion", in.Key, "title", in.Title); err != nil {
 		return nil, err
 	}
 	if len(in.Items) == 0 {

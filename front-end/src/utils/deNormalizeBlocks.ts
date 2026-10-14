@@ -11,11 +11,9 @@ export default function deNormalizeBlocks(blocks: any[]): PortableTextTextBlock[
       console.warn(`Skipping unknown block type: ${blockType}`);
       continue;
     }
-    result.push(
-      block.markDefs
-        ? { ...block, markDefs: deNormalizeMarkDefs(block.markDefs) }
-        : block
-    );
+    let value = block.markDefs ? { ...block, markDefs: deNormalizeMarkDefs(block.markDefs) } : block;
+    if (blockType === "spoiler") value = { ...value, content: deNormalizeBlocks(block.content ?? []) };
+    result.push(value);
   }
   return result;
 }

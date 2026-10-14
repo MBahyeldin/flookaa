@@ -99,6 +99,7 @@ export type BlockInput = {
   callout?: InputMaybe<CalloutBlockInput>;
   image?: InputMaybe<ImageBlockInput>;
   quote?: InputMaybe<QuoteBlockInput>;
+  spoiler?: InputMaybe<SpoilerBlockInput>;
   steps?: InputMaybe<StepsBlockInput>;
 };
 
@@ -110,6 +111,7 @@ export type BlockType =
   | 'callout'
   | 'image'
   | 'quote'
+  | 'spoiler'
   | 'steps';
 
 /** Union of all possible blocks */
@@ -121,6 +123,7 @@ export type Blocks = {
   callout?: Maybe<CalloutBlock>;
   image?: Maybe<ImageBlock>;
   quote?: Maybe<QuoteBlock>;
+  spoiler?: Maybe<SpoilerBlock>;
   steps?: Maybe<StepsBlock>;
 };
 
@@ -549,6 +552,21 @@ export type SpanInput = {
 /** A span of text inside a block */
 export type SpanType =
   | 'span';
+
+export type SpoilerBlock = Block & {
+  __typename?: 'SpoilerBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  content: Array<Blocks>;
+  label?: Maybe<Scalars['String']['output']>;
+};
+
+export type SpoilerBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  content: Array<BlockInput>;
+  label?: InputMaybe<Scalars['String']['input']>;
+};
 
 export type StepItem = {
   __typename?: 'StepItem';

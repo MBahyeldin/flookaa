@@ -13,7 +13,7 @@ import {
   PopoverAnchor,
   PopoverContent,
 } from "@/components/ui/popover";
-import { blockByName } from "../blocks";
+import { blockByName, fromFormValue, toFormValue } from "../blocks";
 import { BlockSurface } from "./block-surface";
 import { ObjectForm } from "./object-form";
 
@@ -36,6 +36,7 @@ export function BlockObjectPopover(props: {
   }
 
   const title = blockObject.schemaType.title ?? blockObject.schemaType.name;
+  const block = blockByName(blockObject.value._type);
   const editing = editingKey === blockObject.value._key;
   const close = () => {
     setEditingKey(null);
@@ -56,15 +57,15 @@ export function BlockObjectPopover(props: {
           key={blockObject.value._key}
           submitLabel="Save"
           fields={blockObject.schemaType.fields}
-          defaultValues={{
-            ...blockByName(blockObject.value._type)?.defaultValues,
+          defaultValues={toFormValue(block, {
+            ...block?.defaultValues,
             ...blockObject.value,
-          }}
+          })}
           onSubmit={({ value }) => {
             blockObjectPopover.send({
               type: "edit",
               at: blockObject.at,
-              props: value,
+              props: fromFormValue(block, value),
             });
             close();
           }}

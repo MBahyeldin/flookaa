@@ -99,6 +99,7 @@ type BlockInput struct {
 	Quote     *QuoteBlockInput     `json:"quote,omitempty"`
 	Steps     *StepsBlockInput     `json:"steps,omitempty"`
 	Accordion *AccordionBlockInput `json:"accordion,omitempty"`
+	Spoiler   *SpoilerBlockInput   `json:"spoiler,omitempty"`
 }
 
 // Union of all possible blocks
@@ -110,6 +111,7 @@ type Blocks struct {
 	Quote     *QuoteBlock     `json:"quote,omitempty"`
 	Steps     *StepsBlock     `json:"steps,omitempty"`
 	Accordion *AccordionBlock `json:"accordion,omitempty"`
+	Spoiler   *SpoilerBlock   `json:"spoiler,omitempty"`
 }
 
 type BreakBlock struct {
@@ -409,6 +411,24 @@ type SpanInput struct {
 	Marks []string `json:"marks"`
 }
 
+type SpoilerBlock struct {
+	Type    BlockType `json:"_type"`
+	Key     string    `json:"_key"`
+	Label   *string   `json:"label,omitempty"`
+	Content []*Blocks `json:"content"`
+}
+
+func (SpoilerBlock) IsBlock()                {}
+func (this SpoilerBlock) GetType() BlockType { return this.Type }
+func (this SpoilerBlock) GetKey() string     { return this.Key }
+
+type SpoilerBlockInput struct {
+	Type    BlockType     `json:"_type"`
+	Key     string        `json:"_key"`
+	Label   *string       `json:"label,omitempty"`
+	Content []*BlockInput `json:"content"`
+}
+
 type StepItem struct {
 	Key   string  `json:"_key"`
 	Title string  `json:"title"`
@@ -450,6 +470,7 @@ const (
 	BlockTypeQuote     BlockType = "quote"
 	BlockTypeSteps     BlockType = "steps"
 	BlockTypeAccordion BlockType = "accordion"
+	BlockTypeSpoiler   BlockType = "spoiler"
 )
 
 var AllBlockType = []BlockType{
@@ -460,11 +481,12 @@ var AllBlockType = []BlockType{
 	BlockTypeQuote,
 	BlockTypeSteps,
 	BlockTypeAccordion,
+	BlockTypeSpoiler,
 }
 
 func (e BlockType) IsValid() bool {
 	switch e {
-	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote, BlockTypeSteps, BlockTypeAccordion:
+	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote, BlockTypeSteps, BlockTypeAccordion, BlockTypeSpoiler:
 		return true
 	}
 	return false

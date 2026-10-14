@@ -8,7 +8,7 @@ func parseSteps(in *models.StepsBlockInput) (*models.Blocks, error) {
 	if err := requireKey("steps", in.Key); err != nil {
 		return nil, err
 	}
-	if err := checkTitle("steps", in.Key, in.Title); err != nil {
+	if err := checkTitle("steps", in.Key, "title", in.Title); err != nil {
 		return nil, err
 	}
 	if len(in.Items) == 0 {

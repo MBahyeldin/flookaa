@@ -11,6 +11,10 @@ export default function normalizeBlocks(blocks: PortableTextTextBlock[]): any[] 
     if (markDefs) {
       markDefs = normalizeMarkDefs(block.markDefs || []);
     }
+    if (blockType === "spoiler") {
+      const content = (block as unknown as { content?: PortableTextTextBlock[] }).content ?? [];
+      return { spoiler: { ...block, content: normalizeBlocks(content) } };
+    }
     if (blockType === "block" || blockNames.includes(blockType)) {
       return {
         [blockType]: { ...block, [markDefs ? "markDefs" : ""]: markDefs },

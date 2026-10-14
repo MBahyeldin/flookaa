@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { Editor } from "@portabletext/editor";
-import { blocks, type AnyBlock } from "../blocks";
+import { blocks, fromFormValue, type AnyBlock } from "../blocks";
 import type { BlockCategory } from "../blocks/defineBlock";
 import { cn } from "@/lib/utils";
 
@@ -35,7 +35,7 @@ export function insertBlock(
 ) {
   editor.send({
     type: "insert.block object",
-    blockObject: { name: block.name, value },
+    blockObject: { name: block.name, value: fromFormValue(block, value) },
     placement: "auto",
   });
   editor.send({ type: "focus" });

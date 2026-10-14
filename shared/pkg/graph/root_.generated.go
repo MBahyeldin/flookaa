@@ -82,6 +82,7 @@ type ComplexityRoot struct {
 		Callout   func(childComplexity int) int
 		Image     func(childComplexity int) int
 		Quote     func(childComplexity int) int
+		Spoiler   func(childComplexity int) int
 		Steps     func(childComplexity int) int
 	}
 
@@ -263,6 +264,13 @@ type ComplexityRoot struct {
 		Marks func(childComplexity int) int
 		Text  func(childComplexity int) int
 		Type  func(childComplexity int) int
+	}
+
+	SpoilerBlock struct {
+		Content func(childComplexity int) int
+		Key     func(childComplexity int) int
+		Label   func(childComplexity int) int
+		Type    func(childComplexity int) int
 	}
 
 	StepItem struct {
@@ -486,6 +494,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Blocks.Quote(childComplexity), true
+
+	case "Blocks.spoiler":
+		if e.complexity.Blocks.Spoiler == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Spoiler(childComplexity), true
 
 	case "Blocks.steps":
 		if e.complexity.Blocks.Steps == nil {
@@ -1395,6 +1410,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Span.Type(childComplexity), true
 
+	case "SpoilerBlock.content":
+		if e.complexity.SpoilerBlock.Content == nil {
+			break
+		}
+
+		return e.complexity.SpoilerBlock.Content(childComplexity), true
+
+	case "SpoilerBlock._key":
+		if e.complexity.SpoilerBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.SpoilerBlock.Key(childComplexity), true
+
+	case "SpoilerBlock.label":
+		if e.complexity.SpoilerBlock.Label == nil {
+			break
+		}
+
+		return e.complexity.SpoilerBlock.Label(childComplexity), true
+
+	case "SpoilerBlock._type":
+		if e.complexity.SpoilerBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.SpoilerBlock.Type(childComplexity), true
+
 	case "StepItem._key":
 		if e.complexity.StepItem.Key == nil {
 			break
@@ -1470,6 +1513,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputQuoteBlockInput,
 		ec.unmarshalInputSimpleInput,
 		ec.unmarshalInputSpanInput,
+		ec.unmarshalInputSpoilerBlockInput,
 		ec.unmarshalInputStepItemInput,
 		ec.unmarshalInputStepsBlockInput,
 	)
@@ -1625,6 +1669,7 @@ enum BlockType {
   quote
   steps
   accordion
+  spoiler
 }
 
 enum ImageSize {
@@ -1761,6 +1806,13 @@ type AccordionBlock implements Block {
   defaultFirstOpen: Boolean
 }
 
+type SpoilerBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  label: String
+  content: [Blocks!]!
+}
+
 """
 Union of all possible blocks
 """
@@ -1772,6 +1824,7 @@ type Blocks {
   quote: QuoteBlock
   steps: StepsBlock
   accordion: AccordionBlock
+  spoiler: SpoilerBlock
 }
 
 """
@@ -1882,6 +1935,13 @@ input AccordionBlockInput {
   defaultFirstOpen: Boolean
 }
 
+input SpoilerBlockInput {
+  _type: BlockType!
+  _key: ID!
+  label: String
+  content: [BlockInput!]!
+}
+
 """
 Oneof input for blocks
 """
@@ -1893,6 +1953,7 @@ input BlockInput @oneof {
   quote: QuoteBlockInput
   steps: StepsBlockInput
   accordion: AccordionBlockInput
+  spoiler: SpoilerBlockInput
 }
 
 input PortableTextInput {

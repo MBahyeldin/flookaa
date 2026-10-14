@@ -812,6 +812,45 @@ func (ec *executionContext) fieldContext_Blocks_accordion(_ context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Blocks_spoiler(ctx context.Context, field graphql.CollectedField, obj *models.Blocks) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Blocks_spoiler,
+		func(ctx context.Context) (any, error) {
+			return obj.Spoiler, nil
+		},
+		nil,
+		ec.marshalOSpoilerBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐSpoilerBlock,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Blocks_spoiler(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Blocks",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_type":
+				return ec.fieldContext_SpoilerBlock__type(ctx, field)
+			case "_key":
+				return ec.fieldContext_SpoilerBlock__key(ctx, field)
+			case "label":
+				return ec.fieldContext_SpoilerBlock_label(ctx, field)
+			case "content":
+				return ec.fieldContext_SpoilerBlock_content(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SpoilerBlock", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _BreakBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.BreakBlock) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1527,6 +1566,8 @@ func (ec *executionContext) fieldContext_PortableText_blocks(_ context.Context, 
 				return ec.fieldContext_Blocks_steps(ctx, field)
 			case "accordion":
 				return ec.fieldContext_Blocks_accordion(ctx, field)
+			case "spoiler":
+				return ec.fieldContext_Blocks_spoiler(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Blocks", field.Name)
 		},
@@ -1790,6 +1831,140 @@ func (ec *executionContext) fieldContext_Span_marks(_ context.Context, field gra
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SpoilerBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.SpoilerBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SpoilerBlock__type,
+		func(ctx context.Context) (any, error) {
+			return obj.Type, nil
+		},
+		nil,
+		ec.marshalNBlockType2sharedᚋpkgᚋgraphᚋmodelsᚐBlockType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SpoilerBlock__type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SpoilerBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type BlockType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SpoilerBlock__key(ctx context.Context, field graphql.CollectedField, obj *models.SpoilerBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SpoilerBlock__key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SpoilerBlock__key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SpoilerBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SpoilerBlock_label(ctx context.Context, field graphql.CollectedField, obj *models.SpoilerBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SpoilerBlock_label,
+		func(ctx context.Context) (any, error) {
+			return obj.Label, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SpoilerBlock_label(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SpoilerBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SpoilerBlock_content(ctx context.Context, field graphql.CollectedField, obj *models.SpoilerBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SpoilerBlock_content,
+		func(ctx context.Context) (any, error) {
+			return obj.Content, nil
+		},
+		nil,
+		ec.marshalNBlocks2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐBlocksᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SpoilerBlock_content(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SpoilerBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "block":
+				return ec.fieldContext_Blocks_block(ctx, field)
+			case "image":
+				return ec.fieldContext_Blocks_image(ctx, field)
+			case "break":
+				return ec.fieldContext_Blocks_break(ctx, field)
+			case "callout":
+				return ec.fieldContext_Blocks_callout(ctx, field)
+			case "quote":
+				return ec.fieldContext_Blocks_quote(ctx, field)
+			case "steps":
+				return ec.fieldContext_Blocks_steps(ctx, field)
+			case "accordion":
+				return ec.fieldContext_Blocks_accordion(ctx, field)
+			case "spoiler":
+				return ec.fieldContext_Blocks_spoiler(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Blocks", field.Name)
 		},
 	}
 	return fc, nil
@@ -2208,7 +2383,7 @@ func (ec *executionContext) unmarshalInputBlockInput(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"block", "image", "break", "callout", "quote", "steps", "accordion"}
+	fieldsInOrder := [...]string{"block", "image", "break", "callout", "quote", "steps", "accordion", "spoiler"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -2395,6 +2570,32 @@ func (ec *executionContext) unmarshalInputBlockInput(ctx context.Context, obj an
 				it.Accordion = nil
 			} else {
 				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.AccordionBlockInput`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "spoiler":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spoiler"))
+			directive0 := func(ctx context.Context) (any, error) {
+				return ec.unmarshalOSpoilerBlockInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐSpoilerBlockInput(ctx, v)
+			}
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.Oneof == nil {
+					var zeroVal *models.SpoilerBlockInput
+					return zeroVal, errors.New("directive oneof is not implemented")
+				}
+				return ec.directives.Oneof(ctx, obj, directive0)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*models.SpoilerBlockInput); ok {
+				it.Spoiler = data
+			} else if tmp == nil {
+				it.Spoiler = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.SpoilerBlockInput`, tmp)
 				return it, graphql.ErrorOnPath(ctx, err)
 			}
 		}
@@ -2832,6 +3033,73 @@ func (ec *executionContext) unmarshalInputSpanInput(ctx context.Context, obj any
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSpoilerBlockInput(ctx context.Context, obj any) (models.SpoilerBlockInput, error) {
+	var it models.SpoilerBlockInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"_type", "_key", "label", "content"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "_type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_type"))
+			data, err := ec.unmarshalNBlockType2sharedᚋpkgᚋgraphᚋmodelsᚐBlockType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		case "_key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_key"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "label":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Label = data
+		case "content":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
+			directive0 := func(ctx context.Context) (any, error) {
+				return ec.unmarshalNBlockInput2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐBlockInputᚄ(ctx, v)
+			}
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.Oneof == nil {
+					var zeroVal []*models.BlockInput
+					return zeroVal, errors.New("directive oneof is not implemented")
+				}
+				return ec.directives.Oneof(ctx, obj, directive0)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.([]*models.BlockInput); ok {
+				it.Content = data
+			} else if tmp == nil {
+				it.Content = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be []*shared/pkg/graph/models.BlockInput`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputStepItemInput(ctx context.Context, obj any) (models.StepItemInput, error) {
 	var it models.StepItemInput
 	asMap := map[string]any{}
@@ -2936,6 +3204,13 @@ func (ec *executionContext) _Block(ctx context.Context, sel ast.SelectionSet, ob
 			return graphql.Null
 		}
 		return ec._StepsBlock(ctx, sel, obj)
+	case models.SpoilerBlock:
+		return ec._SpoilerBlock(ctx, sel, &obj)
+	case *models.SpoilerBlock:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SpoilerBlock(ctx, sel, obj)
 	case models.QuoteBlock:
 		return ec._QuoteBlock(ctx, sel, &obj)
 	case *models.QuoteBlock:
@@ -3195,6 +3470,8 @@ func (ec *executionContext) _Blocks(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Blocks_steps(ctx, field, obj)
 		case "accordion":
 			out.Values[i] = ec._Blocks_accordion(ctx, field, obj)
+		case "spoiler":
+			out.Values[i] = ec._Blocks_spoiler(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3587,6 +3864,57 @@ func (ec *executionContext) _Span(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "marks":
 			out.Values[i] = ec._Span_marks(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var spoilerBlockImplementors = []string{"SpoilerBlock", "Block"}
+
+func (ec *executionContext) _SpoilerBlock(ctx context.Context, sel ast.SelectionSet, obj *models.SpoilerBlock) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, spoilerBlockImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SpoilerBlock")
+		case "_type":
+			out.Values[i] = ec._SpoilerBlock__type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "_key":
+			out.Values[i] = ec._SpoilerBlock__key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "label":
+			out.Values[i] = ec._SpoilerBlock_label(ctx, field, obj)
+		case "content":
+			out.Values[i] = ec._SpoilerBlock_content(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4334,6 +4662,21 @@ func (ec *executionContext) unmarshalOQuoteBlockInput2ᚖsharedᚋpkgᚋgraphᚋ
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputQuoteBlockInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOSpoilerBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐSpoilerBlock(ctx context.Context, sel ast.SelectionSet, v *models.SpoilerBlock) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SpoilerBlock(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOSpoilerBlockInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐSpoilerBlockInput(ctx context.Context, v any) (*models.SpoilerBlockInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputSpoilerBlockInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

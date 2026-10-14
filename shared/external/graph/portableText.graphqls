@@ -54,6 +54,7 @@ enum BlockType {
   quote
   steps
   accordion
+  spoiler
 }
 
 enum ImageSize {
@@ -190,6 +191,13 @@ type AccordionBlock implements Block {
   defaultFirstOpen: Boolean
 }
 
+type SpoilerBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  label: String
+  content: [Blocks!]!
+}
+
 """
 Union of all possible blocks
 """
@@ -201,6 +209,7 @@ type Blocks {
   quote: QuoteBlock
   steps: StepsBlock
   accordion: AccordionBlock
+  spoiler: SpoilerBlock
 }
 
 """
@@ -311,6 +320,13 @@ input AccordionBlockInput {
   defaultFirstOpen: Boolean
 }
 
+input SpoilerBlockInput {
+  _type: BlockType!
+  _key: ID!
+  label: String
+  content: [BlockInput!]!
+}
+
 """
 Oneof input for blocks
 """
@@ -322,6 +338,7 @@ input BlockInput @oneof {
   quote: QuoteBlockInput
   steps: StepsBlockInput
   accordion: AccordionBlockInput
+  spoiler: SpoilerBlockInput
 }
 
 input PortableTextInput {

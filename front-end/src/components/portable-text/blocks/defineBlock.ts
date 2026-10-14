@@ -23,6 +23,9 @@ export type BlockDefinition<T> = {
   schema: ZodType<T>;
   View: (props: { value: T }) => ReactNode;
   Editor?: (props: BlockEditorProps<T>) => ReactNode;
+  // For a block whose form edits a different shape than it stores.
+  toForm?: (value: Partial<T>) => Record<string, unknown>;
+  fromForm?: (form: Record<string, unknown>) => T;
   examples: T[];
 };
 

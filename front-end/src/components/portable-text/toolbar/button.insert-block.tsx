@@ -3,7 +3,7 @@ import { useEditor } from "@portabletext/editor";
 import { PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/useMobile";
-import type { AnyBlock } from "../blocks";
+import { toFormValue, type AnyBlock } from "../blocks";
 import { BlockSurface } from "./block-surface";
 import { ObjectForm } from "./object-form";
 import {
@@ -62,7 +62,7 @@ export function InsertBlockButton(props: { className?: string }) {
           key={picked.name}
           submitLabel="Insert"
           fields={picked.fields}
-          defaultValues={picked.defaultValues}
+          defaultValues={toFormValue(picked, picked.defaultValues)}
           onSubmit={({ value }) => {
             insertBlock(editor, picked, value);
             onOpenChange(false);

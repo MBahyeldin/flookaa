@@ -11,7 +11,7 @@ import {
   PopoverAnchor,
   PopoverContent,
 } from "@/components/ui/popover";
-import type { AnyBlock } from "../blocks";
+import { toFormValue, type AnyBlock } from "../blocks";
 import { BlockSurface } from "./block-surface";
 import { ObjectForm } from "./object-form";
 import {
@@ -179,7 +179,7 @@ export function SlashMenuPlugin() {
             key={formBlock.name}
             submitLabel="Insert"
             fields={formBlock.fields}
-            defaultValues={formBlock.defaultValues}
+            defaultValues={toFormValue(formBlock, formBlock.defaultValues)}
             onSubmit={({ value }) => {
               insertBlock(editor, formBlock, value);
               setFormBlock(null);

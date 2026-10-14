@@ -4,15 +4,15 @@ import "strings"
 
 const maxTitle = 120
 
-func checkTitle(blockType, blockKey string, title *string) error {
+func checkTitle(blockType, blockKey, field string, title *string) error {
 	if title == nil {
 		return nil
 	}
 	if utf16Len(*title) > maxTitle {
-		return invalid(blockType, blockKey, "title must be at most %d characters", maxTitle)
+		return invalid(blockType, blockKey, "%s must be at most %d characters", field, maxTitle)
 	}
 	if strings.ContainsAny(*title, "\r\n") {
-		return invalid(blockType, blockKey, "title must be one line")
+		return invalid(blockType, blockKey, "%s must be one line", field)
 	}
 	return nil
 }
