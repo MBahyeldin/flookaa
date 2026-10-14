@@ -97,6 +97,7 @@ export type BlockInput = {
   block?: InputMaybe<BlockBlockInput>;
   break?: InputMaybe<BreakBlockInput>;
   callout?: InputMaybe<CalloutBlockInput>;
+  checklist?: InputMaybe<ChecklistBlockInput>;
   countdown?: InputMaybe<CountdownBlockInput>;
   image?: InputMaybe<ImageBlockInput>;
   quote?: InputMaybe<QuoteBlockInput>;
@@ -110,6 +111,7 @@ export type BlockType =
   | 'block'
   | 'break'
   | 'callout'
+  | 'checklist'
   | 'countdown'
   | 'image'
   | 'quote'
@@ -123,6 +125,7 @@ export type Blocks = {
   block?: Maybe<BlockBlock>;
   break?: Maybe<BreakBlock>;
   callout?: Maybe<CalloutBlock>;
+  checklist?: Maybe<ChecklistBlock>;
   countdown?: Maybe<CountdownBlock>;
   image?: Maybe<ImageBlock>;
   quote?: Maybe<QuoteBlock>;
@@ -203,6 +206,34 @@ export type Channel = {
   thumbnailUrl?: Maybe<Scalars['String']['output']>;
   totalPosts: Scalars['Int']['output'];
   updatedAt: Scalars['DateTime']['output'];
+};
+
+export type ChecklistBlock = Block & {
+  __typename?: 'ChecklistBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  items: Array<ChecklistItem>;
+  title?: Maybe<Scalars['String']['output']>;
+};
+
+export type ChecklistBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  items: Array<ChecklistItemInput>;
+  title?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type ChecklistItem = {
+  __typename?: 'ChecklistItem';
+  _key: Scalars['ID']['output'];
+  checked: Scalars['Boolean']['output'];
+  text: Scalars['String']['output'];
+};
+
+export type ChecklistItemInput = {
+  _key: Scalars['ID']['input'];
+  checked?: InputMaybe<Scalars['Boolean']['input']>;
+  text: Scalars['String']['input'];
 };
 
 export type Comment = {

@@ -29,6 +29,8 @@ func ParseBlock(in *models.BlockInput) (*models.Blocks, error) {
 		return parseSpoiler(in.Spoiler)
 	case in.Countdown != nil:
 		return parseCountdown(in.Countdown)
+	case in.Checklist != nil:
+		return parseChecklist(in.Checklist)
 	}
 	return nil, errors.New("invalid block: unknown type")
 }
@@ -54,6 +56,8 @@ func Key(b *models.Blocks) string {
 		return b.Spoiler.Key
 	case b.Countdown != nil:
 		return b.Countdown.Key
+	case b.Checklist != nil:
+		return b.Checklist.Key
 	}
 	return ""
 }
@@ -115,6 +119,16 @@ func TextLength(b *models.Blocks) int {
 			if s != nil {
 				n += utf16Len(*s)
 			}
+		}
+		return n
+	}
+	if b.Checklist != nil {
+		n := 0
+		if b.Checklist.Title != nil {
+			n += utf16Len(*b.Checklist.Title)
+		}
+		for _, item := range b.Checklist.Items {
+			n += utf16Len(item.Text)
 		}
 		return n
 	}

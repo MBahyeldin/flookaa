@@ -56,6 +56,7 @@ enum BlockType {
   accordion
   spoiler
   countdown
+  checklist
 }
 
 enum ImageSize {
@@ -207,6 +208,19 @@ type CountdownBlock implements Block {
   endedText: String
 }
 
+type ChecklistItem {
+  _key: ID!
+  text: String!
+  checked: Boolean!
+}
+
+type ChecklistBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [ChecklistItem!]!
+}
+
 """
 Union of all possible blocks
 """
@@ -220,6 +234,7 @@ type Blocks {
   accordion: AccordionBlock
   spoiler: SpoilerBlock
   countdown: CountdownBlock
+  checklist: ChecklistBlock
 }
 
 """
@@ -345,6 +360,19 @@ input CountdownBlockInput {
   endedText: String
 }
 
+input ChecklistItemInput {
+  _key: ID!
+  text: String!
+  checked: Boolean
+}
+
+input ChecklistBlockInput {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [ChecklistItemInput!]!
+}
+
 """
 Oneof input for blocks
 """
@@ -358,6 +386,7 @@ input BlockInput @oneof {
   accordion: AccordionBlockInput
   spoiler: SpoilerBlockInput
   countdown: CountdownBlockInput
+  checklist: ChecklistBlockInput
 }
 
 input PortableTextInput {

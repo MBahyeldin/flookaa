@@ -44,6 +44,13 @@ export function portableTextLength(blocks: Blocks | undefined): number {
         total + (typeof title === "string" ? title.length : 0)
       );
     }
+    if (block._type === "checklist") {
+      const { title, items = [] } = block as unknown as { title?: unknown; items?: { text?: unknown }[] };
+      return items.reduce(
+        (sum, item) => sum + (typeof item.text === "string" ? item.text.length : 0),
+        total + (typeof title === "string" ? title.length : 0)
+      );
+    }
     if (block._type === "spoiler") {
       const { label, content } = block as unknown as { label?: unknown; content?: Blocks };
       return total + (typeof label === "string" ? label.length : 0) + portableTextLength(content);

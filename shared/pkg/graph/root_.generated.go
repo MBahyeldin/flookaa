@@ -80,6 +80,7 @@ type ComplexityRoot struct {
 		Block     func(childComplexity int) int
 		Break     func(childComplexity int) int
 		Callout   func(childComplexity int) int
+		Checklist func(childComplexity int) int
 		Countdown func(childComplexity int) int
 		Image     func(childComplexity int) int
 		Quote     func(childComplexity int) int
@@ -119,6 +120,19 @@ type ComplexityRoot struct {
 		ThumbnailURL    func(childComplexity int) int
 		TotalPosts      func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
+	}
+
+	ChecklistBlock struct {
+		Items func(childComplexity int) int
+		Key   func(childComplexity int) int
+		Title func(childComplexity int) int
+		Type  func(childComplexity int) int
+	}
+
+	ChecklistItem struct {
+		Checked func(childComplexity int) int
+		Key     func(childComplexity int) int
+		Text    func(childComplexity int) int
 	}
 
 	Comment struct {
@@ -490,6 +504,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Blocks.Callout(childComplexity), true
 
+	case "Blocks.checklist":
+		if e.complexity.Blocks.Checklist == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Checklist(childComplexity), true
+
 	case "Blocks.countdown":
 		if e.complexity.Blocks.Countdown == nil {
 			break
@@ -699,6 +720,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Channel.UpdatedAt(childComplexity), true
+
+	case "ChecklistBlock.items":
+		if e.complexity.ChecklistBlock.Items == nil {
+			break
+		}
+
+		return e.complexity.ChecklistBlock.Items(childComplexity), true
+
+	case "ChecklistBlock._key":
+		if e.complexity.ChecklistBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.ChecklistBlock.Key(childComplexity), true
+
+	case "ChecklistBlock.title":
+		if e.complexity.ChecklistBlock.Title == nil {
+			break
+		}
+
+		return e.complexity.ChecklistBlock.Title(childComplexity), true
+
+	case "ChecklistBlock._type":
+		if e.complexity.ChecklistBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.ChecklistBlock.Type(childComplexity), true
+
+	case "ChecklistItem.checked":
+		if e.complexity.ChecklistItem.Checked == nil {
+			break
+		}
+
+		return e.complexity.ChecklistItem.Checked(childComplexity), true
+
+	case "ChecklistItem._key":
+		if e.complexity.ChecklistItem.Key == nil {
+			break
+		}
+
+		return e.complexity.ChecklistItem.Key(childComplexity), true
+
+	case "ChecklistItem.text":
+		if e.complexity.ChecklistItem.Text == nil {
+			break
+		}
+
+		return e.complexity.ChecklistItem.Text(childComplexity), true
 
 	case "Comment.allowedPersonaIds":
 		if e.complexity.Comment.AllowedPersonaIds == nil {
@@ -1552,6 +1622,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputBlockInput,
 		ec.unmarshalInputBreakBlockInput,
 		ec.unmarshalInputCalloutBlockInput,
+		ec.unmarshalInputChecklistBlockInput,
+		ec.unmarshalInputChecklistItemInput,
 		ec.unmarshalInputCommentInput,
 		ec.unmarshalInputCountdownBlockInput,
 		ec.unmarshalInputImageBlockInput,
@@ -1723,6 +1795,7 @@ enum BlockType {
   accordion
   spoiler
   countdown
+  checklist
 }
 
 enum ImageSize {
@@ -1874,6 +1947,19 @@ type CountdownBlock implements Block {
   endedText: String
 }
 
+type ChecklistItem {
+  _key: ID!
+  text: String!
+  checked: Boolean!
+}
+
+type ChecklistBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [ChecklistItem!]!
+}
+
 """
 Union of all possible blocks
 """
@@ -1887,6 +1973,7 @@ type Blocks {
   accordion: AccordionBlock
   spoiler: SpoilerBlock
   countdown: CountdownBlock
+  checklist: ChecklistBlock
 }
 
 """
@@ -2012,6 +2099,19 @@ input CountdownBlockInput {
   endedText: String
 }
 
+input ChecklistItemInput {
+  _key: ID!
+  text: String!
+  checked: Boolean
+}
+
+input ChecklistBlockInput {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [ChecklistItemInput!]!
+}
+
 """
 Oneof input for blocks
 """
@@ -2025,6 +2125,7 @@ input BlockInput @oneof {
   accordion: AccordionBlockInput
   spoiler: SpoilerBlockInput
   countdown: CountdownBlockInput
+  checklist: ChecklistBlockInput
 }
 
 input PortableTextInput {

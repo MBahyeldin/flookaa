@@ -7,10 +7,11 @@ import { steps } from "./steps";
 import { accordion } from "./accordion";
 import { spoiler } from "./spoiler";
 import { countdown } from "./countdown";
+import { checklist } from "./checklist";
 
 export type AnyBlock = BlockDefinition<any>;
 
-export const blocks: AnyBlock[] = [image, breakBlock, callout, quote, steps, accordion, spoiler, countdown];
+export const blocks: AnyBlock[] = [image, breakBlock, callout, quote, steps, accordion, spoiler, countdown, checklist];
 
 const byName = new Map(blocks.map((block) => [block.name, block]));
 

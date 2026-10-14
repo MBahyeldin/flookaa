@@ -101,6 +101,7 @@ type BlockInput struct {
 	Accordion *AccordionBlockInput `json:"accordion,omitempty"`
 	Spoiler   *SpoilerBlockInput   `json:"spoiler,omitempty"`
 	Countdown *CountdownBlockInput `json:"countdown,omitempty"`
+	Checklist *ChecklistBlockInput `json:"checklist,omitempty"`
 }
 
 // Union of all possible blocks
@@ -114,6 +115,7 @@ type Blocks struct {
 	Accordion *AccordionBlock `json:"accordion,omitempty"`
 	Spoiler   *SpoilerBlock   `json:"spoiler,omitempty"`
 	Countdown *CountdownBlock `json:"countdown,omitempty"`
+	Checklist *ChecklistBlock `json:"checklist,omitempty"`
 }
 
 type BreakBlock struct {
@@ -171,6 +173,36 @@ type Channel struct {
 	IsMember        bool      `json:"isMember"`
 	IsFollower      bool      `json:"isFollower"`
 	CanModerate     bool      `json:"canModerate"`
+}
+
+type ChecklistBlock struct {
+	Type  BlockType        `json:"_type"`
+	Key   string           `json:"_key"`
+	Title *string          `json:"title,omitempty"`
+	Items []*ChecklistItem `json:"items"`
+}
+
+func (ChecklistBlock) IsBlock()                {}
+func (this ChecklistBlock) GetType() BlockType { return this.Type }
+func (this ChecklistBlock) GetKey() string     { return this.Key }
+
+type ChecklistBlockInput struct {
+	Type  BlockType             `json:"_type"`
+	Key   string                `json:"_key"`
+	Title *string               `json:"title,omitempty"`
+	Items []*ChecklistItemInput `json:"items"`
+}
+
+type ChecklistItem struct {
+	Key     string `json:"_key"`
+	Text    string `json:"text"`
+	Checked bool   `json:"checked"`
+}
+
+type ChecklistItemInput struct {
+	Key     string `json:"_key"`
+	Text    string `json:"text"`
+	Checked *bool  `json:"checked,omitempty"`
 }
 
 type Comment struct {
@@ -494,6 +526,7 @@ const (
 	BlockTypeAccordion BlockType = "accordion"
 	BlockTypeSpoiler   BlockType = "spoiler"
 	BlockTypeCountdown BlockType = "countdown"
+	BlockTypeChecklist BlockType = "checklist"
 )
 
 var AllBlockType = []BlockType{
@@ -506,11 +539,12 @@ var AllBlockType = []BlockType{
 	BlockTypeAccordion,
 	BlockTypeSpoiler,
 	BlockTypeCountdown,
+	BlockTypeChecklist,
 }
 
 func (e BlockType) IsValid() bool {
 	switch e {
-	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote, BlockTypeSteps, BlockTypeAccordion, BlockTypeSpoiler, BlockTypeCountdown:
+	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote, BlockTypeSteps, BlockTypeAccordion, BlockTypeSpoiler, BlockTypeCountdown, BlockTypeChecklist:
 		return true
 	}
 	return false

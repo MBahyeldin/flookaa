@@ -892,6 +892,45 @@ func (ec *executionContext) fieldContext_Blocks_countdown(_ context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Blocks_checklist(ctx context.Context, field graphql.CollectedField, obj *models.Blocks) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Blocks_checklist,
+		func(ctx context.Context) (any, error) {
+			return obj.Checklist, nil
+		},
+		nil,
+		ec.marshalOChecklistBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐChecklistBlock,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Blocks_checklist(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Blocks",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_type":
+				return ec.fieldContext_ChecklistBlock__type(ctx, field)
+			case "_key":
+				return ec.fieldContext_ChecklistBlock__key(ctx, field)
+			case "title":
+				return ec.fieldContext_ChecklistBlock_title(ctx, field)
+			case "items":
+				return ec.fieldContext_ChecklistBlock_items(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ChecklistBlock", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _BreakBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.BreakBlock) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1148,6 +1187,217 @@ func (ec *executionContext) fieldContext_CalloutBlock_description(_ context.Cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChecklistBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.ChecklistBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChecklistBlock__type,
+		func(ctx context.Context) (any, error) {
+			return obj.Type, nil
+		},
+		nil,
+		ec.marshalNBlockType2sharedᚋpkgᚋgraphᚋmodelsᚐBlockType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChecklistBlock__type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChecklistBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type BlockType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChecklistBlock__key(ctx context.Context, field graphql.CollectedField, obj *models.ChecklistBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChecklistBlock__key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChecklistBlock__key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChecklistBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChecklistBlock_title(ctx context.Context, field graphql.CollectedField, obj *models.ChecklistBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChecklistBlock_title,
+		func(ctx context.Context) (any, error) {
+			return obj.Title, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChecklistBlock_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChecklistBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChecklistBlock_items(ctx context.Context, field graphql.CollectedField, obj *models.ChecklistBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChecklistBlock_items,
+		func(ctx context.Context) (any, error) {
+			return obj.Items, nil
+		},
+		nil,
+		ec.marshalNChecklistItem2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐChecklistItemᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChecklistBlock_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChecklistBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_key":
+				return ec.fieldContext_ChecklistItem__key(ctx, field)
+			case "text":
+				return ec.fieldContext_ChecklistItem_text(ctx, field)
+			case "checked":
+				return ec.fieldContext_ChecklistItem_checked(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ChecklistItem", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChecklistItem__key(ctx context.Context, field graphql.CollectedField, obj *models.ChecklistItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChecklistItem__key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChecklistItem__key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChecklistItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChecklistItem_text(ctx context.Context, field graphql.CollectedField, obj *models.ChecklistItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChecklistItem_text,
+		func(ctx context.Context) (any, error) {
+			return obj.Text, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChecklistItem_text(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChecklistItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChecklistItem_checked(ctx context.Context, field graphql.CollectedField, obj *models.ChecklistItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChecklistItem_checked,
+		func(ctx context.Context) (any, error) {
+			return obj.Checked, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChecklistItem_checked(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChecklistItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1756,6 +2006,8 @@ func (ec *executionContext) fieldContext_PortableText_blocks(_ context.Context, 
 				return ec.fieldContext_Blocks_spoiler(ctx, field)
 			case "countdown":
 				return ec.fieldContext_Blocks_countdown(ctx, field)
+			case "checklist":
+				return ec.fieldContext_Blocks_checklist(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Blocks", field.Name)
 		},
@@ -2153,6 +2405,8 @@ func (ec *executionContext) fieldContext_SpoilerBlock_content(_ context.Context,
 				return ec.fieldContext_Blocks_spoiler(ctx, field)
 			case "countdown":
 				return ec.fieldContext_Blocks_countdown(ctx, field)
+			case "checklist":
+				return ec.fieldContext_Blocks_checklist(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Blocks", field.Name)
 		},
@@ -2573,7 +2827,7 @@ func (ec *executionContext) unmarshalInputBlockInput(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"block", "image", "break", "callout", "quote", "steps", "accordion", "spoiler", "countdown"}
+	fieldsInOrder := [...]string{"block", "image", "break", "callout", "quote", "steps", "accordion", "spoiler", "countdown", "checklist"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -2814,6 +3068,32 @@ func (ec *executionContext) unmarshalInputBlockInput(ctx context.Context, obj an
 				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.CountdownBlockInput`, tmp)
 				return it, graphql.ErrorOnPath(ctx, err)
 			}
+		case "checklist":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("checklist"))
+			directive0 := func(ctx context.Context) (any, error) {
+				return ec.unmarshalOChecklistBlockInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐChecklistBlockInput(ctx, v)
+			}
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.Oneof == nil {
+					var zeroVal *models.ChecklistBlockInput
+					return zeroVal, errors.New("directive oneof is not implemented")
+				}
+				return ec.directives.Oneof(ctx, obj, directive0)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*models.ChecklistBlockInput); ok {
+				it.Checklist = data
+			} else if tmp == nil {
+				it.Checklist = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.ChecklistBlockInput`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
 		}
 	}
 
@@ -2917,6 +3197,95 @@ func (ec *executionContext) unmarshalInputCalloutBlockInput(ctx context.Context,
 				return it, err
 			}
 			it.Description = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputChecklistBlockInput(ctx context.Context, obj any) (models.ChecklistBlockInput, error) {
+	var it models.ChecklistBlockInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"_type", "_key", "title", "items"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "_type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_type"))
+			data, err := ec.unmarshalNBlockType2sharedᚋpkgᚋgraphᚋmodelsᚐBlockType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		case "_key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_key"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "items":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("items"))
+			data, err := ec.unmarshalNChecklistItemInput2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐChecklistItemInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Items = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputChecklistItemInput(ctx context.Context, obj any) (models.ChecklistItemInput, error) {
+	var it models.ChecklistItemInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"_key", "text", "checked"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "_key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_key"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "text":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("text"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Text = data
+		case "checked":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("checked"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Checked = data
 		}
 	}
 
@@ -3503,6 +3872,13 @@ func (ec *executionContext) _Block(ctx context.Context, sel ast.SelectionSet, ob
 			return graphql.Null
 		}
 		return ec._CountdownBlock(ctx, sel, obj)
+	case models.ChecklistBlock:
+		return ec._ChecklistBlock(ctx, sel, &obj)
+	case *models.ChecklistBlock:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ChecklistBlock(ctx, sel, obj)
 	case models.CalloutBlock:
 		return ec._CalloutBlock(ctx, sel, &obj)
 	case *models.CalloutBlock:
@@ -3752,6 +4128,8 @@ func (ec *executionContext) _Blocks(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Blocks_spoiler(ctx, field, obj)
 		case "countdown":
 			out.Values[i] = ec._Blocks_countdown(ctx, field, obj)
+		case "checklist":
+			out.Values[i] = ec._Blocks_checklist(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3850,6 +4228,106 @@ func (ec *executionContext) _CalloutBlock(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._CalloutBlock_title(ctx, field, obj)
 		case "description":
 			out.Values[i] = ec._CalloutBlock_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var checklistBlockImplementors = []string{"ChecklistBlock", "Block"}
+
+func (ec *executionContext) _ChecklistBlock(ctx context.Context, sel ast.SelectionSet, obj *models.ChecklistBlock) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, checklistBlockImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChecklistBlock")
+		case "_type":
+			out.Values[i] = ec._ChecklistBlock__type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "_key":
+			out.Values[i] = ec._ChecklistBlock__key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "title":
+			out.Values[i] = ec._ChecklistBlock_title(ctx, field, obj)
+		case "items":
+			out.Values[i] = ec._ChecklistBlock_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var checklistItemImplementors = []string{"ChecklistItem"}
+
+func (ec *executionContext) _ChecklistItem(ctx context.Context, sel ast.SelectionSet, obj *models.ChecklistItem) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, checklistItemImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChecklistItem")
+		case "_key":
+			out.Values[i] = ec._ChecklistItem__key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "text":
+			out.Values[i] = ec._ChecklistItem_text(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "checked":
+			out.Values[i] = ec._ChecklistItem_checked(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4533,6 +5011,80 @@ func (ec *executionContext) marshalNBlocks2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐBl
 	return ec._Blocks(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNChecklistItem2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐChecklistItemᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.ChecklistItem) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNChecklistItem2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐChecklistItem(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNChecklistItem2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐChecklistItem(ctx context.Context, sel ast.SelectionSet, v *models.ChecklistItem) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ChecklistItem(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNChecklistItemInput2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐChecklistItemInputᚄ(ctx context.Context, v any) ([]*models.ChecklistItemInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*models.ChecklistItemInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNChecklistItemInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐChecklistItemInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNChecklistItemInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐChecklistItemInput(ctx context.Context, v any) (*models.ChecklistItemInput, error) {
+	res, err := ec.unmarshalInputChecklistItemInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNMarkDefInput2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐMarkDefInputᚄ(ctx context.Context, v any) ([]*models.MarkDefInput, error) {
 	var vSlice []any
 	vSlice = graphql.CoerceList(v)
@@ -4896,6 +5448,21 @@ func (ec *executionContext) marshalOCalloutTone2ᚖsharedᚋpkgᚋgraphᚋmodels
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) marshalOChecklistBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐChecklistBlock(ctx context.Context, sel ast.SelectionSet, v *models.ChecklistBlock) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ChecklistBlock(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOChecklistBlockInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐChecklistBlockInput(ctx context.Context, v any) (*models.ChecklistBlockInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputChecklistBlockInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOCountdownBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCountdownBlock(ctx context.Context, sel ast.SelectionSet, v *models.CountdownBlock) graphql.Marshaler {
