@@ -30,7 +30,7 @@ export function portableTextLength(blocks: Blocks | undefined): number {
   if (!blocks?.length) return 0;
 
   return blocks.reduce((total, block) => {
-    if (block._type === "steps") {
+    if (block._type === "steps" || block._type === "accordion") {
       const items = (block as unknown as { items?: { title?: unknown; text?: unknown }[] }).items ?? [];
       return items.reduce(
         (sum, item) =>

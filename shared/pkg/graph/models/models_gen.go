@@ -31,6 +31,38 @@ type ACL struct {
 	CanLike    bool `json:"canLike"`
 }
 
+type AccordionBlock struct {
+	Type             BlockType        `json:"_type"`
+	Key              string           `json:"_key"`
+	Items            []*AccordionItem `json:"items"`
+	AllowMultiple    *bool            `json:"allowMultiple,omitempty"`
+	DefaultFirstOpen *bool            `json:"defaultFirstOpen,omitempty"`
+}
+
+func (AccordionBlock) IsBlock()                {}
+func (this AccordionBlock) GetType() BlockType { return this.Type }
+func (this AccordionBlock) GetKey() string     { return this.Key }
+
+type AccordionBlockInput struct {
+	Type             BlockType             `json:"_type"`
+	Key              string                `json:"_key"`
+	Items            []*AccordionItemInput `json:"items"`
+	AllowMultiple    *bool                 `json:"allowMultiple,omitempty"`
+	DefaultFirstOpen *bool                 `json:"defaultFirstOpen,omitempty"`
+}
+
+type AccordionItem struct {
+	Key   string `json:"_key"`
+	Title string `json:"title"`
+	Text  string `json:"text"`
+}
+
+type AccordionItemInput struct {
+	Key   string `json:"_key"`
+	Title string `json:"title"`
+	Text  string `json:"text"`
+}
+
 type BlockBlock struct {
 	Type     BlockType     `json:"_type"`
 	Key      string        `json:"_key"`
@@ -58,22 +90,24 @@ type BlockBlockInput struct {
 
 // Oneof input for blocks
 type BlockInput struct {
-	Block   *BlockBlockInput   `json:"block,omitempty"`
-	Image   *ImageBlockInput   `json:"image,omitempty"`
-	Break   *BreakBlockInput   `json:"break,omitempty"`
-	Callout *CalloutBlockInput `json:"callout,omitempty"`
-	Quote   *QuoteBlockInput   `json:"quote,omitempty"`
-	Steps   *StepsBlockInput   `json:"steps,omitempty"`
+	Block     *BlockBlockInput     `json:"block,omitempty"`
+	Image     *ImageBlockInput     `json:"image,omitempty"`
+	Break     *BreakBlockInput     `json:"break,omitempty"`
+	Callout   *CalloutBlockInput   `json:"callout,omitempty"`
+	Quote     *QuoteBlockInput     `json:"quote,omitempty"`
+	Steps     *StepsBlockInput     `json:"steps,omitempty"`
+	Accordion *AccordionBlockInput `json:"accordion,omitempty"`
 }
 
 // Union of all possible blocks
 type Blocks struct {
-	Block   *BlockBlock   `json:"block,omitempty"`
-	Image   *ImageBlock   `json:"image,omitempty"`
-	Break   *BreakBlock   `json:"break,omitempty"`
-	Callout *CalloutBlock `json:"callout,omitempty"`
-	Quote   *QuoteBlock   `json:"quote,omitempty"`
-	Steps   *StepsBlock   `json:"steps,omitempty"`
+	Block     *BlockBlock     `json:"block,omitempty"`
+	Image     *ImageBlock     `json:"image,omitempty"`
+	Break     *BreakBlock     `json:"break,omitempty"`
+	Callout   *CalloutBlock   `json:"callout,omitempty"`
+	Quote     *QuoteBlock     `json:"quote,omitempty"`
+	Steps     *StepsBlock     `json:"steps,omitempty"`
+	Accordion *AccordionBlock `json:"accordion,omitempty"`
 }
 
 type BreakBlock struct {
@@ -405,12 +439,13 @@ type StepsBlockInput struct {
 type BlockType string
 
 const (
-	BlockTypeBlock   BlockType = "block"
-	BlockTypeImage   BlockType = "image"
-	BlockTypeBreak   BlockType = "break"
-	BlockTypeCallout BlockType = "callout"
-	BlockTypeQuote   BlockType = "quote"
-	BlockTypeSteps   BlockType = "steps"
+	BlockTypeBlock     BlockType = "block"
+	BlockTypeImage     BlockType = "image"
+	BlockTypeBreak     BlockType = "break"
+	BlockTypeCallout   BlockType = "callout"
+	BlockTypeQuote     BlockType = "quote"
+	BlockTypeSteps     BlockType = "steps"
+	BlockTypeAccordion BlockType = "accordion"
 )
 
 var AllBlockType = []BlockType{
@@ -420,11 +455,12 @@ var AllBlockType = []BlockType{
 	BlockTypeCallout,
 	BlockTypeQuote,
 	BlockTypeSteps,
+	BlockTypeAccordion,
 }
 
 func (e BlockType) IsValid() bool {
 	switch e {
-	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote, BlockTypeSteps:
+	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote, BlockTypeSteps, BlockTypeAccordion:
 		return true
 	}
 	return false

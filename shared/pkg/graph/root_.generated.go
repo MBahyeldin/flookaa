@@ -50,6 +50,20 @@ type ComplexityRoot struct {
 		CanView    func(childComplexity int) int
 	}
 
+	AccordionBlock struct {
+		AllowMultiple    func(childComplexity int) int
+		DefaultFirstOpen func(childComplexity int) int
+		Items            func(childComplexity int) int
+		Key              func(childComplexity int) int
+		Type             func(childComplexity int) int
+	}
+
+	AccordionItem struct {
+		Key   func(childComplexity int) int
+		Text  func(childComplexity int) int
+		Title func(childComplexity int) int
+	}
+
 	BlockBlock struct {
 		Children func(childComplexity int) int
 		Key      func(childComplexity int) int
@@ -61,12 +75,13 @@ type ComplexityRoot struct {
 	}
 
 	Blocks struct {
-		Block   func(childComplexity int) int
-		Break   func(childComplexity int) int
-		Callout func(childComplexity int) int
-		Image   func(childComplexity int) int
-		Quote   func(childComplexity int) int
-		Steps   func(childComplexity int) int
+		Accordion func(childComplexity int) int
+		Block     func(childComplexity int) int
+		Break     func(childComplexity int) int
+		Callout   func(childComplexity int) int
+		Image     func(childComplexity int) int
+		Quote     func(childComplexity int) int
+		Steps     func(childComplexity int) int
 	}
 
 	BreakBlock struct {
@@ -316,6 +331,62 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ACL.CanView(childComplexity), true
 
+	case "AccordionBlock.allowMultiple":
+		if e.complexity.AccordionBlock.AllowMultiple == nil {
+			break
+		}
+
+		return e.complexity.AccordionBlock.AllowMultiple(childComplexity), true
+
+	case "AccordionBlock.defaultFirstOpen":
+		if e.complexity.AccordionBlock.DefaultFirstOpen == nil {
+			break
+		}
+
+		return e.complexity.AccordionBlock.DefaultFirstOpen(childComplexity), true
+
+	case "AccordionBlock.items":
+		if e.complexity.AccordionBlock.Items == nil {
+			break
+		}
+
+		return e.complexity.AccordionBlock.Items(childComplexity), true
+
+	case "AccordionBlock._key":
+		if e.complexity.AccordionBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.AccordionBlock.Key(childComplexity), true
+
+	case "AccordionBlock._type":
+		if e.complexity.AccordionBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.AccordionBlock.Type(childComplexity), true
+
+	case "AccordionItem._key":
+		if e.complexity.AccordionItem.Key == nil {
+			break
+		}
+
+		return e.complexity.AccordionItem.Key(childComplexity), true
+
+	case "AccordionItem.text":
+		if e.complexity.AccordionItem.Text == nil {
+			break
+		}
+
+		return e.complexity.AccordionItem.Text(childComplexity), true
+
+	case "AccordionItem.title":
+		if e.complexity.AccordionItem.Title == nil {
+			break
+		}
+
+		return e.complexity.AccordionItem.Title(childComplexity), true
+
 	case "BlockBlock.children":
 		if e.complexity.BlockBlock.Children == nil {
 			break
@@ -364,6 +435,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.BlockBlock.Type(childComplexity), true
+
+	case "Blocks.accordion":
+		if e.complexity.Blocks.Accordion == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Accordion(childComplexity), true
 
 	case "Blocks.block":
 		if e.complexity.Blocks.Block == nil {
@@ -1358,6 +1436,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputAccordionBlockInput,
+		ec.unmarshalInputAccordionItemInput,
 		ec.unmarshalInputBlockBlockInput,
 		ec.unmarshalInputBlockInput,
 		ec.unmarshalInputBreakBlockInput,
@@ -1528,6 +1608,7 @@ enum BlockType {
   callout
   quote
   steps
+  accordion
 }
 
 enum ImageSize {
@@ -1648,6 +1729,20 @@ type StepsBlock implements Block {
   items: [StepItem!]!
 }
 
+type AccordionItem {
+  _key: ID!
+  title: String!
+  text: String!
+}
+
+type AccordionBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  items: [AccordionItem!]!
+  allowMultiple: Boolean
+  defaultFirstOpen: Boolean
+}
+
 """
 Union of all possible blocks
 """
@@ -1658,6 +1753,7 @@ type Blocks {
   callout: CalloutBlock
   quote: QuoteBlock
   steps: StepsBlock
+  accordion: AccordionBlock
 }
 
 """
@@ -1752,6 +1848,20 @@ input StepsBlockInput {
   items: [StepItemInput!]!
 }
 
+input AccordionItemInput {
+  _key: ID!
+  title: String!
+  text: String!
+}
+
+input AccordionBlockInput {
+  _type: BlockType!
+  _key: ID!
+  items: [AccordionItemInput!]!
+  allowMultiple: Boolean
+  defaultFirstOpen: Boolean
+}
+
 """
 Oneof input for blocks
 """
@@ -1762,6 +1872,7 @@ input BlockInput @oneof {
   callout: CalloutBlockInput
   quote: QuoteBlockInput
   steps: StepsBlockInput
+  accordion: AccordionBlockInput
 }
 
 input PortableTextInput {

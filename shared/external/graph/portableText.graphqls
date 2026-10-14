@@ -53,6 +53,7 @@ enum BlockType {
   callout
   quote
   steps
+  accordion
 }
 
 enum ImageSize {
@@ -173,6 +174,20 @@ type StepsBlock implements Block {
   items: [StepItem!]!
 }
 
+type AccordionItem {
+  _key: ID!
+  title: String!
+  text: String!
+}
+
+type AccordionBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  items: [AccordionItem!]!
+  allowMultiple: Boolean
+  defaultFirstOpen: Boolean
+}
+
 """
 Union of all possible blocks
 """
@@ -183,6 +198,7 @@ type Blocks {
   callout: CalloutBlock
   quote: QuoteBlock
   steps: StepsBlock
+  accordion: AccordionBlock
 }
 
 """
@@ -277,6 +293,20 @@ input StepsBlockInput {
   items: [StepItemInput!]!
 }
 
+input AccordionItemInput {
+  _key: ID!
+  title: String!
+  text: String!
+}
+
+input AccordionBlockInput {
+  _type: BlockType!
+  _key: ID!
+  items: [AccordionItemInput!]!
+  allowMultiple: Boolean
+  defaultFirstOpen: Boolean
+}
+
 """
 Oneof input for blocks
 """
@@ -287,6 +317,7 @@ input BlockInput @oneof {
   callout: CalloutBlockInput
   quote: QuoteBlockInput
   steps: StepsBlockInput
+  accordion: AccordionBlockInput
 }
 
 input PortableTextInput {

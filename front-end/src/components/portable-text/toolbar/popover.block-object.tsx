@@ -13,6 +13,7 @@ import {
   PopoverAnchor,
   PopoverContent,
 } from "@/components/ui/popover";
+import { blockByName } from "../blocks";
 import { BlockSurface } from "./block-surface";
 import { ObjectForm } from "./object-form";
 
@@ -55,7 +56,10 @@ export function BlockObjectPopover(props: {
           key={blockObject.value._key}
           submitLabel="Save"
           fields={blockObject.schemaType.fields}
-          defaultValues={blockObject.value}
+          defaultValues={{
+            ...blockByName(blockObject.value._type)?.defaultValues,
+            ...blockObject.value,
+          }}
           onSubmit={({ value }) => {
             blockObjectPopover.send({
               type: "edit",

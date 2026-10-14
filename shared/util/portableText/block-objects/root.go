@@ -23,6 +23,8 @@ func ParseBlock(in *models.BlockInput) (*models.Blocks, error) {
 		return parseQuote(in.Quote)
 	case in.Steps != nil:
 		return parseSteps(in.Steps)
+	case in.Accordion != nil:
+		return parseAccordion(in.Accordion)
 	}
 	return nil, errors.New("invalid block: unknown type")
 }
@@ -42,6 +44,8 @@ func Key(b *models.Blocks) string {
 		return b.Quote.Key
 	case b.Steps != nil:
 		return b.Steps.Key
+	case b.Accordion != nil:
+		return b.Accordion.Key
 	}
 	return ""
 }
@@ -71,6 +75,13 @@ func TextLength(b *models.Blocks) int {
 			if item.Text != nil {
 				n += utf16Len(*item.Text)
 			}
+		}
+		return n
+	}
+	if b.Accordion != nil {
+		n := 0
+		for _, item := range b.Accordion.Items {
+			n += utf16Len(item.Title) + utf16Len(item.Text)
 		}
 		return n
 	}

@@ -32,6 +32,36 @@ export type Acl = {
   canView: Scalars['Boolean']['output'];
 };
 
+export type AccordionBlock = Block & {
+  __typename?: 'AccordionBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  allowMultiple?: Maybe<Scalars['Boolean']['output']>;
+  defaultFirstOpen?: Maybe<Scalars['Boolean']['output']>;
+  items: Array<AccordionItem>;
+};
+
+export type AccordionBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  allowMultiple?: InputMaybe<Scalars['Boolean']['input']>;
+  defaultFirstOpen?: InputMaybe<Scalars['Boolean']['input']>;
+  items: Array<AccordionItemInput>;
+};
+
+export type AccordionItem = {
+  __typename?: 'AccordionItem';
+  _key: Scalars['ID']['output'];
+  text: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+};
+
+export type AccordionItemInput = {
+  _key: Scalars['ID']['input'];
+  text: Scalars['String']['input'];
+  title: Scalars['String']['input'];
+};
+
 export type Block = {
   _key: Scalars['ID']['output'];
   _type: BlockType;
@@ -61,6 +91,7 @@ export type BlockBlockInput = {
 
 /** Oneof input for blocks */
 export type BlockInput = {
+  accordion?: InputMaybe<AccordionBlockInput>;
   block?: InputMaybe<BlockBlockInput>;
   break?: InputMaybe<BreakBlockInput>;
   callout?: InputMaybe<CalloutBlockInput>;
@@ -71,6 +102,7 @@ export type BlockInput = {
 
 /** A block of rich text */
 export type BlockType =
+  | 'accordion'
   | 'block'
   | 'break'
   | 'callout'
@@ -81,6 +113,7 @@ export type BlockType =
 /** Union of all possible blocks */
 export type Blocks = {
   __typename?: 'Blocks';
+  accordion?: Maybe<AccordionBlock>;
   block?: Maybe<BlockBlock>;
   break?: Maybe<BreakBlock>;
   callout?: Maybe<CalloutBlock>;

@@ -1,15 +1,8 @@
 package blockobjects
 
-import (
-	"strings"
+import "shared/pkg/graph/models"
 
-	"shared/pkg/graph/models"
-)
-
-const (
-	maxSteps     = 20
-	maxStepTitle = 120
-)
+const maxSteps = 20
 
 func parseSteps(in *models.StepsBlockInput) (*models.Blocks, error) {
 	if err := requireKey("steps", in.Key); err != nil {
@@ -24,21 +17,8 @@ func parseSteps(in *models.StepsBlockInput) (*models.Blocks, error) {
 	seen := make(map[string]bool, len(in.Items))
 	items := make([]*models.StepItem, 0, len(in.Items))
 	for i, item := range in.Items {
-		if item.Key == "" {
-			return nil, invalid("steps", in.Key, "step %d is missing _key", i+1)
-		}
-		if seen[item.Key] {
-			return nil, invalid("steps", in.Key, "step %d has a duplicate _key", i+1)
-		}
-		seen[item.Key] = true
-		if strings.TrimSpace(item.Title) == "" {
-			return nil, invalid("steps", in.Key, "step %d title is required", i+1)
-		}
-		if utf16Len(item.Title) > maxStepTitle {
-			return nil, invalid("steps", in.Key, "step %d title must be at most %d characters", i+1, maxStepTitle)
-		}
-		if strings.ContainsAny(item.Title, "\r\n") {
-			return nil, invalid("steps", in.Key, "step %d title must be one line", i+1)
+		if err := checkItem("steps", in.Key, "step", i, item.Key, item.Title, seen); err != nil {
+			return nil, err
 		}
 		items = append(items, &models.StepItem{Key: item.Key, Title: item.Title, Text: item.Text})
 	}
