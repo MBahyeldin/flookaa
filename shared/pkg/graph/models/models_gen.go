@@ -100,6 +100,7 @@ type BlockInput struct {
 	Steps     *StepsBlockInput     `json:"steps,omitempty"`
 	Accordion *AccordionBlockInput `json:"accordion,omitempty"`
 	Spoiler   *SpoilerBlockInput   `json:"spoiler,omitempty"`
+	Countdown *CountdownBlockInput `json:"countdown,omitempty"`
 }
 
 // Union of all possible blocks
@@ -112,6 +113,7 @@ type Blocks struct {
 	Steps     *StepsBlock     `json:"steps,omitempty"`
 	Accordion *AccordionBlock `json:"accordion,omitempty"`
 	Spoiler   *SpoilerBlock   `json:"spoiler,omitempty"`
+	Countdown *CountdownBlock `json:"countdown,omitempty"`
 }
 
 type BreakBlock struct {
@@ -201,6 +203,26 @@ type CommentInput struct {
 	Privacy           Privacy      `json:"privacy"`
 	DeniedPersonaIds  []int64      `json:"deniedPersonaIds"`
 	AllowedPersonaIds []int64      `json:"allowedPersonaIds"`
+}
+
+type CountdownBlock struct {
+	Type      BlockType `json:"_type"`
+	Key       string    `json:"_key"`
+	EndsAt    time.Time `json:"endsAt"`
+	Label     *string   `json:"label,omitempty"`
+	EndedText *string   `json:"endedText,omitempty"`
+}
+
+func (CountdownBlock) IsBlock()                {}
+func (this CountdownBlock) GetType() BlockType { return this.Type }
+func (this CountdownBlock) GetKey() string     { return this.Key }
+
+type CountdownBlockInput struct {
+	Type      BlockType `json:"_type"`
+	Key       string    `json:"_key"`
+	EndsAt    time.Time `json:"endsAt"`
+	Label     *string   `json:"label,omitempty"`
+	EndedText *string   `json:"endedText,omitempty"`
 }
 
 type ImageBlock struct {
@@ -471,6 +493,7 @@ const (
 	BlockTypeSteps     BlockType = "steps"
 	BlockTypeAccordion BlockType = "accordion"
 	BlockTypeSpoiler   BlockType = "spoiler"
+	BlockTypeCountdown BlockType = "countdown"
 )
 
 var AllBlockType = []BlockType{
@@ -482,11 +505,12 @@ var AllBlockType = []BlockType{
 	BlockTypeSteps,
 	BlockTypeAccordion,
 	BlockTypeSpoiler,
+	BlockTypeCountdown,
 }
 
 func (e BlockType) IsValid() bool {
 	switch e {
-	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote, BlockTypeSteps, BlockTypeAccordion, BlockTypeSpoiler:
+	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote, BlockTypeSteps, BlockTypeAccordion, BlockTypeSpoiler, BlockTypeCountdown:
 		return true
 	}
 	return false

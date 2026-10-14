@@ -14,6 +14,7 @@ type FormFieldInterfaceTypes =
   | "checkbox"
   | "switch"
   | "date"
+  | "datetime"
   | "file"
   | "pic"
   | "profile-picture"

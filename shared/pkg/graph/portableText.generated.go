@@ -851,6 +851,47 @@ func (ec *executionContext) fieldContext_Blocks_spoiler(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _Blocks_countdown(ctx context.Context, field graphql.CollectedField, obj *models.Blocks) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Blocks_countdown,
+		func(ctx context.Context) (any, error) {
+			return obj.Countdown, nil
+		},
+		nil,
+		ec.marshalOCountdownBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCountdownBlock,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Blocks_countdown(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Blocks",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_type":
+				return ec.fieldContext_CountdownBlock__type(ctx, field)
+			case "_key":
+				return ec.fieldContext_CountdownBlock__key(ctx, field)
+			case "endsAt":
+				return ec.fieldContext_CountdownBlock_endsAt(ctx, field)
+			case "label":
+				return ec.fieldContext_CountdownBlock_label(ctx, field)
+			case "endedText":
+				return ec.fieldContext_CountdownBlock_endedText(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CountdownBlock", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _BreakBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.BreakBlock) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1102,6 +1143,151 @@ func (ec *executionContext) _CalloutBlock_description(ctx context.Context, field
 func (ec *executionContext) fieldContext_CalloutBlock_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "CalloutBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CountdownBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.CountdownBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CountdownBlock__type,
+		func(ctx context.Context) (any, error) {
+			return obj.Type, nil
+		},
+		nil,
+		ec.marshalNBlockType2sharedᚋpkgᚋgraphᚋmodelsᚐBlockType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CountdownBlock__type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CountdownBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type BlockType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CountdownBlock__key(ctx context.Context, field graphql.CollectedField, obj *models.CountdownBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CountdownBlock__key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CountdownBlock__key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CountdownBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CountdownBlock_endsAt(ctx context.Context, field graphql.CollectedField, obj *models.CountdownBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CountdownBlock_endsAt,
+		func(ctx context.Context) (any, error) {
+			return obj.EndsAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CountdownBlock_endsAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CountdownBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CountdownBlock_label(ctx context.Context, field graphql.CollectedField, obj *models.CountdownBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CountdownBlock_label,
+		func(ctx context.Context) (any, error) {
+			return obj.Label, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CountdownBlock_label(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CountdownBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CountdownBlock_endedText(ctx context.Context, field graphql.CollectedField, obj *models.CountdownBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CountdownBlock_endedText,
+		func(ctx context.Context) (any, error) {
+			return obj.EndedText, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CountdownBlock_endedText(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CountdownBlock",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -1568,6 +1754,8 @@ func (ec *executionContext) fieldContext_PortableText_blocks(_ context.Context, 
 				return ec.fieldContext_Blocks_accordion(ctx, field)
 			case "spoiler":
 				return ec.fieldContext_Blocks_spoiler(ctx, field)
+			case "countdown":
+				return ec.fieldContext_Blocks_countdown(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Blocks", field.Name)
 		},
@@ -1963,6 +2151,8 @@ func (ec *executionContext) fieldContext_SpoilerBlock_content(_ context.Context,
 				return ec.fieldContext_Blocks_accordion(ctx, field)
 			case "spoiler":
 				return ec.fieldContext_Blocks_spoiler(ctx, field)
+			case "countdown":
+				return ec.fieldContext_Blocks_countdown(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Blocks", field.Name)
 		},
@@ -2383,7 +2573,7 @@ func (ec *executionContext) unmarshalInputBlockInput(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"block", "image", "break", "callout", "quote", "steps", "accordion", "spoiler"}
+	fieldsInOrder := [...]string{"block", "image", "break", "callout", "quote", "steps", "accordion", "spoiler", "countdown"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -2598,6 +2788,32 @@ func (ec *executionContext) unmarshalInputBlockInput(ctx context.Context, obj an
 				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.SpoilerBlockInput`, tmp)
 				return it, graphql.ErrorOnPath(ctx, err)
 			}
+		case "countdown":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("countdown"))
+			directive0 := func(ctx context.Context) (any, error) {
+				return ec.unmarshalOCountdownBlockInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCountdownBlockInput(ctx, v)
+			}
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.Oneof == nil {
+					var zeroVal *models.CountdownBlockInput
+					return zeroVal, errors.New("directive oneof is not implemented")
+				}
+				return ec.directives.Oneof(ctx, obj, directive0)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*models.CountdownBlockInput); ok {
+				it.Countdown = data
+			} else if tmp == nil {
+				it.Countdown = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.CountdownBlockInput`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
 		}
 	}
 
@@ -2701,6 +2917,61 @@ func (ec *executionContext) unmarshalInputCalloutBlockInput(ctx context.Context,
 				return it, err
 			}
 			it.Description = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCountdownBlockInput(ctx context.Context, obj any) (models.CountdownBlockInput, error) {
+	var it models.CountdownBlockInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"_type", "_key", "endsAt", "label", "endedText"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "_type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_type"))
+			data, err := ec.unmarshalNBlockType2sharedᚋpkgᚋgraphᚋmodelsᚐBlockType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		case "_key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_key"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "endsAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endsAt"))
+			data, err := ec.unmarshalNDateTime2timeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EndsAt = data
+		case "label":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Label = data
+		case "endedText":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endedText"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EndedText = data
 		}
 	}
 
@@ -3225,6 +3496,13 @@ func (ec *executionContext) _Block(ctx context.Context, sel ast.SelectionSet, ob
 			return graphql.Null
 		}
 		return ec._ImageBlock(ctx, sel, obj)
+	case models.CountdownBlock:
+		return ec._CountdownBlock(ctx, sel, &obj)
+	case *models.CountdownBlock:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CountdownBlock(ctx, sel, obj)
 	case models.CalloutBlock:
 		return ec._CalloutBlock(ctx, sel, &obj)
 	case *models.CalloutBlock:
@@ -3472,6 +3750,8 @@ func (ec *executionContext) _Blocks(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Blocks_accordion(ctx, field, obj)
 		case "spoiler":
 			out.Values[i] = ec._Blocks_spoiler(ctx, field, obj)
+		case "countdown":
+			out.Values[i] = ec._Blocks_countdown(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3573,6 +3853,59 @@ func (ec *executionContext) _CalloutBlock(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var countdownBlockImplementors = []string{"CountdownBlock", "Block"}
+
+func (ec *executionContext) _CountdownBlock(ctx context.Context, sel ast.SelectionSet, obj *models.CountdownBlock) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, countdownBlockImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CountdownBlock")
+		case "_type":
+			out.Values[i] = ec._CountdownBlock__type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "_key":
+			out.Values[i] = ec._CountdownBlock__key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "endsAt":
+			out.Values[i] = ec._CountdownBlock_endsAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "label":
+			out.Values[i] = ec._CountdownBlock_label(ctx, field, obj)
+		case "endedText":
+			out.Values[i] = ec._CountdownBlock_endedText(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4563,6 +4896,21 @@ func (ec *executionContext) marshalOCalloutTone2ᚖsharedᚋpkgᚋgraphᚋmodels
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) marshalOCountdownBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCountdownBlock(ctx context.Context, sel ast.SelectionSet, v *models.CountdownBlock) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CountdownBlock(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOCountdownBlockInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCountdownBlockInput(ctx context.Context, v any) (*models.CountdownBlockInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputCountdownBlockInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOImageAlign2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐImageAlign(ctx context.Context, v any) (*models.ImageAlign, error) {

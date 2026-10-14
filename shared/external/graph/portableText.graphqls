@@ -55,6 +55,7 @@ enum BlockType {
   steps
   accordion
   spoiler
+  countdown
 }
 
 enum ImageSize {
@@ -198,6 +199,14 @@ type SpoilerBlock implements Block {
   content: [Blocks!]!
 }
 
+type CountdownBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  endsAt: DateTime!
+  label: String
+  endedText: String
+}
+
 """
 Union of all possible blocks
 """
@@ -210,6 +219,7 @@ type Blocks {
   steps: StepsBlock
   accordion: AccordionBlock
   spoiler: SpoilerBlock
+  countdown: CountdownBlock
 }
 
 """
@@ -327,6 +337,14 @@ input SpoilerBlockInput {
   content: [BlockInput!]!
 }
 
+input CountdownBlockInput {
+  _type: BlockType!
+  _key: ID!
+  endsAt: DateTime!
+  label: String
+  endedText: String
+}
+
 """
 Oneof input for blocks
 """
@@ -339,6 +357,7 @@ input BlockInput @oneof {
   steps: StepsBlockInput
   accordion: AccordionBlockInput
   spoiler: SpoilerBlockInput
+  countdown: CountdownBlockInput
 }
 
 input PortableTextInput {

@@ -27,6 +27,8 @@ func ParseBlock(in *models.BlockInput) (*models.Blocks, error) {
 		return parseAccordion(in.Accordion)
 	case in.Spoiler != nil:
 		return parseSpoiler(in.Spoiler)
+	case in.Countdown != nil:
+		return parseCountdown(in.Countdown)
 	}
 	return nil, errors.New("invalid block: unknown type")
 }
@@ -50,6 +52,8 @@ func Key(b *models.Blocks) string {
 		return b.Accordion.Key
 	case b.Spoiler != nil:
 		return b.Spoiler.Key
+	case b.Countdown != nil:
+		return b.Countdown.Key
 	}
 	return ""
 }
@@ -102,6 +106,15 @@ func TextLength(b *models.Blocks) int {
 		}
 		for _, child := range b.Spoiler.Content {
 			n += TextLength(child)
+		}
+		return n
+	}
+	if b.Countdown != nil {
+		n := 0
+		for _, s := range []*string{b.Countdown.Label, b.Countdown.EndedText} {
+			if s != nil {
+				n += utf16Len(*s)
+			}
 		}
 		return n
 	}

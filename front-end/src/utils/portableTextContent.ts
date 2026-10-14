@@ -23,6 +23,7 @@ type Blocks = PortableTextTextBlock<PortableTextSpan | PortableTextObject>[];
 const objectTextFields: Record<string, string[]> = {
   callout: ["title", "description"],
   quote: ["text", "name", "role"],
+  countdown: ["label", "endedText"],
 };
 
 /** Total number of characters across every text span and text-bearing block object. */

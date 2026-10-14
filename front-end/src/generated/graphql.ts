@@ -97,6 +97,7 @@ export type BlockInput = {
   block?: InputMaybe<BlockBlockInput>;
   break?: InputMaybe<BreakBlockInput>;
   callout?: InputMaybe<CalloutBlockInput>;
+  countdown?: InputMaybe<CountdownBlockInput>;
   image?: InputMaybe<ImageBlockInput>;
   quote?: InputMaybe<QuoteBlockInput>;
   spoiler?: InputMaybe<SpoilerBlockInput>;
@@ -109,6 +110,7 @@ export type BlockType =
   | 'block'
   | 'break'
   | 'callout'
+  | 'countdown'
   | 'image'
   | 'quote'
   | 'spoiler'
@@ -121,6 +123,7 @@ export type Blocks = {
   block?: Maybe<BlockBlock>;
   break?: Maybe<BreakBlock>;
   callout?: Maybe<CalloutBlock>;
+  countdown?: Maybe<CountdownBlock>;
   image?: Maybe<ImageBlock>;
   quote?: Maybe<QuoteBlock>;
   spoiler?: Maybe<SpoilerBlock>;
@@ -233,6 +236,23 @@ export type CommentInput = {
   parentId: Scalars['ObjectId']['input'];
   privacy: Privacy;
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type CountdownBlock = Block & {
+  __typename?: 'CountdownBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  endedText?: Maybe<Scalars['String']['output']>;
+  endsAt: Scalars['DateTime']['output'];
+  label?: Maybe<Scalars['String']['output']>;
+};
+
+export type CountdownBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  endedText?: InputMaybe<Scalars['String']['input']>;
+  endsAt: Scalars['DateTime']['input'];
+  label?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type ImageAlign =

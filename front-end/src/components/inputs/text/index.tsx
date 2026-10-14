@@ -14,6 +14,7 @@ export default function TextInput({
   field,
 }: FormFieldProps) {
   const [value, setValue] = useState(initValue || "");
+  const hint = field.hint?.(value);
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValue(e.target.value);
     setFieldValue(
@@ -34,14 +35,18 @@ export default function TextInput({
       </div>
       <Input
         id={field.id}
-        type={field.type}
+        type={field.interfaceType === "datetime" ? "datetime-local" : field.type}
         value={value}
         placeholder={field.placeholder}
         onChange={onChange}
         className="mt-2"
         onBlur={handleBlur}
       />
-      {error && touched && <p className="text-sm text-destructive mt-1">{error}</p>}
+      {error && touched ? (
+        <p className="text-sm text-destructive mt-1">{error}</p>
+      ) : (
+        hint && <p className="text-sm text-muted-foreground mt-1">{hint}</p>
+      )}
     </div>
   );
 }

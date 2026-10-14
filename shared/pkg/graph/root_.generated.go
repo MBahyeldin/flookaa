@@ -80,6 +80,7 @@ type ComplexityRoot struct {
 		Block     func(childComplexity int) int
 		Break     func(childComplexity int) int
 		Callout   func(childComplexity int) int
+		Countdown func(childComplexity int) int
 		Image     func(childComplexity int) int
 		Quote     func(childComplexity int) int
 		Spoiler   func(childComplexity int) int
@@ -138,6 +139,14 @@ type ComplexityRoot struct {
 		Tags              func(childComplexity int) int
 		Type              func(childComplexity int) int
 		UpdatedAt         func(childComplexity int) int
+	}
+
+	CountdownBlock struct {
+		EndedText func(childComplexity int) int
+		EndsAt    func(childComplexity int) int
+		Key       func(childComplexity int) int
+		Label     func(childComplexity int) int
+		Type      func(childComplexity int) int
 	}
 
 	ImageBlock struct {
@@ -481,6 +490,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Blocks.Callout(childComplexity), true
 
+	case "Blocks.countdown":
+		if e.complexity.Blocks.Countdown == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Countdown(childComplexity), true
+
 	case "Blocks.image":
 		if e.complexity.Blocks.Image == nil {
 			break
@@ -802,6 +818,41 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Comment.UpdatedAt(childComplexity), true
+
+	case "CountdownBlock.endedText":
+		if e.complexity.CountdownBlock.EndedText == nil {
+			break
+		}
+
+		return e.complexity.CountdownBlock.EndedText(childComplexity), true
+
+	case "CountdownBlock.endsAt":
+		if e.complexity.CountdownBlock.EndsAt == nil {
+			break
+		}
+
+		return e.complexity.CountdownBlock.EndsAt(childComplexity), true
+
+	case "CountdownBlock._key":
+		if e.complexity.CountdownBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.CountdownBlock.Key(childComplexity), true
+
+	case "CountdownBlock.label":
+		if e.complexity.CountdownBlock.Label == nil {
+			break
+		}
+
+		return e.complexity.CountdownBlock.Label(childComplexity), true
+
+	case "CountdownBlock._type":
+		if e.complexity.CountdownBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.CountdownBlock.Type(childComplexity), true
 
 	case "ImageBlock.align":
 		if e.complexity.ImageBlock.Align == nil {
@@ -1502,6 +1553,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputBreakBlockInput,
 		ec.unmarshalInputCalloutBlockInput,
 		ec.unmarshalInputCommentInput,
+		ec.unmarshalInputCountdownBlockInput,
 		ec.unmarshalInputImageBlockInput,
 		ec.unmarshalInputLikeInput,
 		ec.unmarshalInputLinkMarkDefInput,
@@ -1670,6 +1722,7 @@ enum BlockType {
   steps
   accordion
   spoiler
+  countdown
 }
 
 enum ImageSize {
@@ -1813,6 +1866,14 @@ type SpoilerBlock implements Block {
   content: [Blocks!]!
 }
 
+type CountdownBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  endsAt: DateTime!
+  label: String
+  endedText: String
+}
+
 """
 Union of all possible blocks
 """
@@ -1825,6 +1886,7 @@ type Blocks {
   steps: StepsBlock
   accordion: AccordionBlock
   spoiler: SpoilerBlock
+  countdown: CountdownBlock
 }
 
 """
@@ -1942,6 +2004,14 @@ input SpoilerBlockInput {
   content: [BlockInput!]!
 }
 
+input CountdownBlockInput {
+  _type: BlockType!
+  _key: ID!
+  endsAt: DateTime!
+  label: String
+  endedText: String
+}
+
 """
 Oneof input for blocks
 """
@@ -1954,6 +2024,7 @@ input BlockInput @oneof {
   steps: StepsBlockInput
   accordion: AccordionBlockInput
   spoiler: SpoilerBlockInput
+  countdown: CountdownBlockInput
 }
 
 input PortableTextInput {

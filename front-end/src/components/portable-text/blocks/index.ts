@@ -6,10 +6,11 @@ import { quote } from "./quote";
 import { steps } from "./steps";
 import { accordion } from "./accordion";
 import { spoiler } from "./spoiler";
+import { countdown } from "./countdown";
 
 export type AnyBlock = BlockDefinition<any>;
 
-export const blocks: AnyBlock[] = [image, breakBlock, callout, quote, steps, accordion, spoiler];
+export const blocks: AnyBlock[] = [image, breakBlock, callout, quote, steps, accordion, spoiler, countdown];
 
 const byName = new Map(blocks.map((block) => [block.name, block]));
 

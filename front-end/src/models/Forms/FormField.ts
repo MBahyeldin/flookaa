@@ -21,6 +21,8 @@ export class FormField {
     values?: Record<string, unknown>
   ) => string | null;
   public visibleWhen?: (values: Record<string, unknown>) => boolean;
+  // Muted note under the input, recomputed as the value changes.
+  public hint?: (value: string) => string | null;
   // Pic fields only: the sibling fields that receive the picked file's size.
   public dimensions?: { width: string; height: string };
   // List fields only.
@@ -47,6 +49,7 @@ export class FormField {
     name,
     validate = () => null,
     visibleWhen,
+    hint,
     dimensions,
     itemFields,
     itemLabel,
@@ -73,6 +76,7 @@ export class FormField {
       values?: Record<string, unknown>
     ) => string | null;
     visibleWhen?: (values: Record<string, unknown>) => boolean;
+    hint?: (value: string) => string | null;
     dimensions?: { width: string; height: string };
     itemFields?: FormField[];
     itemLabel?: string;
@@ -96,6 +100,7 @@ export class FormField {
     this.width = this.geWidthClass(width);
     this.validate = validate;
     this.visibleWhen = visibleWhen;
+    this.hint = hint;
     this.dimensions = dimensions;
     this.itemFields = itemFields;
     this.itemLabel = itemLabel;

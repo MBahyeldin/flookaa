@@ -43,7 +43,7 @@ export default function FieldRender({
   }
   return (
     <>
-      {["text", "password"].includes(field.interfaceType) && (
+      {["text", "password", "datetime"].includes(field.interfaceType) && (
         <TextInput
           field={field}
           error={error}
