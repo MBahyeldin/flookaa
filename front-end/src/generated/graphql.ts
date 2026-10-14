@@ -39,6 +39,7 @@ export type AccordionBlock = Block & {
   allowMultiple?: Maybe<Scalars['Boolean']['output']>;
   defaultFirstOpen?: Maybe<Scalars['Boolean']['output']>;
   items: Array<AccordionItem>;
+  title?: Maybe<Scalars['String']['output']>;
 };
 
 export type AccordionBlockInput = {
@@ -47,6 +48,7 @@ export type AccordionBlockInput = {
   allowMultiple?: InputMaybe<Scalars['Boolean']['input']>;
   defaultFirstOpen?: InputMaybe<Scalars['Boolean']['input']>;
   items: Array<AccordionItemInput>;
+  title?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type AccordionItem = {
@@ -566,12 +568,14 @@ export type StepsBlock = Block & {
   _key: Scalars['ID']['output'];
   _type: BlockType;
   items: Array<StepItem>;
+  title?: Maybe<Scalars['String']['output']>;
 };
 
 export type StepsBlockInput = {
   _key: Scalars['ID']['input'];
   _type: BlockType;
   items: Array<StepItemInput>;
+  title?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type StyleType =

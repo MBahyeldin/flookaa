@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { ListOrderedIcon } from "lucide-react";
 import { z } from "zod";
 import { FormField } from "@/models/Forms/FormField";
@@ -7,6 +8,11 @@ const MAX_STEPS = 20;
 const MAX_TITLE = 120;
 
 const stepsSchema = z.object({
+  title: z
+    .string()
+    .refine((title) => title.length <= MAX_TITLE, `must be at most ${MAX_TITLE} characters`)
+    .refine((title) => !/[\r\n]/.test(title), "must be one line")
+    .optional(),
   items: z
     .array(
       z.object({
@@ -30,6 +36,14 @@ const stepsSchema = z.object({
 type StepsValue = z.infer<typeof stepsSchema>;
 
 const stepsFormFields: FormField[] = [
+  new FormField({
+    id: "title",
+    name: "title",
+    label: "Title",
+    type: "string",
+    interfaceType: "text",
+    placeholder: "How to …",
+  }),
   new FormField({
     id: "items",
     name: "items",
@@ -62,32 +76,40 @@ const stepsFormFields: FormField[] = [
 ];
 
 function StepsView({ value }: { value: StepsValue }) {
+  const titleId = useId();
   return (
-    <ol className="text-foreground">
-      {value.items.map((item, index) => (
-        <li key={item._key} className="relative flex gap-3 pb-4 last:pb-0">
-          {index < value.items.length - 1 ? (
-            <span aria-hidden className="absolute top-8 bottom-1 start-3.5 border-s border-border" />
-          ) : null}
-          <span
-            aria-hidden
-            className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
-          >
-            {index + 1}
-          </span>
-          <div className="min-w-0 pt-0.5">
-            <p dir="auto" className="font-semibold break-words">
-              {item.title}
-            </p>
-            {item.text ? (
-              <p dir="auto" className="mt-1 text-muted-foreground whitespace-pre-wrap break-words">
-                {item.text}
-              </p>
+    <div>
+      {value.title ? (
+        <p id={titleId} dir="auto" className="mb-2 text-lg font-semibold break-words text-foreground">
+          {value.title}
+        </p>
+      ) : null}
+      <ol className="text-foreground" aria-labelledby={value.title ? titleId : undefined}>
+        {value.items.map((item, index) => (
+          <li key={item._key} className="relative flex gap-3 pb-4 last:pb-0">
+            {index < value.items.length - 1 ? (
+              <span aria-hidden className="absolute top-8 bottom-1 start-3.5 border-s border-border" />
             ) : null}
-          </div>
-        </li>
-      ))}
-    </ol>
+            <span
+              aria-hidden
+              className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
+            >
+              {index + 1}
+            </span>
+            <div className="min-w-0 pt-0.5">
+              <p dir="auto" className="font-semibold break-words">
+                {item.title}
+              </p>
+              {item.text ? (
+                <p dir="auto" className="mt-1 text-muted-foreground whitespace-pre-wrap break-words">
+                  {item.text}
+                </p>
+              ) : null}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
 
@@ -103,6 +125,7 @@ export const steps = defineBlock<StepsValue>({
   View: StepsView,
   examples: [
     {
+      title: "Lentil soup",
       items: [
         { _key: "a1", title: "Toast the spices", text: "Cumin and coriander, two minutes in a dry pan." },
         { _key: "a2", title: "Add the lentils", text: "One cup, rinsed.\nCover with three cups of water." },

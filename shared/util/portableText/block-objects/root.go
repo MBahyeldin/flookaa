@@ -70,6 +70,9 @@ func TextLength(b *models.Blocks) int {
 	}
 	if b.Steps != nil {
 		n := 0
+		if b.Steps.Title != nil {
+			n += utf16Len(*b.Steps.Title)
+		}
 		for _, item := range b.Steps.Items {
 			n += utf16Len(item.Title)
 			if item.Text != nil {
@@ -80,6 +83,9 @@ func TextLength(b *models.Blocks) int {
 	}
 	if b.Accordion != nil {
 		n := 0
+		if b.Accordion.Title != nil {
+			n += utf16Len(*b.Accordion.Title)
+		}
 		for _, item := range b.Accordion.Items {
 			n += utf16Len(item.Title) + utf16Len(item.Text)
 		}

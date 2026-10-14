@@ -171,6 +171,7 @@ type StepItem {
 type StepsBlock implements Block {
   _type: BlockType!
   _key: ID!
+  title: String
   items: [StepItem!]!
 }
 
@@ -183,6 +184,7 @@ type AccordionItem {
 type AccordionBlock implements Block {
   _type: BlockType!
   _key: ID!
+  title: String
   items: [AccordionItem!]!
   allowMultiple: Boolean
   defaultFirstOpen: Boolean
@@ -290,6 +292,7 @@ input StepItemInput {
 input StepsBlockInput {
   _type: BlockType!
   _key: ID!
+  title: String
   items: [StepItemInput!]!
 }
 
@@ -302,6 +305,7 @@ input AccordionItemInput {
 input AccordionBlockInput {
   _type: BlockType!
   _key: ID!
+  title: String
   items: [AccordionItemInput!]!
   allowMultiple: Boolean
   defaultFirstOpen: Boolean

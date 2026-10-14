@@ -1,4 +1,4 @@
-import { useRef, type SyntheticEvent } from "react";
+import { useId, useRef, type SyntheticEvent } from "react";
 import { ChevronDownIcon, ChevronsUpDownIcon } from "lucide-react";
 import { z } from "zod";
 import { FormField } from "@/models/Forms/FormField";
@@ -8,6 +8,11 @@ const MAX_SECTIONS = 20;
 const MAX_TITLE = 120;
 
 const accordionSchema = z.object({
+  title: z
+    .string()
+    .refine((title) => title.length <= MAX_TITLE, `must be at most ${MAX_TITLE} characters`)
+    .refine((title) => !/[\r\n]/.test(title), "must be one line")
+    .optional(),
   items: z
     .array(
       z.object({
@@ -33,6 +38,14 @@ const accordionSchema = z.object({
 type AccordionValue = z.infer<typeof accordionSchema>;
 
 const accordionFormFields: FormField[] = [
+  new FormField({
+    id: "title",
+    name: "title",
+    label: "Title",
+    type: "string",
+    interfaceType: "text",
+    placeholder: "Frequently asked questions",
+  }),
   new FormField({
     id: "items",
     name: "items",
@@ -81,6 +94,7 @@ const accordionFormFields: FormField[] = [
 
 function AccordionView({ value }: { value: AccordionValue }) {
   const listRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
   const allowMultiple = value.allowMultiple ?? true;
 
   const onToggle = (event: SyntheticEvent<HTMLDetailsElement>) => {
@@ -92,31 +106,40 @@ function AccordionView({ value }: { value: AccordionValue }) {
   };
 
   return (
-    <div
-      ref={listRef}
-      className="divide-y divide-border overflow-hidden rounded-md border border-border bg-card text-card-foreground"
-    >
-      {value.items.map((item, index) => (
-        <details
-          key={item._key}
-          className="group"
-          open={index === 0 && value.defaultFirstOpen === true}
-          onToggle={onToggle}
-        >
-          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 px-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
-            <span dir="auto" className="min-w-0 font-semibold break-words">
-              {item.title}
-            </span>
-            <ChevronDownIcon
-              aria-hidden
-              className="ms-auto size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
-            />
-          </summary>
-          <p dir="auto" className="px-4 pb-3 text-muted-foreground whitespace-pre-wrap break-words">
-            {item.text}
-          </p>
-        </details>
-      ))}
+    <div>
+      {value.title ? (
+        <p id={titleId} dir="auto" className="mb-2 mx-auto w-fit text-lg font-semibold break-words text-foreground">
+          {value.title}
+        </p>
+      ) : null}
+      <div
+        ref={listRef}
+        role={value.title ? "group" : undefined}
+        aria-labelledby={value.title ? titleId : undefined}
+        className="divide-y divide-border overflow-hidden rounded-md border border-border bg-card text-card-foreground"
+      >
+        {value.items.map((item, index) => (
+          <details
+            key={item._key}
+            className="group"
+            open={index === 0 && value.defaultFirstOpen === true}
+            onToggle={onToggle}
+          >
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 px-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
+              <span dir="auto" className="min-w-0 font-semibold break-words">
+                {item.title}
+              </span>
+              <ChevronDownIcon
+                aria-hidden
+                className="ms-auto size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+              />
+            </summary>
+            <p dir="auto" className="px-4 pb-3 text-muted-foreground whitespace-pre-wrap break-words">
+              {item.text}
+            </p>
+          </details>
+        ))}
+      </div>
     </div>
   );
 }
@@ -133,6 +156,7 @@ export const accordion = defineBlock<AccordionValue>({
   View: AccordionView,
   examples: [
     {
+      title: "Frequently asked questions",
       items: [
         { _key: "a1", title: "Who can see my posts?", text: "Members of the channel you post in." },
         { _key: "a2", title: "Can I post as another persona?", text: "Switch persona from the menu, then post." },

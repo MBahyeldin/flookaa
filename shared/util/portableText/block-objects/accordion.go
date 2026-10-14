@@ -12,6 +12,9 @@ func parseAccordion(in *models.AccordionBlockInput) (*models.Blocks, error) {
 	if err := requireKey("accordion", in.Key); err != nil {
 		return nil, err
 	}
+	if err := checkTitle("accordion", in.Key, in.Title); err != nil {
+		return nil, err
+	}
 	if len(in.Items) == 0 {
 		return nil, invalid("accordion", in.Key, "at least one section is required")
 	}
@@ -33,6 +36,7 @@ func parseAccordion(in *models.AccordionBlockInput) (*models.Blocks, error) {
 		Accordion: &models.AccordionBlock{
 			Type:             in.Type,
 			Key:              in.Key,
+			Title:            in.Title,
 			Items:            items,
 			AllowMultiple:    in.AllowMultiple,
 			DefaultFirstOpen: in.DefaultFirstOpen,

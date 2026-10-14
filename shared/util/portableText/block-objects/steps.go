@@ -8,6 +8,9 @@ func parseSteps(in *models.StepsBlockInput) (*models.Blocks, error) {
 	if err := requireKey("steps", in.Key); err != nil {
 		return nil, err
 	}
+	if err := checkTitle("steps", in.Key, in.Title); err != nil {
+		return nil, err
+	}
 	if len(in.Items) == 0 {
 		return nil, invalid("steps", in.Key, "at least one step is required")
 	}
@@ -26,6 +29,7 @@ func parseSteps(in *models.StepsBlockInput) (*models.Blocks, error) {
 		Steps: &models.StepsBlock{
 			Type:  in.Type,
 			Key:   in.Key,
+			Title: in.Title,
 			Items: items,
 		}}, nil
 }

@@ -87,6 +87,35 @@ func (ec *executionContext) fieldContext_AccordionBlock__key(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _AccordionBlock_title(ctx context.Context, field graphql.CollectedField, obj *models.AccordionBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AccordionBlock_title,
+		func(ctx context.Context) (any, error) {
+			return obj.Title, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AccordionBlock_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AccordionBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AccordionBlock_items(ctx context.Context, field graphql.CollectedField, obj *models.AccordionBlock) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -729,6 +758,8 @@ func (ec *executionContext) fieldContext_Blocks_steps(_ context.Context, field g
 				return ec.fieldContext_StepsBlock__type(ctx, field)
 			case "_key":
 				return ec.fieldContext_StepsBlock__key(ctx, field)
+			case "title":
+				return ec.fieldContext_StepsBlock_title(ctx, field)
 			case "items":
 				return ec.fieldContext_StepsBlock_items(ctx, field)
 			}
@@ -766,6 +797,8 @@ func (ec *executionContext) fieldContext_Blocks_accordion(_ context.Context, fie
 				return ec.fieldContext_AccordionBlock__type(ctx, field)
 			case "_key":
 				return ec.fieldContext_AccordionBlock__key(ctx, field)
+			case "title":
+				return ec.fieldContext_AccordionBlock_title(ctx, field)
 			case "items":
 				return ec.fieldContext_AccordionBlock_items(ctx, field)
 			case "allowMultiple":
@@ -1907,6 +1940,35 @@ func (ec *executionContext) fieldContext_StepsBlock__key(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _StepsBlock_title(ctx context.Context, field graphql.CollectedField, obj *models.StepsBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StepsBlock_title,
+		func(ctx context.Context) (any, error) {
+			return obj.Title, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_StepsBlock_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StepsBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _StepsBlock_items(ctx context.Context, field graphql.CollectedField, obj *models.StepsBlock) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1955,7 +2017,7 @@ func (ec *executionContext) unmarshalInputAccordionBlockInput(ctx context.Contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"_type", "_key", "items", "allowMultiple", "defaultFirstOpen"}
+	fieldsInOrder := [...]string{"_type", "_key", "title", "items", "allowMultiple", "defaultFirstOpen"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -1976,6 +2038,13 @@ func (ec *executionContext) unmarshalInputAccordionBlockInput(ctx context.Contex
 				return it, err
 			}
 			it.Key = data
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
 		case "items":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("items"))
 			data, err := ec.unmarshalNAccordionItemInput2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐAccordionItemInputᚄ(ctx, v)
@@ -2811,7 +2880,7 @@ func (ec *executionContext) unmarshalInputStepsBlockInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"_type", "_key", "items"}
+	fieldsInOrder := [...]string{"_type", "_key", "title", "items"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -2832,6 +2901,13 @@ func (ec *executionContext) unmarshalInputStepsBlockInput(ctx context.Context, o
 				return it, err
 			}
 			it.Key = data
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
 		case "items":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("items"))
 			data, err := ec.unmarshalNStepItemInput2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐStepItemInputᚄ(ctx, v)
@@ -2948,6 +3024,8 @@ func (ec *executionContext) _AccordionBlock(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "title":
+			out.Values[i] = ec._AccordionBlock_title(ctx, field, obj)
 		case "items":
 			out.Values[i] = ec._AccordionBlock_items(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3602,6 +3680,8 @@ func (ec *executionContext) _StepsBlock(ctx context.Context, sel ast.SelectionSe
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "title":
+			out.Values[i] = ec._StepsBlock_title(ctx, field, obj)
 		case "items":
 			out.Values[i] = ec._StepsBlock_items(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

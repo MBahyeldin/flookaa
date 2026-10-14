@@ -34,6 +34,7 @@ type ACL struct {
 type AccordionBlock struct {
 	Type             BlockType        `json:"_type"`
 	Key              string           `json:"_key"`
+	Title            *string          `json:"title,omitempty"`
 	Items            []*AccordionItem `json:"items"`
 	AllowMultiple    *bool            `json:"allowMultiple,omitempty"`
 	DefaultFirstOpen *bool            `json:"defaultFirstOpen,omitempty"`
@@ -46,6 +47,7 @@ func (this AccordionBlock) GetKey() string     { return this.Key }
 type AccordionBlockInput struct {
 	Type             BlockType             `json:"_type"`
 	Key              string                `json:"_key"`
+	Title            *string               `json:"title,omitempty"`
 	Items            []*AccordionItemInput `json:"items"`
 	AllowMultiple    *bool                 `json:"allowMultiple,omitempty"`
 	DefaultFirstOpen *bool                 `json:"defaultFirstOpen,omitempty"`
@@ -422,6 +424,7 @@ type StepItemInput struct {
 type StepsBlock struct {
 	Type  BlockType   `json:"_type"`
 	Key   string      `json:"_key"`
+	Title *string     `json:"title,omitempty"`
 	Items []*StepItem `json:"items"`
 }
 
@@ -432,6 +435,7 @@ func (this StepsBlock) GetKey() string     { return this.Key }
 type StepsBlockInput struct {
 	Type  BlockType        `json:"_type"`
 	Key   string           `json:"_key"`
+	Title *string          `json:"title,omitempty"`
 	Items []*StepItemInput `json:"items"`
 }
 

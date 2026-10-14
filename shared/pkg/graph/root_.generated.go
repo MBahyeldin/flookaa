@@ -55,6 +55,7 @@ type ComplexityRoot struct {
 		DefaultFirstOpen func(childComplexity int) int
 		Items            func(childComplexity int) int
 		Key              func(childComplexity int) int
+		Title            func(childComplexity int) int
 		Type             func(childComplexity int) int
 	}
 
@@ -273,6 +274,7 @@ type ComplexityRoot struct {
 	StepsBlock struct {
 		Items func(childComplexity int) int
 		Key   func(childComplexity int) int
+		Title func(childComplexity int) int
 		Type  func(childComplexity int) int
 	}
 }
@@ -358,6 +360,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AccordionBlock.Key(childComplexity), true
+
+	case "AccordionBlock.title":
+		if e.complexity.AccordionBlock.Title == nil {
+			break
+		}
+
+		return e.complexity.AccordionBlock.Title(childComplexity), true
 
 	case "AccordionBlock._type":
 		if e.complexity.AccordionBlock.Type == nil {
@@ -1421,6 +1430,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.StepsBlock.Key(childComplexity), true
 
+	case "StepsBlock.title":
+		if e.complexity.StepsBlock.Title == nil {
+			break
+		}
+
+		return e.complexity.StepsBlock.Title(childComplexity), true
+
 	case "StepsBlock._type":
 		if e.complexity.StepsBlock.Type == nil {
 			break
@@ -1726,6 +1742,7 @@ type StepItem {
 type StepsBlock implements Block {
   _type: BlockType!
   _key: ID!
+  title: String
   items: [StepItem!]!
 }
 
@@ -1738,6 +1755,7 @@ type AccordionItem {
 type AccordionBlock implements Block {
   _type: BlockType!
   _key: ID!
+  title: String
   items: [AccordionItem!]!
   allowMultiple: Boolean
   defaultFirstOpen: Boolean
@@ -1845,6 +1863,7 @@ input StepItemInput {
 input StepsBlockInput {
   _type: BlockType!
   _key: ID!
+  title: String
   items: [StepItemInput!]!
 }
 
@@ -1857,6 +1876,7 @@ input AccordionItemInput {
 input AccordionBlockInput {
   _type: BlockType!
   _key: ID!
+  title: String
   items: [AccordionItemInput!]!
   allowMultiple: Boolean
   defaultFirstOpen: Boolean

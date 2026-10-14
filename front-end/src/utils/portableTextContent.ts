@@ -31,13 +31,16 @@ export function portableTextLength(blocks: Blocks | undefined): number {
 
   return blocks.reduce((total, block) => {
     if (block._type === "steps" || block._type === "accordion") {
-      const items = (block as unknown as { items?: { title?: unknown; text?: unknown }[] }).items ?? [];
+      const { title, items = [] } = block as unknown as {
+        title?: unknown;
+        items?: { title?: unknown; text?: unknown }[];
+      };
       return items.reduce(
         (sum, item) =>
           sum +
           (typeof item.title === "string" ? item.title.length : 0) +
           (typeof item.text === "string" ? item.text.length : 0),
-        total
+        total + (typeof title === "string" ? title.length : 0)
       );
     }
     const textFields = objectTextFields[block._type];

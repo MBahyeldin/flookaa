@@ -17,6 +17,7 @@ persona theme restyles it.
 ```graphql
 accordion {
   _type, _key
+  title: String              # optional, one line, above the sections
   items: [AccordionItem!]!   # 1–20 sections, in order
   allowMultiple: Boolean     # optional, absent = true
   defaultFirstOpen: Boolean  # optional, absent = false
@@ -30,6 +31,13 @@ AccordionItem {
 ```
 
 - **The `_type` is `accordion`.**
+- **An optional block title**, like the callout's: at most 120 UTF-16 units,
+  no line breaks. It sits above the sections and names the whole block
+  ("Frequently asked questions").
+- **Steps gets the same `title` field** in this ticket (`StepsBlock.title`,
+  `StepsBlockInput.title`). WWW-39 left it out in favour of a heading text
+  block, but a title that belongs to the block moves and deletes with it.
+  It's a new optional field, so existing steps blocks are unchanged.
 - **`AccordionItem` is its own type**, not a reuse of `StepItem`. The two
   look alike today, but each block's fields must be free to grow on their
   own, and a shared type would tie them together for good.
@@ -55,6 +63,9 @@ AccordionItem {
    - `text` must be non-blank after trimming, with no limit of its own.
    - Every `title` and `text` counts toward the post's 4096-character limit,
      through `TextLength` in Go and `portableTextLength` on the frontend.
+     The block `title` counts too, in both blocks.
+   - The optional block `title` is checked as in the callout. Steps,
+     Accordion and Callout share one `checkTitle` helper.
    - The item checks are the same as Steps', so `steps.go` and the new
      `accordion.go` share one small helper for keys and titles instead of
      copying the loop.
@@ -71,6 +82,10 @@ AccordionItem {
    - Find-in-page opening a section also fires `onToggle`, so the one-open
      rule holds there too.
 3. **Look.**
+   - The block title, when set, is a `font-semibold text-lg text-foreground`
+     line above the box with `dir="auto"`, and the box is
+     `aria-labelledby` it. Steps shows its title the same way above the
+     `<ol>`.
    - One rounded `border border-border` box, with sections divided by
      `divide-y divide-border` and a `bg-card` fill.
    - The summary is a row with the title (`font-semibold text-foreground`)
@@ -86,7 +101,8 @@ AccordionItem {
 5. **In the editor.** The block renders through `BlockSurface` with the same
    `View` as the feed, so sections can be opened there to check them. The
    form, not the preview, is where text is changed.
-6. **Form.** One field, Sections (a list, `itemLabel` "Section",
+6. **Form.** A Title text field (optional, placeholder "Frequently asked
+   questions"; "How to …" for Steps) first in both blocks, then Sections (a list, `itemLabel` "Section",
    `addLabel` "Add section"), with item fields Title (text, required,
    placeholder "Question or heading") and Content (textarea, required). Below
    it, two switches with the existing `SwitchInput`: "Allow several open"
@@ -102,7 +118,8 @@ AccordionItem {
 
 ## Steps
 
-1. GraphQL (`portableText.graphqls`): add `accordion` to `BlockType`, then
+1. GraphQL (`portableText.graphqls`): add `title: String` to `StepsBlock`
+   and `StepsBlockInput`. Add `accordion` to `BlockType`, then
    `AccordionItem`, `AccordionItemInput`, `AccordionBlock` and
    `AccordionBlockInput` (both with the nullable `allowMultiple` and
    `defaultFirstOpen`), and an `accordion` field on both `Blocks` and
@@ -136,7 +153,11 @@ AccordionItem {
   a line break, an empty list, more than 20 sections, and duplicate or
   missing item keys. The server refuses them too. Section text counts toward
   the 4096-character counter, and the server enforces the same total.
-- Steps still validates exactly as before after the shared helper.
+- Steps still validates its items exactly as before after the shared helper.
+- Both blocks take an optional title. It shows above the block, Edit reopens
+  it, it counts toward the 4096 limit, and Preview and the server refuse one
+  over 120 characters or with a line break. Steps and accordions saved
+  without a title render as before.
 - The block restyles under every palette on `/dev/themes` and reads in light
   and dark mode.
 - An Arabic block reads right to left, with the chevron on the left.

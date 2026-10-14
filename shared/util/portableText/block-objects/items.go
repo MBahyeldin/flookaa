@@ -2,7 +2,20 @@ package blockobjects
 
 import "strings"
 
-const maxItemTitle = 120
+const maxTitle = 120
+
+func checkTitle(blockType, blockKey string, title *string) error {
+	if title == nil {
+		return nil
+	}
+	if utf16Len(*title) > maxTitle {
+		return invalid(blockType, blockKey, "title must be at most %d characters", maxTitle)
+	}
+	if strings.ContainsAny(*title, "\r\n") {
+		return invalid(blockType, blockKey, "title must be one line")
+	}
+	return nil
+}
 
 func checkItem(blockType, blockKey, label string, i int, key, title string, seen map[string]bool) error {
 	if key == "" {
@@ -15,8 +28,8 @@ func checkItem(blockType, blockKey, label string, i int, key, title string, seen
 	if strings.TrimSpace(title) == "" {
 		return invalid(blockType, blockKey, "%s %d title is required", label, i+1)
 	}
-	if utf16Len(title) > maxItemTitle {
-		return invalid(blockType, blockKey, "%s %d title must be at most %d characters", label, i+1, maxItemTitle)
+	if utf16Len(title) > maxTitle {
+		return invalid(blockType, blockKey, "%s %d title must be at most %d characters", label, i+1, maxTitle)
 	}
 	if strings.ContainsAny(title, "\r\n") {
 		return invalid(blockType, blockKey, "%s %d title must be one line", label, i+1)
