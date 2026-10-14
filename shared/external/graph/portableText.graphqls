@@ -67,6 +67,13 @@ enum ImageAlign {
   right
 }
 
+enum BreakStyle {
+  line
+  dashed
+  dots
+  ornament
+}
+
 enum CalloutTone {
   info
   success
@@ -132,6 +139,7 @@ type ImageBlock implements Block {
 type BreakBlock implements Block {
   _type: BlockType!
   _key: ID!
+  style: BreakStyle
 }
 
 type CalloutBlock implements Block {
@@ -213,6 +221,7 @@ input ImageBlockInput {
 input BreakBlockInput {
   _type: BlockType!
   _key: ID!
+  style: BreakStyle
 }
 
 input CalloutBlockInput {

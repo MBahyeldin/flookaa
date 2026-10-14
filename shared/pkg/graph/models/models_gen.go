@@ -73,8 +73,9 @@ type Blocks struct {
 }
 
 type BreakBlock struct {
-	Type BlockType `json:"_type"`
-	Key  string    `json:"_key"`
+	Type  BlockType   `json:"_type"`
+	Key   string      `json:"_key"`
+	Style *BreakStyle `json:"style,omitempty"`
 }
 
 func (BreakBlock) IsBlock()                {}
@@ -82,8 +83,9 @@ func (this BreakBlock) GetType() BlockType { return this.Type }
 func (this BreakBlock) GetKey() string     { return this.Key }
 
 type BreakBlockInput struct {
-	Type BlockType `json:"_type"`
-	Key  string    `json:"_key"`
+	Type  BlockType   `json:"_type"`
+	Key   string      `json:"_key"`
+	Style *BreakStyle `json:"style,omitempty"`
 }
 
 type CalloutBlock struct {
@@ -402,6 +404,65 @@ func (e *BlockType) UnmarshalJSON(b []byte) error {
 }
 
 func (e BlockType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type BreakStyle string
+
+const (
+	BreakStyleLine     BreakStyle = "line"
+	BreakStyleDashed   BreakStyle = "dashed"
+	BreakStyleDots     BreakStyle = "dots"
+	BreakStyleOrnament BreakStyle = "ornament"
+)
+
+var AllBreakStyle = []BreakStyle{
+	BreakStyleLine,
+	BreakStyleDashed,
+	BreakStyleDots,
+	BreakStyleOrnament,
+}
+
+func (e BreakStyle) IsValid() bool {
+	switch e {
+	case BreakStyleLine, BreakStyleDashed, BreakStyleDots, BreakStyleOrnament:
+		return true
+	}
+	return false
+}
+
+func (e BreakStyle) String() string {
+	return string(e)
+}
+
+func (e *BreakStyle) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = BreakStyle(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid BreakStyle", str)
+	}
+	return nil
+}
+
+func (e BreakStyle) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *BreakStyle) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e BreakStyle) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

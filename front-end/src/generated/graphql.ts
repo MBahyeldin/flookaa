@@ -87,12 +87,20 @@ export type BreakBlock = Block & {
   __typename?: 'BreakBlock';
   _key: Scalars['ID']['output'];
   _type: BlockType;
+  style?: Maybe<BreakStyle>;
 };
 
 export type BreakBlockInput = {
   _key: Scalars['ID']['input'];
   _type: BlockType;
+  style?: InputMaybe<BreakStyle>;
 };
+
+export type BreakStyle =
+  | 'dashed'
+  | 'dots'
+  | 'line'
+  | 'ornament';
 
 export type CalloutBlock = Block & {
   __typename?: 'CalloutBlock';

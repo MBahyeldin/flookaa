@@ -368,6 +368,8 @@ func (ec *executionContext) fieldContext_Blocks_break(_ context.Context, field g
 				return ec.fieldContext_BreakBlock__type(ctx, field)
 			case "_key":
 				return ec.fieldContext_BreakBlock__key(ctx, field)
+			case "style":
+				return ec.fieldContext_BreakBlock_style(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type BreakBlock", field.Name)
 		},
@@ -471,6 +473,35 @@ func (ec *executionContext) fieldContext_BreakBlock__key(_ context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BreakBlock_style(ctx context.Context, field graphql.CollectedField, obj *models.BreakBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BreakBlock_style,
+		func(ctx context.Context) (any, error) {
+			return obj.Style, nil
+		},
+		nil,
+		ec.marshalOBreakStyle2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐBreakStyle,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_BreakBlock_style(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BreakBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type BreakStyle does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1444,7 +1475,7 @@ func (ec *executionContext) unmarshalInputBreakBlockInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"_type", "_key"}
+	fieldsInOrder := [...]string{"_type", "_key", "style"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -1465,6 +1496,13 @@ func (ec *executionContext) unmarshalInputBreakBlockInput(ctx context.Context, o
 				return it, err
 			}
 			it.Key = data
+		case "style":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("style"))
+			data, err := ec.unmarshalOBreakStyle2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐBreakStyle(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Style = data
 		}
 	}
 
@@ -1991,6 +2029,8 @@ func (ec *executionContext) _BreakBlock(ctx context.Context, sel ast.SelectionSe
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "style":
+			out.Values[i] = ec._BreakBlock_style(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2609,6 +2649,22 @@ func (ec *executionContext) unmarshalOBreakBlockInput2ᚖsharedᚋpkgᚋgraphᚋ
 	}
 	res, err := ec.unmarshalInputBreakBlockInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOBreakStyle2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐBreakStyle(ctx context.Context, v any) (*models.BreakStyle, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(models.BreakStyle)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOBreakStyle2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐBreakStyle(ctx context.Context, sel ast.SelectionSet, v *models.BreakStyle) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) marshalOCalloutBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCalloutBlock(ctx context.Context, sel ast.SelectionSet, v *models.CalloutBlock) graphql.Marshaler {

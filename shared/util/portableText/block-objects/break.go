@@ -10,7 +10,8 @@ func parseBreak(in *models.BreakBlockInput) (*models.Blocks, error) {
 	}
 	return &models.Blocks{
 		Break: &models.BreakBlock{
-			Type: in.Type,
-			Key:  in.Key,
+			Type:  in.Type,
+			Key:   in.Key,
+			Style: in.Style,
 		}}, nil
 }

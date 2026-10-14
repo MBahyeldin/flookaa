@@ -68,8 +68,9 @@ type ComplexityRoot struct {
 	}
 
 	BreakBlock struct {
-		Key  func(childComplexity int) int
-		Type func(childComplexity int) int
+		Key   func(childComplexity int) int
+		Style func(childComplexity int) int
+		Type  func(childComplexity int) int
 	}
 
 	CalloutBlock struct {
@@ -376,6 +377,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.BreakBlock.Key(childComplexity), true
+
+	case "BreakBlock.style":
+		if e.complexity.BreakBlock.Style == nil {
+			break
+		}
+
+		return e.complexity.BreakBlock.Style(childComplexity), true
 
 	case "BreakBlock._type":
 		if e.complexity.BreakBlock.Type == nil {
@@ -1418,6 +1426,13 @@ enum ImageAlign {
   right
 }
 
+enum BreakStyle {
+  line
+  dashed
+  dots
+  ornament
+}
+
 enum CalloutTone {
   info
   success
@@ -1483,6 +1498,7 @@ type ImageBlock implements Block {
 type BreakBlock implements Block {
   _type: BlockType!
   _key: ID!
+  style: BreakStyle
 }
 
 type CalloutBlock implements Block {
@@ -1564,6 +1580,7 @@ input ImageBlockInput {
 input BreakBlockInput {
   _type: BlockType!
   _key: ID!
+  style: BreakStyle
 }
 
 input CalloutBlockInput {
