@@ -66,6 +66,7 @@ export type BlockInput = {
   callout?: InputMaybe<CalloutBlockInput>;
   image?: InputMaybe<ImageBlockInput>;
   quote?: InputMaybe<QuoteBlockInput>;
+  steps?: InputMaybe<StepsBlockInput>;
 };
 
 /** A block of rich text */
@@ -74,7 +75,8 @@ export type BlockType =
   | 'break'
   | 'callout'
   | 'image'
-  | 'quote';
+  | 'quote'
+  | 'steps';
 
 /** Union of all possible blocks */
 export type Blocks = {
@@ -84,6 +86,7 @@ export type Blocks = {
   callout?: Maybe<CalloutBlock>;
   image?: Maybe<ImageBlock>;
   quote?: Maybe<QuoteBlock>;
+  steps?: Maybe<StepsBlock>;
 };
 
 export type BreakBlock = Block & {
@@ -511,6 +514,32 @@ export type SpanInput = {
 /** A span of text inside a block */
 export type SpanType =
   | 'span';
+
+export type StepItem = {
+  __typename?: 'StepItem';
+  _key: Scalars['ID']['output'];
+  text?: Maybe<Scalars['String']['output']>;
+  title: Scalars['String']['output'];
+};
+
+export type StepItemInput = {
+  _key: Scalars['ID']['input'];
+  text?: InputMaybe<Scalars['String']['input']>;
+  title: Scalars['String']['input'];
+};
+
+export type StepsBlock = Block & {
+  __typename?: 'StepsBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  items: Array<StepItem>;
+};
+
+export type StepsBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  items: Array<StepItemInput>;
+};
 
 export type StyleType =
   | 'blockquote'

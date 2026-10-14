@@ -23,6 +23,12 @@ export class FormField {
   public visibleWhen?: (values: Record<string, unknown>) => boolean;
   // Pic fields only: the sibling fields that receive the picked file's size.
   public dimensions?: { width: string; height: string };
+  // List fields only.
+  public itemFields?: FormField[];
+  public itemLabel?: string;
+  public addLabel?: string;
+  public minItems?: number;
+  public maxItems?: number;
 
   constructor({
     id,
@@ -42,6 +48,11 @@ export class FormField {
     validate = () => null,
     visibleWhen,
     dimensions,
+    itemFields,
+    itemLabel,
+    addLabel,
+    minItems,
+    maxItems,
   }: {
     id: string;
     label: string;
@@ -63,6 +74,11 @@ export class FormField {
     ) => string | null;
     visibleWhen?: (values: Record<string, unknown>) => boolean;
     dimensions?: { width: string; height: string };
+    itemFields?: FormField[];
+    itemLabel?: string;
+    addLabel?: string;
+    minItems?: number;
+    maxItems?: number;
   }) {
     this.id = id;
     this.label = label;
@@ -81,6 +97,11 @@ export class FormField {
     this.validate = validate;
     this.visibleWhen = visibleWhen;
     this.dimensions = dimensions;
+    this.itemFields = itemFields;
+    this.itemLabel = itemLabel;
+    this.addLabel = addLabel;
+    this.minItems = minItems;
+    this.maxItems = maxItems;
   }
 
   isVisible(values: Record<string, unknown>) {

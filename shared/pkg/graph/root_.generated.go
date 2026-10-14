@@ -66,6 +66,7 @@ type ComplexityRoot struct {
 		Callout func(childComplexity int) int
 		Image   func(childComplexity int) int
 		Quote   func(childComplexity int) int
+		Steps   func(childComplexity int) int
 	}
 
 	BreakBlock struct {
@@ -247,6 +248,18 @@ type ComplexityRoot struct {
 		Text  func(childComplexity int) int
 		Type  func(childComplexity int) int
 	}
+
+	StepItem struct {
+		Key   func(childComplexity int) int
+		Text  func(childComplexity int) int
+		Title func(childComplexity int) int
+	}
+
+	StepsBlock struct {
+		Items func(childComplexity int) int
+		Key   func(childComplexity int) int
+		Type  func(childComplexity int) int
+	}
 }
 
 type executableSchema struct {
@@ -386,6 +399,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Blocks.Quote(childComplexity), true
+
+	case "Blocks.steps":
+		if e.complexity.Blocks.Steps == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Steps(childComplexity), true
 
 	case "BreakBlock._key":
 		if e.complexity.BreakBlock.Key == nil {
@@ -1288,6 +1308,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Span.Type(childComplexity), true
 
+	case "StepItem._key":
+		if e.complexity.StepItem.Key == nil {
+			break
+		}
+
+		return e.complexity.StepItem.Key(childComplexity), true
+
+	case "StepItem.text":
+		if e.complexity.StepItem.Text == nil {
+			break
+		}
+
+		return e.complexity.StepItem.Text(childComplexity), true
+
+	case "StepItem.title":
+		if e.complexity.StepItem.Title == nil {
+			break
+		}
+
+		return e.complexity.StepItem.Title(childComplexity), true
+
+	case "StepsBlock.items":
+		if e.complexity.StepsBlock.Items == nil {
+			break
+		}
+
+		return e.complexity.StepsBlock.Items(childComplexity), true
+
+	case "StepsBlock._key":
+		if e.complexity.StepsBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.StepsBlock.Key(childComplexity), true
+
+	case "StepsBlock._type":
+		if e.complexity.StepsBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.StepsBlock.Type(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -1312,6 +1374,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputQuoteBlockInput,
 		ec.unmarshalInputSimpleInput,
 		ec.unmarshalInputSpanInput,
+		ec.unmarshalInputStepItemInput,
+		ec.unmarshalInputStepsBlockInput,
 	)
 	first := true
 
@@ -1463,6 +1527,7 @@ enum BlockType {
   break
   callout
   quote
+  steps
 }
 
 enum ImageSize {
@@ -1571,6 +1636,18 @@ type QuoteBlock implements Block {
   role: String
 }
 
+type StepItem {
+  _key: ID!
+  title: String!
+  text: String
+}
+
+type StepsBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  items: [StepItem!]!
+}
+
 """
 Union of all possible blocks
 """
@@ -1580,6 +1657,7 @@ type Blocks {
   break: BreakBlock
   callout: CalloutBlock
   quote: QuoteBlock
+  steps: StepsBlock
 }
 
 """
@@ -1662,6 +1740,18 @@ input QuoteBlockInput {
   role: String
 }
 
+input StepItemInput {
+  _key: ID!
+  title: String!
+  text: String
+}
+
+input StepsBlockInput {
+  _type: BlockType!
+  _key: ID!
+  items: [StepItemInput!]!
+}
+
 """
 Oneof input for blocks
 """
@@ -1671,6 +1761,7 @@ input BlockInput @oneof {
   break: BreakBlockInput
   callout: CalloutBlockInput
   quote: QuoteBlockInput
+  steps: StepsBlockInput
 }
 
 input PortableTextInput {

@@ -461,6 +461,43 @@ func (ec *executionContext) fieldContext_Blocks_quote(_ context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Blocks_steps(ctx context.Context, field graphql.CollectedField, obj *models.Blocks) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Blocks_steps,
+		func(ctx context.Context) (any, error) {
+			return obj.Steps, nil
+		},
+		nil,
+		ec.marshalOStepsBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐStepsBlock,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Blocks_steps(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Blocks",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_type":
+				return ec.fieldContext_StepsBlock__type(ctx, field)
+			case "_key":
+				return ec.fieldContext_StepsBlock__key(ctx, field)
+			case "items":
+				return ec.fieldContext_StepsBlock_items(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StepsBlock", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _BreakBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.BreakBlock) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1172,6 +1209,8 @@ func (ec *executionContext) fieldContext_PortableText_blocks(_ context.Context, 
 				return ec.fieldContext_Blocks_callout(ctx, field)
 			case "quote":
 				return ec.fieldContext_Blocks_quote(ctx, field)
+			case "steps":
+				return ec.fieldContext_Blocks_steps(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Blocks", field.Name)
 		},
@@ -1440,6 +1479,188 @@ func (ec *executionContext) fieldContext_Span_marks(_ context.Context, field gra
 	return fc, nil
 }
 
+func (ec *executionContext) _StepItem__key(ctx context.Context, field graphql.CollectedField, obj *models.StepItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StepItem__key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StepItem__key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StepItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StepItem_title(ctx context.Context, field graphql.CollectedField, obj *models.StepItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StepItem_title,
+		func(ctx context.Context) (any, error) {
+			return obj.Title, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StepItem_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StepItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StepItem_text(ctx context.Context, field graphql.CollectedField, obj *models.StepItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StepItem_text,
+		func(ctx context.Context) (any, error) {
+			return obj.Text, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_StepItem_text(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StepItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StepsBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.StepsBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StepsBlock__type,
+		func(ctx context.Context) (any, error) {
+			return obj.Type, nil
+		},
+		nil,
+		ec.marshalNBlockType2sharedᚋpkgᚋgraphᚋmodelsᚐBlockType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StepsBlock__type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StepsBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type BlockType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StepsBlock__key(ctx context.Context, field graphql.CollectedField, obj *models.StepsBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StepsBlock__key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StepsBlock__key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StepsBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StepsBlock_items(ctx context.Context, field graphql.CollectedField, obj *models.StepsBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StepsBlock_items,
+		func(ctx context.Context) (any, error) {
+			return obj.Items, nil
+		},
+		nil,
+		ec.marshalNStepItem2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐStepItemᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StepsBlock_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StepsBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_key":
+				return ec.fieldContext_StepItem__key(ctx, field)
+			case "title":
+				return ec.fieldContext_StepItem_title(ctx, field)
+			case "text":
+				return ec.fieldContext_StepItem_text(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StepItem", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 // endregion **************************** field.gotpl *****************************
 
 // region    **************************** input.gotpl *****************************
@@ -1539,7 +1760,7 @@ func (ec *executionContext) unmarshalInputBlockInput(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"block", "image", "break", "callout", "quote"}
+	fieldsInOrder := [...]string{"block", "image", "break", "callout", "quote", "steps"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -1674,6 +1895,32 @@ func (ec *executionContext) unmarshalInputBlockInput(ctx context.Context, obj an
 				it.Quote = nil
 			} else {
 				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.QuoteBlockInput`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "steps":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("steps"))
+			directive0 := func(ctx context.Context) (any, error) {
+				return ec.unmarshalOStepsBlockInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐStepsBlockInput(ctx, v)
+			}
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.Oneof == nil {
+					var zeroVal *models.StepsBlockInput
+					return zeroVal, errors.New("directive oneof is not implemented")
+				}
+				return ec.directives.Oneof(ctx, obj, directive0)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*models.StepsBlockInput); ok {
+				it.Steps = data
+			} else if tmp == nil {
+				it.Steps = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.StepsBlockInput`, tmp)
 				return it, graphql.ErrorOnPath(ctx, err)
 			}
 		}
@@ -2111,6 +2358,88 @@ func (ec *executionContext) unmarshalInputSpanInput(ctx context.Context, obj any
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputStepItemInput(ctx context.Context, obj any) (models.StepItemInput, error) {
+	var it models.StepItemInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"_key", "title", "text"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "_key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_key"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "text":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("text"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Text = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputStepsBlockInput(ctx context.Context, obj any) (models.StepsBlockInput, error) {
+	var it models.StepsBlockInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"_type", "_key", "items"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "_type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_type"))
+			data, err := ec.unmarshalNBlockType2sharedᚋpkgᚋgraphᚋmodelsᚐBlockType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		case "_key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_key"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "items":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("items"))
+			data, err := ec.unmarshalNStepItemInput2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐStepItemInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Items = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -2119,6 +2448,13 @@ func (ec *executionContext) _Block(ctx context.Context, sel ast.SelectionSet, ob
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
+	case models.StepsBlock:
+		return ec._StepsBlock(ctx, sel, &obj)
+	case *models.StepsBlock:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._StepsBlock(ctx, sel, obj)
 	case models.QuoteBlock:
 		return ec._QuoteBlock(ctx, sel, &obj)
 	case *models.QuoteBlock:
@@ -2263,6 +2599,8 @@ func (ec *executionContext) _Blocks(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Blocks_callout(ctx, field, obj)
 		case "quote":
 			out.Values[i] = ec._Blocks_quote(ctx, field, obj)
+		case "steps":
+			out.Values[i] = ec._Blocks_steps(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2681,6 +3019,101 @@ func (ec *executionContext) _Span(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
+var stepItemImplementors = []string{"StepItem"}
+
+func (ec *executionContext) _StepItem(ctx context.Context, sel ast.SelectionSet, obj *models.StepItem) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, stepItemImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("StepItem")
+		case "_key":
+			out.Values[i] = ec._StepItem__key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "title":
+			out.Values[i] = ec._StepItem_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "text":
+			out.Values[i] = ec._StepItem_text(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var stepsBlockImplementors = []string{"StepsBlock", "Block"}
+
+func (ec *executionContext) _StepsBlock(ctx context.Context, sel ast.SelectionSet, obj *models.StepsBlock) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, stepsBlockImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("StepsBlock")
+		case "_type":
+			out.Values[i] = ec._StepsBlock__type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "_key":
+			out.Values[i] = ec._StepsBlock__key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "items":
+			out.Values[i] = ec._StepsBlock_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 // endregion **************************** object.gotpl ****************************
 
 // region    ***************************** type.gotpl *****************************
@@ -2942,6 +3375,80 @@ func (ec *executionContext) marshalNSpanType2sharedᚋpkgᚋgraphᚋmodelsᚐSpa
 	return v
 }
 
+func (ec *executionContext) marshalNStepItem2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐStepItemᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.StepItem) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNStepItem2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐStepItem(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNStepItem2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐStepItem(ctx context.Context, sel ast.SelectionSet, v *models.StepItem) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._StepItem(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNStepItemInput2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐStepItemInputᚄ(ctx context.Context, v any) ([]*models.StepItemInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*models.StepItemInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNStepItemInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐStepItemInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNStepItemInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐStepItemInput(ctx context.Context, v any) (*models.StepItemInput, error) {
+	res, err := ec.unmarshalInputStepItemInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNStyleType2sharedᚋpkgᚋgraphᚋmodelsᚐStyleType(ctx context.Context, v any) (models.StyleType, error) {
 	var res models.StyleType
 	err := res.UnmarshalGQL(v)
@@ -3142,6 +3649,21 @@ func (ec *executionContext) unmarshalOQuoteBlockInput2ᚖsharedᚋpkgᚋgraphᚋ
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputQuoteBlockInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOStepsBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐStepsBlock(ctx context.Context, sel ast.SelectionSet, v *models.StepsBlock) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._StepsBlock(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOStepsBlockInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐStepsBlockInput(ctx context.Context, v any) (*models.StepsBlockInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputStepsBlockInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

@@ -63,6 +63,7 @@ type BlockInput struct {
 	Break   *BreakBlockInput   `json:"break,omitempty"`
 	Callout *CalloutBlockInput `json:"callout,omitempty"`
 	Quote   *QuoteBlockInput   `json:"quote,omitempty"`
+	Steps   *StepsBlockInput   `json:"steps,omitempty"`
 }
 
 // Union of all possible blocks
@@ -72,6 +73,7 @@ type Blocks struct {
 	Break   *BreakBlock   `json:"break,omitempty"`
 	Callout *CalloutBlock `json:"callout,omitempty"`
 	Quote   *QuoteBlock   `json:"quote,omitempty"`
+	Steps   *StepsBlock   `json:"steps,omitempty"`
 }
 
 type BreakBlock struct {
@@ -371,6 +373,34 @@ type SpanInput struct {
 	Marks []string `json:"marks"`
 }
 
+type StepItem struct {
+	Key   string  `json:"_key"`
+	Title string  `json:"title"`
+	Text  *string `json:"text,omitempty"`
+}
+
+type StepItemInput struct {
+	Key   string  `json:"_key"`
+	Title string  `json:"title"`
+	Text  *string `json:"text,omitempty"`
+}
+
+type StepsBlock struct {
+	Type  BlockType   `json:"_type"`
+	Key   string      `json:"_key"`
+	Items []*StepItem `json:"items"`
+}
+
+func (StepsBlock) IsBlock()                {}
+func (this StepsBlock) GetType() BlockType { return this.Type }
+func (this StepsBlock) GetKey() string     { return this.Key }
+
+type StepsBlockInput struct {
+	Type  BlockType        `json:"_type"`
+	Key   string           `json:"_key"`
+	Items []*StepItemInput `json:"items"`
+}
+
 // A block of rich text
 type BlockType string
 
@@ -380,6 +410,7 @@ const (
 	BlockTypeBreak   BlockType = "break"
 	BlockTypeCallout BlockType = "callout"
 	BlockTypeQuote   BlockType = "quote"
+	BlockTypeSteps   BlockType = "steps"
 )
 
 var AllBlockType = []BlockType{
@@ -388,11 +419,12 @@ var AllBlockType = []BlockType{
 	BlockTypeBreak,
 	BlockTypeCallout,
 	BlockTypeQuote,
+	BlockTypeSteps,
 }
 
 func (e BlockType) IsValid() bool {
 	switch e {
-	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote:
+	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote, BlockTypeSteps:
 		return true
 	}
 	return false

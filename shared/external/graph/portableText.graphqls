@@ -52,6 +52,7 @@ enum BlockType {
   break
   callout
   quote
+  steps
 }
 
 enum ImageSize {
@@ -160,6 +161,18 @@ type QuoteBlock implements Block {
   role: String
 }
 
+type StepItem {
+  _key: ID!
+  title: String!
+  text: String
+}
+
+type StepsBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  items: [StepItem!]!
+}
+
 """
 Union of all possible blocks
 """
@@ -169,6 +182,7 @@ type Blocks {
   break: BreakBlock
   callout: CalloutBlock
   quote: QuoteBlock
+  steps: StepsBlock
 }
 
 """
@@ -251,6 +265,18 @@ input QuoteBlockInput {
   role: String
 }
 
+input StepItemInput {
+  _key: ID!
+  title: String!
+  text: String
+}
+
+input StepsBlockInput {
+  _type: BlockType!
+  _key: ID!
+  items: [StepItemInput!]!
+}
+
 """
 Oneof input for blocks
 """
@@ -260,6 +286,7 @@ input BlockInput @oneof {
   break: BreakBlockInput
   callout: CalloutBlockInput
   quote: QuoteBlockInput
+  steps: StepsBlockInput
 }
 
 input PortableTextInput {

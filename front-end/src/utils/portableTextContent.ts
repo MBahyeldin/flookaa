@@ -30,6 +30,16 @@ export function portableTextLength(blocks: Blocks | undefined): number {
   if (!blocks?.length) return 0;
 
   return blocks.reduce((total, block) => {
+    if (block._type === "steps") {
+      const items = (block as unknown as { items?: { title?: unknown; text?: unknown }[] }).items ?? [];
+      return items.reduce(
+        (sum, item) =>
+          sum +
+          (typeof item.title === "string" ? item.title.length : 0) +
+          (typeof item.text === "string" ? item.text.length : 0),
+        total
+      );
+    }
     const textFields = objectTextFields[block._type];
     if (textFields) {
       const fields = block as unknown as Record<string, unknown>;

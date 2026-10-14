@@ -19,7 +19,8 @@ type FormFieldInterfaceTypes =
   | "profile-picture"
   | "dropdown-country"
   | "dropdown-state"
-  | "dropdown-city";
+  | "dropdown-city"
+  | "list";
 
 export type { FormFieldInterfaceTypes };
 

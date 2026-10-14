@@ -9,6 +9,7 @@ import StateSelector from "../inputs/geo/StateSelector";
 import CitySelector from "../inputs/geo/CitySelector";
 import SelectInput from "../inputs/select";
 import SwitchInput from "../inputs/switch";
+import ListInput from "../inputs/list";
 
 export default function FieldRender({
   field,
@@ -132,6 +133,9 @@ export default function FieldRender({
           value={value}
           setFieldValue={setFieldValue}
         />
+      )}
+      {field.interfaceType === "list" && (
+        <ListInput field={field} value={value} setFieldValue={setFieldValue} />
       )}
       {
         field.interfaceType === "select" && (

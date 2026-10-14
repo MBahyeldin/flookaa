@@ -3,10 +3,11 @@ import { image } from "./image";
 import { breakBlock } from "./break";
 import { callout } from "./callout";
 import { quote } from "./quote";
+import { steps } from "./steps";
 
 export type AnyBlock = BlockDefinition<any>;
 
-export const blocks: AnyBlock[] = [image, breakBlock, callout, quote];
+export const blocks: AnyBlock[] = [image, breakBlock, callout, quote, steps];
 
 const byName = new Map(blocks.map((block) => [block.name, block]));
 
