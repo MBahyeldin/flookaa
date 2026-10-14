@@ -19,17 +19,23 @@ type Blocks = PortableTextTextBlock<PortableTextSpan | PortableTextObject>[];
  * clearing the field.
  */
 
-/** Total number of characters across every text span and callout. */
+// Text fields of block objects that count toward the post's limit.
+const objectTextFields: Record<string, string[]> = {
+  callout: ["title", "description"],
+  quote: ["text", "name", "role"],
+};
+
+/** Total number of characters across every text span and text-bearing block object. */
 export function portableTextLength(blocks: Blocks | undefined): number {
   if (!blocks?.length) return 0;
 
   return blocks.reduce((total, block) => {
-    if (block._type === "callout") {
-      const { title, description } = block as { title?: unknown; description?: unknown };
-      return (
-        total +
-        (typeof title === "string" ? title.length : 0) +
-        (typeof description === "string" ? description.length : 0)
+    const textFields = objectTextFields[block._type];
+    if (textFields) {
+      const fields = block as unknown as Record<string, unknown>;
+      return textFields.reduce(
+        (sum, field) => sum + (typeof fields[field] === "string" ? (fields[field] as string).length : 0),
+        total
       );
     }
     // Other block objects (images, breaks) carry no text of their own.

@@ -65,6 +65,7 @@ export type BlockInput = {
   break?: InputMaybe<BreakBlockInput>;
   callout?: InputMaybe<CalloutBlockInput>;
   image?: InputMaybe<ImageBlockInput>;
+  quote?: InputMaybe<QuoteBlockInput>;
 };
 
 /** A block of rich text */
@@ -72,7 +73,8 @@ export type BlockType =
   | 'block'
   | 'break'
   | 'callout'
-  | 'image';
+  | 'image'
+  | 'quote';
 
 /** Union of all possible blocks */
 export type Blocks = {
@@ -81,6 +83,7 @@ export type Blocks = {
   break?: Maybe<BreakBlock>;
   callout?: Maybe<CalloutBlock>;
   image?: Maybe<ImageBlock>;
+  quote?: Maybe<QuoteBlock>;
 };
 
 export type BreakBlock = Block & {
@@ -461,6 +464,23 @@ export type QueryGetPostsArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   owner: OwnerInput;
+};
+
+export type QuoteBlock = Block & {
+  __typename?: 'QuoteBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  name?: Maybe<Scalars['String']['output']>;
+  role?: Maybe<Scalars['String']['output']>;
+  text: Scalars['String']['output'];
+};
+
+export type QuoteBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  name?: InputMaybe<Scalars['String']['input']>;
+  role?: InputMaybe<Scalars['String']['input']>;
+  text: Scalars['String']['input'];
 };
 
 export type SimpleInput = {

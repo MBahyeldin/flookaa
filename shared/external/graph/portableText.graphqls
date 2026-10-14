@@ -51,6 +51,7 @@ enum BlockType {
   image
   break
   callout
+  quote
 }
 
 enum ImageSize {
@@ -151,6 +152,14 @@ type CalloutBlock implements Block {
   description: String!
 }
 
+type QuoteBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  text: String!
+  name: String
+  role: String
+}
+
 """
 Union of all possible blocks
 """
@@ -159,6 +168,7 @@ type Blocks {
   image: ImageBlock
   break: BreakBlock
   callout: CalloutBlock
+  quote: QuoteBlock
 }
 
 """
@@ -233,6 +243,14 @@ input CalloutBlockInput {
   description: String!
 }
 
+input QuoteBlockInput {
+  _type: BlockType!
+  _key: ID!
+  text: String!
+  name: String
+  role: String
+}
+
 """
 Oneof input for blocks
 """
@@ -241,6 +259,7 @@ input BlockInput @oneof {
   image: ImageBlockInput
   break: BreakBlockInput
   callout: CalloutBlockInput
+  quote: QuoteBlockInput
 }
 
 input PortableTextInput {

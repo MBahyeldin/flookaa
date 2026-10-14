@@ -62,6 +62,7 @@ type BlockInput struct {
 	Image   *ImageBlockInput   `json:"image,omitempty"`
 	Break   *BreakBlockInput   `json:"break,omitempty"`
 	Callout *CalloutBlockInput `json:"callout,omitempty"`
+	Quote   *QuoteBlockInput   `json:"quote,omitempty"`
 }
 
 // Union of all possible blocks
@@ -70,6 +71,7 @@ type Blocks struct {
 	Image   *ImageBlock   `json:"image,omitempty"`
 	Break   *BreakBlock   `json:"break,omitempty"`
 	Callout *CalloutBlock `json:"callout,omitempty"`
+	Quote   *QuoteBlock   `json:"quote,omitempty"`
 }
 
 type BreakBlock struct {
@@ -330,6 +332,26 @@ type PostInput struct {
 type Query struct {
 }
 
+type QuoteBlock struct {
+	Type BlockType `json:"_type"`
+	Key  string    `json:"_key"`
+	Text string    `json:"text"`
+	Name *string   `json:"name,omitempty"`
+	Role *string   `json:"role,omitempty"`
+}
+
+func (QuoteBlock) IsBlock()                {}
+func (this QuoteBlock) GetType() BlockType { return this.Type }
+func (this QuoteBlock) GetKey() string     { return this.Key }
+
+type QuoteBlockInput struct {
+	Type BlockType `json:"_type"`
+	Key  string    `json:"_key"`
+	Text string    `json:"text"`
+	Name *string   `json:"name,omitempty"`
+	Role *string   `json:"role,omitempty"`
+}
+
 type SimpleInput struct {
 	Type    SimpleInputType `json:"type"`
 	Content string          `json:"content"`
@@ -357,6 +379,7 @@ const (
 	BlockTypeImage   BlockType = "image"
 	BlockTypeBreak   BlockType = "break"
 	BlockTypeCallout BlockType = "callout"
+	BlockTypeQuote   BlockType = "quote"
 )
 
 var AllBlockType = []BlockType{
@@ -364,11 +387,12 @@ var AllBlockType = []BlockType{
 	BlockTypeImage,
 	BlockTypeBreak,
 	BlockTypeCallout,
+	BlockTypeQuote,
 }
 
 func (e BlockType) IsValid() bool {
 	switch e {
-	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout:
+	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote:
 		return true
 	}
 	return false

@@ -19,6 +19,8 @@ func ParseBlock(in *models.BlockInput) (*models.Blocks, error) {
 		return parseBreak(in.Break)
 	case in.Callout != nil:
 		return parseCallout(in.Callout)
+	case in.Quote != nil:
+		return parseQuote(in.Quote)
 	}
 	return nil, errors.New("invalid block: unknown type")
 }
@@ -34,6 +36,8 @@ func Key(b *models.Blocks) string {
 		return b.Break.Key
 	case b.Callout != nil:
 		return b.Callout.Key
+	case b.Quote != nil:
+		return b.Quote.Key
 	}
 	return ""
 }
@@ -44,6 +48,15 @@ func TextLength(b *models.Blocks) int {
 		n := utf16Len(b.Callout.Description)
 		if b.Callout.Title != nil {
 			n += utf16Len(*b.Callout.Title)
+		}
+		return n
+	}
+	if b.Quote != nil {
+		n := utf16Len(b.Quote.Text)
+		for _, s := range []*string{b.Quote.Name, b.Quote.Role} {
+			if s != nil {
+				n += utf16Len(*s)
+			}
 		}
 		return n
 	}

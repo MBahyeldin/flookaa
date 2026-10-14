@@ -65,6 +65,7 @@ type ComplexityRoot struct {
 		Break   func(childComplexity int) int
 		Callout func(childComplexity int) int
 		Image   func(childComplexity int) int
+		Quote   func(childComplexity int) int
 	}
 
 	BreakBlock struct {
@@ -232,6 +233,14 @@ type ComplexityRoot struct {
 		GetPosts    func(childComplexity int, owner models.OwnerInput, ids []string, limit *int32, offset *int32) int
 	}
 
+	QuoteBlock struct {
+		Key  func(childComplexity int) int
+		Name func(childComplexity int) int
+		Role func(childComplexity int) int
+		Text func(childComplexity int) int
+		Type func(childComplexity int) int
+	}
+
 	Span struct {
 		Key   func(childComplexity int) int
 		Marks func(childComplexity int) int
@@ -370,6 +379,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Blocks.Image(childComplexity), true
+
+	case "Blocks.quote":
+		if e.complexity.Blocks.Quote == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Quote(childComplexity), true
 
 	case "BreakBlock._key":
 		if e.complexity.BreakBlock.Key == nil {
@@ -1209,6 +1225,41 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.GetPosts(childComplexity, args["owner"].(models.OwnerInput), args["ids"].([]string), args["limit"].(*int32), args["offset"].(*int32)), true
 
+	case "QuoteBlock._key":
+		if e.complexity.QuoteBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.QuoteBlock.Key(childComplexity), true
+
+	case "QuoteBlock.name":
+		if e.complexity.QuoteBlock.Name == nil {
+			break
+		}
+
+		return e.complexity.QuoteBlock.Name(childComplexity), true
+
+	case "QuoteBlock.role":
+		if e.complexity.QuoteBlock.Role == nil {
+			break
+		}
+
+		return e.complexity.QuoteBlock.Role(childComplexity), true
+
+	case "QuoteBlock.text":
+		if e.complexity.QuoteBlock.Text == nil {
+			break
+		}
+
+		return e.complexity.QuoteBlock.Text(childComplexity), true
+
+	case "QuoteBlock._type":
+		if e.complexity.QuoteBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.QuoteBlock.Type(childComplexity), true
+
 	case "Span._key":
 		if e.complexity.Span.Key == nil {
 			break
@@ -1258,6 +1309,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputOwnerInput,
 		ec.unmarshalInputPortableTextInput,
 		ec.unmarshalInputPostInput,
+		ec.unmarshalInputQuoteBlockInput,
 		ec.unmarshalInputSimpleInput,
 		ec.unmarshalInputSpanInput,
 	)
@@ -1410,6 +1462,7 @@ enum BlockType {
   image
   break
   callout
+  quote
 }
 
 enum ImageSize {
@@ -1510,6 +1563,14 @@ type CalloutBlock implements Block {
   description: String!
 }
 
+type QuoteBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  text: String!
+  name: String
+  role: String
+}
+
 """
 Union of all possible blocks
 """
@@ -1518,6 +1579,7 @@ type Blocks {
   image: ImageBlock
   break: BreakBlock
   callout: CalloutBlock
+  quote: QuoteBlock
 }
 
 """
@@ -1592,6 +1654,14 @@ input CalloutBlockInput {
   description: String!
 }
 
+input QuoteBlockInput {
+  _type: BlockType!
+  _key: ID!
+  text: String!
+  name: String
+  role: String
+}
+
 """
 Oneof input for blocks
 """
@@ -1600,6 +1670,7 @@ input BlockInput @oneof {
   image: ImageBlockInput
   break: BreakBlockInput
   callout: CalloutBlockInput
+  quote: QuoteBlockInput
 }
 
 input PortableTextInput {

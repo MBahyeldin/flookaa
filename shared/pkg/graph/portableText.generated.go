@@ -420,6 +420,47 @@ func (ec *executionContext) fieldContext_Blocks_callout(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _Blocks_quote(ctx context.Context, field graphql.CollectedField, obj *models.Blocks) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Blocks_quote,
+		func(ctx context.Context) (any, error) {
+			return obj.Quote, nil
+		},
+		nil,
+		ec.marshalOQuoteBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐQuoteBlock,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Blocks_quote(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Blocks",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_type":
+				return ec.fieldContext_QuoteBlock__type(ctx, field)
+			case "_key":
+				return ec.fieldContext_QuoteBlock__key(ctx, field)
+			case "text":
+				return ec.fieldContext_QuoteBlock_text(ctx, field)
+			case "name":
+				return ec.fieldContext_QuoteBlock_name(ctx, field)
+			case "role":
+				return ec.fieldContext_QuoteBlock_role(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QuoteBlock", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _BreakBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.BreakBlock) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1129,8 +1170,155 @@ func (ec *executionContext) fieldContext_PortableText_blocks(_ context.Context, 
 				return ec.fieldContext_Blocks_break(ctx, field)
 			case "callout":
 				return ec.fieldContext_Blocks_callout(ctx, field)
+			case "quote":
+				return ec.fieldContext_Blocks_quote(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Blocks", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuoteBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.QuoteBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuoteBlock__type,
+		func(ctx context.Context) (any, error) {
+			return obj.Type, nil
+		},
+		nil,
+		ec.marshalNBlockType2sharedᚋpkgᚋgraphᚋmodelsᚐBlockType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuoteBlock__type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuoteBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type BlockType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuoteBlock__key(ctx context.Context, field graphql.CollectedField, obj *models.QuoteBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuoteBlock__key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuoteBlock__key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuoteBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuoteBlock_text(ctx context.Context, field graphql.CollectedField, obj *models.QuoteBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuoteBlock_text,
+		func(ctx context.Context) (any, error) {
+			return obj.Text, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuoteBlock_text(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuoteBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuoteBlock_name(ctx context.Context, field graphql.CollectedField, obj *models.QuoteBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuoteBlock_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuoteBlock_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuoteBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QuoteBlock_role(ctx context.Context, field graphql.CollectedField, obj *models.QuoteBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_QuoteBlock_role,
+		func(ctx context.Context) (any, error) {
+			return obj.Role, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_QuoteBlock_role(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QuoteBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1351,7 +1539,7 @@ func (ec *executionContext) unmarshalInputBlockInput(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"block", "image", "break", "callout"}
+	fieldsInOrder := [...]string{"block", "image", "break", "callout", "quote"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -1460,6 +1648,32 @@ func (ec *executionContext) unmarshalInputBlockInput(ctx context.Context, obj an
 				it.Callout = nil
 			} else {
 				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.CalloutBlockInput`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "quote":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("quote"))
+			directive0 := func(ctx context.Context) (any, error) {
+				return ec.unmarshalOQuoteBlockInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐQuoteBlockInput(ctx, v)
+			}
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.Oneof == nil {
+					var zeroVal *models.QuoteBlockInput
+					return zeroVal, errors.New("directive oneof is not implemented")
+				}
+				return ec.directives.Oneof(ctx, obj, directive0)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*models.QuoteBlockInput); ok {
+				it.Quote = data
+			} else if tmp == nil {
+				it.Quote = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.QuoteBlockInput`, tmp)
 				return it, graphql.ErrorOnPath(ctx, err)
 			}
 		}
@@ -1794,6 +2008,61 @@ func (ec *executionContext) unmarshalInputPortableTextInput(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputQuoteBlockInput(ctx context.Context, obj any) (models.QuoteBlockInput, error) {
+	var it models.QuoteBlockInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"_type", "_key", "text", "name", "role"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "_type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_type"))
+			data, err := ec.unmarshalNBlockType2sharedᚋpkgᚋgraphᚋmodelsᚐBlockType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		case "_key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_key"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "text":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("text"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Text = data
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "role":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Role = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSpanInput(ctx context.Context, obj any) (models.SpanInput, error) {
 	var it models.SpanInput
 	asMap := map[string]any{}
@@ -1850,6 +2119,13 @@ func (ec *executionContext) _Block(ctx context.Context, sel ast.SelectionSet, ob
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
+	case models.QuoteBlock:
+		return ec._QuoteBlock(ctx, sel, &obj)
+	case *models.QuoteBlock:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._QuoteBlock(ctx, sel, obj)
 	case models.ImageBlock:
 		return ec._ImageBlock(ctx, sel, &obj)
 	case *models.ImageBlock:
@@ -1985,6 +2261,8 @@ func (ec *executionContext) _Blocks(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Blocks_break(ctx, field, obj)
 		case "callout":
 			out.Values[i] = ec._Blocks_callout(ctx, field, obj)
+		case "quote":
+			out.Values[i] = ec._Blocks_quote(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2273,6 +2551,59 @@ func (ec *executionContext) _PortableText(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var quoteBlockImplementors = []string{"QuoteBlock", "Block"}
+
+func (ec *executionContext) _QuoteBlock(ctx context.Context, sel ast.SelectionSet, obj *models.QuoteBlock) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, quoteBlockImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("QuoteBlock")
+		case "_type":
+			out.Values[i] = ec._QuoteBlock__type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "_key":
+			out.Values[i] = ec._QuoteBlock__key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "text":
+			out.Values[i] = ec._QuoteBlock_text(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._QuoteBlock_name(ctx, field, obj)
+		case "role":
+			out.Values[i] = ec._QuoteBlock_role(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2797,6 +3128,21 @@ func (ec *executionContext) marshalOPortableText2ᚖsharedᚋpkgᚋgraphᚋmodel
 		return graphql.Null
 	}
 	return ec._PortableText(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOQuoteBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐQuoteBlock(ctx context.Context, sel ast.SelectionSet, v *models.QuoteBlock) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._QuoteBlock(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOQuoteBlockInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐQuoteBlockInput(ctx context.Context, v any) (*models.QuoteBlockInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputQuoteBlockInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 // endregion ***************************** type.gotpl *****************************
