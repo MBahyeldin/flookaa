@@ -10,6 +10,7 @@ import CitySelector from "../inputs/geo/CitySelector";
 import SelectInput from "../inputs/select";
 import SwitchInput from "../inputs/switch";
 import ListInput from "../inputs/list";
+import VoiceInput from "../inputs/voice";
 
 export default function FieldRender({
   field,
@@ -72,6 +73,16 @@ export default function FieldRender({
           handleBlur={handleBlur}
           touched={touched}
           setTouched={setTouched}
+          values={values}
+        />
+      )}
+      {field.interfaceType === "voice" && (
+        <VoiceInput
+          error={error}
+          setFieldValue={setFieldValue}
+          field={field}
+          initValue={value as string}
+          touched={touched}
           values={values}
         />
       )}

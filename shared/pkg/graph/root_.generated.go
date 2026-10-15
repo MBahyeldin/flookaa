@@ -86,6 +86,7 @@ type ComplexityRoot struct {
 		Quote     func(childComplexity int) int
 		Spoiler   func(childComplexity int) int
 		Steps     func(childComplexity int) int
+		VoiceNote func(childComplexity int) int
 	}
 
 	BreakBlock struct {
@@ -307,6 +308,14 @@ type ComplexityRoot struct {
 		Key   func(childComplexity int) int
 		Title func(childComplexity int) int
 		Type  func(childComplexity int) int
+	}
+
+	VoiceNoteBlock struct {
+		Duration func(childComplexity int) int
+		Key      func(childComplexity int) int
+		Src      func(childComplexity int) int
+		Title    func(childComplexity int) int
+		Type     func(childComplexity int) int
 	}
 }
 
@@ -545,6 +554,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Blocks.Steps(childComplexity), true
+
+	case "Blocks.voiceNote":
+		if e.complexity.Blocks.VoiceNote == nil {
+			break
+		}
+
+		return e.complexity.Blocks.VoiceNote(childComplexity), true
 
 	case "BreakBlock._key":
 		if e.complexity.BreakBlock.Key == nil {
@@ -1608,6 +1624,41 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.StepsBlock.Type(childComplexity), true
 
+	case "VoiceNoteBlock.duration":
+		if e.complexity.VoiceNoteBlock.Duration == nil {
+			break
+		}
+
+		return e.complexity.VoiceNoteBlock.Duration(childComplexity), true
+
+	case "VoiceNoteBlock._key":
+		if e.complexity.VoiceNoteBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.VoiceNoteBlock.Key(childComplexity), true
+
+	case "VoiceNoteBlock.src":
+		if e.complexity.VoiceNoteBlock.Src == nil {
+			break
+		}
+
+		return e.complexity.VoiceNoteBlock.Src(childComplexity), true
+
+	case "VoiceNoteBlock.title":
+		if e.complexity.VoiceNoteBlock.Title == nil {
+			break
+		}
+
+		return e.complexity.VoiceNoteBlock.Title(childComplexity), true
+
+	case "VoiceNoteBlock._type":
+		if e.complexity.VoiceNoteBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.VoiceNoteBlock.Type(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -1640,6 +1691,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputSpoilerBlockInput,
 		ec.unmarshalInputStepItemInput,
 		ec.unmarshalInputStepsBlockInput,
+		ec.unmarshalInputVoiceNoteBlockInput,
 	)
 	first := true
 
@@ -1796,6 +1848,7 @@ enum BlockType {
   spoiler
   countdown
   checklist
+  voiceNote
 }
 
 enum ImageSize {
@@ -1960,6 +2013,14 @@ type ChecklistBlock implements Block {
   items: [ChecklistItem!]!
 }
 
+type VoiceNoteBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  src: String!
+  title: String
+  duration: Int
+}
+
 """
 Union of all possible blocks
 """
@@ -1974,6 +2035,7 @@ type Blocks {
   spoiler: SpoilerBlock
   countdown: CountdownBlock
   checklist: ChecklistBlock
+  voiceNote: VoiceNoteBlock
 }
 
 """
@@ -2112,6 +2174,14 @@ input ChecklistBlockInput {
   items: [ChecklistItemInput!]!
 }
 
+input VoiceNoteBlockInput {
+  _type: BlockType!
+  _key: ID!
+  src: String!
+  title: String
+  duration: Int
+}
+
 """
 Oneof input for blocks
 """
@@ -2126,6 +2196,7 @@ input BlockInput @oneof {
   spoiler: SpoilerBlockInput
   countdown: CountdownBlockInput
   checklist: ChecklistBlockInput
+  voiceNote: VoiceNoteBlockInput
 }
 
 input PortableTextInput {

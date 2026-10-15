@@ -103,6 +103,7 @@ export type BlockInput = {
   quote?: InputMaybe<QuoteBlockInput>;
   spoiler?: InputMaybe<SpoilerBlockInput>;
   steps?: InputMaybe<StepsBlockInput>;
+  voiceNote?: InputMaybe<VoiceNoteBlockInput>;
 };
 
 /** A block of rich text */
@@ -116,7 +117,8 @@ export type BlockType =
   | 'image'
   | 'quote'
   | 'spoiler'
-  | 'steps';
+  | 'steps'
+  | 'voiceNote';
 
 /** Union of all possible blocks */
 export type Blocks = {
@@ -131,6 +133,7 @@ export type Blocks = {
   quote?: Maybe<QuoteBlock>;
   spoiler?: Maybe<SpoilerBlock>;
   steps?: Maybe<StepsBlock>;
+  voiceNote?: Maybe<VoiceNoteBlock>;
 };
 
 export type BreakBlock = Block & {
@@ -656,6 +659,23 @@ export type StyleType =
   | 'h5'
   | 'h6'
   | 'normal';
+
+export type VoiceNoteBlock = Block & {
+  __typename?: 'VoiceNoteBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  duration?: Maybe<Scalars['Int']['output']>;
+  src: Scalars['String']['output'];
+  title?: Maybe<Scalars['String']['output']>;
+};
+
+export type VoiceNoteBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  duration?: InputMaybe<Scalars['Int']['input']>;
+  src: Scalars['String']['input'];
+  title?: InputMaybe<Scalars['String']['input']>;
+};
 
 export type CreateCommentMutationVariables = Exact<{
   parentId: Scalars['ObjectId']['input'];

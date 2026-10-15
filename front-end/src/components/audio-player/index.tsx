@@ -24,14 +24,18 @@ function formatTime(seconds: number): string {
 
 export default function AudioPlayer({
   src,
+  initialDuration,
   className,
 }: {
   src: string;
+  // Shown until the file's own duration is known.
+  initialDuration?: number;
   className?: string;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
+  const [loadedDuration, setDuration] = useState(0);
+  const duration = loadedDuration || initialDuration || 0;
   const [currentTime, setCurrentTime] = useState(0);
   const [speedIndex, setSpeedIndex] = useState(0);
   const { peaks } = useAudioPeaks(src, BAR_COUNT);

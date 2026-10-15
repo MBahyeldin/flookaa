@@ -17,6 +17,7 @@ type FormFieldInterfaceTypes =
   | "datetime"
   | "file"
   | "pic"
+  | "voice"
   | "profile-picture"
   | "dropdown-country"
   | "dropdown-state"

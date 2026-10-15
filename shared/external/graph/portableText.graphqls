@@ -57,6 +57,7 @@ enum BlockType {
   spoiler
   countdown
   checklist
+  voiceNote
 }
 
 enum ImageSize {
@@ -221,6 +222,14 @@ type ChecklistBlock implements Block {
   items: [ChecklistItem!]!
 }
 
+type VoiceNoteBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  src: String!
+  title: String
+  duration: Int
+}
+
 """
 Union of all possible blocks
 """
@@ -235,6 +244,7 @@ type Blocks {
   spoiler: SpoilerBlock
   countdown: CountdownBlock
   checklist: ChecklistBlock
+  voiceNote: VoiceNoteBlock
 }
 
 """
@@ -373,6 +383,14 @@ input ChecklistBlockInput {
   items: [ChecklistItemInput!]!
 }
 
+input VoiceNoteBlockInput {
+  _type: BlockType!
+  _key: ID!
+  src: String!
+  title: String
+  duration: Int
+}
+
 """
 Oneof input for blocks
 """
@@ -387,6 +405,7 @@ input BlockInput @oneof {
   spoiler: SpoilerBlockInput
   countdown: CountdownBlockInput
   checklist: ChecklistBlockInput
+  voiceNote: VoiceNoteBlockInput
 }
 
 input PortableTextInput {
