@@ -17,7 +17,7 @@ func checkTitle(blockType, blockKey, field string, title *string) error {
 	return nil
 }
 
-func checkItem(blockType, blockKey, label string, i int, key, title string, seen map[string]bool) error {
+func checkItemKey(blockType, blockKey, label string, i int, key string, seen map[string]bool) error {
 	if key == "" {
 		return invalid(blockType, blockKey, "%s %d is missing _key", label, i+1)
 	}
@@ -25,6 +25,13 @@ func checkItem(blockType, blockKey, label string, i int, key, title string, seen
 		return invalid(blockType, blockKey, "%s %d has a duplicate _key", label, i+1)
 	}
 	seen[key] = true
+	return nil
+}
+
+func checkItem(blockType, blockKey, label string, i int, key, title string, seen map[string]bool) error {
+	if err := checkItemKey(blockType, blockKey, label, i, key, seen); err != nil {
+		return err
+	}
 	if strings.TrimSpace(title) == "" {
 		return invalid(blockType, blockKey, "%s %d title is required", label, i+1)
 	}

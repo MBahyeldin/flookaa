@@ -102,6 +102,7 @@ type BlockInput struct {
 	Spoiler   *SpoilerBlockInput   `json:"spoiler,omitempty"`
 	Countdown *CountdownBlockInput `json:"countdown,omitempty"`
 	Checklist *ChecklistBlockInput `json:"checklist,omitempty"`
+	Gallery   *GalleryBlockInput   `json:"gallery,omitempty"`
 }
 
 // Union of all possible blocks
@@ -116,6 +117,7 @@ type Blocks struct {
 	Spoiler   *SpoilerBlock   `json:"spoiler,omitempty"`
 	Countdown *CountdownBlock `json:"countdown,omitempty"`
 	Checklist *ChecklistBlock `json:"checklist,omitempty"`
+	Gallery   *GalleryBlock   `json:"gallery,omitempty"`
 }
 
 type BreakBlock struct {
@@ -255,6 +257,42 @@ type CountdownBlockInput struct {
 	EndsAt    time.Time `json:"endsAt"`
 	Label     *string   `json:"label,omitempty"`
 	EndedText *string   `json:"endedText,omitempty"`
+}
+
+type GalleryBlock struct {
+	Type   BlockType      `json:"_type"`
+	Key    string         `json:"_key"`
+	Layout *GalleryLayout `json:"layout,omitempty"`
+	Items  []*GalleryItem `json:"items"`
+}
+
+func (GalleryBlock) IsBlock()                {}
+func (this GalleryBlock) GetType() BlockType { return this.Type }
+func (this GalleryBlock) GetKey() string     { return this.Key }
+
+type GalleryBlockInput struct {
+	Type   BlockType           `json:"_type"`
+	Key    string              `json:"_key"`
+	Layout *GalleryLayout      `json:"layout,omitempty"`
+	Items  []*GalleryItemInput `json:"items"`
+}
+
+type GalleryItem struct {
+	Key     string  `json:"_key"`
+	Src     string  `json:"src"`
+	Alt     *string `json:"alt,omitempty"`
+	Caption *string `json:"caption,omitempty"`
+	Width   *int32  `json:"width,omitempty"`
+	Height  *int32  `json:"height,omitempty"`
+}
+
+type GalleryItemInput struct {
+	Key     string  `json:"_key"`
+	Src     string  `json:"src"`
+	Alt     *string `json:"alt,omitempty"`
+	Caption *string `json:"caption,omitempty"`
+	Width   *int32  `json:"width,omitempty"`
+	Height  *int32  `json:"height,omitempty"`
 }
 
 type ImageBlock struct {
@@ -527,6 +565,7 @@ const (
 	BlockTypeSpoiler   BlockType = "spoiler"
 	BlockTypeCountdown BlockType = "countdown"
 	BlockTypeChecklist BlockType = "checklist"
+	BlockTypeGallery   BlockType = "gallery"
 )
 
 var AllBlockType = []BlockType{
@@ -540,11 +579,12 @@ var AllBlockType = []BlockType{
 	BlockTypeSpoiler,
 	BlockTypeCountdown,
 	BlockTypeChecklist,
+	BlockTypeGallery,
 }
 
 func (e BlockType) IsValid() bool {
 	switch e {
-	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote, BlockTypeSteps, BlockTypeAccordion, BlockTypeSpoiler, BlockTypeCountdown, BlockTypeChecklist:
+	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote, BlockTypeSteps, BlockTypeAccordion, BlockTypeSpoiler, BlockTypeCountdown, BlockTypeChecklist, BlockTypeGallery:
 		return true
 	}
 	return false
@@ -767,6 +807,61 @@ func (e *CalloutTone) UnmarshalJSON(b []byte) error {
 }
 
 func (e CalloutTone) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type GalleryLayout string
+
+const (
+	GalleryLayoutGrid     GalleryLayout = "grid"
+	GalleryLayoutCarousel GalleryLayout = "carousel"
+)
+
+var AllGalleryLayout = []GalleryLayout{
+	GalleryLayoutGrid,
+	GalleryLayoutCarousel,
+}
+
+func (e GalleryLayout) IsValid() bool {
+	switch e {
+	case GalleryLayoutGrid, GalleryLayoutCarousel:
+		return true
+	}
+	return false
+}
+
+func (e GalleryLayout) String() string {
+	return string(e)
+}
+
+func (e *GalleryLayout) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = GalleryLayout(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid GalleryLayout", str)
+	}
+	return nil
+}
+
+func (e GalleryLayout) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *GalleryLayout) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e GalleryLayout) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

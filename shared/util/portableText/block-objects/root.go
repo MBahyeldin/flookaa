@@ -31,6 +31,8 @@ func ParseBlock(in *models.BlockInput) (*models.Blocks, error) {
 		return parseCountdown(in.Countdown)
 	case in.Checklist != nil:
 		return parseChecklist(in.Checklist)
+	case in.Gallery != nil:
+		return parseGallery(in.Gallery)
 	}
 	return nil, errors.New("invalid block: unknown type")
 }
@@ -58,6 +60,8 @@ func Key(b *models.Blocks) string {
 		return b.Countdown.Key
 	case b.Checklist != nil:
 		return b.Checklist.Key
+	case b.Gallery != nil:
+		return b.Gallery.Key
 	}
 	return ""
 }

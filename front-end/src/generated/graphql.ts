@@ -99,6 +99,7 @@ export type BlockInput = {
   callout?: InputMaybe<CalloutBlockInput>;
   checklist?: InputMaybe<ChecklistBlockInput>;
   countdown?: InputMaybe<CountdownBlockInput>;
+  gallery?: InputMaybe<GalleryBlockInput>;
   image?: InputMaybe<ImageBlockInput>;
   quote?: InputMaybe<QuoteBlockInput>;
   spoiler?: InputMaybe<SpoilerBlockInput>;
@@ -113,6 +114,7 @@ export type BlockType =
   | 'callout'
   | 'checklist'
   | 'countdown'
+  | 'gallery'
   | 'image'
   | 'quote'
   | 'spoiler'
@@ -127,6 +129,7 @@ export type Blocks = {
   callout?: Maybe<CalloutBlock>;
   checklist?: Maybe<ChecklistBlock>;
   countdown?: Maybe<CountdownBlock>;
+  gallery?: Maybe<GalleryBlock>;
   image?: Maybe<ImageBlock>;
   quote?: Maybe<QuoteBlock>;
   spoiler?: Maybe<SpoilerBlock>;
@@ -285,6 +288,44 @@ export type CountdownBlockInput = {
   endsAt: Scalars['DateTime']['input'];
   label?: InputMaybe<Scalars['String']['input']>;
 };
+
+export type GalleryBlock = Block & {
+  __typename?: 'GalleryBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  items: Array<GalleryItem>;
+  layout?: Maybe<GalleryLayout>;
+};
+
+export type GalleryBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  items: Array<GalleryItemInput>;
+  layout?: InputMaybe<GalleryLayout>;
+};
+
+export type GalleryItem = {
+  __typename?: 'GalleryItem';
+  _key: Scalars['ID']['output'];
+  alt?: Maybe<Scalars['String']['output']>;
+  caption?: Maybe<Scalars['String']['output']>;
+  height?: Maybe<Scalars['Int']['output']>;
+  src: Scalars['String']['output'];
+  width?: Maybe<Scalars['Int']['output']>;
+};
+
+export type GalleryItemInput = {
+  _key: Scalars['ID']['input'];
+  alt?: InputMaybe<Scalars['String']['input']>;
+  caption?: InputMaybe<Scalars['String']['input']>;
+  height?: InputMaybe<Scalars['Int']['input']>;
+  src: Scalars['String']['input'];
+  width?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type GalleryLayout =
+  | 'carousel'
+  | 'grid';
 
 export type ImageAlign =
   | 'center'

@@ -57,6 +57,7 @@ enum BlockType {
   spoiler
   countdown
   checklist
+  gallery
 }
 
 enum ImageSize {
@@ -71,6 +72,11 @@ enum ImageAlign {
   left
   center
   right
+}
+
+enum GalleryLayout {
+  grid
+  carousel
 }
 
 enum BreakStyle {
@@ -221,6 +227,22 @@ type ChecklistBlock implements Block {
   items: [ChecklistItem!]!
 }
 
+type GalleryItem {
+  _key: ID!
+  src: String!
+  alt: String
+  caption: String
+  width: Int
+  height: Int
+}
+
+type GalleryBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  layout: GalleryLayout
+  items: [GalleryItem!]!
+}
+
 """
 Union of all possible blocks
 """
@@ -235,6 +257,7 @@ type Blocks {
   spoiler: SpoilerBlock
   countdown: CountdownBlock
   checklist: ChecklistBlock
+  gallery: GalleryBlock
 }
 
 """
@@ -373,6 +396,22 @@ input ChecklistBlockInput {
   items: [ChecklistItemInput!]!
 }
 
+input GalleryItemInput {
+  _key: ID!
+  src: String!
+  alt: String
+  caption: String
+  width: Int
+  height: Int
+}
+
+input GalleryBlockInput {
+  _type: BlockType!
+  _key: ID!
+  layout: GalleryLayout
+  items: [GalleryItemInput!]!
+}
+
 """
 Oneof input for blocks
 """
@@ -387,6 +426,7 @@ input BlockInput @oneof {
   spoiler: SpoilerBlockInput
   countdown: CountdownBlockInput
   checklist: ChecklistBlockInput
+  gallery: GalleryBlockInput
 }
 
 input PortableTextInput {

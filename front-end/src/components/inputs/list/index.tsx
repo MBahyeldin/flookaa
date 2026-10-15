@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ArrowDownIcon, ArrowUpIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import FieldRender from "@/components/form/FieldRender";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,19 @@ export default function ListInput({
     }
   }, [value, min, name, setFieldValue]);
 
-  const update = (next: Item[]) => setFieldValue(name, next);
+  // Inputs may set several fields before the next render (src, width, height).
+  const latest = useRef(items);
+  useEffect(() => {
+    latest.current = items;
+  });
+
+  const update = (next: Item[]) => {
+    latest.current = next;
+    return setFieldValue(name, next);
+  };
+
+  const setItemField = (key: string, field: string, next: unknown) =>
+    update(latest.current.map((other) => (other._key === key ? { ...other, [field]: next } : other)));
 
   const move = (index: number, by: number) => {
     const next = [...items];
@@ -89,25 +101,24 @@ export default function ListInput({
               ) : null}
             </div>
             <div className="flex flex-col gap-3">
-              {field.itemFields?.map((sub) => (
-                <FieldRender
-                  key={sub.name}
-                  field={Object.assign(
-                    new FormField({ id: sub.id, label: sub.label, type: sub.type }),
-                    sub,
-                    { id: `${name}-${item._key}-${sub.name}` }
-                  )}
-                  value={item[sub.name!]}
-                  values={item}
-                  setFieldValue={(_, next) =>
-                    update(
-                      items.map((other) =>
-                        other._key === item._key ? { ...other, [sub.name!]: next } : other
-                      )
-                    )
-                  }
-                />
-              ))}
+              {field.itemFields?.map((sub) => {
+                const id = `${name}-${item._key}-${sub.name}`;
+                return (
+                  <FieldRender
+                    key={sub.name}
+                    field={Object.assign(
+                      new FormField({ id: sub.id, label: sub.label, type: sub.type }),
+                      sub,
+                      { id }
+                    )}
+                    value={item[sub.name!]}
+                    values={item}
+                    setFieldValue={(target, next) =>
+                      setItemField(item._key, target === id ? sub.name! : target, next)
+                    }
+                  />
+                );
+              })}
             </div>
           </li>
         ))}

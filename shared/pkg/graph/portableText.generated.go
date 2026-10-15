@@ -931,6 +931,45 @@ func (ec *executionContext) fieldContext_Blocks_checklist(_ context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Blocks_gallery(ctx context.Context, field graphql.CollectedField, obj *models.Blocks) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Blocks_gallery,
+		func(ctx context.Context) (any, error) {
+			return obj.Gallery, nil
+		},
+		nil,
+		ec.marshalOGalleryBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryBlock,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Blocks_gallery(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Blocks",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_type":
+				return ec.fieldContext_GalleryBlock__type(ctx, field)
+			case "_key":
+				return ec.fieldContext_GalleryBlock__key(ctx, field)
+			case "layout":
+				return ec.fieldContext_GalleryBlock_layout(ctx, field)
+			case "items":
+				return ec.fieldContext_GalleryBlock_items(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GalleryBlock", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _BreakBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.BreakBlock) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1548,6 +1587,310 @@ func (ec *executionContext) fieldContext_CountdownBlock_endedText(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _GalleryBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.GalleryBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GalleryBlock__type,
+		func(ctx context.Context) (any, error) {
+			return obj.Type, nil
+		},
+		nil,
+		ec.marshalNBlockType2sharedᚋpkgᚋgraphᚋmodelsᚐBlockType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GalleryBlock__type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GalleryBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type BlockType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GalleryBlock__key(ctx context.Context, field graphql.CollectedField, obj *models.GalleryBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GalleryBlock__key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GalleryBlock__key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GalleryBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GalleryBlock_layout(ctx context.Context, field graphql.CollectedField, obj *models.GalleryBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GalleryBlock_layout,
+		func(ctx context.Context) (any, error) {
+			return obj.Layout, nil
+		},
+		nil,
+		ec.marshalOGalleryLayout2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryLayout,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_GalleryBlock_layout(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GalleryBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type GalleryLayout does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GalleryBlock_items(ctx context.Context, field graphql.CollectedField, obj *models.GalleryBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GalleryBlock_items,
+		func(ctx context.Context) (any, error) {
+			return obj.Items, nil
+		},
+		nil,
+		ec.marshalNGalleryItem2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryItemᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GalleryBlock_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GalleryBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_key":
+				return ec.fieldContext_GalleryItem__key(ctx, field)
+			case "src":
+				return ec.fieldContext_GalleryItem_src(ctx, field)
+			case "alt":
+				return ec.fieldContext_GalleryItem_alt(ctx, field)
+			case "caption":
+				return ec.fieldContext_GalleryItem_caption(ctx, field)
+			case "width":
+				return ec.fieldContext_GalleryItem_width(ctx, field)
+			case "height":
+				return ec.fieldContext_GalleryItem_height(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GalleryItem", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GalleryItem__key(ctx context.Context, field graphql.CollectedField, obj *models.GalleryItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GalleryItem__key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GalleryItem__key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GalleryItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GalleryItem_src(ctx context.Context, field graphql.CollectedField, obj *models.GalleryItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GalleryItem_src,
+		func(ctx context.Context) (any, error) {
+			return obj.Src, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GalleryItem_src(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GalleryItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GalleryItem_alt(ctx context.Context, field graphql.CollectedField, obj *models.GalleryItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GalleryItem_alt,
+		func(ctx context.Context) (any, error) {
+			return obj.Alt, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_GalleryItem_alt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GalleryItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GalleryItem_caption(ctx context.Context, field graphql.CollectedField, obj *models.GalleryItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GalleryItem_caption,
+		func(ctx context.Context) (any, error) {
+			return obj.Caption, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_GalleryItem_caption(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GalleryItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GalleryItem_width(ctx context.Context, field graphql.CollectedField, obj *models.GalleryItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GalleryItem_width,
+		func(ctx context.Context) (any, error) {
+			return obj.Width, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint32,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_GalleryItem_width(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GalleryItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GalleryItem_height(ctx context.Context, field graphql.CollectedField, obj *models.GalleryItem) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GalleryItem_height,
+		func(ctx context.Context) (any, error) {
+			return obj.Height, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint32,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_GalleryItem_height(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GalleryItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ImageBlock__type(ctx context.Context, field graphql.CollectedField, obj *models.ImageBlock) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2008,6 +2351,8 @@ func (ec *executionContext) fieldContext_PortableText_blocks(_ context.Context, 
 				return ec.fieldContext_Blocks_countdown(ctx, field)
 			case "checklist":
 				return ec.fieldContext_Blocks_checklist(ctx, field)
+			case "gallery":
+				return ec.fieldContext_Blocks_gallery(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Blocks", field.Name)
 		},
@@ -2407,6 +2752,8 @@ func (ec *executionContext) fieldContext_SpoilerBlock_content(_ context.Context,
 				return ec.fieldContext_Blocks_countdown(ctx, field)
 			case "checklist":
 				return ec.fieldContext_Blocks_checklist(ctx, field)
+			case "gallery":
+				return ec.fieldContext_Blocks_gallery(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Blocks", field.Name)
 		},
@@ -2827,7 +3174,7 @@ func (ec *executionContext) unmarshalInputBlockInput(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"block", "image", "break", "callout", "quote", "steps", "accordion", "spoiler", "countdown", "checklist"}
+	fieldsInOrder := [...]string{"block", "image", "break", "callout", "quote", "steps", "accordion", "spoiler", "countdown", "checklist", "gallery"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -3094,6 +3441,32 @@ func (ec *executionContext) unmarshalInputBlockInput(ctx context.Context, obj an
 				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.ChecklistBlockInput`, tmp)
 				return it, graphql.ErrorOnPath(ctx, err)
 			}
+		case "gallery":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gallery"))
+			directive0 := func(ctx context.Context) (any, error) {
+				return ec.unmarshalOGalleryBlockInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryBlockInput(ctx, v)
+			}
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.Oneof == nil {
+					var zeroVal *models.GalleryBlockInput
+					return zeroVal, errors.New("directive oneof is not implemented")
+				}
+				return ec.directives.Oneof(ctx, obj, directive0)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*models.GalleryBlockInput); ok {
+				it.Gallery = data
+			} else if tmp == nil {
+				it.Gallery = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *shared/pkg/graph/models.GalleryBlockInput`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
 		}
 	}
 
@@ -3341,6 +3714,116 @@ func (ec *executionContext) unmarshalInputCountdownBlockInput(ctx context.Contex
 				return it, err
 			}
 			it.EndedText = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputGalleryBlockInput(ctx context.Context, obj any) (models.GalleryBlockInput, error) {
+	var it models.GalleryBlockInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"_type", "_key", "layout", "items"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "_type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_type"))
+			data, err := ec.unmarshalNBlockType2sharedᚋpkgᚋgraphᚋmodelsᚐBlockType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		case "_key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_key"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "layout":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("layout"))
+			data, err := ec.unmarshalOGalleryLayout2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryLayout(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Layout = data
+		case "items":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("items"))
+			data, err := ec.unmarshalNGalleryItemInput2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryItemInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Items = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputGalleryItemInput(ctx context.Context, obj any) (models.GalleryItemInput, error) {
+	var it models.GalleryItemInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"_key", "src", "alt", "caption", "width", "height"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "_key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_key"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "src":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("src"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Src = data
+		case "alt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("alt"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Alt = data
+		case "caption":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("caption"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Caption = data
+		case "width":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("width"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Width = data
+		case "height":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("height"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Height = data
 		}
 	}
 
@@ -3865,6 +4348,13 @@ func (ec *executionContext) _Block(ctx context.Context, sel ast.SelectionSet, ob
 			return graphql.Null
 		}
 		return ec._ImageBlock(ctx, sel, obj)
+	case models.GalleryBlock:
+		return ec._GalleryBlock(ctx, sel, &obj)
+	case *models.GalleryBlock:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._GalleryBlock(ctx, sel, obj)
 	case models.CountdownBlock:
 		return ec._CountdownBlock(ctx, sel, &obj)
 	case *models.CountdownBlock:
@@ -4130,6 +4620,8 @@ func (ec *executionContext) _Blocks(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Blocks_countdown(ctx, field, obj)
 		case "checklist":
 			out.Values[i] = ec._Blocks_checklist(ctx, field, obj)
+		case "gallery":
+			out.Values[i] = ec._Blocks_gallery(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4384,6 +4876,109 @@ func (ec *executionContext) _CountdownBlock(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._CountdownBlock_label(ctx, field, obj)
 		case "endedText":
 			out.Values[i] = ec._CountdownBlock_endedText(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var galleryBlockImplementors = []string{"GalleryBlock", "Block"}
+
+func (ec *executionContext) _GalleryBlock(ctx context.Context, sel ast.SelectionSet, obj *models.GalleryBlock) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, galleryBlockImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GalleryBlock")
+		case "_type":
+			out.Values[i] = ec._GalleryBlock__type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "_key":
+			out.Values[i] = ec._GalleryBlock__key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "layout":
+			out.Values[i] = ec._GalleryBlock_layout(ctx, field, obj)
+		case "items":
+			out.Values[i] = ec._GalleryBlock_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var galleryItemImplementors = []string{"GalleryItem"}
+
+func (ec *executionContext) _GalleryItem(ctx context.Context, sel ast.SelectionSet, obj *models.GalleryItem) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, galleryItemImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GalleryItem")
+		case "_key":
+			out.Values[i] = ec._GalleryItem__key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "src":
+			out.Values[i] = ec._GalleryItem_src(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "alt":
+			out.Values[i] = ec._GalleryItem_alt(ctx, field, obj)
+		case "caption":
+			out.Values[i] = ec._GalleryItem_caption(ctx, field, obj)
+		case "width":
+			out.Values[i] = ec._GalleryItem_width(ctx, field, obj)
+		case "height":
+			out.Values[i] = ec._GalleryItem_height(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5085,6 +5680,80 @@ func (ec *executionContext) unmarshalNChecklistItemInput2ᚖsharedᚋpkgᚋgraph
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNGalleryItem2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryItemᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.GalleryItem) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNGalleryItem2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryItem(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNGalleryItem2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryItem(ctx context.Context, sel ast.SelectionSet, v *models.GalleryItem) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GalleryItem(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNGalleryItemInput2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryItemInputᚄ(ctx context.Context, v any) ([]*models.GalleryItemInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*models.GalleryItemInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNGalleryItemInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryItemInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNGalleryItemInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryItemInput(ctx context.Context, v any) (*models.GalleryItemInput, error) {
+	res, err := ec.unmarshalInputGalleryItemInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNMarkDefInput2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐMarkDefInputᚄ(ctx context.Context, v any) ([]*models.MarkDefInput, error) {
 	var vSlice []any
 	vSlice = graphql.CoerceList(v)
@@ -5478,6 +6147,37 @@ func (ec *executionContext) unmarshalOCountdownBlockInput2ᚖsharedᚋpkgᚋgrap
 	}
 	res, err := ec.unmarshalInputCountdownBlockInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOGalleryBlock2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryBlock(ctx context.Context, sel ast.SelectionSet, v *models.GalleryBlock) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._GalleryBlock(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOGalleryBlockInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryBlockInput(ctx context.Context, v any) (*models.GalleryBlockInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputGalleryBlockInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOGalleryLayout2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryLayout(ctx context.Context, v any) (*models.GalleryLayout, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(models.GalleryLayout)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOGalleryLayout2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐGalleryLayout(ctx context.Context, sel ast.SelectionSet, v *models.GalleryLayout) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOImageAlign2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐImageAlign(ctx context.Context, v any) (*models.ImageAlign, error) {

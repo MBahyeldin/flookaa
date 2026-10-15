@@ -1,5 +1,6 @@
 import type { BlockDefinition } from "./defineBlock";
 import { image } from "./image";
+import { gallery } from "./gallery";
 import { breakBlock } from "./break";
 import { callout } from "./callout";
 import { quote } from "./quote";
@@ -11,7 +12,7 @@ import { checklist } from "./checklist";
 
 export type AnyBlock = BlockDefinition<any>;
 
-export const blocks: AnyBlock[] = [image, breakBlock, callout, quote, steps, accordion, spoiler, countdown, checklist];
+export const blocks: AnyBlock[] = [image, gallery, breakBlock, callout, quote, steps, accordion, spoiler, countdown, checklist];
 
 const byName = new Map(blocks.map((block) => [block.name, block]));
 

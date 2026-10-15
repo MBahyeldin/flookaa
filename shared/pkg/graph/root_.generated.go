@@ -82,6 +82,7 @@ type ComplexityRoot struct {
 		Callout   func(childComplexity int) int
 		Checklist func(childComplexity int) int
 		Countdown func(childComplexity int) int
+		Gallery   func(childComplexity int) int
 		Image     func(childComplexity int) int
 		Quote     func(childComplexity int) int
 		Spoiler   func(childComplexity int) int
@@ -161,6 +162,22 @@ type ComplexityRoot struct {
 		Key       func(childComplexity int) int
 		Label     func(childComplexity int) int
 		Type      func(childComplexity int) int
+	}
+
+	GalleryBlock struct {
+		Items  func(childComplexity int) int
+		Key    func(childComplexity int) int
+		Layout func(childComplexity int) int
+		Type   func(childComplexity int) int
+	}
+
+	GalleryItem struct {
+		Alt     func(childComplexity int) int
+		Caption func(childComplexity int) int
+		Height  func(childComplexity int) int
+		Key     func(childComplexity int) int
+		Src     func(childComplexity int) int
+		Width   func(childComplexity int) int
 	}
 
 	ImageBlock struct {
@@ -517,6 +534,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Blocks.Countdown(childComplexity), true
+
+	case "Blocks.gallery":
+		if e.complexity.Blocks.Gallery == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Gallery(childComplexity), true
 
 	case "Blocks.image":
 		if e.complexity.Blocks.Image == nil {
@@ -923,6 +947,76 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.CountdownBlock.Type(childComplexity), true
+
+	case "GalleryBlock.items":
+		if e.complexity.GalleryBlock.Items == nil {
+			break
+		}
+
+		return e.complexity.GalleryBlock.Items(childComplexity), true
+
+	case "GalleryBlock._key":
+		if e.complexity.GalleryBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.GalleryBlock.Key(childComplexity), true
+
+	case "GalleryBlock.layout":
+		if e.complexity.GalleryBlock.Layout == nil {
+			break
+		}
+
+		return e.complexity.GalleryBlock.Layout(childComplexity), true
+
+	case "GalleryBlock._type":
+		if e.complexity.GalleryBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.GalleryBlock.Type(childComplexity), true
+
+	case "GalleryItem.alt":
+		if e.complexity.GalleryItem.Alt == nil {
+			break
+		}
+
+		return e.complexity.GalleryItem.Alt(childComplexity), true
+
+	case "GalleryItem.caption":
+		if e.complexity.GalleryItem.Caption == nil {
+			break
+		}
+
+		return e.complexity.GalleryItem.Caption(childComplexity), true
+
+	case "GalleryItem.height":
+		if e.complexity.GalleryItem.Height == nil {
+			break
+		}
+
+		return e.complexity.GalleryItem.Height(childComplexity), true
+
+	case "GalleryItem._key":
+		if e.complexity.GalleryItem.Key == nil {
+			break
+		}
+
+		return e.complexity.GalleryItem.Key(childComplexity), true
+
+	case "GalleryItem.src":
+		if e.complexity.GalleryItem.Src == nil {
+			break
+		}
+
+		return e.complexity.GalleryItem.Src(childComplexity), true
+
+	case "GalleryItem.width":
+		if e.complexity.GalleryItem.Width == nil {
+			break
+		}
+
+		return e.complexity.GalleryItem.Width(childComplexity), true
 
 	case "ImageBlock.align":
 		if e.complexity.ImageBlock.Align == nil {
@@ -1626,6 +1720,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputChecklistItemInput,
 		ec.unmarshalInputCommentInput,
 		ec.unmarshalInputCountdownBlockInput,
+		ec.unmarshalInputGalleryBlockInput,
+		ec.unmarshalInputGalleryItemInput,
 		ec.unmarshalInputImageBlockInput,
 		ec.unmarshalInputLikeInput,
 		ec.unmarshalInputLinkMarkDefInput,
@@ -1796,6 +1892,7 @@ enum BlockType {
   spoiler
   countdown
   checklist
+  gallery
 }
 
 enum ImageSize {
@@ -1810,6 +1907,11 @@ enum ImageAlign {
   left
   center
   right
+}
+
+enum GalleryLayout {
+  grid
+  carousel
 }
 
 enum BreakStyle {
@@ -1960,6 +2062,22 @@ type ChecklistBlock implements Block {
   items: [ChecklistItem!]!
 }
 
+type GalleryItem {
+  _key: ID!
+  src: String!
+  alt: String
+  caption: String
+  width: Int
+  height: Int
+}
+
+type GalleryBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  layout: GalleryLayout
+  items: [GalleryItem!]!
+}
+
 """
 Union of all possible blocks
 """
@@ -1974,6 +2092,7 @@ type Blocks {
   spoiler: SpoilerBlock
   countdown: CountdownBlock
   checklist: ChecklistBlock
+  gallery: GalleryBlock
 }
 
 """
@@ -2112,6 +2231,22 @@ input ChecklistBlockInput {
   items: [ChecklistItemInput!]!
 }
 
+input GalleryItemInput {
+  _key: ID!
+  src: String!
+  alt: String
+  caption: String
+  width: Int
+  height: Int
+}
+
+input GalleryBlockInput {
+  _type: BlockType!
+  _key: ID!
+  layout: GalleryLayout
+  items: [GalleryItemInput!]!
+}
+
 """
 Oneof input for blocks
 """
@@ -2126,6 +2261,7 @@ input BlockInput @oneof {
   spoiler: SpoilerBlockInput
   countdown: CountdownBlockInput
   checklist: ChecklistBlockInput
+  gallery: GalleryBlockInput
 }
 
 input PortableTextInput {
