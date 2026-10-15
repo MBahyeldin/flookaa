@@ -9,10 +9,11 @@ import { accordion } from "./accordion";
 import { spoiler } from "./spoiler";
 import { countdown } from "./countdown";
 import { checklist } from "./checklist";
+import { voiceNote } from "./voiceNote";
 
 export type AnyBlock = BlockDefinition<any>;
 
-export const blocks: AnyBlock[] = [image, gallery, breakBlock, callout, quote, steps, accordion, spoiler, countdown, checklist];
+export const blocks: AnyBlock[] = [image, gallery, voiceNote, breakBlock, callout, quote, steps, accordion, spoiler, countdown, checklist];
 
 const byName = new Map(blocks.map((block) => [block.name, block]));
 

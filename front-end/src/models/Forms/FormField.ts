@@ -25,6 +25,8 @@ export class FormField {
   public hint?: (value: string) => string | null;
   // Pic fields only: the sibling fields that receive the picked file's size.
   public dimensions?: { width: string; height: string };
+  // Voice fields only: the sibling field that receives the clip's length in seconds.
+  public duration?: string;
   // List fields only.
   public itemFields?: FormField[];
   public itemLabel?: string;
@@ -51,6 +53,7 @@ export class FormField {
     visibleWhen,
     hint,
     dimensions,
+    duration,
     itemFields,
     itemLabel,
     addLabel,
@@ -78,6 +81,7 @@ export class FormField {
     visibleWhen?: (values: Record<string, unknown>) => boolean;
     hint?: (value: string) => string | null;
     dimensions?: { width: string; height: string };
+    duration?: string;
     itemFields?: FormField[];
     itemLabel?: string;
     addLabel?: string;
@@ -102,6 +106,7 @@ export class FormField {
     this.visibleWhen = visibleWhen;
     this.hint = hint;
     this.dimensions = dimensions;
+    this.duration = duration;
     this.itemFields = itemFields;
     this.itemLabel = itemLabel;
     this.addLabel = addLabel;

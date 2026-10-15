@@ -103,6 +103,7 @@ type BlockInput struct {
 	Countdown *CountdownBlockInput `json:"countdown,omitempty"`
 	Checklist *ChecklistBlockInput `json:"checklist,omitempty"`
 	Gallery   *GalleryBlockInput   `json:"gallery,omitempty"`
+	VoiceNote *VoiceNoteBlockInput `json:"voiceNote,omitempty"`
 }
 
 // Union of all possible blocks
@@ -118,6 +119,7 @@ type Blocks struct {
 	Countdown *CountdownBlock `json:"countdown,omitempty"`
 	Checklist *ChecklistBlock `json:"checklist,omitempty"`
 	Gallery   *GalleryBlock   `json:"gallery,omitempty"`
+	VoiceNote *VoiceNoteBlock `json:"voiceNote,omitempty"`
 }
 
 type BreakBlock struct {
@@ -551,6 +553,26 @@ type StepsBlockInput struct {
 	Items []*StepItemInput `json:"items"`
 }
 
+type VoiceNoteBlock struct {
+	Type     BlockType `json:"_type"`
+	Key      string    `json:"_key"`
+	Src      string    `json:"src"`
+	Title    *string   `json:"title,omitempty"`
+	Duration *int32    `json:"duration,omitempty"`
+}
+
+func (VoiceNoteBlock) IsBlock()                {}
+func (this VoiceNoteBlock) GetType() BlockType { return this.Type }
+func (this VoiceNoteBlock) GetKey() string     { return this.Key }
+
+type VoiceNoteBlockInput struct {
+	Type     BlockType `json:"_type"`
+	Key      string    `json:"_key"`
+	Src      string    `json:"src"`
+	Title    *string   `json:"title,omitempty"`
+	Duration *int32    `json:"duration,omitempty"`
+}
+
 // A block of rich text
 type BlockType string
 
@@ -566,6 +588,7 @@ const (
 	BlockTypeCountdown BlockType = "countdown"
 	BlockTypeChecklist BlockType = "checklist"
 	BlockTypeGallery   BlockType = "gallery"
+	BlockTypeVoiceNote BlockType = "voiceNote"
 )
 
 var AllBlockType = []BlockType{
@@ -580,11 +603,12 @@ var AllBlockType = []BlockType{
 	BlockTypeCountdown,
 	BlockTypeChecklist,
 	BlockTypeGallery,
+	BlockTypeVoiceNote,
 }
 
 func (e BlockType) IsValid() bool {
 	switch e {
-	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote, BlockTypeSteps, BlockTypeAccordion, BlockTypeSpoiler, BlockTypeCountdown, BlockTypeChecklist, BlockTypeGallery:
+	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote, BlockTypeSteps, BlockTypeAccordion, BlockTypeSpoiler, BlockTypeCountdown, BlockTypeChecklist, BlockTypeGallery, BlockTypeVoiceNote:
 		return true
 	}
 	return false
