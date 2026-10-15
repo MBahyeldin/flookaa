@@ -14,7 +14,7 @@ const MAX_SIDE = 4096;
 const MAX_CAPTION = 120;
 const MAX_ALT = 300;
 
-const layouts = ["grid", "carousel"] as const;
+const layouts = ["carousel", "grid"] as const;
 
 const side = z.number().int().min(1).max(MAX_SIDE).optional();
 
@@ -54,8 +54,8 @@ const galleryFormFields: FormField[] = [
     type: "string",
     interfaceType: "select",
     options: [
-      { label: "Grid", value: "grid" },
       { label: "Carousel", value: "carousel" },
+      { label: "Grid", value: "grid" },
     ],
     width: "full",
   }),
@@ -257,10 +257,14 @@ export const gallery = defineBlock<GalleryValue>({
   icon: ImagesIcon,
   category: "media",
   fields: galleryFormFields,
-  defaultValues: { layout: "grid" },
+  defaultValues: { layout: "carousel" },
   schema: gallerySchema,
   View: GalleryView,
   examples: [
+    {
+      layout: "carousel",
+      items: [sample("c1", "The first slide"), sample("c2"), sample("c3", "صورة بعنوان عربي")],
+    },
     {
       layout: "grid",
       items: [
@@ -273,10 +277,6 @@ export const gallery = defineBlock<GalleryValue>({
     {
       layout: "grid",
       items: ["b1", "b2", "b3", "b4", "b5", "b6"].map((key) => sample(key)),
-    },
-    {
-      layout: "carousel",
-      items: [sample("c1", "The first slide"), sample("c2"), sample("c3", "صورة بعنوان عربي")],
     },
   ],
 });

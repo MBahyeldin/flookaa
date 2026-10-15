@@ -18,7 +18,7 @@ tokens only.
 ```graphql
 gallery {
   _type, _key
-  layout: GalleryLayout        # grid | carousel; absent = grid
+  layout: GalleryLayout        # grid | carousel; absent = carousel
   items: [GalleryItem!]!       # { _key, src: String!, alt, caption, width, height }
 }
 ```
