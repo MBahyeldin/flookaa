@@ -12,6 +12,7 @@ import PersonaManagerPage from "@/pages/(dashboard)/persona-manager";
 import NotificationsPage from "@/pages/(dashboard)/notifications";
 import PersonaProfilePage from "@/pages/(dashboard)/personas/[id]";
 import FollowInvitePage from "@/pages/(dashboard)/follow/[token]";
+import BlocksGalleryPage from "@/pages/(dashboard)/blocks";
 
 const DevThemesPage = import.meta.env.DEV ? lazy(() => import("@/pages/dev-themes")) : () => null;
 
@@ -39,6 +40,8 @@ export default function AppRouter() {
       <Route path="/persona-manager" element={<PersonaManagerPage />} />
 
       <Route path="/notifications" element={<NotificationsPage />} />
+
+      <Route path="/blocks" element={<BlocksGalleryPage />} />
 
       <Route path="/personas/:id" element={<PersonaProfilePage />} />
 

@@ -1,13 +1,8 @@
 import { useEffect, useRef } from "react";
 import type { Editor } from "@portabletext/editor";
 import { blocks, fromFormValue, type AnyBlock } from "../blocks";
-import type { BlockCategory } from "../blocks/defineBlock";
+import { categoryTitle, type BlockCategory } from "../blocks/defineBlock";
 import { cn } from "@/lib/utils";
-
-const categoryTitle: Record<BlockCategory, string> = {
-  media: "Media",
-  layout: "Layout",
-};
 
 export function insertableBlocks(): AnyBlock[] {
   return blocks;
@@ -126,6 +121,20 @@ export function BlockList(props: {
         </li>
       ))}
     </ul>
+  );
+}
+
+// A new tab, so the draft in the composer stays.
+export function BlocksGalleryLink() {
+  return (
+    <a
+      href="/blocks"
+      target="_blank"
+      rel="noopener"
+      className="mt-3 block rounded-md px-2 py-1.5 text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring max-md:min-h-11 max-md:py-3"
+    >
+      See all blocks
+    </a>
   );
 }
 

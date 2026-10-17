@@ -1,4 +1,4 @@
-import { PortableText, type PortableTextComponents } from "@portabletext/react";
+import { PortableText, type PortableTextBlock, type PortableTextComponents } from "@portabletext/react";
 import { useMemo } from "react";
 import deNormalizeBlocks from "@/utils/deNormalizeBlocks";
 import displayBlockComponents from "./displayBlocks";
@@ -56,14 +56,16 @@ export function parsePostContent(rawContent: unknown) {
 
 export default function PostContent({
   rawContent,
+  value: parsed,
   theme,
   showInvalid = false,
 }: {
-  rawContent: unknown;
+  rawContent?: unknown;
+  value?: PortableTextBlock[];
   theme?: string;
   showInvalid?: boolean;
 }) {
-  const value = useMemo(() => parsePostContent(rawContent), [rawContent]);
+  const value = useMemo(() => parsed ?? parsePostContent(rawContent), [parsed, rawContent]);
 
   return (
     <div className="post-content space-y-4" data-theme={theme}>

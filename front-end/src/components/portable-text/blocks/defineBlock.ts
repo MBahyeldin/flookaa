@@ -4,6 +4,11 @@ import type { FormField } from "@/models/Forms/FormField";
 
 export type BlockCategory = "media" | "layout";
 
+export const categoryTitle: Record<BlockCategory, string> = {
+  media: "Media",
+  layout: "Layout",
+};
+
 export type BlockEditorProps<T> = {
   value: T;
   selected: boolean;

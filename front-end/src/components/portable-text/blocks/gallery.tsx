@@ -118,7 +118,7 @@ function GridView({ items }: { items: GalleryItem[] }) {
               <figcaption
                 dir="auto"
                 title={item.caption}
-                className="mt-1 w-fit mx-auto truncate text-xs text-muted-foreground"
+                className="mx-auto mt-1 w-fit max-w-full truncate text-xs text-muted-foreground"
               >
                 {item.caption}
               </figcaption>

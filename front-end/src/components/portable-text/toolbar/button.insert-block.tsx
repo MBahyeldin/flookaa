@@ -9,6 +9,7 @@ import { ObjectForm } from "./object-form";
 import {
   BlockGrid,
   BlockList,
+  BlocksGalleryLink,
   insertBlock,
   insertableBlocks,
   listKeyDown,
@@ -69,7 +70,10 @@ export function InsertBlockButton(props: { className?: string }) {
           }}
         />
       ) : isMobile ? (
-        <BlockGrid onPick={pick} />
+        <>
+          <BlockGrid onPick={pick} />
+          <BlocksGalleryLink />
+        </>
       ) : (
         <div
           tabIndex={0}
@@ -88,6 +92,7 @@ export function InsertBlockButton(props: { className?: string }) {
             onActiveIndex={setActiveIndex}
             onPick={pick}
           />
+          <BlocksGalleryLink />
         </div>
       )}
     </BlockSurface>
