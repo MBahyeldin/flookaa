@@ -1,3 +1,4 @@
+import type { PaletteId } from "@/themes/palettes";
 export type Persona = {
     id: string;
     userId: string;
@@ -15,6 +16,7 @@ export type Persona = {
 
     privacy: "public" | "private" | "only_me";
     show_on_profile: boolean;
+    theme: PaletteId;
 
     joined_channels: Array<{
         id: string;

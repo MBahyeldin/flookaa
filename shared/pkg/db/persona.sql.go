@@ -98,9 +98,9 @@ func (q *Queries) CancelInvitationsFrom(ctx context.Context, personaID int64) ([
 }
 
 const createPersona = `-- name: CreatePersona :one
-INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, privacy, show_on_profile, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, $10, NOW(), NOW())
-RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at, invite_token
+INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, privacy, show_on_profile, theme, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, $10, $11, NOW(), NOW())
+RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, theme, created_at, updated_at, deleted_at, invite_token
 `
 
 type CreatePersonaParams struct {
@@ -114,6 +114,7 @@ type CreatePersonaParams struct {
 	Slug          string
 	Privacy       PersonaPrivacyEnum
 	ShowOnProfile bool
+	Theme         PersonaThemeEnum
 }
 
 // ------------------------------
@@ -131,6 +132,7 @@ func (q *Queries) CreatePersona(ctx context.Context, arg CreatePersonaParams) (P
 		arg.Slug,
 		arg.Privacy,
 		arg.ShowOnProfile,
+		arg.Theme,
 	)
 	var i Persona
 	err := row.Scan(
@@ -146,6 +148,7 @@ func (q *Queries) CreatePersona(ctx context.Context, arg CreatePersonaParams) (P
 		&i.Privacy,
 		&i.IsDefault,
 		&i.ShowOnProfile,
+		&i.Theme,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -203,7 +206,7 @@ func (q *Queries) FollowPersona(ctx context.Context, arg FollowPersonaParams) (i
 }
 
 const getDefaultPersonaByUserId = `-- name: GetDefaultPersonaByUserId :one
-SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at, invite_token
+SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, theme, created_at, updated_at, deleted_at, invite_token
 FROM personas
 WHERE user_id = $1 AND is_default = TRUE
 LIMIT 1
@@ -228,6 +231,7 @@ func (q *Queries) GetDefaultPersonaByUserId(ctx context.Context, userID int64) (
 		&i.Privacy,
 		&i.IsDefault,
 		&i.ShowOnProfile,
+		&i.Theme,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -313,7 +317,7 @@ func (q *Queries) GetInviteTarget(ctx context.Context, arg GetInviteTargetParams
 }
 
 const getPersonaBasicInfo = `-- name: GetPersonaBasicInfo :one
-SELECT u.id, u.name, u.slug, u.first_name, u.last_name, u.thumbnail, u.created_at, u.updated_at, u.privacy,
+SELECT u.id, u.name, u.slug, u.first_name, u.last_name, u.thumbnail, u.created_at, u.updated_at, u.privacy, u.theme,
       (SELECT COALESCE(json_agg(json_build_object(
                'id', c.id,
                'name', c.name,
@@ -349,6 +353,7 @@ type GetPersonaBasicInfoRow struct {
 	CreatedAt        sql.NullTime
 	UpdatedAt        sql.NullTime
 	Privacy          PersonaPrivacyEnum
+	Theme            PersonaThemeEnum
 	JoinedChannels   pqtype.NullRawMessage
 	FollowedChannels pqtype.NullRawMessage
 }
@@ -369,6 +374,7 @@ func (q *Queries) GetPersonaBasicInfo(ctx context.Context, id int64) (GetPersona
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Privacy,
+		&i.Theme,
 		&i.JoinedChannels,
 		&i.FollowedChannels,
 	)
@@ -376,7 +382,7 @@ func (q *Queries) GetPersonaBasicInfo(ctx context.Context, id int64) (GetPersona
 }
 
 const getPersonaByIdAndUserId = `-- name: GetPersonaByIdAndUserId :one
-SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at, invite_token
+SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, theme, created_at, updated_at, deleted_at, invite_token
 FROM personas
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 `
@@ -405,6 +411,7 @@ func (q *Queries) GetPersonaByIdAndUserId(ctx context.Context, arg GetPersonaByI
 		&i.Privacy,
 		&i.IsDefault,
 		&i.ShowOnProfile,
+		&i.Theme,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -628,7 +635,7 @@ func (q *Queries) GetPersonaStats(ctx context.Context, id int64) (GetPersonaStat
 }
 
 const getUserPersonasByUserId = `-- name: GetUserPersonasByUserId :many
-SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at, invite_token
+SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, theme, created_at, updated_at, deleted_at, invite_token
 FROM personas
 WHERE user_id = $1 AND deleted_at IS NULL
 ORDER BY created_at DESC
@@ -659,6 +666,7 @@ func (q *Queries) GetUserPersonasByUserId(ctx context.Context, userID int64) ([]
 			&i.Privacy,
 			&i.IsDefault,
 			&i.ShowOnProfile,
+			&i.Theme,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -1119,10 +1127,11 @@ SET name = COALESCE($3, name),
     slug = COALESCE($9, slug),
     privacy = COALESCE($10, privacy),
     show_on_profile = $11,
+    theme = $12,
     invite_token = CASE WHEN COALESCE($10, privacy) = 'private' THEN invite_token END,
     updated_at = NOW()
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
-RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, created_at, updated_at, deleted_at, invite_token
+RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, theme, created_at, updated_at, deleted_at, invite_token
 `
 
 type UpdatePersonaByIdAndUserIdParams struct {
@@ -1137,6 +1146,7 @@ type UpdatePersonaByIdAndUserIdParams struct {
 	Slug          string
 	Privacy       PersonaPrivacyEnum
 	ShowOnProfile bool
+	Theme         PersonaThemeEnum
 }
 
 // -------------------------------
@@ -1155,6 +1165,7 @@ func (q *Queries) UpdatePersonaByIdAndUserId(ctx context.Context, arg UpdatePers
 		arg.Slug,
 		arg.Privacy,
 		arg.ShowOnProfile,
+		arg.Theme,
 	)
 	var i Persona
 	err := row.Scan(
@@ -1170,6 +1181,7 @@ func (q *Queries) UpdatePersonaByIdAndUserId(ctx context.Context, arg UpdatePers
 		&i.Privacy,
 		&i.IsDefault,
 		&i.ShowOnProfile,
+		&i.Theme,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,

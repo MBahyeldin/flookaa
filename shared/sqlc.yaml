@@ -9,3 +9,4 @@ sql:
       go:
         package: "db"
         out: "pkg/db"
+        emit_enum_valid_method: true

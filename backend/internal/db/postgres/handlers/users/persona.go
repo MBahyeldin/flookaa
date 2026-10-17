@@ -40,6 +40,7 @@ func (h *Handler) ReadCurrentPersona(c *gin.Context) {
 		"last_name":       personaRow.LastName,
 		"slug":            personaRow.Slug,
 		"thumbnail":       personaRow.Thumbnail.String,
+		"theme":           personaRow.Theme,
 		"joined_channels": personaRow.JoinedChannels.RawMessage,
 	})
 }
@@ -76,6 +77,7 @@ func (h *Handler) ListPersonas(c *gin.Context) {
 			"slug":            persona.Slug,
 			"privacy":         persona.Privacy,
 			"show_on_profile": persona.ShowOnProfile,
+			"theme":           persona.Theme,
 		})
 	}
 
@@ -100,6 +102,7 @@ func (h *Handler) CreatePersona(c *gin.Context) {
 		Thumbnail     string `json:"thumbnail"`
 		Bio           string `json:"bio"`
 		ShowOnProfile *bool  `json:"show_on_profile"`
+		Theme         string `json:"theme"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -111,6 +114,11 @@ func (h *Handler) CreatePersona(c *gin.Context) {
 	showOnProfile, ok := resolveShowOnProfile(privacy, req.ShowOnProfile, false)
 	if !ok {
 		showOnProfileRequiresPublic(c)
+		return
+	}
+	theme, ok := resolveTheme(req.Theme, db.PersonaThemeEnumTide)
+	if !ok {
+		invalidTheme(c)
 		return
 	}
 
@@ -129,6 +137,7 @@ func (h *Handler) CreatePersona(c *gin.Context) {
 		Thumbnail:     sql.NullString{String: req.Thumbnail, Valid: req.Thumbnail != ""},
 		Privacy:       privacy,
 		ShowOnProfile: showOnProfile,
+		Theme:         theme,
 	})
 	if err != nil {
 		fmt.Println("Error creating persona:", err)
@@ -215,6 +224,7 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 		Bio           string `json:"bio"`
 		Privacy       string `json:"privacy"`
 		ShowOnProfile *bool  `json:"show_on_profile"`
+		Theme         string `json:"theme"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -239,6 +249,11 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 		showOnProfileRequiresPublic(c)
 		return
 	}
+	theme, ok := resolveTheme(req.Theme, persona.Theme)
+	if !ok {
+		invalidTheme(c)
+		return
+	}
 
 	updatedPersona, err := q.UpdatePersonaByIdAndUserId(ctx, db.UpdatePersonaByIdAndUserIdParams{
 		ID:            personaId,
@@ -252,6 +267,7 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 		Slug:          persona.Slug,
 		Privacy:       privacy,
 		ShowOnProfile: showOnProfile,
+		Theme:         theme,
 	})
 
 	if err != nil {
@@ -278,6 +294,7 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 		"slug":            updatedPersona.Slug,
 		"privacy":         updatedPersona.Privacy,
 		"show_on_profile": updatedPersona.ShowOnProfile,
+		"theme":           updatedPersona.Theme,
 	})
 }
 
@@ -307,6 +324,18 @@ func resolveShowOnProfile(privacy db.PersonaPrivacyEnum, requested *bool, curren
 
 func showOnProfileRequiresPublic(c *gin.Context) {
 	c.JSON(http.StatusBadRequest, gin.H{"error": "show_on_profile_requires_public"})
+}
+
+func resolveTheme(requested string, current db.PersonaThemeEnum) (db.PersonaThemeEnum, bool) {
+	if requested == "" {
+		return current, true
+	}
+	theme := db.PersonaThemeEnum(requested)
+	return theme, theme.Valid()
+}
+
+func invalidTheme(c *gin.Context) {
+	c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_theme"})
 }
 
 func personaIDParam(c *gin.Context) (int64, bool) {

@@ -21,8 +21,8 @@ ORDER BY created_at DESC;
 -- 3. CreatePersona
 -- ------------------------------
 -- name: CreatePersona :one
-INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, privacy, show_on_profile, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, $10, NOW(), NOW())
+INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, privacy, show_on_profile, theme, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, $10, $11, NOW(), NOW())
 RETURNING *;
 
 -- ------------------------------
@@ -38,7 +38,7 @@ WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL;
 -- 7. Get Persona Basic Info
 -- -------------------------------
 -- name: GetPersonaBasicInfo :one
-SELECT u.id, u.name, u.slug, u.first_name, u.last_name, u.thumbnail, u.created_at, u.updated_at, u.privacy,
+SELECT u.id, u.name, u.slug, u.first_name, u.last_name, u.thumbnail, u.created_at, u.updated_at, u.privacy, u.theme,
       (SELECT COALESCE(json_agg(json_build_object(
                'id', c.id,
                'name', c.name,
@@ -120,6 +120,7 @@ SET name = COALESCE($3, name),
     slug = COALESCE($9, slug),
     privacy = COALESCE($10, privacy),
     show_on_profile = $11,
+    theme = $12,
     invite_token = CASE WHEN COALESCE($10, privacy) = 'private' THEN invite_token END,
     updated_at = NOW()
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL

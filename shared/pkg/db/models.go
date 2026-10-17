@@ -57,6 +57,16 @@ func (ns NullChannelMembershipStatusEnum) Value() (driver.Value, error) {
 	return string(ns.ChannelMembershipStatusEnum), nil
 }
 
+func (e ChannelMembershipStatusEnum) Valid() bool {
+	switch e {
+	case ChannelMembershipStatusEnumPending,
+		ChannelMembershipStatusEnumActive,
+		ChannelMembershipStatusEnumRejected:
+		return true
+	}
+	return false
+}
+
 type ChannelVisibilityEnum string
 
 const (
@@ -97,6 +107,15 @@ func (ns NullChannelVisibilityEnum) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.ChannelVisibilityEnum), nil
+}
+
+func (e ChannelVisibilityEnum) Valid() bool {
+	switch e {
+	case ChannelVisibilityEnumPublic,
+		ChannelVisibilityEnumPrivate:
+		return true
+	}
+	return false
 }
 
 type EventActionEnum string
@@ -142,6 +161,16 @@ func (ns NullEventActionEnum) Value() (driver.Value, error) {
 	return string(ns.EventActionEnum), nil
 }
 
+func (e EventActionEnum) Valid() bool {
+	switch e {
+	case EventActionEnumCreate,
+		EventActionEnumUpdate,
+		EventActionEnumDelete:
+		return true
+	}
+	return false
+}
+
 type EventEnum string
 
 const (
@@ -183,6 +212,16 @@ func (ns NullEventEnum) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.EventEnum), nil
+}
+
+func (e EventEnum) Valid() bool {
+	switch e {
+	case EventEnumPost,
+		EventEnumComment,
+		EventEnumLike:
+		return true
+	}
+	return false
 }
 
 type EventTargetTypeEnum string
@@ -227,6 +266,17 @@ func (ns NullEventTargetTypeEnum) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.EventTargetTypeEnum), nil
+}
+
+func (e EventTargetTypeEnum) Valid() bool {
+	switch e {
+	case EventTargetTypeEnumPERSONA,
+		EventTargetTypeEnumCHANNEL,
+		EventTargetTypeEnumPOST,
+		EventTargetTypeEnumCOMMENT:
+		return true
+	}
+	return false
 }
 
 type NotificationKindEnum string
@@ -281,6 +331,25 @@ func (ns NullNotificationKindEnum) Value() (driver.Value, error) {
 	return string(ns.NotificationKindEnum), nil
 }
 
+func (e NotificationKindEnum) Valid() bool {
+	switch e {
+	case NotificationKindEnumPostComment,
+		NotificationKindEnumCommentReply,
+		NotificationKindEnumPostLike,
+		NotificationKindEnumCommentLike,
+		NotificationKindEnumJoinRequest,
+		NotificationKindEnumRequestApproved,
+		NotificationKindEnumRemovedFromChannel,
+		NotificationKindEnumNewFollower,
+		NotificationKindEnumFollowRequest,
+		NotificationKindEnumFollowRequestApproved,
+		NotificationKindEnumFollowInvitation,
+		NotificationKindEnumFollowInvitationAccepted:
+		return true
+	}
+	return false
+}
+
 type NotificationScopeEnum string
 
 const (
@@ -320,6 +389,14 @@ func (ns NullNotificationScopeEnum) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.NotificationScopeEnum), nil
+}
+
+func (e NotificationScopeEnum) Valid() bool {
+	switch e {
+	case NotificationScopeEnumCHANNEL:
+		return true
+	}
+	return false
 }
 
 type NotificationSubjectEnum string
@@ -366,6 +443,17 @@ func (ns NullNotificationSubjectEnum) Value() (driver.Value, error) {
 	return string(ns.NotificationSubjectEnum), nil
 }
 
+func (e NotificationSubjectEnum) Valid() bool {
+	switch e {
+	case NotificationSubjectEnumPOST,
+		NotificationSubjectEnumCOMMENT,
+		NotificationSubjectEnumCHANNEL,
+		NotificationSubjectEnumPERSONA:
+		return true
+	}
+	return false
+}
+
 type OauthProvider string
 
 const (
@@ -407,6 +495,16 @@ func (ns NullOauthProvider) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.OauthProvider), nil
+}
+
+func (e OauthProvider) Valid() bool {
+	switch e {
+	case OauthProviderGoogle,
+		OauthProviderGithub,
+		OauthProviderLinkedin:
+		return true
+	}
+	return false
 }
 
 type OwnerEnum string
@@ -451,6 +549,15 @@ func (ns NullOwnerEnum) Value() (driver.Value, error) {
 	return string(ns.OwnerEnum), nil
 }
 
+func (e OwnerEnum) Valid() bool {
+	switch e {
+	case OwnerEnumPERSONA,
+		OwnerEnumCHANNEL:
+		return true
+	}
+	return false
+}
+
 type PersonaFollowStatusEnum string
 
 const (
@@ -492,6 +599,16 @@ func (ns NullPersonaFollowStatusEnum) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.PersonaFollowStatusEnum), nil
+}
+
+func (e PersonaFollowStatusEnum) Valid() bool {
+	switch e {
+	case PersonaFollowStatusEnumPending,
+		PersonaFollowStatusEnumActive,
+		PersonaFollowStatusEnumRejected:
+		return true
+	}
+	return false
 }
 
 type PersonaInvitationStatusEnum string
@@ -538,6 +655,17 @@ func (ns NullPersonaInvitationStatusEnum) Value() (driver.Value, error) {
 	return string(ns.PersonaInvitationStatusEnum), nil
 }
 
+func (e PersonaInvitationStatusEnum) Valid() bool {
+	switch e {
+	case PersonaInvitationStatusEnumPending,
+		PersonaInvitationStatusEnumAccepted,
+		PersonaInvitationStatusEnumRejected,
+		PersonaInvitationStatusEnumCancelled:
+		return true
+	}
+	return false
+}
+
 type PersonaPrivacyEnum string
 
 const (
@@ -581,6 +709,75 @@ func (ns NullPersonaPrivacyEnum) Value() (driver.Value, error) {
 	return string(ns.PersonaPrivacyEnum), nil
 }
 
+func (e PersonaPrivacyEnum) Valid() bool {
+	switch e {
+	case PersonaPrivacyEnumPublic,
+		PersonaPrivacyEnumPrivate,
+		PersonaPrivacyEnumOnlyMe:
+		return true
+	}
+	return false
+}
+
+type PersonaThemeEnum string
+
+const (
+	PersonaThemeEnumTide   PersonaThemeEnum = "tide"
+	PersonaThemeEnumForest PersonaThemeEnum = "forest"
+	PersonaThemeEnumEmber  PersonaThemeEnum = "ember"
+	PersonaThemeEnumPlum   PersonaThemeEnum = "plum"
+	PersonaThemeEnumRose   PersonaThemeEnum = "rose"
+	PersonaThemeEnumSlate  PersonaThemeEnum = "slate"
+)
+
+func (e *PersonaThemeEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PersonaThemeEnum(s)
+	case string:
+		*e = PersonaThemeEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PersonaThemeEnum: %T", src)
+	}
+	return nil
+}
+
+type NullPersonaThemeEnum struct {
+	PersonaThemeEnum PersonaThemeEnum
+	Valid            bool // Valid is true if PersonaThemeEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPersonaThemeEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.PersonaThemeEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PersonaThemeEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPersonaThemeEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PersonaThemeEnum), nil
+}
+
+func (e PersonaThemeEnum) Valid() bool {
+	switch e {
+	case PersonaThemeEnumTide,
+		PersonaThemeEnumForest,
+		PersonaThemeEnumEmber,
+		PersonaThemeEnumPlum,
+		PersonaThemeEnumRose,
+		PersonaThemeEnumSlate:
+		return true
+	}
+	return false
+}
+
 type RelationshipEnum string
 
 const (
@@ -622,6 +819,16 @@ func (ns NullRelationshipEnum) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.RelationshipEnum), nil
+}
+
+func (e RelationshipEnum) Valid() bool {
+	switch e {
+	case RelationshipEnumFollower,
+		RelationshipEnumBlocked,
+		RelationshipEnumMuted:
+		return true
+	}
+	return false
 }
 
 type Channel struct {
@@ -763,6 +970,7 @@ type Persona struct {
 	Privacy       PersonaPrivacyEnum
 	IsDefault     sql.NullBool
 	ShowOnProfile bool
+	Theme         PersonaThemeEnum
 	CreatedAt     sql.NullTime
 	UpdatedAt     sql.NullTime
 	DeletedAt     sql.NullTime
