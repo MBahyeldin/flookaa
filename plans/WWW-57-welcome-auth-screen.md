@@ -41,8 +41,9 @@ Top to bottom, centred, max width ~ 24rem:
 
 - Background: the existing `welcome-bg-bottom` scenery (`/welcon-bg.jpg`),
   anchored to the bottom as now.
-- The form sits on a translucent panel (`bg-background/80`, backdrop blur,
-  rounded) so it stays readable over the image in both light and dark mode.
+- Everything, title included, sits on a translucent panel
+  (`bg-background/80`, backdrop blur, rounded) so it stays readable over the
+  light image in dark mode too.
   Colours from semantic tokens only.
 - Header: `DefaultLayout` renders `Header onlyLogo` on `/login` and
   `/sign-up` (the theme toggle stays), matching Figma.

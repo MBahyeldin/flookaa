@@ -10,6 +10,7 @@ import { useUserProfileStore } from "@/stores/UserProfileStore";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import useNotificationsRealtime from "@/hooks/useNotificationsRealtime";
 import usePersonaTheme from "@/hooks/usePersonaTheme";
+import useResumeAuthNext from "@/hooks/useResumeAuthNext";
 
 export default function DashboardLayout({
   children,
@@ -23,6 +24,7 @@ export default function DashboardLayout({
   // Before the early returns: hooks must run on every render.
   useNotificationsRealtime(user?.is_verified ? persona?.id : undefined);
   usePersonaTheme(persona?.theme);
+  useResumeAuthNext();
 
   if (isFetchCurrentPersonaLoading || isFetchAllPersonasLoading) {
     return <AppLoader />;
