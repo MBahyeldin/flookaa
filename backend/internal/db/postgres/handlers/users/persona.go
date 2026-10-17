@@ -8,6 +8,8 @@ import (
 	"hash/fnv"
 	"log"
 	"net/http"
+	"regexp"
+	"shared/external/db/postgres"
 	"shared/pkg/access"
 	"shared/pkg/db"
 	"strconv"
@@ -216,15 +218,16 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 	}
 
 	var req struct {
-		Name          string `json:"name"`
-		Description   string `json:"description"`
-		FirstName     string `json:"first_name"`
-		LastName      string `json:"last_name"`
-		Thumbnail     string `json:"thumbnail"`
-		Bio           string `json:"bio"`
-		Privacy       string `json:"privacy"`
-		ShowOnProfile *bool  `json:"show_on_profile"`
-		Theme         string `json:"theme"`
+		Name          string  `json:"name"`
+		Description   *string `json:"description"`
+		FirstName     string  `json:"first_name"`
+		LastName      string  `json:"last_name"`
+		Thumbnail     *string `json:"thumbnail"`
+		Bio           *string `json:"bio"`
+		Slug          string  `json:"slug"`
+		Privacy       string  `json:"privacy"`
+		ShowOnProfile *bool   `json:"show_on_profile"`
+		Theme         string  `json:"theme"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -254,22 +257,30 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 		invalidTheme(c)
 		return
 	}
+	if req.Slug != "" && !validSlug(req.Slug) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_slug"})
+		return
+	}
 
 	updatedPersona, err := q.UpdatePersonaByIdAndUserId(ctx, db.UpdatePersonaByIdAndUserIdParams{
 		ID:            personaId,
 		UserID:        userId,
 		Name:          getStringOrDefault(req.Name, persona.Name),
-		Description:   getStringOrDefault(req.Description, persona.Description),
-		Bio:           sql.NullString{String: getStringOrDefault(req.Bio, persona.Bio.String), Valid: req.Bio != ""},
+		Description:   getOptionalOrDefault(req.Description, persona.Description),
+		Bio:           optionalNullString(req.Bio),
 		FirstName:     getStringOrDefault(req.FirstName, persona.FirstName),
 		LastName:      getStringOrDefault(req.LastName, persona.LastName),
-		Thumbnail:     sql.NullString{String: getStringOrDefault(req.Thumbnail, persona.Thumbnail.String), Valid: req.Thumbnail != ""},
-		Slug:          persona.Slug,
+		Thumbnail:     optionalNullString(req.Thumbnail),
+		Slug:          getStringOrDefault(req.Slug, persona.Slug),
 		Privacy:       privacy,
 		ShowOnProfile: showOnProfile,
 		Theme:         theme,
 	})
 
+	if postgres.IsUniqueViolation(err, "personas_user_id_slug_key") {
+		c.JSON(http.StatusConflict, gin.H{"error": "slug_taken"})
+		return
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update persona"})
 		return
@@ -336,6 +347,27 @@ func resolveTheme(requested string, current db.PersonaThemeEnum) (db.PersonaThem
 
 func invalidTheme(c *gin.Context) {
 	c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_theme"})
+}
+
+var slugPattern = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+
+func validSlug(slug string) bool {
+	return len(slug) >= 3 && len(slug) <= 50 && slugPattern.MatchString(slug)
+}
+
+// nil keeps the stored value (COALESCE in the query); "" clears it.
+func optionalNullString(s *string) sql.NullString {
+	if s == nil {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: *s, Valid: true}
+}
+
+func getOptionalOrDefault(s *string, defaultVal string) string {
+	if s == nil {
+		return defaultVal
+	}
+	return *s
 }
 
 func personaIDParam(c *gin.Context) (int64, bool) {

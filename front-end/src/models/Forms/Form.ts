@@ -3,7 +3,11 @@ import signupFormFieldsGroup from "@/lib/formFields/signup";
 import profileFieldsGroups from "@/lib/formFields/profile";
 import loginFormFieldsGroups from "@/lib/formFields/login";
 import channelFormFieldsGroups from "@/lib/formFields/channel";
-import personaFormFieldsGroups from "@/lib/formFields/persona";
+import personaFormFieldsGroups, { personaSettingsFormGroups } from "@/lib/formFields/persona";
+import type { Persona } from "@/types/persona";
+
+// An API error code shown on a field instead of under the form.
+type ServerFieldError = { field: string; message: string };
 
 export class Form {
   id: string;
@@ -14,6 +18,7 @@ export class Form {
   submitText: string;
   relativeApiPath: string;
   method: string;
+  serverErrors: Record<string, ServerFieldError>;
 
   static signup = new Form({
     id: "signup_form",
@@ -70,6 +75,24 @@ export class Form {
     method: "POST",
   });
 
+  static personaSettings(persona: Persona) {
+    return new Form({
+      id: "persona_settings_form",
+      name: "Persona Settings Form",
+      title: "Persona settings",
+      description: "Form for editing one of your personas",
+      submitText: "Save changes",
+      groups: personaSettingsFormGroups(persona),
+      relativeApiPath: `/api/v1/persona/update/${persona.id}`,
+      method: "POST",
+      serverErrors: {
+        invalid_slug: { field: "slug", message: "Use 3–50 lowercase letters, digits or single hyphens." },
+        slug_taken: { field: "slug", message: "Another of your personas already uses this slug." },
+        invalid_theme: { field: "theme", message: "Pick one of the palettes." },
+      },
+    });
+  }
+
   constructor({
     id,
     name,
@@ -79,7 +102,8 @@ export class Form {
     relativeApiPath,
     method = "POST",
     groups = [],
-    urlPathParams = ""
+    urlPathParams = "",
+    serverErrors = {},
   }: {
     id: string;
     name: string;
@@ -90,6 +114,7 @@ export class Form {
     method?: "POST" | "PUT" | "PATCH";
     groups?: FormGroup[];
     urlPathParams?: string;
+    serverErrors?: Record<string, ServerFieldError>;
   }) {
     this.id = id;
     this.name = name;
@@ -99,6 +124,7 @@ export class Form {
     this.groups = groups;
     this.relativeApiPath = relativeApiPath + (urlPathParams || "");
     this.method = method;
+    this.serverErrors = serverErrors;
   }
 
   validate(values: Record<string, unknown>) {

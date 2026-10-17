@@ -30,7 +30,7 @@ export default function useForm({
     initialValues,
     validate: form.validate.bind(form),
     initialStatus: { success: false, error: null, result: unknown },
-    onSubmit: async (values, { setStatus }) => {
+    onSubmit: async (values, { setStatus, setFieldError }) => {
 
       try {
         setStatus({ success: false, error: null });
@@ -79,9 +79,14 @@ export default function useForm({
       } catch (error) {
         console.error("Form submission failed:", error);
 
-        setStatus({
-          error: error instanceof Error ? error.message : String(error),
-        });
+        const message = error instanceof Error ? error.message : String(error);
+        const fieldError = form.serverErrors[message];
+        if (fieldError) {
+          setFieldError(fieldError.field, fieldError.message);
+          setStatus({ success: false, error: null });
+          return;
+        }
+        setStatus({ error: message });
       }
     },
   });

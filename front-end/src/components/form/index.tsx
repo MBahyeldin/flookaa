@@ -11,6 +11,7 @@ export default function Form({
   className,
   changeOpacityWhenSubmitting = false,
   onStatusChange,
+  onValuesChange,
   children,
 }: {
   form: FormType;
@@ -18,6 +19,7 @@ export default function Form({
   className?: string;
   changeOpacityWhenSubmitting?: boolean;
   onStatusChange: (status: { success: boolean; error: string | null, result: unknown }) => void;
+  onValuesChange?: (values: Record<string, unknown>) => void;
   children?: React.ReactNode;
 }) {
   const {
@@ -42,6 +44,10 @@ export default function Form({
       .filter((f) => !f.isVisible(values) && values[f.id] !== undefined)
       .forEach((f) => setFieldValue(f.id, undefined));
   }, [form, values, setFieldValue]);
+
+  useEffect(() => {
+    onValuesChange?.(values);
+  }, [values, onValuesChange]);
 
   useEffect(() => {
     if (status) {

@@ -13,6 +13,7 @@ export default function SelectInput({
   field,
 }: FormFieldProps) {
   const [value, setValue] = useState(initValue || "");
+  const hint = field.hint?.(value);
   const onChange = (value: string) => {
     setValue(value);
     setFieldValue(
@@ -50,7 +51,11 @@ export default function SelectInput({
           ))}
         </SelectContent>
       </Select>
-      {error && touched && <p className="text-sm text-destructive mt-1">{error}</p>}
+      {error && touched ? (
+        <p className="text-sm text-destructive mt-1">{error}</p>
+      ) : (
+        hint && <p className="text-sm text-muted-foreground mt-1">{hint}</p>
+      )}
     </div>
   );
 }

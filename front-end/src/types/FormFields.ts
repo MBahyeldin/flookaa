@@ -22,7 +22,8 @@ type FormFieldInterfaceTypes =
   | "dropdown-country"
   | "dropdown-state"
   | "dropdown-city"
-  | "list";
+  | "list"
+  | "theme";
 
 export type { FormFieldInterfaceTypes };
 

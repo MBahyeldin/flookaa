@@ -178,22 +178,6 @@ export async function requestViaInvite(token: string): Promise<FollowStatus | Er
   }
 }
 
-export async function setShowOnProfile(personaId: string, showOnProfile: boolean): Promise<boolean> {
-  try {
-    const resp = await apiFetch(`${API_BASE_URL}/api/v1/persona/update/${personaId}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ show_on_profile: showOnProfile }),
-    });
-    return resp.ok;
-  } catch (err) {
-    console.error("Error updating show on profile:", err);
-    return false;
-  }
-}
-
 export async function setCurrentPersona(personaId: string): Promise<boolean> {
   try {
     const resp = await apiFetch(`${API_BASE_URL}/api/v1/persona/set-current-persona`, {
