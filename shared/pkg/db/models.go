@@ -990,6 +990,16 @@ type Interest struct {
 	RetiredAt sql.NullTime
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	GroupID   sql.NullInt64
+}
+
+type InterestGroup struct {
+	ID        int64
+	Name      string
+	Slug      string
+	SortOrder int32
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type Notification struct {

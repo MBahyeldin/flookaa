@@ -20,4 +20,11 @@ func AddInterestsRoutes(r *gin.RouterGroup, h *interests.Handler, isAdmin func(c
 		admin.POST("/:id/retire", h.Retire)
 		admin.POST("/:id/restore", h.Restore)
 	}
+
+	groups := r.Group("/admin/interest-groups", auth.RequireAdministrator(isAdmin))
+	{
+		groups.POST("", h.CreateGroup)
+		groups.PATCH("/:id", h.UpdateGroup)
+		groups.POST("/:id/move", h.MoveGroup)
+	}
 }

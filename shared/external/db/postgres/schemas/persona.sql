@@ -58,6 +58,18 @@ CREATE UNIQUE INDEX personas_invite_token_key ON personas (invite_token) WHERE i
 -- 3. INTERESTS
 -- =========================
 
+CREATE TABLE interest_groups (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(50) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    CONSTRAINT interest_groups_slug_key UNIQUE (slug)
+);
+
+CREATE UNIQUE INDEX interest_groups_name_lower_key ON interest_groups (lower(name));
+
 CREATE TABLE interests (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -66,10 +78,12 @@ CREATE TABLE interests (
     sort_order INT NOT NULL DEFAULT 0,
     retired_at TIMESTAMP WITHOUT TIME ZONE,
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now()
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    group_id BIGINT REFERENCES interest_groups(id)
 );
 
 CREATE UNIQUE INDEX interests_name_lower_key ON interests (lower(name));
+CREATE INDEX interests_group_id_idx ON interests (group_id);
 
 CREATE TABLE persona_interests (
     persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,

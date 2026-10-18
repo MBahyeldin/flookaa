@@ -2,6 +2,7 @@ package interests
 
 import (
 	"app/internal/slug"
+	"context"
 	"database/sql"
 	"errors"
 	"log"
@@ -30,9 +31,23 @@ type Interest struct {
 	Emoji string `json:"emoji"`
 }
 
+type Group struct {
+	ID        int64      `json:"id"`
+	Name      string     `json:"name"`
+	Slug      string     `json:"slug"`
+	Interests []Interest `json:"interests"`
+}
+
 type AdminInterest struct {
 	Interest
-	Retired bool `json:"retired"`
+	GroupID *int64 `json:"group_id"`
+	Retired bool   `json:"retired"`
+}
+
+type AdminGroup struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
 }
 
 const (
@@ -40,37 +55,52 @@ const (
 	maxEmojiLen = 8
 )
 
-// List is the public catalogue: active interests, in order.
+// List is the public catalogue: groups in order, each with its active interests.
 func (h *Handler) List(c *gin.Context) {
 	rows, err := h.q.ListActiveInterests(c.Request.Context())
 	if err != nil {
 		internalError(c, "list", err)
 		return
 	}
-	out := make([]Interest, len(rows))
-	for i, r := range rows {
-		out[i] = Interest{ID: r.ID, Name: r.Name, Slug: r.Slug, Emoji: r.Emoji}
+	out := []Group{}
+	for _, r := range rows {
+		if len(out) == 0 || out[len(out)-1].ID != r.GroupID {
+			out = append(out, Group{ID: r.GroupID, Name: r.GroupName, Slug: r.GroupSlug})
+		}
+		g := &out[len(out)-1]
+		g.Interests = append(g.Interests, Interest{ID: r.ID, Name: r.Name, Slug: r.Slug, Emoji: r.Emoji})
 	}
 	c.JSON(http.StatusOK, out)
 }
 
 func (h *Handler) AdminList(c *gin.Context) {
-	rows, err := h.q.ListAllInterests(c.Request.Context())
+	ctx := c.Request.Context()
+	groups, err := h.q.ListInterestGroups(ctx)
+	if err != nil {
+		internalError(c, "admin list groups", err)
+		return
+	}
+	rows, err := h.q.ListAllInterests(ctx)
 	if err != nil {
 		internalError(c, "admin list", err)
 		return
 	}
-	out := make([]AdminInterest, len(rows))
-	for i, r := range rows {
-		out[i] = adminInterest(r.ID, r.Name, r.Slug, r.Emoji, r.Retired)
+	outGroups := make([]AdminGroup, len(groups))
+	for i, g := range groups {
+		outGroups[i] = AdminGroup{ID: g.ID, Name: g.Name, Slug: g.Slug}
 	}
-	c.JSON(http.StatusOK, out)
+	outInterests := make([]AdminInterest, len(rows))
+	for i, r := range rows {
+		outInterests[i] = adminInterest(r.ID, r.Name, r.Slug, r.Emoji, r.GroupID, r.Retired)
+	}
+	c.JSON(http.StatusOK, gin.H{"groups": outGroups, "interests": outInterests})
 }
 
 type interestInput struct {
-	Name  *string `json:"name"`
-	Slug  *string `json:"slug"`
-	Emoji *string `json:"emoji"`
+	Name    *string `json:"name"`
+	Slug    *string `json:"slug"`
+	Emoji   *string `json:"emoji"`
+	GroupID *int64  `json:"group_id"`
 }
 
 func (h *Handler) Create(c *gin.Context) {
@@ -79,12 +109,20 @@ func (h *Handler) Create(c *gin.Context) {
 		badRequest(c, "invalid_input")
 		return
 	}
+	ctx := c.Request.Context()
 	name, slugValue, emoji := deref(in.Name), deref(in.Slug), deref(in.Emoji)
 	if code := validate(&name, slugValue, &emoji); code != "" {
 		badRequest(c, code)
 		return
 	}
-	row, err := h.q.CreateInterest(c.Request.Context(), db.CreateInterestParams{Name: name, Slug: slugValue, Emoji: emoji})
+	if ok, err := h.groupExists(ctx, in.GroupID); err != nil {
+		internalError(c, "group check", err)
+		return
+	} else if !ok {
+		badRequest(c, "invalid_group")
+		return
+	}
+	row, err := h.q.CreateInterest(ctx, db.CreateInterestParams{Name: name, Slug: slugValue, Emoji: emoji, GroupID: *in.GroupID})
 	if code := conflict(err); code != "" {
 		c.JSON(http.StatusConflict, gin.H{"error": code})
 		return
@@ -93,11 +131,11 @@ func (h *Handler) Create(c *gin.Context) {
 		internalError(c, "create", err)
 		return
 	}
-	c.JSON(http.StatusCreated, adminInterest(row.ID, row.Name, row.Slug, row.Emoji, row.Retired))
+	c.JSON(http.StatusCreated, adminInterest(row.ID, row.Name, row.Slug, row.Emoji, row.GroupID, row.Retired))
 }
 
 func (h *Handler) Update(c *gin.Context) {
-	id, ok := interestID(c)
+	id, ok := pathID(c)
 	if !ok {
 		return
 	}
@@ -127,12 +165,23 @@ func (h *Handler) Update(c *gin.Context) {
 	if in.Emoji != nil {
 		emoji = *in.Emoji
 	}
+	groupID := in.GroupID
+	if groupID == nil && cur.GroupID.Valid {
+		groupID = &cur.GroupID.Int64
+	}
 	if code := validate(&name, slugValue, &emoji); code != "" {
 		badRequest(c, code)
 		return
 	}
+	if ok, err := h.groupExists(ctx, groupID); err != nil {
+		internalError(c, "group check", err)
+		return
+	} else if !ok {
+		badRequest(c, "invalid_group")
+		return
+	}
 
-	row, err := h.q.UpdateInterest(ctx, db.UpdateInterestParams{ID: id, Name: name, Slug: slugValue, Emoji: emoji})
+	row, err := h.q.UpdateInterest(ctx, db.UpdateInterestParams{ID: id, Name: name, Slug: slugValue, Emoji: emoji, GroupID: *groupID})
 	if code := conflict(err); code != "" {
 		c.JSON(http.StatusConflict, gin.H{"error": code})
 		return
@@ -145,21 +194,18 @@ func (h *Handler) Update(c *gin.Context) {
 		internalError(c, "update", err)
 		return
 	}
-	c.JSON(http.StatusOK, adminInterest(row.ID, row.Name, row.Slug, row.Emoji, row.Retired))
+	c.JSON(http.StatusOK, adminInterest(row.ID, row.Name, row.Slug, row.Emoji, row.GroupID, row.Retired))
 }
 
-// Move swaps an interest with its neighbour in its list (active or retired)
-// and renumbers everything, so ties can't get stuck.
+// Move swaps an interest with the nearest one in the same group and status,
+// then renumbers everything, so ties can't get stuck.
 func (h *Handler) Move(c *gin.Context) {
-	id, ok := interestID(c)
+	id, ok := pathID(c)
 	if !ok {
 		return
 	}
-	var in struct {
-		Direction string `json:"direction"`
-	}
-	if err := c.ShouldBindJSON(&in); err != nil || (in.Direction != "up" && in.Direction != "down") {
-		badRequest(c, "invalid_direction")
+	up, ok := direction(c)
+	if !ok {
 		return
 	}
 	ctx := c.Request.Context()
@@ -178,33 +224,37 @@ func (h *Handler) Move(c *gin.Context) {
 		notFound(c)
 		return
 	}
-	j := i - 1
-	if in.Direction == "down" {
-		j = i + 1
+	same := func(r db.ListAllInterestsRow) bool {
+		return r.Retired == rows[i].Retired && r.GroupID == rows[i].GroupID
 	}
-	if j >= 0 && j < len(rows) && rows[j].Retired == rows[i].Retired {
-		rows[i], rows[j] = rows[j], rows[i]
+	step := 1
+	if up {
+		step = -1
+	}
+	for j := i + step; j >= 0 && j < len(rows); j += step {
+		if same(rows[j]) {
+			rows[i], rows[j] = rows[j], rows[i]
+			break
+		}
 	}
 
 	ids := make([]int64, len(rows))
 	orders := make([]int32, len(rows))
-	out := make([]AdminInterest, len(rows))
 	for k, r := range rows {
 		ids[k], orders[k] = r.ID, int32(k+1)
-		out[k] = adminInterest(r.ID, r.Name, r.Slug, r.Emoji, r.Retired)
 	}
 	if err := h.q.SetInterestOrders(ctx, db.SetInterestOrdersParams{Ids: ids, Orders: orders}); err != nil {
 		internalError(c, "move", err)
 		return
 	}
-	c.JSON(http.StatusOK, out)
+	h.AdminList(c)
 }
 
 func (h *Handler) Retire(c *gin.Context)  { h.setRetired(c, true) }
 func (h *Handler) Restore(c *gin.Context) { h.setRetired(c, false) }
 
 func (h *Handler) setRetired(c *gin.Context, retired bool) {
-	id, ok := interestID(c)
+	id, ok := pathID(c)
 	if !ok {
 		return
 	}
@@ -217,7 +267,144 @@ func (h *Handler) setRetired(c *gin.Context, retired bool) {
 		internalError(c, "retire", err)
 		return
 	}
-	c.JSON(http.StatusOK, adminInterest(row.ID, row.Name, row.Slug, row.Emoji, row.Retired))
+	c.JSON(http.StatusOK, adminInterest(row.ID, row.Name, row.Slug, row.Emoji, row.GroupID, row.Retired))
+}
+
+type groupInput struct {
+	Name *string `json:"name"`
+	Slug *string `json:"slug"`
+}
+
+func (h *Handler) CreateGroup(c *gin.Context) {
+	var in groupInput
+	if err := c.ShouldBindJSON(&in); err != nil {
+		badRequest(c, "invalid_input")
+		return
+	}
+	name, slugValue := deref(in.Name), deref(in.Slug)
+	if code := validateGroup(&name, slugValue); code != "" {
+		badRequest(c, code)
+		return
+	}
+	row, err := h.q.CreateInterestGroup(c.Request.Context(), db.CreateInterestGroupParams{Name: name, Slug: slugValue})
+	if code := groupConflict(err); code != "" {
+		c.JSON(http.StatusConflict, gin.H{"error": code})
+		return
+	}
+	if err != nil {
+		internalError(c, "create group", err)
+		return
+	}
+	c.JSON(http.StatusCreated, AdminGroup{ID: row.ID, Name: row.Name, Slug: row.Slug})
+}
+
+func (h *Handler) UpdateGroup(c *gin.Context) {
+	id, ok := pathID(c)
+	if !ok {
+		return
+	}
+	var in groupInput
+	if err := c.ShouldBindJSON(&in); err != nil {
+		badRequest(c, "invalid_input")
+		return
+	}
+	ctx := c.Request.Context()
+	cur, err := h.q.GetInterestGroup(ctx, id)
+	if errors.Is(err, sql.ErrNoRows) {
+		notFound(c)
+		return
+	}
+	if err != nil {
+		internalError(c, "get group", err)
+		return
+	}
+	name, slugValue := cur.Name, cur.Slug
+	if in.Name != nil {
+		name = *in.Name
+	}
+	if in.Slug != nil {
+		slugValue = *in.Slug
+	}
+	if code := validateGroup(&name, slugValue); code != "" {
+		badRequest(c, code)
+		return
+	}
+	row, err := h.q.UpdateInterestGroup(ctx, db.UpdateInterestGroupParams{ID: id, Name: name, Slug: slugValue})
+	if code := groupConflict(err); code != "" {
+		c.JSON(http.StatusConflict, gin.H{"error": code})
+		return
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		notFound(c)
+		return
+	}
+	if err != nil {
+		internalError(c, "update group", err)
+		return
+	}
+	c.JSON(http.StatusOK, AdminGroup{ID: row.ID, Name: row.Name, Slug: row.Slug})
+}
+
+func (h *Handler) MoveGroup(c *gin.Context) {
+	id, ok := pathID(c)
+	if !ok {
+		return
+	}
+	up, ok := direction(c)
+	if !ok {
+		return
+	}
+	ctx := c.Request.Context()
+	groups, err := h.q.ListInterestGroups(ctx)
+	if err != nil {
+		internalError(c, "move groups list", err)
+		return
+	}
+	i := -1
+	for k, g := range groups {
+		if g.ID == id {
+			i = k
+		}
+	}
+	if i < 0 {
+		notFound(c)
+		return
+	}
+	j := i + 1
+	if up {
+		j = i - 1
+	}
+	if j >= 0 && j < len(groups) {
+		groups[i], groups[j] = groups[j], groups[i]
+	}
+	ids := make([]int64, len(groups))
+	orders := make([]int32, len(groups))
+	for k, g := range groups {
+		ids[k], orders[k] = g.ID, int32(k+1)
+	}
+	if err := h.q.SetInterestGroupOrders(ctx, db.SetInterestGroupOrdersParams{Ids: ids, Orders: orders}); err != nil {
+		internalError(c, "move group", err)
+		return
+	}
+	h.AdminList(c)
+}
+
+func (h *Handler) groupExists(ctx context.Context, id *int64) (bool, error) {
+	if id == nil {
+		return false, nil
+	}
+	return h.q.InterestGroupExists(ctx, *id)
+}
+
+func direction(c *gin.Context) (up bool, ok bool) {
+	var in struct {
+		Direction string `json:"direction"`
+	}
+	if err := c.ShouldBindJSON(&in); err != nil || (in.Direction != "up" && in.Direction != "down") {
+		badRequest(c, "invalid_direction")
+		return false, false
+	}
+	return in.Direction == "up", true
 }
 
 func validate(name *string, slugValue string, emoji *string) string {
@@ -235,6 +422,27 @@ func validate(name *string, slugValue string, emoji *string) string {
 	return ""
 }
 
+func validateGroup(name *string, slugValue string) string {
+	*name = strings.TrimSpace(*name)
+	if *name == "" || utf8.RuneCountInString(*name) > maxNameLen {
+		return "invalid_name"
+	}
+	if !slug.Valid(slugValue) {
+		return "invalid_slug"
+	}
+	return ""
+}
+
+func groupConflict(err error) string {
+	switch {
+	case postgres.IsUniqueViolation(err, "interest_groups_name_lower_key"):
+		return "name_taken"
+	case postgres.IsUniqueViolation(err, "interest_groups_slug_key"):
+		return "slug_taken"
+	}
+	return ""
+}
+
 func conflict(err error) string {
 	switch {
 	case postgres.IsUniqueViolation(err, "interests_name_lower_key"):
@@ -245,11 +453,15 @@ func conflict(err error) string {
 	return ""
 }
 
-func adminInterest(id int64, name, slugValue, emoji string, retired bool) AdminInterest {
-	return AdminInterest{Interest: Interest{ID: id, Name: name, Slug: slugValue, Emoji: emoji}, Retired: retired}
+func adminInterest(id int64, name, slugValue, emoji string, groupID sql.NullInt64, retired bool) AdminInterest {
+	a := AdminInterest{Interest: Interest{ID: id, Name: name, Slug: slugValue, Emoji: emoji}, Retired: retired}
+	if groupID.Valid {
+		a.GroupID = &groupID.Int64
+	}
+	return a
 }
 
-func interestID(c *gin.Context) (int64, bool) {
+func pathID(c *gin.Context) (int64, bool) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil || id <= 0 {
 		notFound(c)

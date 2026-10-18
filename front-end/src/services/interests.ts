@@ -1,5 +1,12 @@
 import { apiFetch } from "@/lib/apiFetch";
-import type { AdminInterest, Interest, InterestInput } from "@/types/interest";
+import type {
+  AdminCatalogue,
+  AdminInterest,
+  AdminInterestGroup,
+  InterestGroup,
+  InterestGroupInput,
+  InterestInput,
+} from "@/types/interest";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -20,9 +27,9 @@ async function call<T>(path: string, init?: RequestInit): Promise<Result<T>> {
   }
 }
 
-export const listInterests = () => call<Interest[]>("/interests");
+export const listInterests = () => call<InterestGroup[]>("/interests");
 
-export const adminListInterests = () => call<AdminInterest[]>("/admin/interests");
+export const adminListInterests = () => call<AdminCatalogue>("/admin/interests");
 
 export const createInterest = (input: InterestInput) =>
   call<AdminInterest>("/admin/interests", { method: "POST", body: JSON.stringify(input) });
@@ -31,7 +38,16 @@ export const updateInterest = (id: number, input: Partial<InterestInput>) =>
   call<AdminInterest>(`/admin/interests/${id}`, { method: "PATCH", body: JSON.stringify(input) });
 
 export const moveInterest = (id: number, direction: "up" | "down") =>
-  call<AdminInterest[]>(`/admin/interests/${id}/move`, { method: "POST", body: JSON.stringify({ direction }) });
+  call<AdminCatalogue>(`/admin/interests/${id}/move`, { method: "POST", body: JSON.stringify({ direction }) });
 
 export const setInterestRetired = (id: number, retired: boolean) =>
   call<AdminInterest>(`/admin/interests/${id}/${retired ? "retire" : "restore"}`, { method: "POST" });
+
+export const createInterestGroup = (input: InterestGroupInput) =>
+  call<AdminInterestGroup>("/admin/interest-groups", { method: "POST", body: JSON.stringify(input) });
+
+export const updateInterestGroup = (id: number, input: Partial<InterestGroupInput>) =>
+  call<AdminInterestGroup>(`/admin/interest-groups/${id}`, { method: "PATCH", body: JSON.stringify(input) });
+
+export const moveInterestGroup = (id: number, direction: "up" | "down") =>
+  call<AdminCatalogue>(`/admin/interest-groups/${id}/move`, { method: "POST", body: JSON.stringify({ direction }) });
