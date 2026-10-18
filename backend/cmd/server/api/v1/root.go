@@ -32,7 +32,7 @@ func AddV1Group(r *gin.RouterGroup, h Handlers) *gin.RouterGroup {
 	AddHealthRoutes(v1Group)
 	AddGeoRoutes(v1Group, h.Geo)
 	AddChannelsGroups(v1Group, h.Channels)
-	AddPersonaRoutes(v1Group, h.Users, h.Followers)
+	AddPersonaRoutes(v1Group, h.Users, h.Followers, h.Interests)
 	AddNotificationsRoutes(v1Group, h.Notifications)
 	AddInterestsRoutes(v1Group, h.Interests, h.IsAdmin)
 	return v1Group

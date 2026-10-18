@@ -88,8 +88,11 @@ CREATE INDEX interests_group_id_idx ON interests (group_id);
 CREATE TABLE persona_interests (
     persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
     interest_id BIGINT REFERENCES interests(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
     PRIMARY KEY (persona_id, interest_id)
 );
+
+CREATE INDEX persona_interests_interest_id_idx ON persona_interests (interest_id);
 
 -- =========================
 -- 4. PERSONA RELATIONSHIPS

@@ -21,3 +21,7 @@ export type AdminCatalogue = { groups: AdminInterestGroup[]; interests: AdminInt
 export type InterestInput = Pick<Interest, "name" | "slug" | "emoji"> & { group_id: number | null };
 
 export type InterestGroupInput = Pick<InterestGroup, "name" | "slug">;
+
+export type PersonaInterests = { groups: InterestGroup[]; selected: number[]; retired: Interest[] };
+
+export const MAX_PERSONA_INTERESTS = 20;

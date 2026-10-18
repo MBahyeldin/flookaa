@@ -12,6 +12,29 @@ import (
 	"github.com/lib/pq"
 )
 
+const countAllowedPersonaInterests = `-- name: CountAllowedPersonaInterests :one
+SELECT COUNT(*)::int AS allowed
+FROM interests i
+WHERE i.id = ANY($1::bigint[])
+  AND (i.retired_at IS NULL OR EXISTS (
+      SELECT 1 FROM persona_interests pi
+      WHERE pi.persona_id = $2 AND pi.interest_id = i.id
+  ))
+`
+
+type CountAllowedPersonaInterestsParams struct {
+	Ids       []int64
+	PersonaID int64
+}
+
+// An id is allowed if it's active or the persona already has it.
+func (q *Queries) CountAllowedPersonaInterests(ctx context.Context, arg CountAllowedPersonaInterestsParams) (int32, error) {
+	row := q.db.QueryRowContext(ctx, countAllowedPersonaInterests, pq.Array(arg.Ids), arg.PersonaID)
+	var allowed int32
+	err := row.Scan(&allowed)
+	return allowed, err
+}
+
 const createInterest = `-- name: CreateInterest :one
 INSERT INTO interests (name, slug, emoji, group_id, sort_order)
 VALUES (
@@ -87,6 +110,22 @@ func (q *Queries) CreateInterestGroup(ctx context.Context, arg CreateInterestGro
 	var i CreateInterestGroupRow
 	err := row.Scan(&i.ID, &i.Name, &i.Slug)
 	return i, err
+}
+
+const defaultPersonaHasInterests = `-- name: DefaultPersonaHasInterests :one
+SELECT EXISTS (
+    SELECT 1
+    FROM persona_interests pi
+    JOIN personas p ON p.id = pi.persona_id
+    WHERE p.user_id = $1 AND p.is_default AND p.deleted_at IS NULL
+)::boolean AS done
+`
+
+func (q *Queries) DefaultPersonaHasInterests(ctx context.Context, userID int64) (bool, error) {
+	row := q.db.QueryRowContext(ctx, defaultPersonaHasInterests, userID)
+	var done bool
+	err := row.Scan(&done)
+	return done, err
 }
 
 const fillInterestGroup = `-- name: FillInterestGroup :exec
@@ -300,6 +339,133 @@ func (q *Queries) ListInterestGroups(ctx context.Context) ([]ListInterestGroupsR
 		return nil, err
 	}
 	return items, nil
+}
+
+const listPersonaInterests = `-- name: ListPersonaInterests :many
+SELECT i.id, i.name, i.slug, i.emoji, (i.retired_at IS NOT NULL)::boolean AS retired
+FROM persona_interests pi
+JOIN interests i ON i.id = pi.interest_id
+WHERE pi.persona_id = $1
+ORDER BY pi.created_at, i.id
+`
+
+type ListPersonaInterestsRow struct {
+	ID      int64
+	Name    string
+	Slug    string
+	Emoji   string
+	Retired bool
+}
+
+func (q *Queries) ListPersonaInterests(ctx context.Context, personaID int64) ([]ListPersonaInterestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPersonaInterests, personaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPersonaInterestsRow
+	for rows.Next() {
+		var i ListPersonaInterestsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.Emoji,
+			&i.Retired,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const rankedActiveInterests = `-- name: RankedActiveInterests :many
+WITH viewer AS (
+    SELECT gender FROM users WHERE id = $1::bigint
+), popularity AS (
+    SELECT pi.interest_id, COUNT(*) AS n
+    FROM persona_interests pi
+    JOIN personas p ON p.id = pi.persona_id AND p.deleted_at IS NULL
+    JOIN users u ON u.id = p.user_id
+    WHERE (SELECT gender FROM viewer) IS NULL OR u.gender = (SELECT gender FROM viewer)
+    GROUP BY pi.interest_id
+)
+SELECT i.id, i.name, i.slug, i.emoji, g.id AS group_id, g.name AS group_name, g.slug AS group_slug
+FROM interests i
+JOIN interest_groups g ON g.id = i.group_id
+LEFT JOIN popularity pop ON pop.interest_id = i.id
+WHERE i.retired_at IS NULL
+ORDER BY g.sort_order, g.name, COALESCE(pop.n, 0) DESC, i.sort_order, i.name
+`
+
+type RankedActiveInterestsRow struct {
+	ID        int64
+	Name      string
+	Slug      string
+	Emoji     string
+	GroupID   int64
+	GroupName string
+	GroupSlug string
+}
+
+// Within a group, by popularity among personas of users with the viewer's gender (everyone if unset).
+func (q *Queries) RankedActiveInterests(ctx context.Context, userID int64) ([]RankedActiveInterestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, rankedActiveInterests, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RankedActiveInterestsRow
+	for rows.Next() {
+		var i RankedActiveInterestsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.Emoji,
+			&i.GroupID,
+			&i.GroupName,
+			&i.GroupSlug,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const replacePersonaInterests = `-- name: ReplacePersonaInterests :exec
+WITH removed AS (
+    DELETE FROM persona_interests
+    WHERE persona_id = $1
+      AND NOT (interest_id = ANY($2::bigint[]))
+)
+INSERT INTO persona_interests (persona_id, interest_id)
+SELECT $1, unnest($2::bigint[])
+ON CONFLICT DO NOTHING
+`
+
+type ReplacePersonaInterestsParams struct {
+	PersonaID int64
+	Ids       []int64
+}
+
+func (q *Queries) ReplacePersonaInterests(ctx context.Context, arg ReplacePersonaInterestsParams) error {
+	_, err := q.db.ExecContext(ctx, replacePersonaInterests, arg.PersonaID, pq.Array(arg.Ids))
+	return err
 }
 
 const seedInterest = `-- name: SeedInterest :exec

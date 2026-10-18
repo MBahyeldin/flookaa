@@ -1073,6 +1073,7 @@ type PersonaFriendGroupMember struct {
 type PersonaInterest struct {
 	PersonaID  int64
 	InterestID int64
+	CreatedAt  time.Time
 }
 
 type PersonaRelationship struct {

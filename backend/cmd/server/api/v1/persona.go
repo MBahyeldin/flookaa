@@ -3,12 +3,13 @@ package v1
 import (
 	"app/internal/auth"
 	"app/internal/db/postgres/handlers/followers"
+	"app/internal/db/postgres/handlers/interests"
 	"app/internal/db/postgres/handlers/users"
 
 	"github.com/gin-gonic/gin"
 )
 
-func AddPersonaRoutes(r *gin.RouterGroup, users *users.Handler, followers *followers.Handler) {
+func AddPersonaRoutes(r *gin.RouterGroup, users *users.Handler, followers *followers.Handler, interests *interests.Handler) {
 	personaGroup := r.Group("/persona", auth.RequireUser())
 	{
 		personaGroup.GET("/list", users.ListPersonas)
@@ -39,5 +40,9 @@ func AddPersonaRoutes(r *gin.RouterGroup, users *users.Handler, followers *follo
 		viewGroup.POST("/invite-link/reset", followers.ResetInviteLink)
 		viewGroup.POST("/invitations/:inviter_id/accept", followers.AcceptInvitation)
 		viewGroup.POST("/invitations/:inviter_id/reject", followers.RejectInvitation)
+
+		// Any of the user's own personas.
+		viewGroup.GET("/interests", interests.PersonaInterests)
+		viewGroup.PUT("/interests", interests.SetPersonaInterests)
 	}
 }

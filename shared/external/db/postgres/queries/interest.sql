@@ -125,3 +125,57 @@ FROM interest_groups g
 WHERE i.slug = sqlc.arg(slug)
   AND i.group_id IS NULL
   AND g.slug = sqlc.arg(group_slug);
+
+-- Within a group, by popularity among personas of users with the viewer's gender (everyone if unset).
+-- name: RankedActiveInterests :many
+WITH viewer AS (
+    SELECT gender FROM users WHERE id = sqlc.arg(user_id)::bigint
+), popularity AS (
+    SELECT pi.interest_id, COUNT(*) AS n
+    FROM persona_interests pi
+    JOIN personas p ON p.id = pi.persona_id AND p.deleted_at IS NULL
+    JOIN users u ON u.id = p.user_id
+    WHERE (SELECT gender FROM viewer) IS NULL OR u.gender = (SELECT gender FROM viewer)
+    GROUP BY pi.interest_id
+)
+SELECT i.id, i.name, i.slug, i.emoji, g.id AS group_id, g.name AS group_name, g.slug AS group_slug
+FROM interests i
+JOIN interest_groups g ON g.id = i.group_id
+LEFT JOIN popularity pop ON pop.interest_id = i.id
+WHERE i.retired_at IS NULL
+ORDER BY g.sort_order, g.name, COALESCE(pop.n, 0) DESC, i.sort_order, i.name;
+
+-- name: ListPersonaInterests :many
+SELECT i.id, i.name, i.slug, i.emoji, (i.retired_at IS NOT NULL)::boolean AS retired
+FROM persona_interests pi
+JOIN interests i ON i.id = pi.interest_id
+WHERE pi.persona_id = $1
+ORDER BY pi.created_at, i.id;
+
+-- An id is allowed if it's active or the persona already has it.
+-- name: CountAllowedPersonaInterests :one
+SELECT COUNT(*)::int AS allowed
+FROM interests i
+WHERE i.id = ANY(sqlc.arg(ids)::bigint[])
+  AND (i.retired_at IS NULL OR EXISTS (
+      SELECT 1 FROM persona_interests pi
+      WHERE pi.persona_id = sqlc.arg(persona_id) AND pi.interest_id = i.id
+  ));
+
+-- name: ReplacePersonaInterests :exec
+WITH removed AS (
+    DELETE FROM persona_interests
+    WHERE persona_id = sqlc.arg(persona_id)
+      AND NOT (interest_id = ANY(sqlc.arg(ids)::bigint[]))
+)
+INSERT INTO persona_interests (persona_id, interest_id)
+SELECT sqlc.arg(persona_id), unnest(sqlc.arg(ids)::bigint[])
+ON CONFLICT DO NOTHING;
+
+-- name: DefaultPersonaHasInterests :one
+SELECT EXISTS (
+    SELECT 1
+    FROM persona_interests pi
+    JOIN personas p ON p.id = pi.persona_id
+    WHERE p.user_id = $1 AND p.is_default AND p.deleted_at IS NULL
+)::boolean AS done;

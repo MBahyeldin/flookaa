@@ -3,6 +3,9 @@ import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Save, UserRound, UserRoundX } from "lucide-react";
 import FormComponent from "@/components/form";
+import InterestPicker from "@/components/interests/InterestPicker";
+import { usePersonaInterests } from "@/components/interests/usePersonaInterests";
+import SectionLoader from "@/components/section-loader";
 import { Button } from "@/components/ui/button";
 import { personaPath } from "@/components/persona-link";
 import { Form } from "@/models/Forms/Form";
@@ -22,6 +25,46 @@ const SETTINGS_FIELDS = [
   "slug",
   "bio",
 ] as const;
+
+function PersonaInterestsSection({ personaId }: { personaId: number }) {
+  const { data, value, setValue, save, dirty, loadError } = usePersonaInterests(personaId);
+  const [saving, setSaving] = useState(false);
+
+  const onSave = async () => {
+    setSaving(true);
+    const r = await save();
+    setSaving(false);
+    if (r.ok) toast.success("Interests saved");
+    else toast.error("Couldn't save the interests. Please try again.");
+  };
+
+  return (
+    <section className="mt-6 rounded-2xl bg-background p-4 text-foreground md:p-6" aria-labelledby="persona-interests">
+      <div className="mb-4 flex flex-col gap-1">
+        <h2 id="persona-interests" className="text-lg font-semibold">
+          Interests
+        </h2>
+        <p className="text-sm text-muted-foreground">Only you can see this persona's interests.</p>
+      </div>
+      {loadError ? (
+        <p className="text-sm text-destructive">Couldn't load interests. Please reload.</p>
+      ) : !data ? (
+        <SectionLoader />
+      ) : (
+        <div className="flex flex-col gap-6">
+          <InterestPicker groups={data.groups} retired={data.retired} value={value} onChange={setValue} />
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            {value.length === 0 && <p className="text-sm text-muted-foreground">Pick at least one.</p>}
+            <Button onClick={onSave} disabled={!dirty || value.length === 0 || saving}>
+              <Save className="mr-2 h-4 w-4" />
+              {saving ? "Saving…" : "Save interests"}
+            </Button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
 
 function PersonaSettingsForm({ persona }: { persona: Persona }) {
   const { updatePersonaInStore } = useUserProfileStore();
@@ -105,7 +148,10 @@ export default function PersonaSettingsPage() {
       </div>
 
       {persona ? (
-        <PersonaSettingsForm key={persona.id} persona={persona} />
+        <>
+          <PersonaSettingsForm key={persona.id} persona={persona} />
+          <PersonaInterestsSection key={`interests-${persona.id}`} personaId={Number(persona.id)} />
+        </>
       ) : (
         <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
           <UserRoundX className="h-10 w-10" />

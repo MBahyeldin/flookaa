@@ -6,6 +6,7 @@ import type {
   InterestGroup,
   InterestGroupInput,
   InterestInput,
+  PersonaInterests,
 } from "@/types/interest";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -51,3 +52,11 @@ export const updateInterestGroup = (id: number, input: Partial<InterestGroupInpu
 
 export const moveInterestGroup = (id: number, direction: "up" | "down") =>
   call<AdminCatalogue>(`/admin/interest-groups/${id}/move`, { method: "POST", body: JSON.stringify({ direction }) });
+
+export const getPersonaInterests = (personaId: number) => call<PersonaInterests>(`/persona/${personaId}/interests`);
+
+export const setPersonaInterests = (personaId: number, interestIds: number[]) =>
+  call<PersonaInterests>(`/persona/${personaId}/interests`, {
+    method: "PUT",
+    body: JSON.stringify({ interest_ids: interestIds }),
+  });
