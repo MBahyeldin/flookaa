@@ -34,6 +34,6 @@ func (h *Handler) Info(c *gin.Context) {
 		"email":       userRow.EmailAddress,
 		"is_verified": userRow.IsVerified.Bool,
 		"thumbnail":   userRow.Thumbnail.String,
-		"onboarding":  h.onboarding.State(userRow.OnboardingStep, userRow.OnboardingCompleted),
+		"onboarding":  h.state(ctx, userId, userRow.OnboardingStep, userRow.OnboardingCompleted),
 	})
 }

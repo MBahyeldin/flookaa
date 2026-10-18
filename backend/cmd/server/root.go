@@ -88,7 +88,9 @@ func StartServer(cfg config.Server) error {
 	}
 
 	followersHandler := followers.NewHandler(q, natsHelper)
-	onboardingFlow, err := onboarding.New()
+	onboardingFlow, err := onboarding.New(
+		onboarding.Step{ID: 1, Key: "about_you", Done: q.UserAboutYouDone},
+	)
 	if err != nil {
 		return err
 	}

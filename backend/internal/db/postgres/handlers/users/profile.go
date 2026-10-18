@@ -4,9 +4,11 @@ import (
 	"app/internal/auth"
 	"app/internal/models"
 	"database/sql"
+	"errors"
 	"net/http"
 	"shared/pkg/db"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,6 +43,8 @@ func (h *Handler) GetProfile(c *gin.Context) {
 		"country_id":    user.CountryID.Int64,
 		"state_id":      user.StateID.Int64,
 		"postal_code":   user.PostalCode.String,
+		"date_of_birth": dateOfBirthJSON(user.DateOfBirth),
+		"gender":        genderJSON(user.Gender),
 	})
 }
 
@@ -56,6 +60,17 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	dob, err := parseDateOfBirth(input.DateOfBirth, time.Now().UTC())
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_date_of_birth"})
+		return
+	}
+	gender, err := parseGender(input.Gender)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_gender"})
 		return
 	}
 
@@ -79,13 +94,76 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 		CountryID:      parseNullableInt64(input.CountryID),
 		StateID:        parseNullableInt64(input.StateID),
 		PostalCode:     sql.NullString{String: input.PostalCode, Valid: input.PostalCode != ""},
+		DateOfBirth:    dob,
+		Gender:         gender,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": updatedUser})
+	c.JSON(http.StatusOK, gin.H{"data": gin.H{
+		"id":                       updatedUser.ID,
+		"first_name":               updatedUser.FirstName,
+		"last_name":                updatedUser.LastName,
+		"email_address":            updatedUser.EmailAddress,
+		"updated_at":               updatedUser.UpdatedAt,
+		"thumbnail":                updatedUser.Thumbnail,
+		"is_verified":              updatedUser.IsVerified,
+		"city_id":                  updatedUser.CityID,
+		"state_id":                 updatedUser.StateID,
+		"country_id":               updatedUser.CountryID,
+		"postal_code":              updatedUser.PostalCode,
+		"other_platforms_accounts": updatedUser.OtherPlatformsAccounts,
+		"date_of_birth":            dateOfBirthJSON(updatedUser.DateOfBirth),
+		"gender":                   genderJSON(updatedUser.Gender),
+	}})
+}
+
+const dateLayout = "2006-01-02"
+
+var minDateOfBirth = time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
+
+// A nil value leaves the field unchanged; it can't be cleared once set.
+func parseDateOfBirth(s *string, now time.Time) (sql.NullTime, error) {
+	if s == nil {
+		return sql.NullTime{}, nil
+	}
+	t, err := time.Parse(dateLayout, *s)
+	if err != nil {
+		return sql.NullTime{}, err
+	}
+	if t.Before(minDateOfBirth) || t.After(now) {
+		return sql.NullTime{}, errors.New("date of birth out of range")
+	}
+	return sql.NullTime{Time: t, Valid: true}, nil
+}
+
+func parseGender(s *string) (db.NullGenderEnum, error) {
+	if s == nil {
+		return db.NullGenderEnum{}, nil
+	}
+	g := db.GenderEnum(*s)
+	if !g.Valid() {
+		return db.NullGenderEnum{}, errors.New("invalid gender")
+	}
+	return db.NullGenderEnum{GenderEnum: g, Valid: true}, nil
+}
+
+func dateOfBirthJSON(t sql.NullTime) *string {
+	if !t.Valid {
+		return nil
+	}
+	s := t.Time.Format(dateLayout)
+	return &s
+}
+
+func genderJSON(g db.NullGenderEnum) *string {
+	if !g.Valid {
+		return nil
+	}
+	s := string(g.GenderEnum)
+	return &s
 }
 
 func parseNullableInt64(s string) sql.NullInt64 {

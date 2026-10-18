@@ -3,6 +3,7 @@ package users
 import (
 	"app/internal/auth"
 	"app/internal/onboarding"
+	"context"
 	"database/sql"
 	"errors"
 	"log"
@@ -37,9 +38,9 @@ func (h *Handler) MoveOnboarding(c *gin.Context) {
 		auth.Unauthorized(c)
 		return
 	}
-	state := h.onboarding.State(user.OnboardingStep, user.OnboardingCompleted)
+	state := h.state(ctx, userId, user.OnboardingStep, user.OnboardingCompleted)
 
-	toStep, completed, err := h.onboarding.Move(ctx, userId, user.OnboardingStep, user.OnboardingCompleted, input.Step, input.Action)
+	result, err := h.onboarding.Move(ctx, userId, user.OnboardingStep, user.OnboardingCompleted, input.Step, input.Action)
 	switch {
 	case errors.Is(err, onboarding.ErrCompleted), errors.Is(err, onboarding.ErrStepMismatch):
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error(), "onboarding": state})
@@ -54,16 +55,21 @@ func (h *Handler) MoveOnboarding(c *gin.Context) {
 		return
 	}
 
+	if !result.Write {
+		c.JSON(http.StatusOK, gin.H{"onboarding": h.state(ctx, userId, user.OnboardingStep, user.OnboardingCompleted)})
+		return
+	}
+
 	row, err := h.q.AdvanceOnboarding(ctx, db.AdvanceOnboardingParams{
 		UserID:    userId,
 		FromStep:  user.OnboardingStep,
-		ToStep:    toStep,
-		Completed: completed,
+		ToStep:    result.Step,
+		Completed: result.Completed,
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		// Another request moved it first.
 		if fresh, err := h.q.GetUserBasicInfo(ctx, userId); err == nil {
-			state = h.onboarding.State(fresh.OnboardingStep, fresh.OnboardingCompleted)
+			state = h.state(ctx, userId, fresh.OnboardingStep, fresh.OnboardingCompleted)
 		}
 		c.JSON(http.StatusConflict, gin.H{"error": onboarding.ErrStepMismatch.Error(), "onboarding": state})
 		return
@@ -74,5 +80,13 @@ func (h *Handler) MoveOnboarding(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"onboarding": h.onboarding.State(row.OnboardingStep, row.OnboardingCompleted)})
+	c.JSON(http.StatusOK, gin.H{"onboarding": h.state(ctx, userId, row.OnboardingStep, row.OnboardingCompleted)})
+}
+
+func (h *Handler) state(ctx context.Context, userID int64, lastStep int32, completed bool) onboarding.State {
+	st, err := h.onboarding.State(ctx, userID, lastStep, completed)
+	if err != nil {
+		log.Printf("onboarding: state for user %d: %v", userID, err)
+	}
+	return st
 }

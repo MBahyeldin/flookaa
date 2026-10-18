@@ -61,68 +61,132 @@ func New(steps ...Step) (*Flow, error) {
 	return &Flow{steps: steps}, nil
 }
 
-func (f *Flow) current(lastStep int32, completed bool) int {
-	if completed {
-		return -1
-	}
-	for i, s := range f.steps {
-		if s.ID > lastStep {
-			return i
-		}
-	}
-	return -1
+// Past every step, required steps whose Done is false are caught up on, alone.
+type position struct {
+	index   int
+	catchUp []int
 }
 
-func (f *Flow) State(lastStep int32, completed bool) State {
-	st := State{Steps: make([]StepInfo, len(f.steps))}
+func (f *Flow) position(ctx context.Context, userID int64, lastStep int32, completed bool) (position, error) {
+	if !completed {
+		for i, s := range f.steps {
+			if s.ID > lastStep {
+				return position{index: i}, nil
+			}
+		}
+	}
+	var missing []int
 	for i, s := range f.steps {
-		st.Steps[i] = StepInfo{Key: s.Key, Skippable: s.Skippable}
+		if s.Skippable {
+			continue
+		}
+		done, err := s.Done(ctx, userID)
+		if err != nil {
+			return position{index: -1}, err
+		}
+		if !done {
+			missing = append(missing, i)
+		}
 	}
-	i := f.current(lastStep, completed)
-	if i < 0 {
+	if len(missing) == 0 {
+		return position{index: -1}, nil
+	}
+	return position{index: missing[0], catchUp: missing}, nil
+}
+
+func (f *Flow) info(i int) StepInfo {
+	return StepInfo{Key: f.steps[i].Key, Skippable: f.steps[i].Skippable}
+}
+
+// On a Done error the state leaves catch-up out, so callers can fail open.
+func (f *Flow) State(ctx context.Context, userID int64, lastStep int32, completed bool) (State, error) {
+	pos, err := f.position(ctx, userID, lastStep, completed)
+	var st State
+	if pos.catchUp != nil {
+		st.Steps = make([]StepInfo, len(pos.catchUp))
+		for j, i := range pos.catchUp {
+			st.Steps[j] = f.info(i)
+		}
+	} else {
+		st.Steps = make([]StepInfo, len(f.steps))
+		for i := range f.steps {
+			st.Steps[i] = f.info(i)
+		}
+	}
+	if pos.index < 0 {
 		st.Completed = true
-		return st
+		return st, err
 	}
-	st.Current = &f.steps[i].Key
-	return st
+	st.Current = &f.steps[pos.index].Key
+	return st, err
+}
+
+// Write is false for a catch-up step: it doesn't move the stored position.
+type Result struct {
+	Step      int32
+	Completed bool
+	Write     bool
 }
 
 // Move validates an action on the current step and returns the new
 // onboarding_step and onboarding_completed values.
-func (f *Flow) Move(ctx context.Context, userID int64, lastStep int32, completed bool, key string, action Action) (int32, bool, error) {
-	i := f.current(lastStep, completed)
+func (f *Flow) Move(ctx context.Context, userID int64, lastStep int32, completed bool, key string, action Action) (Result, error) {
+	pos, err := f.position(ctx, userID, lastStep, completed)
+	if err != nil {
+		return Result{}, err
+	}
+	i := pos.index
 	if i < 0 {
-		return 0, false, ErrCompleted
+		return Result{}, ErrCompleted
 	}
 	step := f.steps[i]
 	if step.Key != key {
-		return 0, false, ErrStepMismatch
+		return Result{}, ErrStepMismatch
 	}
-	last := i == len(f.steps)-1
 
+	if pos.catchUp != nil {
+		switch action {
+		case ActionNext:
+			done, err := step.Done(ctx, userID)
+			if err != nil {
+				return Result{}, err
+			}
+			if !done {
+				return Result{}, ErrStepIncomplete
+			}
+			return Result{Step: lastStep, Completed: completed}, nil
+		case ActionSkip:
+			return Result{}, ErrStepRequired
+		case ActionBack:
+			return Result{}, ErrNoPreviousStep
+		}
+		return Result{}, ErrInvalidAction
+	}
+
+	last := i == len(f.steps)-1
 	switch action {
 	case ActionNext:
 		done, err := step.Done(ctx, userID)
 		if err != nil {
-			return 0, false, err
+			return Result{}, err
 		}
 		if !done {
-			return 0, false, ErrStepIncomplete
+			return Result{}, ErrStepIncomplete
 		}
-		return step.ID, last, nil
+		return Result{Step: step.ID, Completed: last, Write: true}, nil
 	case ActionSkip:
 		if !step.Skippable {
-			return 0, false, ErrStepRequired
+			return Result{}, ErrStepRequired
 		}
-		return step.ID, last, nil
+		return Result{Step: step.ID, Completed: last, Write: true}, nil
 	case ActionBack:
 		if i == 0 {
-			return 0, false, ErrNoPreviousStep
+			return Result{}, ErrNoPreviousStep
 		}
 		if i == 1 {
-			return 0, false, nil
+			return Result{Write: true}, nil
 		}
-		return f.steps[i-2].ID, false, nil
+		return Result{Step: f.steps[i-2].ID, Write: true}, nil
 	}
-	return 0, false, ErrInvalidAction
+	return Result{}, ErrInvalidAction
 }

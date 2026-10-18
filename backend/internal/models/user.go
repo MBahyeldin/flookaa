@@ -21,6 +21,8 @@ type PatchUserRequest struct {
 	StateID                string   `json:"state_id"`
 	PostalCode             string   `json:"postal_code"`
 	OtherPlatformsAccounts []string `json:"other_platforms_accounts"`
+	DateOfBirth            *string  `json:"date_of_birth"`
+	Gender                 *string  `json:"gender"`
 }
 
 type VerifyRequest struct {

@@ -279,6 +279,57 @@ func (e EventTargetTypeEnum) Valid() bool {
 	return false
 }
 
+type GenderEnum string
+
+const (
+	GenderEnumMale   GenderEnum = "male"
+	GenderEnumFemale GenderEnum = "female"
+)
+
+func (e *GenderEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = GenderEnum(s)
+	case string:
+		*e = GenderEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for GenderEnum: %T", src)
+	}
+	return nil
+}
+
+type NullGenderEnum struct {
+	GenderEnum GenderEnum
+	Valid      bool // Valid is true if GenderEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullGenderEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.GenderEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.GenderEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullGenderEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.GenderEnum), nil
+}
+
+func (e GenderEnum) Valid() bool {
+	switch e {
+	case GenderEnumMale,
+		GenderEnumFemale:
+		return true
+	}
+	return false
+}
+
 type NotificationKindEnum string
 
 const (
@@ -1100,6 +1151,8 @@ type User struct {
 	OauthProvider          NullOauthProvider
 	OnboardingCompleted    bool
 	OnboardingStep         int32
+	DateOfBirth            sql.NullTime
+	Gender                 NullGenderEnum
 }
 
 type UserRole struct {

@@ -2,6 +2,9 @@
 CREATE TYPE oauth_provider
 AS ENUM ('google', 'github', 'linkedin');
 
+CREATE TYPE gender_enum
+AS ENUM ('male', 'female');
+
 
 -- -------------------------------
 -- 2. Users Table
@@ -25,5 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
     city_id BIGINT REFERENCES cities(id),
     oauth_provider oauth_provider,
     onboarding_completed BOOLEAN NOT NULL DEFAULT false,
-    onboarding_step INTEGER NOT NULL DEFAULT 0
+    onboarding_step INTEGER NOT NULL DEFAULT 0,
+    date_of_birth DATE CHECK (date_of_birth >= DATE '1900-01-01'),
+    gender gender_enum
 );

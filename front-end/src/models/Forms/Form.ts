@@ -40,6 +40,10 @@ export class Form {
     groups: profileFieldsGroups,
     relativeApiPath: "/api/v1/users/profile",
     method: "PATCH",
+    serverErrors: {
+      invalid_date_of_birth: { field: "date_of_birth", message: "Enter a date between 1900 and today" },
+      invalid_gender: { field: "gender", message: "Choose one" },
+    },
   });
 
   static login = new Form({

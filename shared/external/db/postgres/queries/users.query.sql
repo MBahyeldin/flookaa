@@ -35,6 +35,8 @@ SET
     state_id = COALESCE($9, state_id),
     postal_code = COALESCE($10, postal_code),
     other_platforms_accounts = COALESCE($11, other_platforms_accounts),
+    date_of_birth = COALESCE($13, date_of_birth),
+    gender = COALESCE($14, gender),
     updated_at = now()
 WHERE id = $12
 RETURNING 
@@ -49,7 +51,9 @@ RETURNING
     state_id,
     country_id,
     postal_code,
-    other_platforms_accounts;
+    other_platforms_accounts,
+    date_of_birth,
+    gender;
 
 -- -------------------------------
 -- 4. Verify user email
@@ -126,3 +130,11 @@ WHERE id = sqlc.arg(user_id)
   AND NOT onboarding_completed
   AND deleted_at IS NULL
 RETURNING onboarding_step, onboarding_completed;
+
+-- -------------------------------
+-- About you onboarding step is done
+-- -------------------------------
+-- name: UserAboutYouDone :one
+SELECT (date_of_birth IS NOT NULL AND gender IS NOT NULL)::boolean AS done
+FROM users
+WHERE id = $1;
