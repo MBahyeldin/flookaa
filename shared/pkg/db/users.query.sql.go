@@ -13,6 +13,45 @@ import (
 	"github.com/lib/pq"
 )
 
+const advanceOnboarding = `-- name: AdvanceOnboarding :one
+UPDATE users
+SET onboarding_step = $1,
+    onboarding_completed = $2,
+    updated_at = now()
+WHERE id = $3
+  AND onboarding_step = $4
+  AND NOT onboarding_completed
+  AND deleted_at IS NULL
+RETURNING onboarding_step, onboarding_completed
+`
+
+type AdvanceOnboardingParams struct {
+	ToStep    int32
+	Completed bool
+	UserID    int64
+	FromStep  int32
+}
+
+type AdvanceOnboardingRow struct {
+	OnboardingStep      int32
+	OnboardingCompleted bool
+}
+
+// -------------------------------
+// Move onboarding, only from the step the caller saw
+// -------------------------------
+func (q *Queries) AdvanceOnboarding(ctx context.Context, arg AdvanceOnboardingParams) (AdvanceOnboardingRow, error) {
+	row := q.db.QueryRowContext(ctx, advanceOnboarding,
+		arg.ToStep,
+		arg.Completed,
+		arg.UserID,
+		arg.FromStep,
+	)
+	var i AdvanceOnboardingRow
+	err := row.Scan(&i.OnboardingStep, &i.OnboardingCompleted)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (first_name, last_name, email_address, hashed_password, oauth_provider, thumbnail, is_verified, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
@@ -68,21 +107,24 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUserBasicInfo = `-- name: GetUserBasicInfo :one
-SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbnail, u.created_at, u.updated_at
+SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbnail, u.created_at, u.updated_at,
+       u.onboarding_step, u.onboarding_completed
 FROM users u
 WHERE u.id = $1
   AND u.deleted_at IS NULL
 `
 
 type GetUserBasicInfoRow struct {
-	ID           int64
-	FirstName    string
-	LastName     string
-	EmailAddress string
-	IsVerified   sql.NullBool
-	Thumbnail    sql.NullString
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID                  int64
+	FirstName           string
+	LastName            string
+	EmailAddress        string
+	IsVerified          sql.NullBool
+	Thumbnail           sql.NullString
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	OnboardingStep      int32
+	OnboardingCompleted bool
 }
 
 // -------------------------------
@@ -100,6 +142,8 @@ func (q *Queries) GetUserBasicInfo(ctx context.Context, id int64) (GetUserBasicI
 		&i.Thumbnail,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OnboardingStep,
+		&i.OnboardingCompleted,
 	)
 	return i, err
 }
@@ -351,10 +395,8 @@ SET
     state_id = COALESCE($9, state_id),
     postal_code = COALESCE($10, postal_code),
     other_platforms_accounts = COALESCE($11, other_platforms_accounts),
-    onboarding_completed = COALESCE($12, onboarding_completed),
-    onboarding_step = COALESCE($13, onboarding_step),
     updated_at = now()
-WHERE id = $14
+WHERE id = $12
 RETURNING 
     id,
     first_name,
@@ -367,9 +409,7 @@ RETURNING
     state_id,
     country_id,
     postal_code,
-    other_platforms_accounts,
-    onboarding_completed,
-    onboarding_step
+    other_platforms_accounts
 `
 
 type UpdateUserParams struct {
@@ -384,8 +424,6 @@ type UpdateUserParams struct {
 	StateID                sql.NullInt64
 	PostalCode             sql.NullString
 	OtherPlatformsAccounts []string
-	OnboardingCompleted    sql.NullBool
-	OnboardingStep         sql.NullInt32
 	ID                     int64
 }
 
@@ -402,8 +440,6 @@ type UpdateUserRow struct {
 	CountryID              sql.NullInt64
 	PostalCode             sql.NullString
 	OtherPlatformsAccounts []string
-	OnboardingCompleted    sql.NullBool
-	OnboardingStep         sql.NullInt32
 }
 
 // -------------------------------
@@ -422,8 +458,6 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateU
 		arg.StateID,
 		arg.PostalCode,
 		pq.Array(arg.OtherPlatformsAccounts),
-		arg.OnboardingCompleted,
-		arg.OnboardingStep,
 		arg.ID,
 	)
 	var i UpdateUserRow
@@ -440,8 +474,6 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateU
 		&i.CountryID,
 		&i.PostalCode,
 		pq.Array(&i.OtherPlatformsAccounts),
-		&i.OnboardingCompleted,
-		&i.OnboardingStep,
 	)
 	return i, err
 }

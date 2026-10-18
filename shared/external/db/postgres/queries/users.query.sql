@@ -35,10 +35,8 @@ SET
     state_id = COALESCE($9, state_id),
     postal_code = COALESCE($10, postal_code),
     other_platforms_accounts = COALESCE($11, other_platforms_accounts),
-    onboarding_completed = COALESCE($12, onboarding_completed),
-    onboarding_step = COALESCE($13, onboarding_step),
     updated_at = now()
-WHERE id = $14
+WHERE id = $12
 RETURNING 
     id,
     first_name,
@@ -51,9 +49,7 @@ RETURNING
     state_id,
     country_id,
     postal_code,
-    other_platforms_accounts,
-    onboarding_completed,
-    onboarding_step;
+    other_platforms_accounts;
 
 -- -------------------------------
 -- 4. Verify user email
@@ -102,7 +98,8 @@ WHERE u.id = $1
 -- 7. Get User Basic Info
 -- -------------------------------
 -- name: GetUserBasicInfo :one
-SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbnail, u.created_at, u.updated_at
+SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbnail, u.created_at, u.updated_at,
+       u.onboarding_step, u.onboarding_completed
 FROM users u
 WHERE u.id = $1
   AND u.deleted_at IS NULL;
@@ -115,3 +112,17 @@ SELECT id, first_name, last_name, email_address, thumbnail
 FROM users 
 WHERE id = $1 
 AND deleted_at IS NULL LIMIT 1;
+
+-- -------------------------------
+-- Move onboarding, only from the step the caller saw
+-- -------------------------------
+-- name: AdvanceOnboarding :one
+UPDATE users
+SET onboarding_step = sqlc.arg(to_step),
+    onboarding_completed = sqlc.arg(completed),
+    updated_at = now()
+WHERE id = sqlc.arg(user_id)
+  AND onboarding_step = sqlc.arg(from_step)
+  AND NOT onboarding_completed
+  AND deleted_at IS NULL
+RETURNING onboarding_step, onboarding_completed;

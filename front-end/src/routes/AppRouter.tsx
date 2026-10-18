@@ -15,6 +15,7 @@ import FollowInvitePage from "@/pages/(dashboard)/follow/[token]";
 import BlocksGalleryPage from "@/pages/(dashboard)/blocks";
 
 const DevThemesPage = import.meta.env.DEV ? lazy(() => import("@/pages/dev-themes")) : () => null;
+const DevOnboardingPage = import.meta.env.DEV ? lazy(() => import("@/pages/dev-onboarding")) : () => null;
 
 export default function AppRouter() {
   return (
@@ -47,6 +48,7 @@ export default function AppRouter() {
       <Route path="/follow/:token" element={<FollowInvitePage />} />
 
       {import.meta.env.DEV && <Route path="/dev/themes" element={<Suspense><DevThemesPage /></Suspense>} />}
+      {import.meta.env.DEV && <Route path="/dev/onboarding" element={<Suspense><DevOnboardingPage /></Suspense>} />}
     </Routes>
   );
 }

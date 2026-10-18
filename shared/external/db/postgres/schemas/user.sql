@@ -24,6 +24,6 @@ CREATE TABLE IF NOT EXISTS users (
     state_id BIGINT REFERENCES states(id),
     city_id BIGINT REFERENCES cities(id),
     oauth_provider oauth_provider,
-    onboarding_completed BOOLEAN DEFAULT false,
-    onboarding_step INTEGER DEFAULT 0
+    onboarding_completed BOOLEAN NOT NULL DEFAULT false,
+    onboarding_step INTEGER NOT NULL DEFAULT 0
 );

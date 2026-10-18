@@ -16,6 +16,7 @@ export type Persona = {
 
     privacy: "public" | "private" | "only_me";
     show_on_profile: boolean;
+    is_default?: boolean;
     theme: PaletteId;
 
     joined_channels: Array<{

@@ -1098,8 +1098,8 @@ type User struct {
 	StateID                sql.NullInt64
 	CityID                 sql.NullInt64
 	OauthProvider          NullOauthProvider
-	OnboardingCompleted    sql.NullBool
-	OnboardingStep         sql.NullInt32
+	OnboardingCompleted    bool
+	OnboardingStep         int32
 }
 
 type UserRole struct {

@@ -129,6 +129,17 @@ Tiers are applied at **group** level, so a new route inherits its group's tier:
 
 The frontend mirrors this: REST calls go through `src/lib/apiFetch.ts` and Apollo through an `ErrorLink` in `src/graphql/client.ts`. On 401 they clear `user` (App renders the public layout); on 403 `email_unverified` they mark `user.is_verified` false (DashboardLayout renders the verify step, `pages/verify-email`, on any route); on 403 `persona_required` they clear `persona` (DashboardLayout renders persona selection). No redirects. Verification codes: one live code per user, 5 attempts, resend cooldown 60 s (`backend/util/verification`).
 
+### Onboarding
+
+New users go through onboarding after verification and before the dashboard; it's a UI flow, not a backend gate.
+
+- **Steps are registered on the server**, in order, in `backend/internal/onboarding` (`onboarding.New(steps...)` in `root.go`): `Step{ID, Key, Skippable, Done}`. Ids are fixed and increase in flow order (`about_you` 1, `default_persona` 2, `interests` 3, `communities` 4, `channels` 5, `personas` 6); only steps that exist are registered.
+- **State**: `users.onboarding_step` is the id of the last step passed (0 = none); the current step is the first registered one with a larger id. Completed = `onboarding_completed` or no step left. Migration 021 marked every user before it as completed.
+- `auth/info` returns `onboarding: {completed, current, steps: [{key, skippable}]}`. `POST /api/v1/users/onboarding {step, action: next|skip|back}` moves it: `step` must be the current one (409 `step_mismatch`), `next` needs the step's `Done` (400 `step_incomplete`), `skip` only on skippable steps (400 `step_required`). The update is compare-and-set on `onboarding_step`. Every answer carries the fresh `onboarding`. Steps save their own data through their own endpoints; `PATCH /users/profile` never touches onboarding.
+- **Frontend**: `DashboardLayout` renders verify → `pages/onboarding` (until completed) → persona selection → dashboard. The page first makes the default persona current (onboarding runs as it), then `OnboardingShell` shows the progress ("n / N" over all registered steps; a skipped step counts as passed) and the step from `pages/onboarding/steps.ts`. Each step renders `OnboardingFooter` (left note, Back, Skip now, Continue running the step's save then `next`). `/dev/onboarding` (dev builds) previews the frame with fake steps.
+
+A new step needs: its `Step` in `onboarding.New` with a `Done` check, its endpoints, and its `steps.ts` entry (`title`, `Component` rendering `OnboardingFooter`).
+
 ### The realtime path
 
 1. Browser opens one WebSocket to the Rust proxy (`/ws`, `nats/src/ws.rs`), forwarding cookies.

@@ -14,6 +14,7 @@ import (
 	"app/internal/db/postgres/handlers/users"
 	controlhandlers "app/internal/db/redis/handler"
 	"app/internal/oauthproviders"
+	"app/internal/onboarding"
 	"app/util/email"
 	"app/util/image"
 	"app/util/verification"
@@ -87,6 +88,10 @@ func StartServer(cfg config.Server) error {
 	}
 
 	followersHandler := followers.NewHandler(q, natsHelper)
+	onboardingFlow, err := onboarding.New()
+	if err != nil {
+		return err
+	}
 	usersHandler := users.NewHandler(
 		q,
 		signer,
@@ -94,6 +99,7 @@ func StartServer(cfg config.Server) error {
 		verification.NewService(pg, q),
 		stores.Persona,
 		followersHandler,
+		onboardingFlow,
 	)
 	restHandlers := v1.Handlers{
 		Users:         usersHandler,

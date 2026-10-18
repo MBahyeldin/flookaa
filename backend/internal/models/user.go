@@ -21,8 +21,6 @@ type PatchUserRequest struct {
 	StateID                string   `json:"state_id"`
 	PostalCode             string   `json:"postal_code"`
 	OtherPlatformsAccounts []string `json:"other_platforms_accounts"`
-	OnboardingCompleted    bool     `json:"onboarding_completed"`
-	OnboardingStep         int32    `json:"onboarding_step"`
 }
 
 type VerifyRequest struct {
