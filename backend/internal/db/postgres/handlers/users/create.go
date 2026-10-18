@@ -5,6 +5,7 @@ import (
 	"app/util/cookies"
 	"app/util/encryption"
 	"database/sql"
+	"log"
 	"net/http"
 	"shared/pkg/db"
 
@@ -51,15 +52,20 @@ func (h *Handler) Create(c *gin.Context) {
 	}
 	cookies.AddCookieToContext(c, "jwt", jwt)
 
-	verificationCode, err := h.verification.CreateVerificationCode(createUser.ID)
-
-	err = h.email.SendEmail(createUser.EmailAddress, verificationCode)
+	// The account exists either way; on failure the verify step offers Resend.
+	emailSent := false
+	verificationCode, err := h.verification.Create(ctx, createUser.ID)
+	if err == nil {
+		err = h.email.SendEmail(createUser.EmailAddress, verificationCode)
+	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send verification email"})
-		return
+		log.Println("verification email:", err)
+	} else {
+		emailSent = true
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "User created successfully. Please check your email to verify your account.",
+		"message":    "User created successfully. Please check your email to verify your account.",
+		"email_sent": emailSent,
 	})
 }

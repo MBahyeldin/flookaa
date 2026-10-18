@@ -39,7 +39,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.LoginToken(UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress})
+	token, err := h.LoginToken(UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress, EmailVerified: user.IsVerified.Bool})
 	if err != nil {
 		fmt.Println("Error generating token:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
@@ -54,18 +54,20 @@ func (h *Handler) Login(c *gin.Context) {
 }
 
 type UserMinimal struct {
-	ID           int64
-	EmailAddress string
-	PersonaId    int64
+	ID            int64
+	EmailAddress  string
+	PersonaId     int64
+	EmailVerified bool
 }
 
 // LoginToken issues the session JWT for user.
 func (h *Handler) LoginToken(user UserMinimal) (string, error) {
 	// Generate JWT token
 	tokenStr, err := h.signer.Generate(map[string]interface{}{
-		"user_id":       user.ID,
-		"email_address": user.EmailAddress,
-		"persona_id":    user.PersonaId,
+		"user_id":        user.ID,
+		"email_address":  user.EmailAddress,
+		"persona_id":     user.PersonaId,
+		"email_verified": user.EmailVerified,
 	})
 
 	if err != nil {

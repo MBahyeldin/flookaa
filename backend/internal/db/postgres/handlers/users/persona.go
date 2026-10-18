@@ -180,7 +180,7 @@ func (h *Handler) SetCurrentPersona(c *gin.Context) {
 	}
 
 	// generate new JWT with updated persona_id
-	jwt, err := h.LoginToken(UserMinimal{ID: userId, EmailAddress: auth.Email(c), PersonaId: persona.ID})
+	jwt, err := h.LoginToken(UserMinimal{ID: userId, EmailAddress: auth.Email(c), PersonaId: persona.ID, EmailVerified: auth.EmailVerified(c)})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return

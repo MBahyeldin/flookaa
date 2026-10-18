@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import OAuthProviders from "@/components/oauth-providers";
 import safeNext from "@/lib/safeNext";
 import { AUTH_NEXT_KEY } from "@/hooks/useResumeAuthNext";
+import { VERIFY_EMAIL_FAILED_KEY } from "@/services/verifyEmail";
 
 const copy = {
   login: {
@@ -32,8 +33,8 @@ export default function AuthScreen({ mode }: { mode: "login" | "signup" }) {
   const next = safeNext(rawNext);
   const { isAuthenticated, revalidateUser } = useAuth();
   const { form, subtitle, switchText, switchLabel, switchTo } = copy[mode];
-  // Sign-up lands on "/", where the unverified page takes over.
-  const destination = mode === "login" ? next : "/";
+  // After sign-up DashboardLayout shows the verify step on any route, so next survives it.
+  const destination = next;
 
   // A Google attempt that never came back must not redirect a later login.
   useEffect(() => {
@@ -51,8 +52,15 @@ export default function AuthScreen({ mode }: { mode: "login" | "signup" }) {
   }, [isAuthenticated, navigate, destination]);
 
   const onStatusChange = useCallback(
-    (status: { success: boolean; error: string | null }) => {
+    (status: { success: boolean; error: string | null; result?: unknown }) => {
       if (status && status.success) {
+        if ((status.result as { email_sent?: boolean } | null)?.email_sent === false) {
+          try {
+            sessionStorage.setItem(VERIFY_EMAIL_FAILED_KEY, "1");
+          } catch {
+            // The verify step still offers Resend.
+          }
+        }
         localStorage.setItem("loginSuccess", "true");
         revalidateUser();
         navigate(destination);

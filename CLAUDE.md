@@ -111,21 +111,23 @@ Always prefer `pick-and-play.bash` over composing `ansible-playbook` invocations
 
 `backend/internal/auth` has three pieces:
 
-- `auth.Middleware(signer)` (global) only **parses** the `jwt` cookie and sets `user_id`, `persona_id`, `email_address` in the Gin context. It never rejects.
-- `auth.RequireUser()` → 401 `{"error":"unauthenticated"}`; `auth.RequirePersona()` → 401, or 403 `{"error":"persona_required"}` when no persona is chosen (`persona_id` is 0 after login until `set-current-persona` reissues the JWT).
-- Handlers read identity with `auth.UserID(c)` / `auth.PersonaID(c)` / `auth.Email(c)`, never `c.Get(...)`.
+- `auth.Middleware(signer)` (global) only **parses** the `jwt` cookie and sets `user_id`, `persona_id`, `email_address`, `email_verified` in the Gin context. It never rejects.
+- `auth.RequireSession()` → 401 `{"error":"unauthenticated"}`. `auth.RequireUser()` → 401, or 403 `{"error":"email_unverified"}`. `auth.RequirePersona()` → 401, 403 `email_unverified`, or 403 `{"error":"persona_required"}` when no persona is chosen (`persona_id` is 0 after login until `set-current-persona` reissues the JWT), checked in that order.
+- **Email verification is a JWT claim** (`email_verified`, set by `LoginToken` from `users.is_verified`), not a per-request lookup: verification only goes one way, so a stale claim only fails closed. A token without the claim counts as unverified. `auth/info` reissues the cookie when the claim disagrees with the database, and `auth/verify` reissues it on success. If anything ever un-verifies a user, the gate needs a DB lookup. Google login verifies an existing unverified account.
+- Handlers read identity with `auth.UserID(c)` / `auth.PersonaID(c)` / `auth.Email(c)` / `auth.EmailVerified(c)`, never `c.Get(...)`.
 
 Tiers are applied at **group** level, so a new route inherits its group's tier:
 
 | Tier | Routes |
 |---|---|
 | Public | `/api/v1/health`, `auth/register`, `auth/login`, `auth/logout`, `auth/google`, `auth/oauth2callback/*`, `geo/*` (used during signup) |
-| User | `auth/info`, `auth/verify`, `users/*`, `persona/*` (except below) |
+| Session (unverified allowed) | `auth/info`, `auth/verify`, `auth/verify/resend` |
+| User | `users/*`, `persona/*` (except below) |
 | Persona | `channels/*`, `notifications/*`, `persona/:persona_id`, `persona/:persona_id/*`, `POST /query`, `POST /control` |
 
 **Content and channel actions belong to a persona, not a user**: authorship, membership, realtime subscriptions (Redis `persona:<id>:subjects`) are all keyed by `persona_id`; `user_id` is only for account and persona management. A response about another persona never carries `user_id`, `is_default`, or any other field that ties it to the account or to the user's other personas; only your own account and persona endpoints return them. GraphQL never reads `user_id`. `/playground` is only mounted when `GIN_MODE` is not `release`.
 
-The frontend mirrors this: REST calls go through `src/lib/apiFetch.ts` and Apollo through an `ErrorLink` in `src/graphql/client.ts`. On 401 they clear `user` (App renders the public layout); on 403 `persona_required` they clear `persona` (DashboardLayout renders persona selection). No redirects.
+The frontend mirrors this: REST calls go through `src/lib/apiFetch.ts` and Apollo through an `ErrorLink` in `src/graphql/client.ts`. On 401 they clear `user` (App renders the public layout); on 403 `email_unverified` they mark `user.is_verified` false (DashboardLayout renders the verify step, `pages/verify-email`, on any route); on 403 `persona_required` they clear `persona` (DashboardLayout renders persona selection). No redirects. Verification codes: one live code per user, 5 attempts, resend cooldown 60 s (`backend/util/verification`).
 
 ### The realtime path
 

@@ -103,14 +103,14 @@ func (g *Google) HandleGoogleOAuthCallback(c *gin.Context) {
 			g.handleSignUpRequest(c, user)
 			return
 		}
-		g.handleLogInRequest(c, users.UserMinimal{ID: dbUser.ID, EmailAddress: dbUser.EmailAddress})
+		g.handleExistingUser(c, dbUser)
 		return
 	case "signup":
 		// Check if user already exists
 		existingUser, err := q.GetUserByEmailAddress(ctx, user.Email)
 		if err == nil && existingUser.ID != 0 {
 			// I got you bro, you already have an account
-			g.handleLogInRequest(c, users.UserMinimal{ID: existingUser.ID, EmailAddress: existingUser.EmailAddress})
+			g.handleExistingUser(c, existingUser)
 			return
 		}
 		g.handleSignUpRequest(c, user)
@@ -119,6 +119,19 @@ func (g *Google) HandleGoogleOAuthCallback(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state parameter"})
 		return
 	}
+}
+
+// handleExistingUser logs in an existing account. Google has proved the
+// address, so an unverified email + password account becomes verified.
+func (g *Google) handleExistingUser(c *gin.Context, user db.User) {
+	if !user.IsVerified.Bool {
+		if _, err := g.q.VerifyUserEmail(c.Request.Context(), user.ID); err != nil {
+			log.Println("Error verifying user on Google login:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to log in"})
+			return
+		}
+	}
+	g.handleLogInRequest(c, users.UserMinimal{ID: user.ID, EmailAddress: user.EmailAddress, EmailVerified: true})
 }
 
 func (g *Google) handleLogInRequest(c *gin.Context, user users.UserMinimal) {
@@ -170,5 +183,5 @@ func (g *Google) handleSignUpRequest(c *gin.Context, user GoogleUser) {
 		return
 	}
 
-	g.handleLogInRequest(c, users.UserMinimal{ID: newUser.ID, EmailAddress: newUser.EmailAddress, PersonaId: defaultPersona.ID})
+	g.handleLogInRequest(c, users.UserMinimal{ID: newUser.ID, EmailAddress: newUser.EmailAddress, PersonaId: defaultPersona.ID, EmailVerified: true})
 }

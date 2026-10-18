@@ -91,7 +91,7 @@ func StartServer(cfg config.Server) error {
 		q,
 		signer,
 		email.NewSender(email.Config(cfg.SMTP)),
-		verification.NewService(q),
+		verification.NewService(pg, q),
 		stores.Persona,
 		followersHandler,
 	)

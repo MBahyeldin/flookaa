@@ -24,6 +24,10 @@ func (h *Handler) Info(c *gin.Context) {
 		return
 	}
 
+	if !h.refreshVerifiedToken(c, userId, userRow.IsVerified.Bool) {
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"id":          userRow.ID,
 		"name":        userRow.FirstName + " " + userRow.LastName,

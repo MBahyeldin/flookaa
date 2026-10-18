@@ -10,7 +10,7 @@ RETURNING *;
 -- 2.0 Get User HashedPassword by email for authentication
 -- -------------------------------
 -- name: GetUserHashedPasswordByEmail :one
-SELECT id, email_address, hashed_password FROM users WHERE email_address = $1 LIMIT 1;
+SELECT id, email_address, hashed_password, is_verified FROM users WHERE email_address = $1 LIMIT 1;
 
 -- -------------------------------
 -- 2.1 Get User by email and provider

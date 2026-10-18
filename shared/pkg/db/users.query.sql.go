@@ -139,13 +139,14 @@ func (q *Queries) GetUserByEmailAddress(ctx context.Context, emailAddress string
 }
 
 const getUserHashedPasswordByEmail = `-- name: GetUserHashedPasswordByEmail :one
-SELECT id, email_address, hashed_password FROM users WHERE email_address = $1 LIMIT 1
+SELECT id, email_address, hashed_password, is_verified FROM users WHERE email_address = $1 LIMIT 1
 `
 
 type GetUserHashedPasswordByEmailRow struct {
 	ID             int64
 	EmailAddress   string
 	HashedPassword sql.NullString
+	IsVerified     sql.NullBool
 }
 
 // -------------------------------
@@ -154,7 +155,12 @@ type GetUserHashedPasswordByEmailRow struct {
 func (q *Queries) GetUserHashedPasswordByEmail(ctx context.Context, emailAddress string) (GetUserHashedPasswordByEmailRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserHashedPasswordByEmail, emailAddress)
 	var i GetUserHashedPasswordByEmailRow
-	err := row.Scan(&i.ID, &i.EmailAddress, &i.HashedPassword)
+	err := row.Scan(
+		&i.ID,
+		&i.EmailAddress,
+		&i.HashedPassword,
+		&i.IsVerified,
+	)
 	return i, err
 }
 
