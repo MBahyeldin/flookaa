@@ -10,6 +10,7 @@ import (
 	"app/internal/db/postgres/handlers/channels"
 	"app/internal/db/postgres/handlers/followers"
 	"app/internal/db/postgres/handlers/geo"
+	"app/internal/db/postgres/handlers/interests"
 	"app/internal/db/postgres/handlers/notifications"
 	"app/internal/db/postgres/handlers/users"
 	controlhandlers "app/internal/db/redis/handler"
@@ -108,6 +109,8 @@ func StartServer(cfg config.Server) error {
 		Channels:      channels.NewHandler(q, natsHelper),
 		Followers:     followersHandler,
 		Geo:           geo.NewHandler(q),
+		Interests:     interests.NewHandler(q),
+		IsAdmin:       q.IsGlobalAdministrator,
 		Notifications: notifications.NewHandler(q, stores.Persona),
 		Google: oauthproviders.NewGoogle(
 			cfg.Google.ClientID,

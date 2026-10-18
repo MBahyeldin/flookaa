@@ -5,6 +5,7 @@ import Login from "../pages/login";
 import HomePage from "../pages/home";
 import ChannelPage from "@/pages/(dashboard)/channels/[id]";
 import DashboardSettingsProfile from "@/pages/(dashboard)/settings/profile";
+import AdminInterestsPage from "@/pages/(dashboard)/admin/interests";
 import ChannelsPage from "@/pages/(dashboard)/channels";
 import CreateChannelPage from "@/pages/(dashboard)/channels/create";
 import PersonaManagerPage from "@/pages/(dashboard)/persona-manager";
@@ -40,6 +41,7 @@ export default function AppRouter() {
       <Route path="/persona-manager/:id" element={<PersonaSettingsPage />} />
 
       <Route path="/notifications" element={<NotificationsPage />} />
+      <Route path="/admin/interests" element={<AdminInterestsPage />} />
 
       <Route path="/blocks" element={<BlocksGalleryPage />} />
 

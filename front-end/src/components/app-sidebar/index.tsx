@@ -1,4 +1,4 @@
-import { Blocks, Home, Inbox, Rss, Search, Settings, ScanFace, User2 } from "lucide-react";
+import { Blocks, Home, Inbox, Rss, Search, Settings, ScanFace, ShieldCheck, Tags, User2 } from "lucide-react";
 
 import {
   Sidebar,
@@ -57,6 +57,13 @@ const items = [
   },
 ];
 
+const adminItem = {
+  title: "Admin",
+  url: "/admin",
+  icon: ShieldCheck,
+  items: [{ title: "Interests", url: "/interests", icon: <Tags className="w-5 h-5" /> }],
+};
+
 export function AppSidebar({
   setOpen,
   open,
@@ -67,7 +74,7 @@ export function AppSidebar({
   const { user } = useAuth();
   const sidebarItems = React.useMemo(() => {
     if (user?.is_verified) {
-      return items;
+      return user.is_admin ? [...items, adminItem] : items;
     }
     return [
       {

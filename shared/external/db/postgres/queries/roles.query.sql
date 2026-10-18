@@ -91,3 +91,27 @@ WHERE cr.channel_id = $1
 UPDATE channel_roles
 SET deleted_at = NOW(), updated_at = NOW()
 WHERE channel_id = $1 AND persona_id = $2 AND deleted_at IS NULL;
+
+-- -------------------------------
+-- Is the user a global Administrator
+-- -------------------------------
+-- name: IsGlobalAdministrator :one
+SELECT EXISTS (
+    SELECT 1
+    FROM user_roles ur
+    JOIN roles r ON r.id = ur.role_id
+    WHERE ur.user_id = $1
+      AND ur.deleted_at IS NULL
+      AND r.deleted_at IS NULL
+      AND r.name = 'Administrator'
+)::boolean AS is_admin;
+
+-- -------------------------------
+-- Grant a global role by name, reviving a removed grant
+-- -------------------------------
+-- name: GrantUserRoleByName :exec
+INSERT INTO user_roles (user_id, role_id)
+SELECT sqlc.arg(user_id)::bigint, r.id
+FROM roles r
+WHERE r.name = sqlc.arg(role_name) AND r.deleted_at IS NULL
+ON CONFLICT (user_id, role_id) DO UPDATE SET deleted_at = NULL, updated_at = now();

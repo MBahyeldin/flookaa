@@ -212,6 +212,49 @@ func (q *Queries) GetUserRoles(ctx context.Context, userID int64) ([]Role, error
 	return items, nil
 }
 
+const grantUserRoleByName = `-- name: GrantUserRoleByName :exec
+INSERT INTO user_roles (user_id, role_id)
+SELECT $1::bigint, r.id
+FROM roles r
+WHERE r.name = $2 AND r.deleted_at IS NULL
+ON CONFLICT (user_id, role_id) DO UPDATE SET deleted_at = NULL, updated_at = now()
+`
+
+type GrantUserRoleByNameParams struct {
+	UserID   int64
+	RoleName string
+}
+
+// -------------------------------
+// Grant a global role by name, reviving a removed grant
+// -------------------------------
+func (q *Queries) GrantUserRoleByName(ctx context.Context, arg GrantUserRoleByNameParams) error {
+	_, err := q.db.ExecContext(ctx, grantUserRoleByName, arg.UserID, arg.RoleName)
+	return err
+}
+
+const isGlobalAdministrator = `-- name: IsGlobalAdministrator :one
+SELECT EXISTS (
+    SELECT 1
+    FROM user_roles ur
+    JOIN roles r ON r.id = ur.role_id
+    WHERE ur.user_id = $1
+      AND ur.deleted_at IS NULL
+      AND r.deleted_at IS NULL
+      AND r.name = 'Administrator'
+)::boolean AS is_admin
+`
+
+// -------------------------------
+// Is the user a global Administrator
+// -------------------------------
+func (q *Queries) IsGlobalAdministrator(ctx context.Context, userID int64) (bool, error) {
+	row := q.db.QueryRowContext(ctx, isGlobalAdministrator, userID)
+	var is_admin bool
+	err := row.Scan(&is_admin)
+	return is_admin, err
+}
+
 const listRoles = `-- name: ListRoles :many
 SELECT id, name, description, created_at, updated_at, deleted_at FROM roles ORDER BY name
 `

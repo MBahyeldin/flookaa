@@ -9,6 +9,7 @@ export type Info = {
   roles: string[];
   permissions: string[];
   thumbnail?: string;
+  is_admin?: boolean;
   onboarding: OnboardingState;
 };
 

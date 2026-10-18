@@ -2,13 +2,13 @@ package users
 
 import (
 	"app/internal/auth"
+	"app/internal/slug"
 	"app/util/cookies"
 	"database/sql"
 	"fmt"
 	"hash/fnv"
 	"log"
 	"net/http"
-	"regexp"
 	"shared/external/db/postgres"
 	"shared/pkg/access"
 	"shared/pkg/db"
@@ -257,7 +257,7 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 		invalidTheme(c)
 		return
 	}
-	if req.Slug != "" && !validSlug(req.Slug) {
+	if req.Slug != "" && !slug.Valid(req.Slug) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_slug"})
 		return
 	}
@@ -347,12 +347,6 @@ func resolveTheme(requested string, current db.PersonaThemeEnum) (db.PersonaThem
 
 func invalidTheme(c *gin.Context) {
 	c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_theme"})
-}
-
-var slugPattern = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
-
-func validSlug(slug string) bool {
-	return len(slug) >= 3 && len(slug) <= 50 && slugPattern.MatchString(slug)
 }
 
 // nil keeps the stored value (COALESCE in the query); "" clears it.

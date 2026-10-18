@@ -114,16 +114,18 @@ Always prefer `pick-and-play.bash` over composing `ansible-playbook` invocations
 - `auth.Middleware(signer)` (global) only **parses** the `jwt` cookie and sets `user_id`, `persona_id`, `email_address`, `email_verified` in the Gin context. It never rejects.
 - `auth.RequireSession()` → 401 `{"error":"unauthenticated"}`. `auth.RequireUser()` → 401, or 403 `{"error":"email_unverified"}`. `auth.RequirePersona()` → 401, 403 `email_unverified`, or 403 `{"error":"persona_required"}` when no persona is chosen (`persona_id` is 0 after login until `set-current-persona` reissues the JWT), checked in that order.
 - **Email verification is a JWT claim** (`email_verified`, set by `LoginToken` from `users.is_verified`), not a per-request lookup: verification only goes one way, so a stale claim only fails closed. A token without the claim counts as unverified. `auth/info` reissues the cookie when the claim disagrees with the database, and `auth/verify` reissues it on success. If anything ever un-verifies a user, the gate needs a DB lookup. Google login verifies an existing unverified account.
+- `auth.RequireAdministrator(isAdmin)` → the `RequireUser` answers, then 403 `{"error":"not_administrator"}` unless the user is a global `Administrator` (`user_roles`). It's a **DB check per request** (`IsGlobalAdministrator`), not a JWT claim, because a role can be taken away. `auth/info` returns `is_admin` only as a UI hint (the sidebar's Admin entry); a 403 `not_administrator` clears it in the frontend.
 - Handlers read identity with `auth.UserID(c)` / `auth.PersonaID(c)` / `auth.Email(c)` / `auth.EmailVerified(c)`, never `c.Get(...)`.
 
 Tiers are applied at **group** level, so a new route inherits its group's tier:
 
 | Tier | Routes |
 |---|---|
-| Public | `/api/v1/health`, `auth/register`, `auth/login`, `auth/logout`, `auth/google`, `auth/oauth2callback/*`, `geo/*` (used during signup) |
+| Public | `/api/v1/health`, `auth/register`, `auth/login`, `auth/logout`, `auth/google`, `auth/oauth2callback/*`, `geo/*` (used during signup), `GET interests` |
 | Session (unverified allowed) | `auth/info`, `auth/verify`, `auth/verify/resend` |
 | User | `users/*`, `persona/*` (except below) |
 | Persona | `channels/*`, `notifications/*`, `persona/:persona_id`, `persona/:persona_id/*`, `POST /query`, `POST /control` |
+| Administrator | `admin/*` |
 
 **Content and channel actions belong to a persona, not a user**: authorship, membership, realtime subscriptions (Redis `persona:<id>:subjects`) are all keyed by `persona_id`; `user_id` is only for account and persona management. A response about another persona never carries `user_id`, `is_default`, or any other field that ties it to the account or to the user's other personas; only your own account and persona endpoints return them. GraphQL never reads `user_id`. `/playground` is only mounted when `GIN_MODE` is not `release`.
 
@@ -237,12 +239,16 @@ A new kind needs:
 
 There are no connection globals. `shared/external/db/{postgres,mongo,nats,redis}` each expose `Connect(...)`, and importing a package connects nothing. Each binary's `main` loads its own `internal/config` (built on `shared/util/envconfig`, which reports **all** missing vars in one error), connects only what it uses, and passes handles into constructors:
 
-- Backend: `backend/cmd/server/root.go` builds one `Handler` struct per domain (`users`, `channels`, `notifications`, `geo`, the `/control` handler, `oauthproviders.Google`) plus the GraphQL `resolvers.Resolver`, each holding only its own deps (`*db.Queries`, specific Redis sub-stores, `*nats.NatsHelper`, `*token.Signer`). The seeder (`app seed`) loads only `DATABASE_DSN` and the admin credentials.
+- Backend: `backend/cmd/server/root.go` builds one `Handler` struct per domain (`users`, `channels`, `notifications`, `geo`, the `/control` handler, `oauthproviders.Google`) plus the GraphQL `resolvers.Resolver`, each holding only its own deps (`*db.Queries`, specific Redis sub-stores, `*nats.NatsHelper`, `*token.Signer`). The seeder (`app seed`) loads only `DATABASE_DSN` and the admin credentials; it creates the roles and the `ADMIN_EMAIL` user and grants that user `Administrator` (idempotent, revives a removed grant).
 - Redis worker: `redis/main.go` → `internal.NewWorker(...)`.
 - Notifier: `notifier/main.go` → `notifications.Check`, then `internal.NewWorker(nats, q)`. It needs `DATABASE_DSN` and `NATS_CONNECTION` only.
 - JWTs go through `token.Signer` (`shared/util/token`), which refuses a secret under 32 bytes. `s3` builds its own signer to verify the backend's image tokens.
 
 Only `config` packages call `os.Getenv`. A new dependency means a constructor parameter, not a package global.
+
+### Interests catalogue
+
+`interests` is the one catalogue personas, channels and communities are tagged with: `name` (unique case-insensitively), `slug` (same rule as persona slugs, `backend/internal/slug` / `front-end/src/lib/slug.ts`), `emoji`, `sort_order`, `retired_at`. Retired interests aren't offered for new picks (`GET /api/v1/interests` lists active ones in order) but stay on existing tags; there is no hard delete. Global Administrators manage it under `/api/v1/admin/interests` (list, create, `PATCH`, `/:id/move {direction}` which renumbers the whole list, `/:id/retire|restore`) and at `/admin/interests` in the app (non-admins get "Page not found"). Edits aren't realtime: rare, one admin, next load shows them.
 
 ### Data split
 

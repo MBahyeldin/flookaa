@@ -2,6 +2,7 @@ package users
 
 import (
 	"app/internal/auth"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -28,12 +29,18 @@ func (h *Handler) Info(c *gin.Context) {
 		return
 	}
 
+	isAdmin, err := q.IsGlobalAdministrator(ctx, userId)
+	if err != nil {
+		log.Printf("info: administrator check for user %d: %v", userId, err)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"id":          userRow.ID,
 		"name":        userRow.FirstName + " " + userRow.LastName,
 		"email":       userRow.EmailAddress,
 		"is_verified": userRow.IsVerified.Bool,
 		"thumbnail":   userRow.Thumbnail.String,
+		"is_admin":    isAdmin,
 		"onboarding":  h.state(ctx, userId, userRow.OnboardingStep, userRow.OnboardingCompleted),
 	})
 }

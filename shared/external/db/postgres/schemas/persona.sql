@@ -60,12 +60,16 @@ CREATE UNIQUE INDEX personas_invite_token_key ON personas (invite_token) WHERE i
 
 CREATE TABLE interests (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100) UNIQUE NOT NULL,
-    pic_url VARCHAR(255),
-    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
-    deleted_at TIMESTAMP WITHOUT TIME ZONE
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(50) NOT NULL UNIQUE,
+    emoji VARCHAR(32) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    retired_at TIMESTAMP WITHOUT TIME ZONE,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX interests_name_lower_key ON interests (lower(name));
 
 CREATE TABLE persona_interests (
     persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,

@@ -3,8 +3,8 @@ import { FormField } from "@/models/Forms/FormField";
 import type { FormGroup } from "@/types/FormFields";
 import type { Persona } from "@/types/persona";
 import { Palette, User } from "lucide-react";
+import { SLUG_PATTERN } from "@/lib/slug";
 
-const SLUG_PATTERN = /^(?=.{3,50}$)[a-z0-9]+(-[a-z0-9]+)*$/;
 
 const nameField = new FormField({
     id: "name",

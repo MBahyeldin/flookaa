@@ -984,10 +984,12 @@ type Event struct {
 type Interest struct {
 	ID        int64
 	Name      string
-	PicUrl    sql.NullString
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
-	DeletedAt sql.NullTime
+	Slug      string
+	Emoji     string
+	SortOrder int32
+	RetiredAt sql.NullTime
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type Notification struct {

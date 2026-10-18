@@ -2,11 +2,13 @@
 //
 // Middleware only parses: it never rejects a request. Rejection is done per
 // route group by RequireSession (401), RequireUser (401/403) and
-// RequirePersona (401/403), so a route is public only when it is mounted
+// RequirePersona (401/403), plus RequireAdministrator, so a route is public only when it is mounted
 // outside all three.
 package auth
 
 import (
+	"context"
+	"log"
 	"net/http"
 	"shared/util/token"
 
@@ -25,6 +27,8 @@ const (
 // ErrPersonaRequired is the error code the frontend matches to show persona
 // selection instead of the login page.
 const ErrPersonaRequired = "persona_required"
+
+const ErrNotAdministrator = "not_administrator"
 
 // ErrEmailUnverified is the error code the frontend matches to show the
 // verify-email step.
@@ -113,6 +117,32 @@ func RequirePersona() gin.HandlerFunc {
 		}
 		if _, ok := PersonaID(c); !ok {
 			PersonaRequired(c)
+			return
+		}
+		c.Next()
+	}
+}
+
+// RequireAdministrator checks the role per request, not in the JWT: a role can be taken away.
+func RequireAdministrator(isAdmin func(ctx context.Context, userID int64) (bool, error)) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, ok := UserID(c)
+		if !ok {
+			Unauthorized(c)
+			return
+		}
+		if !EmailVerified(c) {
+			EmailUnverified(c)
+			return
+		}
+		admin, err := isAdmin(c.Request.Context(), userID)
+		if err != nil {
+			log.Printf("auth: administrator check for user %d: %v", userID, err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
+			return
+		}
+		if !admin {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": ErrNotAdministrator})
 			return
 		}
 		c.Next()
