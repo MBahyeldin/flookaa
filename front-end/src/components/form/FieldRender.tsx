@@ -12,6 +12,7 @@ import SwitchInput from "../inputs/switch";
 import ListInput from "../inputs/list";
 import VoiceInput from "../inputs/voice";
 import ThemeInput from "../inputs/theme";
+import InterestsInput from "../inputs/interests";
 
 export default function FieldRender({
   field,
@@ -148,6 +149,15 @@ export default function FieldRender({
       )}
       {field.interfaceType === "theme" && (
         <ThemeInput
+          field={field}
+          error={error}
+          touched={touched}
+          value={value}
+          setFieldValue={setFieldValue}
+        />
+      )}
+      {field.interfaceType === "interests" && (
+        <InterestsInput
           field={field}
           error={error}
           touched={touched}

@@ -2,6 +2,7 @@ package channels
 
 import (
 	"app/internal/auth"
+	"database/sql"
 	"net/http"
 	"shared/pkg/db"
 	"strconv"
@@ -10,21 +11,22 @@ import (
 )
 
 type ChannelResponse struct {
-	ID             int64  `json:"id"`
-	Name           string `json:"name"`
-	Description    string `json:"description"`
-	Thumbnail      string `json:"thumbnail"`
-	Banner         string `json:"banner"`
-	OwnerID        int64  `json:"owner_id"`
-	CreatedAt      string `json:"created_at"`
-	UpdatedAt      string `json:"updated_at"`
-	IsOwner        bool   `json:"is_owner"`
-	IsMember       bool   `json:"is_member"`
-	IsPending      bool   `json:"is_pending"`
-	Visibility     string `json:"visibility"`
-	IsFollower     bool   `json:"is_follower"`
-	MembersCount   int32  `json:"members_count"`
-	FollowersCount int32  `json:"followers_count"`
+	ID             int64         `json:"id"`
+	Name           string        `json:"name"`
+	Description    string        `json:"description"`
+	Thumbnail      string        `json:"thumbnail"`
+	Banner         string        `json:"banner"`
+	OwnerID        int64         `json:"owner_id"`
+	CreatedAt      string        `json:"created_at"`
+	UpdatedAt      string        `json:"updated_at"`
+	IsOwner        bool          `json:"is_owner"`
+	IsMember       bool          `json:"is_member"`
+	IsPending      bool          `json:"is_pending"`
+	Visibility     string        `json:"visibility"`
+	IsFollower     bool          `json:"is_follower"`
+	MembersCount   int32         `json:"members_count"`
+	FollowersCount int32         `json:"followers_count"`
+	Interests      []InterestTag `json:"interests"`
 }
 
 func (h *Handler) GetAllChannels(c *gin.Context) {
@@ -54,16 +56,27 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 	}
 
 	channels, err := q.GetAllChannels(ctx, db.GetAllChannelsParams{
-		Limit:   limit,
-		Offset:  offset,
-		OwnerID: personaId,
+		Limit:        limit,
+		Offset:       offset,
+		OwnerID:      personaId,
+		InterestSlug: sql.NullString{String: c.Query("interest"), Valid: c.Query("interest") != ""},
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	var channelsList []ChannelResponse
+	ids := make([]int64, len(channels))
+	for i, ch := range channels {
+		ids[i] = ch.ID
+	}
+	tags, err := h.interestsByChannel(ctx, ids)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	channelsList := []ChannelResponse{}
 	for _, ch := range channels {
 		channelsList = append(channelsList, ChannelResponse{
 			ID:             ch.ID,
@@ -81,6 +94,7 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 			IsFollower:     ch.IsFollower,
 			MembersCount:   ch.MembersCount,
 			FollowersCount: ch.FollowersCount,
+			Interests:      tags[ch.ID],
 		})
 	}
 

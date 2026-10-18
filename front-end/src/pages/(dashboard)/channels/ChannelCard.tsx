@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import type { Channel } from "@/types/channel";
 import { joinChannel, leaveChannel, setFollowing as saveFollowing } from "@/services/channels";
 import { toast } from "sonner";
+import InterestChips from "@/components/interests/InterestChips";
 
 interface ChannelCardProps {
   channel: Channel;
@@ -106,6 +107,7 @@ export function ChannelCard({ channel }: ChannelCardProps) {
             <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
               {channel.description}
             </p>
+            <InterestChips interests={channel.interests ?? []} limit={3} className="mt-3" />
           </div>
 
           <div className="flex items-center justify-between text-sm text-muted-foreground">

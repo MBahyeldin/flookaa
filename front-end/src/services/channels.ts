@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/apiFetch";
-import type { Channel, ChannelMember, JoinRequest } from "@/types/channel";
+import type { Channel, ChannelInterests, ChannelMember, JoinRequest } from "@/types/channel";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -7,9 +7,10 @@ if (!API_BASE_URL) {
   throw new Error("API_BASE_URL is not defined");
 }
 
-export async function getChannels(): Promise<{ channels: Channel[] } | null> {
+export async function getChannels(interest?: string): Promise<{ channels: Channel[] } | null> {
   try {
-    const resp = await apiFetch(`${API_BASE_URL}/api/v1/channels/`, {
+    const query = interest ? `?interest=${encodeURIComponent(interest)}` : "";
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/channels/${query}`, {
       credentials: "include",
     });
     if (!resp.ok) return null;
@@ -108,3 +109,25 @@ export async function listMembers(channelId: string): Promise<ChannelMember[]> {
 export async function removeMember(channelId: string, personaId: number): Promise<void> {
   await moderationRequest(`${channelId}/members/${personaId}/remove`, { method: "POST" });
 }
+
+export type ChannelInterestsResult = { ok: true; data: ChannelInterests } | { ok: false; error: string };
+
+async function channelInterestsCall(channelId: string, init?: RequestInit): Promise<ChannelInterestsResult> {
+  try {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/channels/${channelId}/interests`, {
+      credentials: "include",
+      ...init,
+      headers: init?.body ? { "Content-Type": "application/json" } : undefined,
+    });
+    const body = await resp.json().catch(() => ({}));
+    if (!resp.ok) return { ok: false, error: body.error ?? "request_failed" };
+    return { ok: true, data: body as ChannelInterests };
+  } catch {
+    return { ok: false, error: "request_failed" };
+  }
+}
+
+export const getChannelInterests = (channelId: string) => channelInterestsCall(channelId);
+
+export const setChannelInterests = (channelId: string, interestIds: number[]) =>
+  channelInterestsCall(channelId, { method: "PUT", body: JSON.stringify({ interest_ids: interestIds }) });

@@ -1,3 +1,5 @@
+import type { Interest } from "./interest";
+
 type Channel = {
   id: string;
   name: string;
@@ -15,7 +17,10 @@ type Channel = {
   visibility: "public" | "private";
   members_count: number;
   followers_count: number;
+  interests: Interest[];
 };
+
+type ChannelInterests = { interests: Interest[]; can_edit: boolean };
 
 /** A pending request to join a private channel (moderators only). */
 type JoinRequest = {
@@ -41,4 +46,4 @@ type ChannelMember = {
   is_moderator: boolean;
 };
 
-export type { Channel, JoinRequest, ChannelMember };
+export type { Channel, ChannelInterests, JoinRequest, ChannelMember };

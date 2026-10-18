@@ -26,7 +26,9 @@ import { useGetChannelQuery, useGetPostsLazyQuery } from "@/generated/graphql";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { PostCreator } from "@/components/post-creator";
-import { joinChannel, leaveChannel, setFollowing } from "@/services/channels";
+import { getChannelInterests, joinChannel, leaveChannel, setFollowing } from "@/services/channels";
+import InterestChips from "@/components/interests/InterestChips";
+import type { Interest } from "@/types/interest";
 import { toast } from "sonner";
 import { useWebsocketService } from "@/Websocket.context";
 import loadNewPosts from "./subscribe/loadNewPosts";
@@ -67,6 +69,8 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
 
   const [newPosts, setNewPosts] = useState<PostEventPayload[]>([]);
   const [isManaging, setIsManaging] = useState(false);
+  const [interests, setInterests] = useState<Interest[]>([]);
+  const [interestsVersion, setInterestsVersion] = useState(0);
   const [membersCount, setMembersCount] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
   const [isFollowPending, setIsFollowPending] = useState(false);
@@ -207,6 +211,17 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   }, [newlyAddedIds]);
 
   useEffect(() => {
+    if (!channelId) return;
+    let alive = true;
+    getChannelInterests(channelId).then((r) => {
+      if (alive && r.ok) setInterests(r.data.interests);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [channelId, interestsVersion]);
+
+  useEffect(() => {
     if (!websocketService || !channelId) return;
 
     /*
@@ -248,6 +263,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
       handleChannelEvents({
         setNewPosts,
         onMembershipEvent,
+        onInterestsChanged: () => setInterestsVersion((v) => v + 1),
       })
     );
 
@@ -392,6 +408,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
               <p className="text-muted-foreground leading-relaxed">
                 {channelData.getChannel.description}
               </p>
+              <InterestChips interests={interests} />
 
               {/* Channel Stats — flex-wrap so these don't overflow on mobile */}
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
@@ -513,6 +530,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
             channelId={channelId}
             open={isManaging}
             onOpenChange={setIsManaging}
+            onInterestsSaved={setInterests}
           />
         )}
 

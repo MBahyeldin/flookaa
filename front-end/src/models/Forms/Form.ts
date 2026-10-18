@@ -66,6 +66,10 @@ export class Form {
     groups: channelFormFieldsGroups,
     relativeApiPath: "/api/v1/channels/create",
     method: "POST",
+    serverErrors: {
+      invalid_interests: { field: "interest_ids", message: "Pick 1 to 5 interests." },
+      invalid_interest: { field: "interest_ids", message: "One of these interests is no longer offered." },
+    },
   });
 
   static persona = new Form({
@@ -136,7 +140,8 @@ export class Form {
     Object.values(this.groups).forEach((group) =>
       group.fields.forEach((field) => {
         // required field check
-        if (field.isRequired && !values[field.id]) {
+        const value = values[field.id];
+        if (field.isRequired && (!value || (Array.isArray(value) && value.length === 0))) {
           errors[field.id] = "This field is required";
         }
 

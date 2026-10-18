@@ -903,6 +903,12 @@ type ChannelFollower struct {
 	UnfollowedAt sql.NullTime
 }
 
+type ChannelInterest struct {
+	ChannelID  int64
+	InterestID int64
+	CreatedAt  time.Time
+}
+
 type ChannelMember struct {
 	ID        int32
 	ChannelID int64

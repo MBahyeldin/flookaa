@@ -35,7 +35,7 @@ func (h *Handler) SetPersonaInterests(c *gin.Context) {
 	var in struct {
 		InterestIDs []int64 `json:"interest_ids"`
 	}
-	if err := c.ShouldBindJSON(&in); err != nil || !validIDs(in.InterestIDs) {
+	if err := c.ShouldBindJSON(&in); err != nil || !ValidIDs(in.InterestIDs, maxPersonaInterests) {
 		badRequest(c, "invalid_interests")
 		return
 	}
@@ -109,8 +109,9 @@ func (h *Handler) ownPersona(c *gin.Context) (userID, personaID int64, ok bool) 
 	return userID, personaID, true
 }
 
-func validIDs(ids []int64) bool {
-	if len(ids) == 0 || len(ids) > maxPersonaInterests {
+// ValidIDs: 1 to max distinct positive ids.
+func ValidIDs(ids []int64, max int) bool {
+	if len(ids) == 0 || len(ids) > max {
 		return false
 	}
 	seen := make(map[int64]bool, len(ids))

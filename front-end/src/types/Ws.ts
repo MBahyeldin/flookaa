@@ -17,6 +17,8 @@ type EventType =
   | "member"
   | "follower"
   | "join_request"
+  // A channel's interest tags changed (STREAM_CHANNEL_EVENTS); refetch them.
+  | "interests"
   // Per persona (STREAM_USER_EVENTS, default subscription); payload is
   // NotificationPayload. Only the id: refetch over REST.
   | "notifications"

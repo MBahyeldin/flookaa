@@ -14,7 +14,8 @@ type CreateChannelRequest struct {
 	Thumbnail   string `json:"thumbnail"`
 	Banner      string `json:"banner"`
 	// public: readable by every persona; private: members only, joins need approval.
-	Visibility string `json:"visibility" binding:"required,oneof=public private"`
+	Visibility  string  `json:"visibility" binding:"required,oneof=public private"`
+	InterestIDs []int64 `json:"interest_ids"`
 }
 
 func (h *Handler) CreateChannel(c *gin.Context) {
@@ -29,6 +30,14 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 	personaId, ok := auth.PersonaID(c)
 	if !ok {
 		auth.PersonaRequired(c)
+		return
+	}
+
+	if code, err := h.checkInterests(ctx, 0, req.InterestIDs); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	} else if code != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": code})
 		return
 	}
 
@@ -81,6 +90,11 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 		RoleID:    moderatorRole.ID,
 	})
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := q.ReplaceChannelInterests(ctx, db.ReplaceChannelInterestsParams{ChannelID: channel.ID, Ids: req.InterestIDs}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

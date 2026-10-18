@@ -179,3 +179,30 @@ SELECT EXISTS (
     JOIN personas p ON p.id = pi.persona_id
     WHERE p.user_id = $1 AND p.is_default AND p.deleted_at IS NULL
 )::boolean AS done;
+
+-- name: ListChannelInterests :many
+SELECT ci.channel_id, i.id, i.name, i.slug, i.emoji
+FROM channel_interests ci
+JOIN interests i ON i.id = ci.interest_id
+WHERE ci.channel_id = ANY(sqlc.arg(channel_ids)::bigint[])
+ORDER BY ci.channel_id, ci.created_at, i.id;
+
+-- An id is allowed if it's active or the channel already has it.
+-- name: CountAllowedChannelInterests :one
+SELECT COUNT(*)::int AS allowed
+FROM interests i
+WHERE i.id = ANY(sqlc.arg(ids)::bigint[])
+  AND (i.retired_at IS NULL OR EXISTS (
+      SELECT 1 FROM channel_interests ci
+      WHERE ci.channel_id = sqlc.arg(channel_id) AND ci.interest_id = i.id
+  ));
+
+-- name: ReplaceChannelInterests :exec
+WITH removed AS (
+    DELETE FROM channel_interests
+    WHERE channel_id = sqlc.arg(channel_id)
+      AND NOT (interest_id = ANY(sqlc.arg(ids)::bigint[]))
+)
+INSERT INTO channel_interests (channel_id, interest_id)
+SELECT sqlc.arg(channel_id), unnest(sqlc.arg(ids)::bigint[])
+ON CONFLICT DO NOTHING;

@@ -154,13 +154,20 @@ SELECT
     )::int AS followers_count
 FROM channels c
 WHERE c.deleted_at IS NULL
+  AND ($4::text IS NULL OR EXISTS (
+      SELECT 1
+      FROM channel_interests ci
+      JOIN interests i ON i.id = ci.interest_id
+      WHERE ci.channel_id = c.id AND i.slug = $4::text
+  ))
 LIMIT $2 OFFSET $3
 `
 
 type GetAllChannelsParams struct {
-	OwnerID int64
-	Limit   int64
-	Offset  int64
+	OwnerID      int64
+	Limit        int64
+	Offset       int64
+	InterestSlug sql.NullString
 }
 
 type GetAllChannelsRow struct {
@@ -186,7 +193,12 @@ type GetAllChannelsRow struct {
 // 9. Get All Channels
 // -------------------------------
 func (q *Queries) GetAllChannels(ctx context.Context, arg GetAllChannelsParams) ([]GetAllChannelsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllChannels, arg.OwnerID, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, getAllChannels,
+		arg.OwnerID,
+		arg.Limit,
+		arg.Offset,
+		arg.InterestSlug,
+	)
 	if err != nil {
 		return nil, err
 	}

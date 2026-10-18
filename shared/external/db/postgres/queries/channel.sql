@@ -142,6 +142,12 @@ SELECT
     )::int AS followers_count
 FROM channels c
 WHERE c.deleted_at IS NULL
+  AND (sqlc.narg(interest_slug)::text IS NULL OR EXISTS (
+      SELECT 1
+      FROM channel_interests ci
+      JOIN interests i ON i.id = ci.interest_id
+      WHERE ci.channel_id = c.id AND i.slug = sqlc.narg(interest_slug)::text
+  ))
 LIMIT $2 OFFSET $3;
 
 -- -------------------------------

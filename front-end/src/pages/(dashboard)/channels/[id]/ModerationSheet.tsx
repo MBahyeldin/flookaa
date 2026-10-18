@@ -22,6 +22,8 @@ import {
 } from "@/services/channels";
 import type { ChannelMember, JoinRequest } from "@/types/channel";
 import { formatDateOnly } from "@/utils/formateDate";
+import type { Interest } from "@/types/interest";
+import ChannelInterestsEditor from "./ChannelInterestsEditor";
 
 type Person = Pick<JoinRequest, "persona_id" | "first_name" | "last_name" | "name" | "thumbnail" | "anonymous">;
 
@@ -37,10 +39,12 @@ export default function ModerationSheet({
   channelId,
   open,
   onOpenChange,
+  onInterestsSaved,
 }: {
   channelId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onInterestsSaved?: (interests: Interest[]) => void;
 }) {
   const [requests, setRequests] = useState<JoinRequest[]>([]);
   const [members, setMembers] = useState<ChannelMember[]>([]);
@@ -110,7 +114,7 @@ export default function ModerationSheet({
         <SheetHeader>
           <SheetTitle>Manage channel</SheetTitle>
           <SheetDescription>
-            Approve people who asked to join, and remove members.
+            Approve people who asked to join, remove members, and tag the channel's interests.
           </SheetDescription>
         </SheetHeader>
 
@@ -134,6 +138,7 @@ export default function ModerationSheet({
                   Requests{requests.length ? ` (${requests.length})` : ""}
                 </TabsTrigger>
                 <TabsTrigger value="members">Members ({members.length})</TabsTrigger>
+                <TabsTrigger value="interests">Interests</TabsTrigger>
               </TabsList>
 
               <TabsContent value="requests" className="mt-2">
@@ -194,6 +199,9 @@ export default function ModerationSheet({
                     </PersonRow>
                   ))}
                 </ul>
+              </TabsContent>
+              <TabsContent value="interests" className="mt-2">
+                <ChannelInterestsEditor channelId={channelId} onSaved={onInterestsSaved} />
               </TabsContent>
             </Tabs>
           )}

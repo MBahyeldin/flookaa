@@ -7,22 +7,24 @@ export default function InterestPicker({
   retired,
   value,
   onChange,
+  max = MAX_PERSONA_INTERESTS,
 }: {
   groups: InterestGroup[];
   retired: Interest[];
   value: number[];
   onChange: (ids: number[]) => void;
+  max?: number;
 }) {
   const selected = new Set(value);
-  const full = value.length >= MAX_PERSONA_INTERESTS;
+  const full = value.length >= max;
   const toggle = (id: number) =>
     onChange(selected.has(id) ? value.filter((v) => v !== id) : full ? value : [...value, id]);
   const keptRetired = retired.filter((r) => selected.has(r.id));
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="@container flex flex-col gap-6">
       <p className="text-sm text-muted-foreground text-center" aria-live="polite">
-        {value.length} / {MAX_PERSONA_INTERESTS} selected
+        {value.length} / {max} selected
       </p>
 
       {keptRetired.length > 0 && (
@@ -51,7 +53,7 @@ export default function InterestPicker({
           <h3 id={`interest-group-${g.id}`} className="text-sm font-semibold text-foreground">
             {g.name}
           </h3>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 @md:grid-cols-3 @2xl:grid-cols-4">
             {g.interests.map((i) => {
               const on = selected.has(i.id);
               return (

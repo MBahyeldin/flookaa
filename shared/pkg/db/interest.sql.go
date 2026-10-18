@@ -12,6 +12,29 @@ import (
 	"github.com/lib/pq"
 )
 
+const countAllowedChannelInterests = `-- name: CountAllowedChannelInterests :one
+SELECT COUNT(*)::int AS allowed
+FROM interests i
+WHERE i.id = ANY($1::bigint[])
+  AND (i.retired_at IS NULL OR EXISTS (
+      SELECT 1 FROM channel_interests ci
+      WHERE ci.channel_id = $2 AND ci.interest_id = i.id
+  ))
+`
+
+type CountAllowedChannelInterestsParams struct {
+	Ids       []int64
+	ChannelID int64
+}
+
+// An id is allowed if it's active or the channel already has it.
+func (q *Queries) CountAllowedChannelInterests(ctx context.Context, arg CountAllowedChannelInterestsParams) (int32, error) {
+	row := q.db.QueryRowContext(ctx, countAllowedChannelInterests, pq.Array(arg.Ids), arg.ChannelID)
+	var allowed int32
+	err := row.Scan(&allowed)
+	return allowed, err
+}
+
 const countAllowedPersonaInterests = `-- name: CountAllowedPersonaInterests :one
 SELECT COUNT(*)::int AS allowed
 FROM interests i
@@ -306,6 +329,51 @@ func (q *Queries) ListAllInterests(ctx context.Context) ([]ListAllInterestsRow, 
 	return items, nil
 }
 
+const listChannelInterests = `-- name: ListChannelInterests :many
+SELECT ci.channel_id, i.id, i.name, i.slug, i.emoji
+FROM channel_interests ci
+JOIN interests i ON i.id = ci.interest_id
+WHERE ci.channel_id = ANY($1::bigint[])
+ORDER BY ci.channel_id, ci.created_at, i.id
+`
+
+type ListChannelInterestsRow struct {
+	ChannelID int64
+	ID        int64
+	Name      string
+	Slug      string
+	Emoji     string
+}
+
+func (q *Queries) ListChannelInterests(ctx context.Context, channelIds []int64) ([]ListChannelInterestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listChannelInterests, pq.Array(channelIds))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListChannelInterestsRow
+	for rows.Next() {
+		var i ListChannelInterestsRow
+		if err := rows.Scan(
+			&i.ChannelID,
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.Emoji,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listInterestGroups = `-- name: ListInterestGroups :many
 SELECT id, name, slug
 FROM interest_groups
@@ -445,6 +513,27 @@ func (q *Queries) RankedActiveInterests(ctx context.Context, userID int64) ([]Ra
 		return nil, err
 	}
 	return items, nil
+}
+
+const replaceChannelInterests = `-- name: ReplaceChannelInterests :exec
+WITH removed AS (
+    DELETE FROM channel_interests
+    WHERE channel_id = $1
+      AND NOT (interest_id = ANY($2::bigint[]))
+)
+INSERT INTO channel_interests (channel_id, interest_id)
+SELECT $1, unnest($2::bigint[])
+ON CONFLICT DO NOTHING
+`
+
+type ReplaceChannelInterestsParams struct {
+	ChannelID int64
+	Ids       []int64
+}
+
+func (q *Queries) ReplaceChannelInterests(ctx context.Context, arg ReplaceChannelInterestsParams) error {
+	_, err := q.db.ExecContext(ctx, replaceChannelInterests, arg.ChannelID, pq.Array(arg.Ids))
+	return err
 }
 
 const replacePersonaInterests = `-- name: ReplacePersonaInterests :exec
