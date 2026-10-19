@@ -84,18 +84,19 @@ export class Form {
     method: "POST",
   });
 
-  static community(communityId?: number) {
+  static community(communityId?: number, canOwn = true) {
     return new Form({
       id: "community_form",
       name: "Community Form",
       title: communityId ? "Edit community" : "Create a community",
       description: "A community groups channels about the same topics.",
       submitText: communityId ? "Save changes" : "Create community",
-      groups: communityFormFieldsGroups,
+      groups: communityFormFieldsGroups(canOwn),
       relativeApiPath: communityId ? `/api/v1/communities/${communityId}` : "/api/v1/communities/create",
       method: communityId ? "PATCH" : "POST",
       serverErrors: {
         invalid_name: { field: "name", message: "Enter a name of at most 100 characters." },
+        invalid_rules: { field: "rules", message: "Use at most 5000 characters." },
         invalid_slug: { field: "slug", message: "Use 3–50 lowercase letters, digits or single hyphens." },
         slug_taken: { field: "slug", message: "Another community already uses this link." },
         invalid_interests: { field: "interest_ids", message: "Pick 1 to 5 interests." },

@@ -14,7 +14,8 @@ export default function CommunityForm({
   community?: Community;
   onSaved: (community: Community | null) => void;
 }) {
-  const form = useMemo(() => Form.community(community?.id), [community?.id]);
+  const canOwn = !community || !!community.can_own;
+  const form = useMemo(() => Form.community(community?.id, canOwn), [community?.id, canOwn]);
   const initialValues = useMemo(
     () =>
       community
@@ -22,6 +23,7 @@ export default function CommunityForm({
             name: community.name,
             slug: community.slug,
             description: community.description,
+            rules: community.rules,
             visibility: community.visibility,
             thumbnail: community.thumbnail,
             banner: community.banner,

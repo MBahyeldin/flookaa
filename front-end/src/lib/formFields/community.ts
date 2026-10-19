@@ -1,6 +1,6 @@
 import { FormField } from "@/models/Forms/FormField";
 import type { FormGroup } from "@/types/FormFields";
-import { MAX_COMMUNITY_INTERESTS } from "@/types/community";
+import { MAX_COMMUNITY_INTERESTS, MAX_COMMUNITY_RULES } from "@/types/community";
 import { SLUG_PATTERN } from "@/lib/slug";
 
 const communityFields = [
@@ -35,6 +35,19 @@ const communityFields = [
     placeholder: "What is this community about?",
     interfaceType: "text",
     width: "full",
+  }),
+  new FormField({
+    id: "rules",
+    label: "Rules",
+    type: "textarea",
+    placeholder: "Shown on the community page and to everyone before they join.",
+    interfaceType: "text",
+    width: "full",
+    hint: (value) => `${typeof value === "string" ? value.trim().length : 0} / ${MAX_COMMUNITY_RULES}`,
+    validate: (value) =>
+      typeof value === "string" && value.trim().length > MAX_COMMUNITY_RULES
+        ? `Use at most ${MAX_COMMUNITY_RULES} characters.`
+        : null,
   }),
   new FormField({
     id: "visibility",
@@ -80,14 +93,15 @@ const communityFields = [
   }),
 ];
 
-const communityFormFieldsGroups: FormGroup[] = [
-  {
-    id: "community_group_1",
-    label: "Community",
-    description: "",
-    fields: communityFields,
-    sort: 1,
-  },
-];
-
-export default communityFormFieldsGroups;
+/** Visibility is only offered to the owner and global Administrators. */
+export default function communityFormFieldsGroups(canOwn: boolean): FormGroup[] {
+  return [
+    {
+      id: "community_group_1",
+      label: "Community",
+      description: "",
+      fields: canOwn ? communityFields : communityFields.filter((f) => f.id !== "visibility"),
+      sort: 1,
+    },
+  ];
+}

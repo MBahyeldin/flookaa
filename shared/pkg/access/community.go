@@ -10,8 +10,9 @@ import (
 
 var ErrCommunityNotFound = errors.New("community not found")
 
-// Every persona sees a community's metadata and its channel list; managing
-// it (info, interests, creating channels in it) is CanManage.
+// Every persona sees a community's metadata. Managing it (info, interests,
+// rules, requests, members, channels in it) is CanManage; moderators and
+// visibility are CanOwn.
 type Community struct {
 	db.GetCommunityAccessRow
 }
@@ -51,5 +52,13 @@ func MembershipStatus(s db.NullCommunityMembershipStatusEnum) string {
 
 // CanSeeInside: who may list a community's members and, on its page, its channels.
 func (c Community) CanSeeInside() bool {
-	return !c.IsPrivate() || c.IsMember() || c.CanManage
+	return !c.IsPrivate() || c.IsMember() || c.CanManage()
+}
+
+func (c Community) CanOwn() bool {
+	return c.IsOwner || c.IsAdmin
+}
+
+func (c Community) CanManage() bool {
+	return c.CanOwn() || c.IsModerator
 }

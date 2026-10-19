@@ -24,6 +24,9 @@ func AddCommunitiesRoutes(r *gin.RouterGroup, communities *communities.Handler) 
 		group.GET("/:community_id/members", communities.ListMembers)
 		group.POST("/:community_id/members/:persona_id/remove", communities.RemoveMember)
 
+		group.POST("/:community_id/moderators/:persona_id", communities.AppointModerator)
+		group.POST("/:community_id/moderators/:persona_id/remove", communities.RemoveModerator)
+
 		group.GET("/:community_id/requests", communities.ListJoinRequests)
 		group.POST("/:community_id/requests/:persona_id/approve", communities.ApproveJoinRequest)
 		group.POST("/:community_id/requests/:persona_id/reject", communities.RejectJoinRequest)

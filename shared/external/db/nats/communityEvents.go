@@ -16,6 +16,14 @@ const (
 // Membership changes reuse EventMember, EventFollower and EventJoinRequest with
 // a ChannelEventPayload, as {stream}.COMMUNITY.{id}.{event}.{create|delete}.
 
+// moderator.{create|delete}: a ChannelEventPayload like the membership events.
+const EventModerator db.EventEnum = "moderator"
+
+const (
+	ReasonAppointed   = "appointed"
+	ReasonSteppedDown = "stepped_down"
+)
+
 // Not Postgres owner/target values: community events are never rows in events.
 const (
 	OwnerCommunity  db.OwnerEnum           = "COMMUNITY"

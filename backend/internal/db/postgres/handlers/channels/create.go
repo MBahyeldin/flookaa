@@ -123,7 +123,7 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		if !community.CanManage {
+		if !community.CanManage() {
 			c.JSON(http.StatusForbidden, gin.H{"error": "not_community_manager"})
 			return
 		}

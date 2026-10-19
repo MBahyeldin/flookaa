@@ -15,6 +15,7 @@ type CreateCommunityRequest struct {
 	Name        string  `json:"name"`
 	Slug        string  `json:"slug"`
 	Description string  `json:"description"`
+	Rules       string  `json:"rules"`
 	Thumbnail   string  `json:"thumbnail"`
 	Banner      string  `json:"banner"`
 	Visibility  string  `json:"visibility"`
@@ -32,6 +33,10 @@ func validName(name string) bool {
 	return name != "" && len([]rune(name)) <= 100
 }
 
+func validRules(rules string) bool {
+	return len([]rune(rules)) <= 5000
+}
+
 func (h *Handler) CreateCommunity(c *gin.Context) {
 	personaID, ok := auth.PersonaID(c)
 	if !ok {
@@ -44,6 +49,7 @@ func (h *Handler) CreateCommunity(c *gin.Context) {
 		return
 	}
 	req.Name = strings.TrimSpace(req.Name)
+	req.Rules = strings.TrimSpace(req.Rules)
 	if req.Visibility == "" {
 		req.Visibility = string(db.CommunityVisibilityEnumPublic)
 	}
@@ -53,6 +59,9 @@ func (h *Handler) CreateCommunity(c *gin.Context) {
 		return
 	case !validSlug(req.Slug):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_slug"})
+		return
+	case !validRules(req.Rules):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_rules"})
 		return
 	case !db.CommunityVisibilityEnum(req.Visibility).Valid():
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_visibility"})
@@ -80,6 +89,7 @@ func (h *Handler) CreateCommunity(c *gin.Context) {
 		Name:        req.Name,
 		Slug:        req.Slug,
 		Description: req.Description,
+		Rules:       req.Rules,
 		Thumbnail:   req.Thumbnail,
 		Banner:      req.Banner,
 		Visibility:  db.CommunityVisibilityEnum(req.Visibility),

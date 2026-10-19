@@ -87,14 +87,19 @@ func (h *Handler) LeaveCommunity(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	n, err := h.q.LeaveCommunity(ctx, db.LeaveCommunityParams{CommunityID: communityID, PersonaID: personaID})
+	left, hadRole, err := h.endMembership(ctx, communityID, personaID, func(q *db.Queries) (int64, error) {
+		return q.LeaveCommunity(ctx, db.LeaveCommunityParams{CommunityID: communityID, PersonaID: personaID})
+	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if n == 0 {
+	if !left {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "not_a_member"})
 		return
+	}
+	if hadRole {
+		h.publishMembership(ctx, communityID, personaID, nats.EventModerator, db.EventActionEnumDelete, personaID, nats.ReasonLeft)
 	}
 
 	// A cancelled rejection was in nobody's list, so it announces nothing.

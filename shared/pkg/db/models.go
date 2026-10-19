@@ -1058,6 +1058,7 @@ type Community struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   sql.NullTime
+	Rules       string
 }
 
 type CommunityChannel struct {
@@ -1086,6 +1087,15 @@ type CommunityMember struct {
 	JoinedAt    time.Time
 	ResolvedAt  sql.NullTime
 	LeftAt      sql.NullTime
+}
+
+type CommunityRole struct {
+	CommunityID int64
+	PersonaID   int64
+	RoleID      int32
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeletedAt   sql.NullTime
 }
 
 type Country struct {

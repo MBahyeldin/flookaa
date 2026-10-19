@@ -5,6 +5,14 @@ import { toast } from "sonner";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
@@ -41,6 +49,7 @@ export default function CommunityPage() {
   const [requestsKey, setRequestsKey] = useState(0);
   const [pendingRequests, setPendingRequests] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -111,8 +120,13 @@ export default function CommunityPage() {
         setMembersKey((k) => k + 1);
       }
       if (msg.event.name === "join_request") setRequestsKey((k) => k + 1);
+      if (msg.event.name === "moderator") {
+        reloadCommunity();
+        setMembersKey((k) => k + 1);
+      }
     });
-  }, [communityId, websocketService, loadChannels, reloadCommunity]);
+    // canManage: /control only sends join requests to managers, so a new role resubscribes.
+  }, [communityId, websocketService, loadChannels, reloadCommunity, canManage]);
 
   const onSaved = useCallback(
     (saved: Community | null) => {
@@ -134,6 +148,15 @@ export default function CommunityPage() {
     },
     [reloadCommunity],
   );
+
+  const join = () => {
+    if (!community) return;
+    if (community.rules) {
+      setRulesOpen(true);
+      return;
+    }
+    runAction(() => joinCommunity(community.id), "Couldn't join. Please try again.");
+  };
 
   if (state === "missing") return <NotFound />;
   if (state === "failed") {
@@ -192,7 +215,7 @@ export default function CommunityPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           {community.membership_status === "none" && (
-            <Button size="sm" disabled={busy} onClick={() => runAction(() => joinCommunity(community.id), "Couldn't join. Please try again.")}>
+            <Button size="sm" disabled={busy} onClick={join}>
               {isPrivate ? "Request to join" : "Join"}
             </Button>
           )}
@@ -279,6 +302,14 @@ export default function CommunityPage() {
         </div>
         {community.description && <p className="max-w-3xl text-muted-foreground">{community.description}</p>}
         <InterestChips interests={community.interests} />
+        {community.rules && (
+          <section aria-labelledby="community-rules" className="max-w-3xl rounded-xl border bg-card p-4">
+            <h2 id="community-rules" className="mb-2 font-semibold">
+              Rules
+            </h2>
+            <p className="whitespace-pre-line text-sm text-muted-foreground">{community.rules}</p>
+          </section>
+        )}
       </div>
 
       <section className="mt-10" aria-labelledby="community-channels">
@@ -295,11 +326,7 @@ export default function CommunityPage() {
                 Your request to join is waiting for approval.
               </p>
             ) : (
-              <Button
-                size="sm"
-                disabled={busy}
-                onClick={() => runAction(() => joinCommunity(community.id), "Couldn't send your request. Please try again.")}
-              >
+              <Button size="sm" disabled={busy} onClick={join}>
                 Request to join
               </Button>
             )}
@@ -325,6 +352,30 @@ export default function CommunityPage() {
         membersKey={membersKey}
         requestsKey={requestsKey}
       />
+
+      <Dialog open={rulesOpen} onOpenChange={setRulesOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{community.name} rules</DialogTitle>
+            <DialogDescription>Please read them before you {isPrivate ? "ask to join" : "join"}.</DialogDescription>
+          </DialogHeader>
+          <p className="whitespace-pre-line text-sm">{community.rules}</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRulesOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={busy}
+              onClick={() => {
+                setRulesOpen(false);
+                runAction(() => joinCommunity(community.id), "Couldn't join. Please try again.");
+              }}
+            >
+              {isPrivate ? "Agree and request" : "Agree and join"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Sheet open={editing} onOpenChange={setEditing}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">

@@ -17,6 +17,7 @@ type UpdateCommunityRequest struct {
 	Name        *string  `json:"name"`
 	Slug        *string  `json:"slug"`
 	Description *string  `json:"description"`
+	Rules       *string  `json:"rules"`
 	Thumbnail   *string  `json:"thumbnail"`
 	Banner      *string  `json:"banner"`
 	Visibility  *string  `json:"visibility"`
@@ -44,7 +45,7 @@ func (h *Handler) UpdateCommunity(c *gin.Context) {
 	if !ok {
 		return
 	}
-	if !community.CanManage {
+	if !community.CanManage() {
 		c.JSON(http.StatusForbidden, gin.H{"error": "not_community_manager"})
 		return
 	}
@@ -58,12 +59,22 @@ func (h *Handler) UpdateCommunity(c *gin.Context) {
 		trimmed := strings.TrimSpace(*req.Name)
 		req.Name = &trimmed
 	}
+	if req.Rules != nil {
+		trimmed := strings.TrimSpace(*req.Rules)
+		req.Rules = &trimmed
+	}
 	switch {
+	case req.Visibility != nil && *req.Visibility != string(community.Visibility) && !community.CanOwn():
+		c.JSON(http.StatusForbidden, gin.H{"error": "not_community_owner"})
+		return
 	case req.Name != nil && !validName(*req.Name):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_name"})
 		return
 	case req.Slug != nil && !validSlug(*req.Slug):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_slug"})
+		return
+	case req.Rules != nil && !validRules(*req.Rules):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_rules"})
 		return
 	case req.Visibility != nil && !db.CommunityVisibilityEnum(*req.Visibility).Valid():
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_visibility"})
@@ -98,6 +109,7 @@ func (h *Handler) UpdateCommunity(c *gin.Context) {
 		Name:        optional(req.Name),
 		Slug:        optional(req.Slug),
 		Description: optional(req.Description),
+		Rules:       optional(req.Rules),
 		Thumbnail:   optional(req.Thumbnail),
 		Banner:      optional(req.Banner),
 		Visibility:  visibility,

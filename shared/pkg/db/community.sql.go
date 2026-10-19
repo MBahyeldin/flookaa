@@ -59,6 +59,32 @@ func (q *Queries) ApproveAllCommunityJoinRequests(ctx context.Context, community
 	return items, nil
 }
 
+const assignCommunityModerator = `-- name: AssignCommunityModerator :execrows
+INSERT INTO community_roles (community_id, persona_id, role_id)
+SELECT cm.community_id, cm.persona_id, r.id
+FROM community_members cm
+JOIN roles r ON r.name = 'moderator' AND r.deleted_at IS NULL
+WHERE cm.community_id = $1 AND cm.persona_id = $2
+  AND cm.left_at IS NULL AND cm.status = 'active'
+ON CONFLICT (community_id, persona_id, role_id) DO UPDATE
+SET deleted_at = NULL, updated_at = now()
+WHERE community_roles.deleted_at IS NOT NULL
+`
+
+type AssignCommunityModeratorParams struct {
+	CommunityID int64
+	PersonaID   int64
+}
+
+// Only a live active member can be appointed; no row changed means it isn't one or already moderates.
+func (q *Queries) AssignCommunityModerator(ctx context.Context, arg AssignCommunityModeratorParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, assignCommunityModerator, arg.CommunityID, arg.PersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const countAllowedCommunityInterests = `-- name: CountAllowedCommunityInterests :one
 SELECT COUNT(*)::int AS allowed
 FROM interests i
@@ -84,10 +110,10 @@ func (q *Queries) CountAllowedCommunityInterests(ctx context.Context, arg CountA
 
 const createCommunity = `-- name: CreateCommunity :one
 WITH created AS (
-    INSERT INTO communities (name, slug, description, thumbnail, banner, visibility, owner_id)
+    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, visibility, owner_id)
     VALUES (
-        $1, $2, $3, $4,
-        $5, $6, $7
+        $1, $2, $3, $4, $5,
+        $6, $7, $8
     )
     RETURNING id, owner_id
 ), owner_member AS (
@@ -101,6 +127,7 @@ type CreateCommunityParams struct {
 	Name        string
 	Slug        string
 	Description string
+	Rules       string
 	Thumbnail   string
 	Banner      string
 	Visibility  CommunityVisibilityEnum
@@ -113,6 +140,7 @@ func (q *Queries) CreateCommunity(ctx context.Context, arg CreateCommunityParams
 		arg.Name,
 		arg.Slug,
 		arg.Description,
+		arg.Rules,
 		arg.Thumbnail,
 		arg.Banner,
 		arg.Visibility,
@@ -183,17 +211,26 @@ SELECT
     (c.owner_id = $1::bigint) AS is_owner,
     m.status AS membership_status,
     (f.persona_id IS NOT NULL)::boolean AS is_following,
-    (
-        c.owner_id = $1::bigint
-        OR EXISTS (
+    COALESCE(
+        m.status = 'active' AND EXISTS (
             SELECT 1
-            FROM personas p
-            JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
-            JOIN roles r ON r.id = ur.role_id
-            WHERE p.id = $1::bigint
-              AND r.name = 'Administrator'
-        )
-    )::boolean AS can_manage
+            FROM community_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.community_id = c.id
+              AND cr.persona_id = $1::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name = 'moderator'
+        ),
+        false
+    )::boolean AS is_moderator,
+    EXISTS (
+        SELECT 1
+        FROM personas p
+        JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
+        JOIN roles r ON r.id = ur.role_id
+        WHERE p.id = $1::bigint
+          AND r.name = 'Administrator'
+    )::boolean AS is_admin
 FROM communities c
 LEFT JOIN community_members m
     ON m.community_id = c.id AND m.persona_id = $1::bigint AND m.left_at IS NULL
@@ -214,11 +251,13 @@ type GetCommunityAccessRow struct {
 	IsOwner          bool
 	MembershipStatus NullCommunityMembershipStatusEnum
 	IsFollowing      bool
-	CanManage        bool
+	IsModerator      bool
+	IsAdmin          bool
 }
 
 // A missing row (sql.ErrNoRows) means the community does not exist or is deleted.
-// membership_status is the live row's raw status (NULL when none); can_manage: the owner or a global Administrator.
+// membership_status is the live row's raw status (NULL when none).
+// A moderator is one only while it's an active member.
 func (q *Queries) GetCommunityAccess(ctx context.Context, arg GetCommunityAccessParams) (GetCommunityAccessRow, error) {
 	row := q.db.QueryRowContext(ctx, getCommunityAccess, arg.PersonaID, arg.CommunityID)
 	var i GetCommunityAccessRow
@@ -229,13 +268,14 @@ func (q *Queries) GetCommunityAccess(ctx context.Context, arg GetCommunityAccess
 		&i.IsOwner,
 		&i.MembershipStatus,
 		&i.IsFollowing,
-		&i.CanManage,
+		&i.IsModerator,
+		&i.IsAdmin,
 	)
 	return i, err
 }
 
 const getCommunityByID = `-- name: GetCommunityByID :one
-SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at,
+SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
      WHERE cc.community_id = c.id AND ch.deleted_at IS NULL)::int AS channels_count
 FROM communities c
@@ -262,13 +302,14 @@ func (q *Queries) GetCommunityByID(ctx context.Context, id int64) (GetCommunityB
 		&i.Community.CreatedAt,
 		&i.Community.UpdatedAt,
 		&i.Community.DeletedAt,
+		&i.Community.Rules,
 		&i.ChannelsCount,
 	)
 	return i, err
 }
 
 const getCommunityBySlug = `-- name: GetCommunityBySlug :one
-SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at,
+SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
      WHERE cc.community_id = c.id AND ch.deleted_at IS NULL)::int AS channels_count
 FROM communities c
@@ -295,6 +336,7 @@ func (q *Queries) GetCommunityBySlug(ctx context.Context, slug string) (GetCommu
 		&i.Community.CreatedAt,
 		&i.Community.UpdatedAt,
 		&i.Community.DeletedAt,
+		&i.Community.Rules,
 		&i.ChannelsCount,
 	)
 	return i, err
@@ -452,7 +494,7 @@ func (q *Queries) ListChannelCommunities(ctx context.Context, channelIds []int64
 }
 
 const listCommunities = `-- name: ListCommunities :many
-SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at,
+SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
      WHERE cc.community_id = c.id AND ch.deleted_at IS NULL)::int AS channels_count
 FROM communities c
@@ -499,6 +541,7 @@ func (q *Queries) ListCommunities(ctx context.Context, arg ListCommunitiesParams
 			&i.Community.CreatedAt,
 			&i.Community.UpdatedAt,
 			&i.Community.DeletedAt,
+			&i.Community.Rules,
 			&i.ChannelsCount,
 		); err != nil {
 			return nil, err
@@ -622,14 +665,21 @@ SELECT
     p.last_name,
     p.thumbnail,
     p.privacy,
-    (c.owner_id = cm.persona_id)::boolean AS is_owner
+    (c.owner_id = cm.persona_id)::boolean AS is_owner,
+    (mr.persona_id IS NOT NULL)::boolean AS is_moderator
 FROM community_members cm
 JOIN communities c ON c.id = cm.community_id
 JOIN personas p ON p.id = cm.persona_id
+LEFT JOIN (
+    SELECT DISTINCT cr.persona_id
+    FROM community_roles cr
+    JOIN roles r ON r.id = cr.role_id
+    WHERE cr.community_id = $1 AND cr.deleted_at IS NULL AND r.name = 'moderator'
+) mr ON mr.persona_id = cm.persona_id
 WHERE cm.community_id = $1
   AND cm.left_at IS NULL AND cm.status = 'active'
   AND p.deleted_at IS NULL
-ORDER BY (c.owner_id = cm.persona_id) DESC, cm.joined_at, cm.persona_id
+ORDER BY (c.owner_id = cm.persona_id) DESC, (mr.persona_id IS NOT NULL) DESC, cm.joined_at, cm.persona_id
 LIMIT $3 OFFSET $2
 `
 
@@ -640,13 +690,14 @@ type ListCommunityMembersParams struct {
 }
 
 type ListCommunityMembersRow struct {
-	PersonaID int64
-	JoinedAt  time.Time
-	FirstName string
-	LastName  string
-	Thumbnail sql.NullString
-	Privacy   PersonaPrivacyEnum
-	IsOwner   bool
+	PersonaID   int64
+	JoinedAt    time.Time
+	FirstName   string
+	LastName    string
+	Thumbnail   sql.NullString
+	Privacy     PersonaPrivacyEnum
+	IsOwner     bool
+	IsModerator bool
 }
 
 func (q *Queries) ListCommunityMembers(ctx context.Context, arg ListCommunityMembersParams) ([]ListCommunityMembersRow, error) {
@@ -666,6 +717,7 @@ func (q *Queries) ListCommunityMembers(ctx context.Context, arg ListCommunityMem
 			&i.Thumbnail,
 			&i.Privacy,
 			&i.IsOwner,
+			&i.IsModerator,
 		); err != nil {
 			return nil, err
 		}
@@ -763,6 +815,28 @@ func (q *Queries) RemoveCommunityMember(ctx context.Context, arg RemoveCommunity
 	return result.RowsAffected()
 }
 
+const removeCommunityModerator = `-- name: RemoveCommunityModerator :execrows
+UPDATE community_roles cr
+SET deleted_at = now(), updated_at = now()
+FROM roles r
+WHERE r.id = cr.role_id AND r.name = 'moderator'
+  AND cr.community_id = $1 AND cr.persona_id = $2
+  AND cr.deleted_at IS NULL
+`
+
+type RemoveCommunityModeratorParams struct {
+	CommunityID int64
+	PersonaID   int64
+}
+
+func (q *Queries) RemoveCommunityModerator(ctx context.Context, arg RemoveCommunityModeratorParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, removeCommunityModerator, arg.CommunityID, arg.PersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const replaceCommunityInterests = `-- name: ReplaceCommunityInterests :exec
 WITH removed AS (
     DELETE FROM community_interests
@@ -805,6 +879,26 @@ func (q *Queries) ResolveCommunityJoinRequest(ctx context.Context, arg ResolveCo
 	return result.RowsAffected()
 }
 
+const revokeCommunityRolesForPersona = `-- name: RevokeCommunityRolesForPersona :execrows
+UPDATE community_roles
+SET deleted_at = now(), updated_at = now()
+WHERE community_id = $1 AND persona_id = $2
+  AND deleted_at IS NULL
+`
+
+type RevokeCommunityRolesForPersonaParams struct {
+	CommunityID int64
+	PersonaID   int64
+}
+
+func (q *Queries) RevokeCommunityRolesForPersona(ctx context.Context, arg RevokeCommunityRolesForPersonaParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, revokeCommunityRolesForPersona, arg.CommunityID, arg.PersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const unfollowCommunity = `-- name: UnfollowCommunity :execrows
 UPDATE community_followers
 SET unfollowed_at = now()
@@ -830,18 +924,20 @@ UPDATE communities
 SET name = COALESCE($1, name),
     slug = COALESCE($2, slug),
     description = COALESCE($3, description),
-    thumbnail = COALESCE($4, thumbnail),
-    banner = COALESCE($5, banner),
-    visibility = COALESCE($6::community_visibility_enum, visibility),
+    rules = COALESCE($4, rules),
+    thumbnail = COALESCE($5, thumbnail),
+    banner = COALESCE($6, banner),
+    visibility = COALESCE($7::community_visibility_enum, visibility),
     updated_at = now()
-WHERE id = $7 AND deleted_at IS NULL
-RETURNING id, name, slug, description, thumbnail, banner, visibility, owner_id, created_at, updated_at, deleted_at
+WHERE id = $8 AND deleted_at IS NULL
+RETURNING id, name, slug, description, thumbnail, banner, visibility, owner_id, created_at, updated_at, deleted_at, rules
 `
 
 type UpdateCommunityParams struct {
 	Name        sql.NullString
 	Slug        sql.NullString
 	Description sql.NullString
+	Rules       sql.NullString
 	Thumbnail   sql.NullString
 	Banner      sql.NullString
 	Visibility  NullCommunityVisibilityEnum
@@ -853,6 +949,7 @@ func (q *Queries) UpdateCommunity(ctx context.Context, arg UpdateCommunityParams
 		arg.Name,
 		arg.Slug,
 		arg.Description,
+		arg.Rules,
 		arg.Thumbnail,
 		arg.Banner,
 		arg.Visibility,
@@ -871,6 +968,7 @@ func (q *Queries) UpdateCommunity(ctx context.Context, arg UpdateCommunityParams
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Rules,
 	)
 	return i, err
 }

@@ -38,7 +38,11 @@ func (h *Handler) community(c *gin.Context, wsMessage WsMessage, personaId int64
 	for _, event := range []db.EventEnum{nats.EventCommunityInfo, nats.EventCommunityChannels, nats.EventCommunityCounts} {
 		subjects = append(subjects, subject.New(&stream, owner, string(event), string(db.EventActionEnumUpdate)).GetSubjectWithOffsets(0))
 	}
-	if community.CanManage {
+	subjects = append(subjects,
+		subject.New(&stream, owner, string(nats.EventModerator), string(db.EventActionEnumCreate)).GetSubjectWithOffsets(0),
+		subject.New(&stream, owner, string(nats.EventModerator), string(db.EventActionEnumDelete)).GetSubjectWithOffsets(0),
+	)
+	if community.CanManage() {
 		for _, action := range []db.EventActionEnum{db.EventActionEnumCreate, db.EventActionEnumDelete} {
 			subjects = append(subjects, subject.New(&stream, owner, string(nats.EventJoinRequest), string(action)).GetSubjectWithOffsets(0))
 		}

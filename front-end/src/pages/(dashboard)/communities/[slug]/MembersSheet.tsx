@@ -1,17 +1,26 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { PersonRow, displayName } from "@/components/persona-link/PersonRow";
 import {
+  appointCommunityModerator,
   listCommunityMembers,
   listCommunityRequests,
   removeCommunityMember,
+  removeCommunityModerator,
   resolveCommunityRequest,
 } from "@/services/communities";
 import type { Community, CommunityJoinRequest, CommunityMember } from "@/types/community";
+import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { formatDateOnly } from "@/utils/formateDate";
 
 export type MembersTab = "members" | "requests";
@@ -34,6 +43,8 @@ export default function MembersSheet({
 }) {
   const open = tab !== null;
   const manager = !!community.can_manage;
+  const owner = !!community.can_own;
+  const me = Number(useUserProfileStore((s) => s.persona?.id));
   const [members, setMembers] = useState<CommunityMember[] | null>(null);
   const [requests, setRequests] = useState<CommunityJoinRequest[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +102,42 @@ export default function MembersSheet({
     setMembers((prev) => prev?.filter((m) => m.persona_id !== member.persona_id) ?? null);
   };
 
+  const handleModerator = async (member: CommunityMember, appoint: boolean) => {
+    const self = member.persona_id === me;
+    if (!appoint && self && !confirm("Step down as a moderator of this community?")) return;
+    setBusyId(member.persona_id);
+    const r = appoint
+      ? await appointCommunityModerator(community.id, member.persona_id)
+      : await removeCommunityModerator(community.id, member.persona_id);
+    setBusyId(null);
+    if (!r.ok) {
+      toast.error("Couldn't change the moderator role. Please try again.");
+      return;
+    }
+    toast.success(
+      appoint
+        ? `${displayName(member)} is now a moderator`
+        : self
+          ? "You stepped down as a moderator"
+          : `${displayName(member)} is no longer a moderator`,
+    );
+    setMembers((prev) => prev?.map((m) => (m.persona_id === member.persona_id ? { ...m, is_moderator: appoint } : m)) ?? null);
+  };
+
+  const memberActions = (member: CommunityMember) => {
+    if (member.is_owner) return [];
+    const self = member.persona_id === me;
+    const actions: { label: string; destructive?: boolean; run: () => void }[] = [];
+    if (owner && !member.is_moderator) actions.push({ label: "Make moderator", run: () => handleModerator(member, true) });
+    if (member.is_moderator && (owner || self)) {
+      actions.push({ label: self ? "Step down as moderator" : "Remove moderator", run: () => handleModerator(member, false) });
+    }
+    if (manager && !self && (owner || !member.is_moderator)) {
+      actions.push({ label: "Remove from community", destructive: true, run: () => handleRemove(member) });
+    }
+    return actions;
+  };
+
   const membersList =
     error ? (
       <p role="alert" className="py-6 text-center text-sm text-muted-foreground">
@@ -103,26 +150,39 @@ export default function MembersSheet({
       </div>
     ) : (
       <ul className="divide-y divide-border">
-        {members.map((member) => (
-          <PersonRow
-            key={member.persona_id}
-            person={member}
-            detail={`Joined ${formatDateOnly(member.joined_at)}`}
-            badge={member.is_owner ? "Owner" : undefined}
-          >
-            {manager && !member.is_owner && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-destructive hover:text-destructive"
-                disabled={busyId === member.persona_id}
-                onClick={() => handleRemove(member)}
-              >
-                Remove
-              </Button>
-            )}
-          </PersonRow>
-        ))}
+        {members.map((member) => {
+          const actions = memberActions(member);
+          return (
+            <PersonRow
+              key={member.persona_id}
+              person={member}
+              detail={`Joined ${formatDateOnly(member.joined_at)}`}
+              badge={member.is_owner ? "Owner" : member.is_moderator ? "Moderator" : undefined}
+            >
+              {actions.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label={`Actions for ${displayName(member)}`}
+                      disabled={busyId === member.persona_id}
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {actions.map((a) => (
+                      <DropdownMenuItem key={a.label} variant={a.destructive ? "destructive" : "default"} onSelect={a.run}>
+                        {a.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </PersonRow>
+          );
+        })}
       </ul>
     );
 

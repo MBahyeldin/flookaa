@@ -1,9 +1,9 @@
 -- The owner is the first active member.
 -- name: CreateCommunity :one
 WITH created AS (
-    INSERT INTO communities (name, slug, description, thumbnail, banner, visibility, owner_id)
+    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, visibility, owner_id)
     VALUES (
-        sqlc.arg(name), sqlc.arg(slug), sqlc.arg(description), sqlc.arg(thumbnail),
+        sqlc.arg(name), sqlc.arg(slug), sqlc.arg(description), sqlc.arg(rules), sqlc.arg(thumbnail),
         sqlc.arg(banner), sqlc.arg(visibility), sqlc.arg(owner_id)
     )
     RETURNING id, owner_id
@@ -18,6 +18,7 @@ UPDATE communities
 SET name = COALESCE(sqlc.narg(name), name),
     slug = COALESCE(sqlc.narg(slug), slug),
     description = COALESCE(sqlc.narg(description), description),
+    rules = COALESCE(sqlc.narg(rules), rules),
     thumbnail = COALESCE(sqlc.narg(thumbnail), thumbnail),
     banner = COALESCE(sqlc.narg(banner), banner),
     visibility = COALESCE(sqlc.narg(visibility)::community_visibility_enum, visibility),
@@ -40,7 +41,8 @@ FROM communities c
 WHERE c.slug = sqlc.arg(slug) AND c.deleted_at IS NULL;
 
 -- A missing row (sql.ErrNoRows) means the community does not exist or is deleted.
--- membership_status is the live row's raw status (NULL when none); can_manage: the owner or a global Administrator.
+-- membership_status is the live row's raw status (NULL when none).
+-- A moderator is one only while it's an active member.
 -- name: GetCommunityAccess :one
 SELECT
     c.id,
@@ -49,17 +51,26 @@ SELECT
     (c.owner_id = sqlc.arg(persona_id)::bigint) AS is_owner,
     m.status AS membership_status,
     (f.persona_id IS NOT NULL)::boolean AS is_following,
-    (
-        c.owner_id = sqlc.arg(persona_id)::bigint
-        OR EXISTS (
+    COALESCE(
+        m.status = 'active' AND EXISTS (
             SELECT 1
-            FROM personas p
-            JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
-            JOIN roles r ON r.id = ur.role_id
-            WHERE p.id = sqlc.arg(persona_id)::bigint
-              AND r.name = 'Administrator'
-        )
-    )::boolean AS can_manage
+            FROM community_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.community_id = c.id
+              AND cr.persona_id = sqlc.arg(persona_id)::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name = 'moderator'
+        ),
+        false
+    )::boolean AS is_moderator,
+    EXISTS (
+        SELECT 1
+        FROM personas p
+        JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
+        JOIN roles r ON r.id = ur.role_id
+        WHERE p.id = sqlc.arg(persona_id)::bigint
+          AND r.name = 'Administrator'
+    )::boolean AS is_admin
 FROM communities c
 LEFT JOIN community_members m
     ON m.community_id = c.id AND m.persona_id = sqlc.arg(persona_id)::bigint AND m.left_at IS NULL
@@ -245,12 +256,45 @@ SELECT
     p.last_name,
     p.thumbnail,
     p.privacy,
-    (c.owner_id = cm.persona_id)::boolean AS is_owner
+    (c.owner_id = cm.persona_id)::boolean AS is_owner,
+    (mr.persona_id IS NOT NULL)::boolean AS is_moderator
 FROM community_members cm
 JOIN communities c ON c.id = cm.community_id
 JOIN personas p ON p.id = cm.persona_id
+LEFT JOIN (
+    SELECT DISTINCT cr.persona_id
+    FROM community_roles cr
+    JOIN roles r ON r.id = cr.role_id
+    WHERE cr.community_id = sqlc.arg(community_id) AND cr.deleted_at IS NULL AND r.name = 'moderator'
+) mr ON mr.persona_id = cm.persona_id
 WHERE cm.community_id = sqlc.arg(community_id)
   AND cm.left_at IS NULL AND cm.status = 'active'
   AND p.deleted_at IS NULL
-ORDER BY (c.owner_id = cm.persona_id) DESC, cm.joined_at, cm.persona_id
+ORDER BY (c.owner_id = cm.persona_id) DESC, (mr.persona_id IS NOT NULL) DESC, cm.joined_at, cm.persona_id
 LIMIT sqlc.arg(lim) OFFSET sqlc.arg(off);
+
+-- Only a live active member can be appointed; no row changed means it isn't one or already moderates.
+-- name: AssignCommunityModerator :execrows
+INSERT INTO community_roles (community_id, persona_id, role_id)
+SELECT cm.community_id, cm.persona_id, r.id
+FROM community_members cm
+JOIN roles r ON r.name = 'moderator' AND r.deleted_at IS NULL
+WHERE cm.community_id = sqlc.arg(community_id) AND cm.persona_id = sqlc.arg(persona_id)
+  AND cm.left_at IS NULL AND cm.status = 'active'
+ON CONFLICT (community_id, persona_id, role_id) DO UPDATE
+SET deleted_at = NULL, updated_at = now()
+WHERE community_roles.deleted_at IS NOT NULL;
+
+-- name: RemoveCommunityModerator :execrows
+UPDATE community_roles cr
+SET deleted_at = now(), updated_at = now()
+FROM roles r
+WHERE r.id = cr.role_id AND r.name = 'moderator'
+  AND cr.community_id = sqlc.arg(community_id) AND cr.persona_id = sqlc.arg(persona_id)
+  AND cr.deleted_at IS NULL;
+
+-- name: RevokeCommunityRolesForPersona :execrows
+UPDATE community_roles
+SET deleted_at = now(), updated_at = now()
+WHERE community_id = sqlc.arg(community_id) AND persona_id = sqlc.arg(persona_id)
+  AND deleted_at IS NULL;

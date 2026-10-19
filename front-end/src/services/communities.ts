@@ -37,6 +37,12 @@ export const listCommunityMembers = (id: number, limit = 100, offset = 0) =>
 export const removeCommunityMember = (id: number, personaId: number) =>
   call<{ message: string }>(`/${id}/members/${personaId}/remove`, "POST");
 
+export const appointCommunityModerator = (id: number, personaId: number) =>
+  call<{ is_moderator: boolean }>(`/${id}/moderators/${personaId}`, "POST");
+
+export const removeCommunityModerator = (id: number, personaId: number) =>
+  call<{ is_moderator: boolean }>(`/${id}/moderators/${personaId}/remove`, "POST");
+
 export const listCommunityRequests = (id: number) => call<{ requests: CommunityJoinRequest[] }>(`/${id}/requests`);
 
 export const resolveCommunityRequest = (id: number, personaId: number, decision: "approve" | "reject") =>

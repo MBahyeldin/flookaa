@@ -50,6 +50,7 @@ type Community struct {
 	Name           string        `json:"name"`
 	Slug           string        `json:"slug"`
 	Description    string        `json:"description"`
+	Rules          string        `json:"rules"`
 	Thumbnail      string        `json:"thumbnail"`
 	Banner         string        `json:"banner"`
 	Visibility     string        `json:"visibility"`
@@ -62,7 +63,9 @@ type Community struct {
 	MembershipStatus string `json:"membership_status"`
 	Following        bool   `json:"following"`
 	CanManage        bool   `json:"can_manage,omitempty"`
+	CanOwn           bool   `json:"can_own,omitempty"`
 	IsOwner          bool   `json:"is_owner,omitempty"`
+	IsModerator      bool   `json:"is_moderator,omitempty"`
 }
 
 // Publish announces a stored change, so a failed publish is only logged.
@@ -183,6 +186,7 @@ func (h *Handler) build(ctx context.Context, viewerID int64, rows []row) ([]Comm
 			Name:             r.Name,
 			Slug:             r.Slug,
 			Description:      r.Description,
+			Rules:            r.Rules,
 			Thumbnail:        r.Thumbnail,
 			Banner:           r.Banner,
 			Visibility:       string(r.Visibility),
@@ -221,7 +225,9 @@ func (h *Handler) writeRow(c *gin.Context, r row, personaID int64, status int) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	built[0].CanManage = community.CanManage
+	built[0].CanManage = community.CanManage()
+	built[0].CanOwn = community.CanOwn()
 	built[0].IsOwner = community.IsOwner
+	built[0].IsModerator = community.IsModerator
 	c.JSON(status, gin.H{"community": built[0]})
 }

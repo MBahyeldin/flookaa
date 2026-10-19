@@ -23,8 +23,9 @@ type PersonaView struct {
 
 type Member struct {
 	PersonaView
-	IsOwner  bool   `json:"is_owner"`
-	JoinedAt string `json:"joined_at"`
+	IsOwner     bool   `json:"is_owner"`
+	IsModerator bool   `json:"is_moderator"`
+	JoinedAt    string `json:"joined_at"`
 }
 
 // ListMembers: everyone on a public community; members and managers on a private one.
@@ -66,6 +67,7 @@ func (h *Handler) ListMembers(c *gin.Context) {
 		members[i] = Member{
 			PersonaView: PersonaView{PersonaID: r.PersonaID, FirstName: r.FirstName, LastName: r.LastName, Thumbnail: r.Thumbnail.String},
 			IsOwner:     r.IsOwner,
+			IsModerator: r.IsModerator,
 			JoinedAt:    r.JoinedAt.Format(time.RFC3339),
 		}
 		views[i] = &members[i].PersonaView
@@ -77,7 +79,8 @@ func (h *Handler) ListMembers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"members": members})
 }
 
-// RemoveMember: managers only; the owner can't be removed, and may join again later.
+// RemoveMember: managers only; the owner can't be removed, only CanOwn removes a
+// moderator, and a removed persona may join again later.
 func (h *Handler) RemoveMember(c *gin.Context) {
 	personaID, communityID, community, ok := h.requireManager(c)
 	if !ok {
@@ -93,14 +96,30 @@ func (h *Handler) RemoveMember(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	n, err := h.q.RemoveCommunityMember(ctx, db.RemoveCommunityMemberParams{CommunityID: communityID, PersonaID: memberID})
+	if !community.CanOwn() {
+		member, err := access.LoadCommunity(ctx, h.q, communityID, memberID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if member.IsModerator {
+			c.JSON(http.StatusForbidden, gin.H{"error": "not_community_owner"})
+			return
+		}
+	}
+	removed, hadRole, err := h.endMembership(ctx, communityID, memberID, func(q *db.Queries) (int64, error) {
+		return q.RemoveCommunityMember(ctx, db.RemoveCommunityMemberParams{CommunityID: communityID, PersonaID: memberID})
+	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if n == 0 {
+	if !removed {
 		c.JSON(http.StatusNotFound, gin.H{"error": "member not found"})
 		return
+	}
+	if hadRole {
+		h.publishMembership(ctx, communityID, personaID, nats.EventModerator, db.EventActionEnumDelete, memberID, nats.ReasonRemoved)
 	}
 	h.publishMembership(ctx, communityID, personaID, nats.EventMember, db.EventActionEnumDelete, memberID, nats.ReasonRemoved)
 	h.publishCounts(ctx, communityID, personaID)
@@ -145,7 +164,7 @@ func (h *Handler) requireManager(c *gin.Context) (int64, int64, access.Community
 	if !ok {
 		return 0, 0, access.Community{}, false
 	}
-	if !community.CanManage {
+	if !community.CanManage() {
 		c.JSON(http.StatusForbidden, gin.H{"error": "not_community_manager"})
 		return 0, 0, access.Community{}, false
 	}
