@@ -116,10 +116,32 @@ func (h *Handler) UpdateCommunity(c *gin.Context) {
 			return
 		}
 	}
+	var unfollowed, admitted []int64
+	if visibility.Valid && visibility.CommunityVisibilityEnum != community.Visibility {
+		if visibility.CommunityVisibilityEnum == db.CommunityVisibilityEnumPrivate {
+			unfollowed, err = q.EndCommunityFollows(ctx, communityID)
+		} else {
+			admitted, err = q.ApproveAllCommunityJoinRequests(ctx, communityID)
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
 	if err := tx.Commit(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	Publish(ctx, h.nats, communityID, personaID, nats.EventCommunityInfo)
+	for _, id := range unfollowed {
+		h.publishMembership(ctx, communityID, personaID, nats.EventFollower, db.EventActionEnumDelete, id, nats.ReasonRemoved)
+	}
+	for _, id := range admitted {
+		h.publishMembership(ctx, communityID, personaID, nats.EventJoinRequest, db.EventActionEnumDelete, id, nats.ReasonApproved)
+		h.publishMembership(ctx, communityID, personaID, nats.EventMember, db.EventActionEnumCreate, id, nats.ReasonApproved)
+	}
+	if len(unfollowed) > 0 || len(admitted) > 0 {
+		h.publishCounts(ctx, communityID, personaID)
+	}
 	h.writeOne(c, communityID, personaID, http.StatusOK)
 }

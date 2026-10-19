@@ -76,7 +76,7 @@ func (h *Handler) CreateCommunity(c *gin.Context) {
 	defer tx.Rollback()
 	q := h.q.WithTx(tx)
 
-	community, err := q.CreateCommunity(ctx, db.CreateCommunityParams{
+	communityID, err := q.CreateCommunity(ctx, db.CreateCommunityParams{
 		Name:        req.Name,
 		Slug:        req.Slug,
 		Description: req.Description,
@@ -93,7 +93,7 @@ func (h *Handler) CreateCommunity(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if err := q.ReplaceCommunityInterests(ctx, db.ReplaceCommunityInterestsParams{CommunityID: community.ID, Ids: req.InterestIDs}); err != nil {
+	if err := q.ReplaceCommunityInterests(ctx, db.ReplaceCommunityInterestsParams{CommunityID: communityID, Ids: req.InterestIDs}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -101,5 +101,5 @@ func (h *Handler) CreateCommunity(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	h.writeOne(c, community.ID, personaID, http.StatusCreated)
+	h.writeOne(c, communityID, personaID, http.StatusCreated)
 }

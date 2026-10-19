@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Lock, Rss } from "lucide-react";
+import { Lock, Rss, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -30,10 +30,16 @@ export function CommunityCard({ community }: { community: Community }) {
             <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">{community.description}</p>
           </div>
           <InterestChips interests={community.interests} limit={3} />
-          <p className="flex items-center gap-1 text-sm text-muted-foreground">
-            <Rss className="h-4 w-4" />
-            {community.channels_count === 1 ? "1 channel" : `${community.channels_count} channels`}
-          </p>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Users className="h-4 w-4" />
+              {community.members_count === 1 ? "1 member" : `${community.members_count} members`}
+            </span>
+            <span className="flex items-center gap-1">
+              <Rss className="h-4 w-4" />
+              {community.channels_count === 1 ? "1 channel" : `${community.channels_count} channels`}
+            </span>
+          </div>
         </CardContent>
       </Card>
     </Link>

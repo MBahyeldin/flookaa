@@ -9,7 +9,12 @@ const (
 	EventCommunityInfo db.EventEnum = "info"
 	// channels.update: a channel was added to the community.
 	EventCommunityChannels db.EventEnum = "channels"
+	// counts.update: the member or follower count changed.
+	EventCommunityCounts db.EventEnum = "counts"
 )
+
+// Membership changes reuse EventMember, EventFollower and EventJoinRequest with
+// a ChannelEventPayload, as {stream}.COMMUNITY.{id}.{event}.{create|delete}.
 
 // Not Postgres owner/target values: community events are never rows in events.
 const (

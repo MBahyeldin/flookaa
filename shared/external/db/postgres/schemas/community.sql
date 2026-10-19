@@ -31,3 +31,28 @@ CREATE TABLE community_channels (
 );
 
 CREATE INDEX community_channels_community_id_idx ON community_channels (community_id);
+
+CREATE TYPE community_membership_status_enum AS ENUM ('pending', 'active', 'rejected');
+
+-- One row per pair: leaving sets left_at, joining again revives the row.
+CREATE TABLE community_members (
+    community_id BIGINT NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+    persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE,
+    status community_membership_status_enum NOT NULL,
+    joined_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    resolved_at TIMESTAMP WITHOUT TIME ZONE,
+    left_at TIMESTAMP WITHOUT TIME ZONE,
+    PRIMARY KEY (community_id, persona_id)
+);
+
+CREATE INDEX community_members_persona_id_idx ON community_members (persona_id);
+
+CREATE TABLE community_followers (
+    community_id BIGINT NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+    persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE,
+    followed_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    unfollowed_at TIMESTAMP WITHOUT TIME ZONE,
+    PRIMARY KEY (community_id, persona_id)
+);
+
+CREATE INDEX community_followers_persona_id_idx ON community_followers (persona_id);

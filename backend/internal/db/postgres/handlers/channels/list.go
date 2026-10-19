@@ -4,7 +4,9 @@ import (
 	"app/internal/auth"
 	"context"
 	"database/sql"
+	"errors"
 	"net/http"
+	"shared/pkg/access"
 	"shared/pkg/db"
 	"strconv"
 
@@ -66,6 +68,20 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 	var communityID sql.NullInt64
 	if id, err := strconv.ParseInt(c.Query("community_id"), 10, 64); err == nil && id > 0 {
 		communityID = sql.NullInt64{Int64: id, Valid: true}
+		community, err := access.LoadCommunity(ctx, q, id, personaId)
+		if errors.Is(err, access.ErrCommunityNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		// Only the community page's grid; each channel stays listed in /channels/ under its own rules.
+		if !community.CanSeeInside() {
+			c.JSON(http.StatusForbidden, gin.H{"error": "members_only"})
+			return
+		}
 	}
 
 	channels, err := q.GetAllChannels(ctx, db.GetAllChannelsParams{

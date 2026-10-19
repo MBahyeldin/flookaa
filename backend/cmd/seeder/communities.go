@@ -162,7 +162,7 @@ func seedCommunityRow(ctx context.Context, pg *sql.DB, q *db.Queries, ownerID in
 	}
 	defer tx.Rollback()
 	qtx := q.WithTx(tx)
-	community, err := qtx.CreateCommunity(ctx, db.CreateCommunityParams{
+	communityID, err := qtx.CreateCommunity(ctx, db.CreateCommunityParams{
 		Name:        sc.Name,
 		Slug:        sc.Slug,
 		Description: sc.Description,
@@ -172,10 +172,10 @@ func seedCommunityRow(ctx context.Context, pg *sql.DB, q *db.Queries, ownerID in
 	if err != nil {
 		return 0, err
 	}
-	if err := qtx.ReplaceCommunityInterests(ctx, db.ReplaceCommunityInterestsParams{CommunityID: community.ID, Ids: ids}); err != nil {
+	if err := qtx.ReplaceCommunityInterests(ctx, db.ReplaceCommunityInterestsParams{CommunityID: communityID, Ids: ids}); err != nil {
 		return 0, err
 	}
-	return community.ID, tx.Commit()
+	return communityID, tx.Commit()
 }
 
 // Every seeded interest exists once SeedInterests has run, so a miss is an error.

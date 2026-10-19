@@ -118,6 +118,59 @@ func (e ChannelVisibilityEnum) Valid() bool {
 	return false
 }
 
+type CommunityMembershipStatusEnum string
+
+const (
+	CommunityMembershipStatusEnumPending  CommunityMembershipStatusEnum = "pending"
+	CommunityMembershipStatusEnumActive   CommunityMembershipStatusEnum = "active"
+	CommunityMembershipStatusEnumRejected CommunityMembershipStatusEnum = "rejected"
+)
+
+func (e *CommunityMembershipStatusEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = CommunityMembershipStatusEnum(s)
+	case string:
+		*e = CommunityMembershipStatusEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for CommunityMembershipStatusEnum: %T", src)
+	}
+	return nil
+}
+
+type NullCommunityMembershipStatusEnum struct {
+	CommunityMembershipStatusEnum CommunityMembershipStatusEnum
+	Valid                         bool // Valid is true if CommunityMembershipStatusEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullCommunityMembershipStatusEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.CommunityMembershipStatusEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.CommunityMembershipStatusEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullCommunityMembershipStatusEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.CommunityMembershipStatusEnum), nil
+}
+
+func (e CommunityMembershipStatusEnum) Valid() bool {
+	switch e {
+	case CommunityMembershipStatusEnumPending,
+		CommunityMembershipStatusEnumActive,
+		CommunityMembershipStatusEnumRejected:
+		return true
+	}
+	return false
+}
+
 type CommunityVisibilityEnum string
 
 const (
@@ -1013,10 +1066,26 @@ type CommunityChannel struct {
 	CreatedAt   time.Time
 }
 
+type CommunityFollower struct {
+	CommunityID  int64
+	PersonaID    int64
+	FollowedAt   time.Time
+	UnfollowedAt sql.NullTime
+}
+
 type CommunityInterest struct {
 	CommunityID int64
 	InterestID  int64
 	CreatedAt   time.Time
+}
+
+type CommunityMember struct {
+	CommunityID int64
+	PersonaID   int64
+	Status      CommunityMembershipStatusEnum
+	JoinedAt    time.Time
+	ResolvedAt  sql.NullTime
+	LeftAt      sql.NullTime
 }
 
 type Country struct {

@@ -41,8 +41,17 @@ var anonymousAnimals = [...]string{
 
 // AnonymousName is stable per persona and channel, e.g. "Quiet Otter 37".
 func AnonymousName(personaID, channelID int64) string {
+	return anonymousName(fmt.Sprintf("persona:%d:channel:%d", personaID, channelID))
+}
+
+// AnonymousCommunityName differs from the persona's channel names and across communities.
+func AnonymousCommunityName(personaID, communityID int64) string {
+	return anonymousName(fmt.Sprintf("persona:%d:community:%d", personaID, communityID))
+}
+
+func anonymousName(key string) string {
 	h := fnv.New64a()
-	fmt.Fprintf(h, "persona:%d:channel:%d", personaID, channelID)
+	h.Write([]byte(key))
 	sum := h.Sum64()
 	adjective := anonymousAdjectives[sum%uint64(len(anonymousAdjectives))]
 	sum /= uint64(len(anonymousAdjectives))

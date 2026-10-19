@@ -9,11 +9,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { GeneratedAvatarFallback } from "@/components/generated-avatar";
-import { PersonaLink } from "@/components/persona-link";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PersonRow, displayName } from "@/components/persona-link/PersonRow";
 import {
   listJoinRequests,
   listMembers,
@@ -24,11 +21,6 @@ import type { ChannelMember, JoinRequest } from "@/types/channel";
 import { formatDateOnly } from "@/utils/formateDate";
 import type { Interest } from "@/types/interest";
 import ChannelInterestsEditor from "./ChannelInterestsEditor";
-
-type Person = Pick<JoinRequest, "persona_id" | "first_name" | "last_name" | "name" | "thumbnail" | "anonymous">;
-
-const displayName = (p: Person) =>
-  `${p.first_name} ${p.last_name}`.trim() || p.name;
 
 /**
  * Join requests and members for owners, channel moderators and admins. Both
@@ -208,51 +200,5 @@ export default function ModerationSheet({
         </div>
       </SheetContent>
     </Sheet>
-  );
-}
-
-function PersonRow({
-  person,
-  detail,
-  badge,
-  children,
-}: {
-  person: Person;
-  detail: string;
-  badge?: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <li className="flex items-center gap-3 py-3">
-      <PersonaLink
-        personaId={person.persona_id}
-        anonymous={person.anonymous}
-        name={displayName(person)}
-        thumbnail={person.thumbnail || undefined}
-        tabIndex={-1}
-        className="shrink-0"
-      >
-        <Avatar className="h-9 w-9 shrink-0">
-          <AvatarImage src={person.thumbnail || ""} />
-          <GeneratedAvatarFallback name={displayName(person)} />
-        </Avatar>
-      </PersonaLink>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <PersonaLink
-            personaId={person.persona_id}
-            anonymous={person.anonymous}
-          name={displayName(person)}
-          thumbnail={person.thumbnail || undefined}
-            className="truncate text-sm font-medium"
-          >
-            {displayName(person)}
-          </PersonaLink>
-          {badge && <Badge variant="secondary">{badge}</Badge>}
-        </div>
-        <p className="truncate text-xs text-muted-foreground">{detail}</p>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">{children}</div>
-    </li>
   );
 }

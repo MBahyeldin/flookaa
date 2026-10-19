@@ -32,6 +32,8 @@ type EventType =
   // changed (/control owner COMMUNITY); no payload, refetch.
   | "info"
   | "channels"
+  // A community's member or follower count changed; no payload, refetch.
+  | "counts"
   | "*";
 type EventActionType = "create" | "update" | "delete" | "*";
 type EventOwnerType = "CHANNEL" | "USER" | "PERSONA" | "COMMUNITY";

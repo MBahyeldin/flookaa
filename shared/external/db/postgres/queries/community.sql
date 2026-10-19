@@ -1,10 +1,17 @@
+-- The owner is the first active member.
 -- name: CreateCommunity :one
-INSERT INTO communities (name, slug, description, thumbnail, banner, visibility, owner_id)
-VALUES (
-    sqlc.arg(name), sqlc.arg(slug), sqlc.arg(description), sqlc.arg(thumbnail),
-    sqlc.arg(banner), sqlc.arg(visibility), sqlc.arg(owner_id)
+WITH created AS (
+    INSERT INTO communities (name, slug, description, thumbnail, banner, visibility, owner_id)
+    VALUES (
+        sqlc.arg(name), sqlc.arg(slug), sqlc.arg(description), sqlc.arg(thumbnail),
+        sqlc.arg(banner), sqlc.arg(visibility), sqlc.arg(owner_id)
+    )
+    RETURNING id, owner_id
+), owner_member AS (
+    INSERT INTO community_members (community_id, persona_id, status, resolved_at)
+    SELECT id, owner_id, 'active', now() FROM created
 )
-RETURNING *;
+SELECT id FROM created;
 
 -- name: UpdateCommunity :one
 UPDATE communities
@@ -33,12 +40,15 @@ FROM communities c
 WHERE c.slug = sqlc.arg(slug) AND c.deleted_at IS NULL;
 
 -- A missing row (sql.ErrNoRows) means the community does not exist or is deleted.
--- can_manage: the owner or a global Administrator.
+-- membership_status is the live row's raw status (NULL when none); can_manage: the owner or a global Administrator.
 -- name: GetCommunityAccess :one
 SELECT
     c.id,
     c.visibility,
+    c.owner_id,
     (c.owner_id = sqlc.arg(persona_id)::bigint) AS is_owner,
+    m.status AS membership_status,
+    (f.persona_id IS NOT NULL)::boolean AS is_following,
     (
         c.owner_id = sqlc.arg(persona_id)::bigint
         OR EXISTS (
@@ -51,6 +61,10 @@ SELECT
         )
     )::boolean AS can_manage
 FROM communities c
+LEFT JOIN community_members m
+    ON m.community_id = c.id AND m.persona_id = sqlc.arg(persona_id)::bigint AND m.left_at IS NULL
+LEFT JOIN community_followers f
+    ON f.community_id = c.id AND f.persona_id = sqlc.arg(persona_id)::bigint AND f.unfollowed_at IS NULL
 WHERE c.id = sqlc.arg(community_id)::bigint AND c.deleted_at IS NULL;
 
 -- name: ListCommunities :many
@@ -121,3 +135,122 @@ SELECT i.id
 FROM unnest(sqlc.arg(slugs)::text[]) WITH ORDINALITY AS s(slug, ord)
 JOIN interests i ON i.slug = s.slug
 ORDER BY s.ord;
+
+-- Counts of live members and follows (deleted personas left out), and the
+-- viewer's own membership and follow.
+-- name: ListCommunityStats :many
+SELECT
+    c.id,
+    (SELECT COUNT(*) FROM community_members cm JOIN personas p ON p.id = cm.persona_id
+     WHERE cm.community_id = c.id AND cm.status = 'active' AND cm.left_at IS NULL
+       AND p.deleted_at IS NULL)::int AS members_count,
+    (SELECT COUNT(*) FROM community_followers cf JOIN personas p ON p.id = cf.persona_id
+     WHERE cf.community_id = c.id AND cf.unfollowed_at IS NULL
+       AND p.deleted_at IS NULL)::int AS followers_count,
+    vm.status AS viewer_status,
+    (vf.persona_id IS NOT NULL)::boolean AS viewer_following
+FROM communities c
+LEFT JOIN community_members vm
+    ON vm.community_id = c.id AND vm.persona_id = sqlc.arg(viewer_id)::bigint AND vm.left_at IS NULL
+LEFT JOIN community_followers vf
+    ON vf.community_id = c.id AND vf.persona_id = sqlc.arg(viewer_id)::bigint AND vf.unfollowed_at IS NULL
+WHERE c.id = ANY(sqlc.arg(community_ids)::bigint[]);
+
+-- Revives a left row or a rejection. A rejection inside its 7-day cooldown
+-- (cancelled or not) only comes back as it was, so it still reads as pending.
+-- No row: an active or pending live row, left alone.
+-- name: JoinCommunity :one
+INSERT INTO community_members (community_id, persona_id, status, resolved_at)
+VALUES (
+    sqlc.arg(community_id), sqlc.arg(persona_id), sqlc.arg(status)::community_membership_status_enum,
+    CASE WHEN sqlc.arg(status)::community_membership_status_enum = 'active' THEN now() END
+)
+ON CONFLICT (community_id, persona_id) DO UPDATE
+SET status = CASE WHEN community_members.status = 'rejected' AND community_members.resolved_at >= now() - interval '7 days'
+                  THEN community_members.status ELSE EXCLUDED.status END,
+    joined_at = CASE WHEN community_members.status = 'rejected' AND community_members.resolved_at >= now() - interval '7 days'
+                     THEN community_members.joined_at ELSE now() END,
+    resolved_at = CASE WHEN community_members.status = 'rejected' AND community_members.resolved_at >= now() - interval '7 days'
+                       THEN community_members.resolved_at ELSE EXCLUDED.resolved_at END,
+    left_at = NULL
+WHERE community_members.left_at IS NOT NULL OR community_members.status = 'rejected'
+RETURNING status;
+
+-- Ends a membership or cancels a request; a cancelled rejection keeps its cooldown.
+-- name: LeaveCommunity :execrows
+UPDATE community_members
+SET left_at = now()
+WHERE community_id = sqlc.arg(community_id) AND persona_id = sqlc.arg(persona_id)
+  AND left_at IS NULL;
+
+-- name: RemoveCommunityMember :execrows
+UPDATE community_members
+SET left_at = now()
+WHERE community_id = sqlc.arg(community_id) AND persona_id = sqlc.arg(persona_id)
+  AND left_at IS NULL AND status = 'active';
+
+-- name: FollowCommunity :execrows
+INSERT INTO community_followers (community_id, persona_id)
+VALUES (sqlc.arg(community_id), sqlc.arg(persona_id))
+ON CONFLICT (community_id, persona_id) DO UPDATE
+SET followed_at = now(), unfollowed_at = NULL
+WHERE community_followers.unfollowed_at IS NOT NULL;
+
+-- name: UnfollowCommunity :execrows
+UPDATE community_followers
+SET unfollowed_at = now()
+WHERE community_id = sqlc.arg(community_id) AND persona_id = sqlc.arg(persona_id)
+  AND unfollowed_at IS NULL;
+
+-- A community going private loses its followers.
+-- name: EndCommunityFollows :many
+UPDATE community_followers
+SET unfollowed_at = now()
+WHERE community_id = sqlc.arg(community_id) AND unfollowed_at IS NULL
+RETURNING persona_id;
+
+-- A community going public admits everyone waiting.
+-- name: ApproveAllCommunityJoinRequests :many
+UPDATE community_members
+SET status = 'active', resolved_at = now()
+WHERE community_id = sqlc.arg(community_id) AND left_at IS NULL AND status = 'pending'
+RETURNING persona_id;
+
+-- name: ListCommunityJoinRequests :many
+SELECT
+    cm.persona_id,
+    cm.joined_at AS requested_at,
+    p.first_name,
+    p.last_name,
+    p.thumbnail,
+    p.privacy
+FROM community_members cm
+JOIN personas p ON p.id = cm.persona_id
+WHERE cm.community_id = sqlc.arg(community_id)
+  AND cm.left_at IS NULL AND cm.status = 'pending'
+  AND p.deleted_at IS NULL
+ORDER BY cm.joined_at, cm.persona_id;
+
+-- name: ResolveCommunityJoinRequest :execrows
+UPDATE community_members
+SET status = sqlc.arg(status)::community_membership_status_enum, resolved_at = now()
+WHERE community_id = sqlc.arg(community_id) AND persona_id = sqlc.arg(persona_id)
+  AND left_at IS NULL AND status = 'pending';
+
+-- name: ListCommunityMembers :many
+SELECT
+    cm.persona_id,
+    cm.joined_at,
+    p.first_name,
+    p.last_name,
+    p.thumbnail,
+    p.privacy,
+    (c.owner_id = cm.persona_id)::boolean AS is_owner
+FROM community_members cm
+JOIN communities c ON c.id = cm.community_id
+JOIN personas p ON p.id = cm.persona_id
+WHERE cm.community_id = sqlc.arg(community_id)
+  AND cm.left_at IS NULL AND cm.status = 'active'
+  AND p.deleted_at IS NULL
+ORDER BY (c.owner_id = cm.persona_id) DESC, cm.joined_at, cm.persona_id
+LIMIT sqlc.arg(lim) OFFSET sqlc.arg(off);

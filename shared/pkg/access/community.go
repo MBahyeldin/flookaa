@@ -29,3 +29,27 @@ func LoadCommunity(ctx context.Context, q *db.Queries, communityID, personaID in
 	}
 	return Community{row}, nil
 }
+
+func (c Community) IsPrivate() bool {
+	return c.Visibility == db.CommunityVisibilityEnumPrivate
+}
+
+func (c Community) IsMember() bool {
+	return c.MembershipStatus.Valid && c.MembershipStatus.CommunityMembershipStatusEnum == db.CommunityMembershipStatusEnumActive
+}
+
+// MembershipStatus is how a persona sees its own membership: a rejection reads as pending.
+func MembershipStatus(s db.NullCommunityMembershipStatusEnum) string {
+	if !s.Valid {
+		return "none"
+	}
+	if s.CommunityMembershipStatusEnum == db.CommunityMembershipStatusEnumActive {
+		return "active"
+	}
+	return "pending"
+}
+
+// CanSeeInside: who may list a community's members and, on its page, its channels.
+func (c Community) CanSeeInside() bool {
+	return !c.IsPrivate() || c.IsMember() || c.CanManage
+}

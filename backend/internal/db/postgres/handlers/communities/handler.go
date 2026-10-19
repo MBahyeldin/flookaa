@@ -46,17 +46,23 @@ type Owner struct {
 }
 
 type Community struct {
-	ID            int64         `json:"id"`
-	Name          string        `json:"name"`
-	Slug          string        `json:"slug"`
-	Description   string        `json:"description"`
-	Thumbnail     string        `json:"thumbnail"`
-	Banner        string        `json:"banner"`
-	Visibility    string        `json:"visibility"`
-	Owner         *Owner        `json:"owner"`
-	Interests     []InterestTag `json:"interests"`
-	ChannelsCount int32         `json:"channels_count"`
-	CanManage     bool          `json:"can_manage,omitempty"`
+	ID             int64         `json:"id"`
+	Name           string        `json:"name"`
+	Slug           string        `json:"slug"`
+	Description    string        `json:"description"`
+	Thumbnail      string        `json:"thumbnail"`
+	Banner         string        `json:"banner"`
+	Visibility     string        `json:"visibility"`
+	Owner          *Owner        `json:"owner"`
+	Interests      []InterestTag `json:"interests"`
+	ChannelsCount  int32         `json:"channels_count"`
+	MembersCount   int32         `json:"members_count"`
+	FollowersCount int32         `json:"followers_count"`
+	// The viewer's own: none, pending (a rejection too) or active.
+	MembershipStatus string `json:"membership_status"`
+	Following        bool   `json:"following"`
+	CanManage        bool   `json:"can_manage,omitempty"`
+	IsOwner          bool   `json:"is_owner,omitempty"`
 }
 
 // Publish announces a stored change, so a failed publish is only logged.
@@ -145,6 +151,15 @@ func (h *Handler) build(ctx context.Context, viewerID int64, rows []row) ([]Comm
 		tags[t.CommunityID] = append(tags[t.CommunityID], InterestTag{ID: t.ID, Name: t.Name, Slug: t.Slug, Emoji: t.Emoji})
 	}
 
+	stats := make(map[int64]db.ListCommunityStatsRow, len(ids))
+	statRows, err := h.q.ListCommunityStats(ctx, db.ListCommunityStatsParams{ViewerID: viewerID, CommunityIds: ids})
+	if err != nil {
+		return nil, err
+	}
+	for _, st := range statRows {
+		stats[st.ID] = st
+	}
+
 	owners := make(map[int64]*Owner, len(ownerIDs))
 	personas, err := h.q.ResolvePersonasForViewer(ctx, db.ResolvePersonasForViewerParams{ViewerID: viewerID, Ids: ownerIDs})
 	if err != nil {
@@ -164,16 +179,20 @@ func (h *Handler) build(ctx context.Context, viewerID int64, rows []row) ([]Comm
 			tagList = []InterestTag{}
 		}
 		out[i] = Community{
-			ID:            r.ID,
-			Name:          r.Name,
-			Slug:          r.Slug,
-			Description:   r.Description,
-			Thumbnail:     r.Thumbnail,
-			Banner:        r.Banner,
-			Visibility:    string(r.Visibility),
-			Owner:         owners[r.OwnerID],
-			Interests:     tagList,
-			ChannelsCount: r.ChannelsCount,
+			ID:               r.ID,
+			Name:             r.Name,
+			Slug:             r.Slug,
+			Description:      r.Description,
+			Thumbnail:        r.Thumbnail,
+			Banner:           r.Banner,
+			Visibility:       string(r.Visibility),
+			Owner:            owners[r.OwnerID],
+			Interests:        tagList,
+			ChannelsCount:    r.ChannelsCount,
+			MembersCount:     stats[r.ID].MembersCount,
+			FollowersCount:   stats[r.ID].FollowersCount,
+			MembershipStatus: access.MembershipStatus(stats[r.ID].ViewerStatus),
+			Following:        stats[r.ID].ViewerFollowing,
 		}
 	}
 	return out, nil
@@ -203,5 +222,6 @@ func (h *Handler) writeRow(c *gin.Context, r row, personaID int64, status int) {
 		return
 	}
 	built[0].CanManage = community.CanManage
+	built[0].IsOwner = community.IsOwner
 	c.JSON(status, gin.H{"community": built[0]})
 }

@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/lib/pq"
 )
@@ -25,6 +26,37 @@ type AddChannelToCommunityParams struct {
 func (q *Queries) AddChannelToCommunity(ctx context.Context, arg AddChannelToCommunityParams) error {
 	_, err := q.db.ExecContext(ctx, addChannelToCommunity, arg.CommunityID, arg.ChannelID)
 	return err
+}
+
+const approveAllCommunityJoinRequests = `-- name: ApproveAllCommunityJoinRequests :many
+UPDATE community_members
+SET status = 'active', resolved_at = now()
+WHERE community_id = $1 AND left_at IS NULL AND status = 'pending'
+RETURNING persona_id
+`
+
+// A community going public admits everyone waiting.
+func (q *Queries) ApproveAllCommunityJoinRequests(ctx context.Context, communityID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, approveAllCommunityJoinRequests, communityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var persona_id int64
+		if err := rows.Scan(&persona_id); err != nil {
+			return nil, err
+		}
+		items = append(items, persona_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const countAllowedCommunityInterests = `-- name: CountAllowedCommunityInterests :one
@@ -51,12 +83,18 @@ func (q *Queries) CountAllowedCommunityInterests(ctx context.Context, arg CountA
 }
 
 const createCommunity = `-- name: CreateCommunity :one
-INSERT INTO communities (name, slug, description, thumbnail, banner, visibility, owner_id)
-VALUES (
-    $1, $2, $3, $4,
-    $5, $6, $7
+WITH created AS (
+    INSERT INTO communities (name, slug, description, thumbnail, banner, visibility, owner_id)
+    VALUES (
+        $1, $2, $3, $4,
+        $5, $6, $7
+    )
+    RETURNING id, owner_id
+), owner_member AS (
+    INSERT INTO community_members (community_id, persona_id, status, resolved_at)
+    SELECT id, owner_id, 'active', now() FROM created
 )
-RETURNING id, name, slug, description, thumbnail, banner, visibility, owner_id, created_at, updated_at, deleted_at
+SELECT id FROM created
 `
 
 type CreateCommunityParams struct {
@@ -69,7 +107,8 @@ type CreateCommunityParams struct {
 	OwnerID     int64
 }
 
-func (q *Queries) CreateCommunity(ctx context.Context, arg CreateCommunityParams) (Community, error) {
+// The owner is the first active member.
+func (q *Queries) CreateCommunity(ctx context.Context, arg CreateCommunityParams) (int64, error) {
 	row := q.db.QueryRowContext(ctx, createCommunity,
 		arg.Name,
 		arg.Slug,
@@ -79,28 +118,71 @@ func (q *Queries) CreateCommunity(ctx context.Context, arg CreateCommunityParams
 		arg.Visibility,
 		arg.OwnerID,
 	)
-	var i Community
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Slug,
-		&i.Description,
-		&i.Thumbnail,
-		&i.Banner,
-		&i.Visibility,
-		&i.OwnerID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedAt,
-	)
-	return i, err
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const endCommunityFollows = `-- name: EndCommunityFollows :many
+UPDATE community_followers
+SET unfollowed_at = now()
+WHERE community_id = $1 AND unfollowed_at IS NULL
+RETURNING persona_id
+`
+
+// A community going private loses its followers.
+func (q *Queries) EndCommunityFollows(ctx context.Context, communityID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, endCommunityFollows, communityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var persona_id int64
+		if err := rows.Scan(&persona_id); err != nil {
+			return nil, err
+		}
+		items = append(items, persona_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const followCommunity = `-- name: FollowCommunity :execrows
+INSERT INTO community_followers (community_id, persona_id)
+VALUES ($1, $2)
+ON CONFLICT (community_id, persona_id) DO UPDATE
+SET followed_at = now(), unfollowed_at = NULL
+WHERE community_followers.unfollowed_at IS NOT NULL
+`
+
+type FollowCommunityParams struct {
+	CommunityID int64
+	PersonaID   int64
+}
+
+func (q *Queries) FollowCommunity(ctx context.Context, arg FollowCommunityParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, followCommunity, arg.CommunityID, arg.PersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const getCommunityAccess = `-- name: GetCommunityAccess :one
 SELECT
     c.id,
     c.visibility,
+    c.owner_id,
     (c.owner_id = $1::bigint) AS is_owner,
+    m.status AS membership_status,
+    (f.persona_id IS NOT NULL)::boolean AS is_following,
     (
         c.owner_id = $1::bigint
         OR EXISTS (
@@ -113,6 +195,10 @@ SELECT
         )
     )::boolean AS can_manage
 FROM communities c
+LEFT JOIN community_members m
+    ON m.community_id = c.id AND m.persona_id = $1::bigint AND m.left_at IS NULL
+LEFT JOIN community_followers f
+    ON f.community_id = c.id AND f.persona_id = $1::bigint AND f.unfollowed_at IS NULL
 WHERE c.id = $2::bigint AND c.deleted_at IS NULL
 `
 
@@ -122,21 +208,27 @@ type GetCommunityAccessParams struct {
 }
 
 type GetCommunityAccessRow struct {
-	ID         int64
-	Visibility CommunityVisibilityEnum
-	IsOwner    bool
-	CanManage  bool
+	ID               int64
+	Visibility       CommunityVisibilityEnum
+	OwnerID          int64
+	IsOwner          bool
+	MembershipStatus NullCommunityMembershipStatusEnum
+	IsFollowing      bool
+	CanManage        bool
 }
 
 // A missing row (sql.ErrNoRows) means the community does not exist or is deleted.
-// can_manage: the owner or a global Administrator.
+// membership_status is the live row's raw status (NULL when none); can_manage: the owner or a global Administrator.
 func (q *Queries) GetCommunityAccess(ctx context.Context, arg GetCommunityAccessParams) (GetCommunityAccessRow, error) {
 	row := q.db.QueryRowContext(ctx, getCommunityAccess, arg.PersonaID, arg.CommunityID)
 	var i GetCommunityAccessRow
 	err := row.Scan(
 		&i.ID,
 		&i.Visibility,
+		&i.OwnerID,
 		&i.IsOwner,
+		&i.MembershipStatus,
+		&i.IsFollowing,
 		&i.CanManage,
 	)
 	return i, err
@@ -259,6 +351,61 @@ func (q *Queries) GetInterestIDsBySlugs(ctx context.Context, slugs []string) ([]
 		return nil, err
 	}
 	return items, nil
+}
+
+const joinCommunity = `-- name: JoinCommunity :one
+INSERT INTO community_members (community_id, persona_id, status, resolved_at)
+VALUES (
+    $1, $2, $3::community_membership_status_enum,
+    CASE WHEN $3::community_membership_status_enum = 'active' THEN now() END
+)
+ON CONFLICT (community_id, persona_id) DO UPDATE
+SET status = CASE WHEN community_members.status = 'rejected' AND community_members.resolved_at >= now() - interval '7 days'
+                  THEN community_members.status ELSE EXCLUDED.status END,
+    joined_at = CASE WHEN community_members.status = 'rejected' AND community_members.resolved_at >= now() - interval '7 days'
+                     THEN community_members.joined_at ELSE now() END,
+    resolved_at = CASE WHEN community_members.status = 'rejected' AND community_members.resolved_at >= now() - interval '7 days'
+                       THEN community_members.resolved_at ELSE EXCLUDED.resolved_at END,
+    left_at = NULL
+WHERE community_members.left_at IS NOT NULL OR community_members.status = 'rejected'
+RETURNING status
+`
+
+type JoinCommunityParams struct {
+	CommunityID int64
+	PersonaID   int64
+	Status      CommunityMembershipStatusEnum
+}
+
+// Revives a left row or a rejection. A rejection inside its 7-day cooldown
+// (cancelled or not) only comes back as it was, so it still reads as pending.
+// No row: an active or pending live row, left alone.
+func (q *Queries) JoinCommunity(ctx context.Context, arg JoinCommunityParams) (CommunityMembershipStatusEnum, error) {
+	row := q.db.QueryRowContext(ctx, joinCommunity, arg.CommunityID, arg.PersonaID, arg.Status)
+	var status CommunityMembershipStatusEnum
+	err := row.Scan(&status)
+	return status, err
+}
+
+const leaveCommunity = `-- name: LeaveCommunity :execrows
+UPDATE community_members
+SET left_at = now()
+WHERE community_id = $1 AND persona_id = $2
+  AND left_at IS NULL
+`
+
+type LeaveCommunityParams struct {
+	CommunityID int64
+	PersonaID   int64
+}
+
+// Ends a membership or cancels a request; a cancelled rejection keeps its cooldown.
+func (q *Queries) LeaveCommunity(ctx context.Context, arg LeaveCommunityParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, leaveCommunity, arg.CommunityID, arg.PersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const listChannelCommunities = `-- name: ListChannelCommunities :many
@@ -412,6 +559,210 @@ func (q *Queries) ListCommunityInterests(ctx context.Context, communityIds []int
 	return items, nil
 }
 
+const listCommunityJoinRequests = `-- name: ListCommunityJoinRequests :many
+SELECT
+    cm.persona_id,
+    cm.joined_at AS requested_at,
+    p.first_name,
+    p.last_name,
+    p.thumbnail,
+    p.privacy
+FROM community_members cm
+JOIN personas p ON p.id = cm.persona_id
+WHERE cm.community_id = $1
+  AND cm.left_at IS NULL AND cm.status = 'pending'
+  AND p.deleted_at IS NULL
+ORDER BY cm.joined_at, cm.persona_id
+`
+
+type ListCommunityJoinRequestsRow struct {
+	PersonaID   int64
+	RequestedAt time.Time
+	FirstName   string
+	LastName    string
+	Thumbnail   sql.NullString
+	Privacy     PersonaPrivacyEnum
+}
+
+func (q *Queries) ListCommunityJoinRequests(ctx context.Context, communityID int64) ([]ListCommunityJoinRequestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCommunityJoinRequests, communityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCommunityJoinRequestsRow
+	for rows.Next() {
+		var i ListCommunityJoinRequestsRow
+		if err := rows.Scan(
+			&i.PersonaID,
+			&i.RequestedAt,
+			&i.FirstName,
+			&i.LastName,
+			&i.Thumbnail,
+			&i.Privacy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCommunityMembers = `-- name: ListCommunityMembers :many
+SELECT
+    cm.persona_id,
+    cm.joined_at,
+    p.first_name,
+    p.last_name,
+    p.thumbnail,
+    p.privacy,
+    (c.owner_id = cm.persona_id)::boolean AS is_owner
+FROM community_members cm
+JOIN communities c ON c.id = cm.community_id
+JOIN personas p ON p.id = cm.persona_id
+WHERE cm.community_id = $1
+  AND cm.left_at IS NULL AND cm.status = 'active'
+  AND p.deleted_at IS NULL
+ORDER BY (c.owner_id = cm.persona_id) DESC, cm.joined_at, cm.persona_id
+LIMIT $3 OFFSET $2
+`
+
+type ListCommunityMembersParams struct {
+	CommunityID int64
+	Off         int64
+	Lim         int64
+}
+
+type ListCommunityMembersRow struct {
+	PersonaID int64
+	JoinedAt  time.Time
+	FirstName string
+	LastName  string
+	Thumbnail sql.NullString
+	Privacy   PersonaPrivacyEnum
+	IsOwner   bool
+}
+
+func (q *Queries) ListCommunityMembers(ctx context.Context, arg ListCommunityMembersParams) ([]ListCommunityMembersRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCommunityMembers, arg.CommunityID, arg.Off, arg.Lim)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCommunityMembersRow
+	for rows.Next() {
+		var i ListCommunityMembersRow
+		if err := rows.Scan(
+			&i.PersonaID,
+			&i.JoinedAt,
+			&i.FirstName,
+			&i.LastName,
+			&i.Thumbnail,
+			&i.Privacy,
+			&i.IsOwner,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCommunityStats = `-- name: ListCommunityStats :many
+SELECT
+    c.id,
+    (SELECT COUNT(*) FROM community_members cm JOIN personas p ON p.id = cm.persona_id
+     WHERE cm.community_id = c.id AND cm.status = 'active' AND cm.left_at IS NULL
+       AND p.deleted_at IS NULL)::int AS members_count,
+    (SELECT COUNT(*) FROM community_followers cf JOIN personas p ON p.id = cf.persona_id
+     WHERE cf.community_id = c.id AND cf.unfollowed_at IS NULL
+       AND p.deleted_at IS NULL)::int AS followers_count,
+    vm.status AS viewer_status,
+    (vf.persona_id IS NOT NULL)::boolean AS viewer_following
+FROM communities c
+LEFT JOIN community_members vm
+    ON vm.community_id = c.id AND vm.persona_id = $1::bigint AND vm.left_at IS NULL
+LEFT JOIN community_followers vf
+    ON vf.community_id = c.id AND vf.persona_id = $1::bigint AND vf.unfollowed_at IS NULL
+WHERE c.id = ANY($2::bigint[])
+`
+
+type ListCommunityStatsParams struct {
+	ViewerID     int64
+	CommunityIds []int64
+}
+
+type ListCommunityStatsRow struct {
+	ID              int64
+	MembersCount    int32
+	FollowersCount  int32
+	ViewerStatus    NullCommunityMembershipStatusEnum
+	ViewerFollowing bool
+}
+
+// Counts of live members and follows (deleted personas left out), and the
+// viewer's own membership and follow.
+func (q *Queries) ListCommunityStats(ctx context.Context, arg ListCommunityStatsParams) ([]ListCommunityStatsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCommunityStats, arg.ViewerID, pq.Array(arg.CommunityIds))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCommunityStatsRow
+	for rows.Next() {
+		var i ListCommunityStatsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MembersCount,
+			&i.FollowersCount,
+			&i.ViewerStatus,
+			&i.ViewerFollowing,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const removeCommunityMember = `-- name: RemoveCommunityMember :execrows
+UPDATE community_members
+SET left_at = now()
+WHERE community_id = $1 AND persona_id = $2
+  AND left_at IS NULL AND status = 'active'
+`
+
+type RemoveCommunityMemberParams struct {
+	CommunityID int64
+	PersonaID   int64
+}
+
+func (q *Queries) RemoveCommunityMember(ctx context.Context, arg RemoveCommunityMemberParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, removeCommunityMember, arg.CommunityID, arg.PersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const replaceCommunityInterests = `-- name: ReplaceCommunityInterests :exec
 WITH removed AS (
     DELETE FROM community_interests
@@ -431,6 +782,47 @@ type ReplaceCommunityInterestsParams struct {
 func (q *Queries) ReplaceCommunityInterests(ctx context.Context, arg ReplaceCommunityInterestsParams) error {
 	_, err := q.db.ExecContext(ctx, replaceCommunityInterests, arg.CommunityID, pq.Array(arg.Ids))
 	return err
+}
+
+const resolveCommunityJoinRequest = `-- name: ResolveCommunityJoinRequest :execrows
+UPDATE community_members
+SET status = $1::community_membership_status_enum, resolved_at = now()
+WHERE community_id = $2 AND persona_id = $3
+  AND left_at IS NULL AND status = 'pending'
+`
+
+type ResolveCommunityJoinRequestParams struct {
+	Status      CommunityMembershipStatusEnum
+	CommunityID int64
+	PersonaID   int64
+}
+
+func (q *Queries) ResolveCommunityJoinRequest(ctx context.Context, arg ResolveCommunityJoinRequestParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, resolveCommunityJoinRequest, arg.Status, arg.CommunityID, arg.PersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const unfollowCommunity = `-- name: UnfollowCommunity :execrows
+UPDATE community_followers
+SET unfollowed_at = now()
+WHERE community_id = $1 AND persona_id = $2
+  AND unfollowed_at IS NULL
+`
+
+type UnfollowCommunityParams struct {
+	CommunityID int64
+	PersonaID   int64
+}
+
+func (q *Queries) UnfollowCommunity(ctx context.Context, arg UnfollowCommunityParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, unfollowCommunity, arg.CommunityID, arg.PersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const updateCommunity = `-- name: UpdateCommunity :one

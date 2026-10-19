@@ -21,22 +21,27 @@ func (h *Handler) community(c *gin.Context, wsMessage WsMessage, personaId int64
 		return
 	}
 
-	if wsMessage.Type == WsMessageTypeSubscribe {
-		if _, err := access.LoadCommunity(c.Request.Context(), h.q, ownerID, personaId); err != nil {
-			if errors.Is(err, access.ErrCommunityNotFound) {
-				c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-				return
-			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
+	// Unsubscribing also loads it, so a manager's request subjects are dropped too.
+	community, err := access.LoadCommunity(c.Request.Context(), h.q, ownerID, personaId)
+	if errors.Is(err, access.ErrCommunityNotFound) && wsMessage.Type == WsMessageTypeSubscribe {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	if err != nil && !errors.Is(err, access.ErrCommunityNotFound) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	stream := nats.CHANNEL_EVENTS_STREAM
 	owner := &models.Owner{ID: ownerID, Type: subject.OwnerTypeCommunity}
 	subjects := []*types.SubjectOffsets{}
-	for _, event := range []db.EventEnum{nats.EventCommunityInfo, nats.EventCommunityChannels} {
+	for _, event := range []db.EventEnum{nats.EventCommunityInfo, nats.EventCommunityChannels, nats.EventCommunityCounts} {
 		subjects = append(subjects, subject.New(&stream, owner, string(event), string(db.EventActionEnumUpdate)).GetSubjectWithOffsets(0))
+	}
+	if community.CanManage {
+		for _, action := range []db.EventActionEnum{db.EventActionEnumCreate, db.EventActionEnumDelete} {
+			subjects = append(subjects, subject.New(&stream, owner, string(nats.EventJoinRequest), string(action)).GetSubjectWithOffsets(0))
+		}
 	}
 
 	switch wsMessage.Type {
