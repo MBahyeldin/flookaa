@@ -148,6 +148,10 @@ WHERE c.deleted_at IS NULL
       JOIN interests i ON i.id = ci.interest_id
       WHERE ci.channel_id = c.id AND i.slug = sqlc.narg(interest_slug)::text
   ))
+  AND (sqlc.narg(community_id)::bigint IS NULL OR EXISTS (
+      SELECT 1 FROM community_channels cc
+      WHERE cc.channel_id = c.id AND cc.community_id = sqlc.narg(community_id)::bigint
+  ))
 LIMIT $2 OFFSET $3;
 
 -- -------------------------------

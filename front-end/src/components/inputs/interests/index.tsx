@@ -36,7 +36,7 @@ export default function InterestsInput({ field, value, error, touched, setFieldV
           retired={[]}
           value={ids}
           onChange={(next) => setFieldValue(field.id, next)}
-          max={MAX_CHANNEL_INTERESTS}
+          max={field.maxItems ?? MAX_CHANNEL_INTERESTS}
         />
       )}
       {error && (touched || ids.length > 0) && <p className="text-sm text-destructive">{error}</p>}

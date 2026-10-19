@@ -216,6 +216,13 @@ type Channel {
   isMember: Boolean!
   isFollower: Boolean!
   canModerate: Boolean!
+  community: CommunityRef
+}
+
+type CommunityRef {
+  id: Int64!
+  name: String!
+  slug: String!
 }
 
 # Queries

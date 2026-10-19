@@ -1,5 +1,5 @@
  
-import type { SubscribeChannelPayload, SubscribeDefaultPayload, SubscribePersonaPayload, WsEventMessage, WsMessage } from "@/types/Ws";
+import type { SubscribeChannelPayload, SubscribeDefaultPayload, SubscribePersonaPayload, SubscribeCommunityPayload, WsEventMessage, WsMessage } from "@/types/Ws";
 
 const WEBSOCKET_BASE_URL = import.meta.env.VITE_WEBSOCKET_BASE_URL;
 
@@ -185,6 +185,18 @@ export default class WebSocketService {
         const id = crypto.randomUUID();
         const payload = { owner: "PERSONA" as const, owner_id: personaId };
         this.sendMessage<SubscribePersonaPayload>({ type: "SUBSCRIBE", payload, id });
+
+        const unsubscribe = this.subscribe(id, callback);
+        return () => {
+            unsubscribe();
+            this.sendMessage({ type: "UNSUBSCRIBE", payload, id });
+        };
+    }
+
+    subscribeToCommunityEvents(communityId: number, callback: MessageListener) {
+        const id = crypto.randomUUID();
+        const payload = { owner: "COMMUNITY" as const, owner_id: communityId };
+        this.sendMessage<SubscribeCommunityPayload>({ type: "SUBSCRIBE", payload, id });
 
         const unsubscribe = this.subscribe(id, callback);
         return () => {

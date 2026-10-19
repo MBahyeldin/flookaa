@@ -5,6 +5,7 @@ import {
   Settings,
   UserPlus,
   HeartOff,
+  Boxes,
   // Bell,
   // BellOff,
 } from "lucide-react";
@@ -399,6 +400,15 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                     {/* The literal "category" badge was removed: Channel has no
                         category field in the schema, so it was always a stub. */}
                   </div>
+                  {channelData.getChannel.community && (
+                    <Link
+                      to={`/communities/${channelData.getChannel.community.slug}`}
+                      className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
+                    >
+                      <Boxes className="h-4 w-4" />
+                      Part of {channelData.getChannel.community.name}
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>

@@ -198,6 +198,7 @@ export type Channel = {
   __typename?: 'Channel';
   bannerImageUrl?: Maybe<Scalars['String']['output']>;
   canModerate: Scalars['Boolean']['output'];
+  community?: Maybe<CommunityRef>;
   createdAt: Scalars['DateTime']['output'];
   description?: Maybe<Scalars['String']['output']>;
   followersCount?: Maybe<Scalars['Int']['output']>;
@@ -273,6 +274,13 @@ export type CommentInput = {
   parentId: Scalars['ObjectId']['input'];
   privacy: Privacy;
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type CommunityRef = {
+  __typename?: 'CommunityRef';
+  id: Scalars['Int64']['output'];
+  name: Scalars['String']['output'];
+  slug: Scalars['String']['output'];
 };
 
 export type CountdownBlock = Block & {
@@ -775,7 +783,7 @@ export type GetChannelQueryVariables = Exact<{
 }>;
 
 
-export type GetChannelQuery = { __typename?: 'Query', getChannel?: { __typename?: 'Channel', id: any, name: string, description?: string | null, bannerImageUrl?: string | null, thumbnailUrl?: string | null, createdAt: string, totalPosts: number, isMember: boolean, isFollower: boolean, canModerate: boolean, membersCount?: number | null, followersCount?: number | null, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, owner: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null } } | null };
+export type GetChannelQuery = { __typename?: 'Query', getChannel?: { __typename?: 'Channel', id: any, name: string, description?: string | null, bannerImageUrl?: string | null, thumbnailUrl?: string | null, createdAt: string, totalPosts: number, isMember: boolean, isFollower: boolean, canModerate: boolean, membersCount?: number | null, followersCount?: number | null, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, owner: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null }, community?: { __typename?: 'CommunityRef', id: any, name: string, slug: string } | null } | null };
 
 export type GetCommentsQueryVariables = Exact<{
   parentId: Scalars['ObjectId']['input'];
@@ -1106,6 +1114,11 @@ export const GetChannelDocument = gql`
     isMember
     isFollower
     canModerate
+    community {
+      id
+      name
+      slug
+    }
     membersCount
     followersCount
   }

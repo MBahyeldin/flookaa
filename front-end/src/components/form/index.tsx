@@ -12,6 +12,7 @@ export default function Form({
   changeOpacityWhenSubmitting = false,
   onStatusChange,
   onValuesChange,
+  derive,
   children,
 }: {
   form: FormType;
@@ -20,6 +21,8 @@ export default function Form({
   changeOpacityWhenSubmitting?: boolean;
   onStatusChange: (status: { success: boolean; error: string | null, result: unknown }) => void;
   onValuesChange?: (values: Record<string, unknown>) => void;
+  /** Fields to set from the others, e.g. a slug that follows the name until edited. */
+  derive?: (values: Record<string, unknown>) => Record<string, unknown> | null;
   children?: React.ReactNode;
 }) {
   const {
@@ -48,6 +51,14 @@ export default function Form({
   useEffect(() => {
     onValuesChange?.(values);
   }, [values, onValuesChange]);
+
+  useEffect(() => {
+    const patch = derive?.(values);
+    if (!patch) return;
+    Object.entries(patch)
+      .filter(([key, value]) => values[key] !== value)
+      .forEach(([key, value]) => setFieldValue(key, value));
+  }, [values, derive, setFieldValue]);
 
   useEffect(() => {
     if (status) {

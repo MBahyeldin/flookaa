@@ -6,6 +6,9 @@ import (
 	"shared/pkg/types"
 )
 
+// Not a GraphQL OwnerType: communities own no content, only realtime subjects.
+const OwnerTypeCommunity models.OwnerType = "COMMUNITY"
+
 type SubjectHelper struct {
 	StreamName  *string
 	Owner       models.Owner

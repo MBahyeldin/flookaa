@@ -824,6 +824,43 @@ func (ec *executionContext) fieldContext_Channel_canModerate(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Channel_community(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_community,
+		func(ctx context.Context) (any, error) {
+			return obj.Community, nil
+		},
+		nil,
+		ec.marshalOCommunityRef2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCommunityRef,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_community(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_CommunityRef_id(ctx, field)
+			case "name":
+				return ec.fieldContext_CommunityRef_name(ctx, field)
+			case "slug":
+				return ec.fieldContext_CommunityRef_slug(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CommunityRef", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Comment__id(ctx context.Context, field graphql.CollectedField, obj *models.Comment) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1348,6 +1385,93 @@ func (ec *executionContext) fieldContext_Comment_personalizedMeta(_ context.Cont
 				return ec.fieldContext_PersonalizedMeta_acl(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type PersonalizedMeta", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CommunityRef_id(ctx context.Context, field graphql.CollectedField, obj *models.CommunityRef) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CommunityRef_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CommunityRef_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CommunityRef",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CommunityRef_name(ctx context.Context, field graphql.CollectedField, obj *models.CommunityRef) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CommunityRef_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CommunityRef_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CommunityRef",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CommunityRef_slug(ctx context.Context, field graphql.CollectedField, obj *models.CommunityRef) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CommunityRef_slug,
+		func(ctx context.Context) (any, error) {
+			return obj.Slug, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CommunityRef_slug(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CommunityRef",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3318,6 +3442,8 @@ func (ec *executionContext) fieldContext_Query_getChannel(ctx context.Context, f
 				return ec.fieldContext_Channel_isFollower(ctx, field)
 			case "canModerate":
 				return ec.fieldContext_Channel_canModerate(ctx, field)
+			case "community":
+				return ec.fieldContext_Channel_community(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Channel", field.Name)
 		},
@@ -3890,6 +4016,8 @@ func (ec *executionContext) _Channel(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "community":
+			out.Values[i] = ec._Channel_community(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4000,6 +4128,55 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "personalizedMeta":
 			out.Values[i] = ec._Comment_personalizedMeta(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var communityRefImplementors = []string{"CommunityRef"}
+
+func (ec *executionContext) _CommunityRef(ctx context.Context, sel ast.SelectionSet, obj *models.CommunityRef) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, communityRefImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CommunityRef")
+		case "id":
+			out.Values[i] = ec._CommunityRef_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._CommunityRef_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "slug":
+			out.Values[i] = ec._CommunityRef_slug(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -5040,6 +5217,13 @@ func (ec *executionContext) marshalOChannel2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐC
 		return graphql.Null
 	}
 	return ec._Channel(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOCommunityRef2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐCommunityRef(ctx context.Context, sel ast.SelectionSet, v *models.CommunityRef) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CommunityRef(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalODateTime2ᚖtimeᚐTime(ctx context.Context, v any) (*time.Time, error) {

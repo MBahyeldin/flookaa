@@ -108,6 +108,7 @@ type ComplexityRoot struct {
 	Channel struct {
 		BannerImageURL  func(childComplexity int) int
 		CanModerate     func(childComplexity int) int
+		Community       func(childComplexity int) int
 		CreatedAt       func(childComplexity int) int
 		Description     func(childComplexity int) int
 		FollowersCount  func(childComplexity int) int
@@ -155,6 +156,12 @@ type ComplexityRoot struct {
 		Tags              func(childComplexity int) int
 		Type              func(childComplexity int) int
 		UpdatedAt         func(childComplexity int) int
+	}
+
+	CommunityRef struct {
+		ID   func(childComplexity int) int
+		Name func(childComplexity int) int
+		Slug func(childComplexity int) int
 	}
 
 	CountdownBlock struct {
@@ -663,6 +670,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Channel.CanModerate(childComplexity), true
 
+	case "Channel.community":
+		if e.complexity.Channel.Community == nil {
+			break
+		}
+
+		return e.complexity.Channel.Community(childComplexity), true
+
 	case "Channel.createdAt":
 		if e.complexity.Channel.CreatedAt == nil {
 			break
@@ -928,6 +942,27 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Comment.UpdatedAt(childComplexity), true
+
+	case "CommunityRef.id":
+		if e.complexity.CommunityRef.ID == nil {
+			break
+		}
+
+		return e.complexity.CommunityRef.ID(childComplexity), true
+
+	case "CommunityRef.name":
+		if e.complexity.CommunityRef.Name == nil {
+			break
+		}
+
+		return e.complexity.CommunityRef.Name(childComplexity), true
+
+	case "CommunityRef.slug":
+		if e.complexity.CommunityRef.Slug == nil {
+			break
+		}
+
+		return e.complexity.CommunityRef.Slug(childComplexity), true
 
 	case "CountdownBlock.endedText":
 		if e.complexity.CountdownBlock.EndedText == nil {
@@ -2557,6 +2592,13 @@ type Channel {
   isMember: Boolean!
   isFollower: Boolean!
   canModerate: Boolean!
+  community: CommunityRef
+}
+
+type CommunityRef {
+  id: Int64!
+  name: String!
+  slug: String!
 }
 
 # Queries

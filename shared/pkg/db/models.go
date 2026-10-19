@@ -118,6 +118,57 @@ func (e ChannelVisibilityEnum) Valid() bool {
 	return false
 }
 
+type CommunityVisibilityEnum string
+
+const (
+	CommunityVisibilityEnumPublic  CommunityVisibilityEnum = "public"
+	CommunityVisibilityEnumPrivate CommunityVisibilityEnum = "private"
+)
+
+func (e *CommunityVisibilityEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = CommunityVisibilityEnum(s)
+	case string:
+		*e = CommunityVisibilityEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for CommunityVisibilityEnum: %T", src)
+	}
+	return nil
+}
+
+type NullCommunityVisibilityEnum struct {
+	CommunityVisibilityEnum CommunityVisibilityEnum
+	Valid                   bool // Valid is true if CommunityVisibilityEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullCommunityVisibilityEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.CommunityVisibilityEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.CommunityVisibilityEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullCommunityVisibilityEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.CommunityVisibilityEnum), nil
+}
+
+func (e CommunityVisibilityEnum) Valid() bool {
+	switch e {
+	case CommunityVisibilityEnumPublic,
+		CommunityVisibilityEnumPrivate:
+		return true
+	}
+	return false
+}
+
 type EventActionEnum string
 
 const (
@@ -940,6 +991,32 @@ type City struct {
 	UpdatedAt   time.Time
 	Flag        int16
 	WikiDataId  sql.NullString
+}
+
+type Community struct {
+	ID          int64
+	Name        string
+	Slug        string
+	Description string
+	Thumbnail   string
+	Banner      string
+	Visibility  CommunityVisibilityEnum
+	OwnerID     int64
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeletedAt   sql.NullTime
+}
+
+type CommunityChannel struct {
+	CommunityID int64
+	ChannelID   int64
+	CreatedAt   time.Time
+}
+
+type CommunityInterest struct {
+	CommunityID int64
+	InterestID  int64
+	CreatedAt   time.Time
 }
 
 type Country struct {

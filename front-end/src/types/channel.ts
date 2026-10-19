@@ -1,3 +1,4 @@
+import type { CommunityRef } from "./community";
 import type { Interest } from "./interest";
 
 type Channel = {
@@ -18,6 +19,7 @@ type Channel = {
   members_count: number;
   followers_count: number;
   interests: Interest[];
+  community: CommunityRef | null;
 };
 
 type ChannelInterests = { interests: Interest[]; can_edit: boolean };

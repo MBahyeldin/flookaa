@@ -2,6 +2,7 @@ package channels
 
 import (
 	"app/internal/auth"
+	"context"
 	"database/sql"
 	"net/http"
 	"shared/pkg/db"
@@ -27,6 +28,13 @@ type ChannelResponse struct {
 	MembersCount   int32         `json:"members_count"`
 	FollowersCount int32         `json:"followers_count"`
 	Interests      []InterestTag `json:"interests"`
+	Community      *CommunityRef `json:"community"`
+}
+
+type CommunityRef struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
 }
 
 func (h *Handler) GetAllChannels(c *gin.Context) {
@@ -55,11 +63,17 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 		}
 	}
 
+	var communityID sql.NullInt64
+	if id, err := strconv.ParseInt(c.Query("community_id"), 10, 64); err == nil && id > 0 {
+		communityID = sql.NullInt64{Int64: id, Valid: true}
+	}
+
 	channels, err := q.GetAllChannels(ctx, db.GetAllChannelsParams{
 		Limit:        limit,
 		Offset:       offset,
 		OwnerID:      personaId,
 		InterestSlug: sql.NullString{String: c.Query("interest"), Valid: c.Query("interest") != ""},
+		CommunityID:  communityID,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -71,6 +85,11 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 		ids[i] = ch.ID
 	}
 	tags, err := h.interestsByChannel(ctx, ids)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	communities, err := h.communitiesByChannel(ctx, ids)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -95,8 +114,24 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 			MembersCount:   ch.MembersCount,
 			FollowersCount: ch.FollowersCount,
 			Interests:      tags[ch.ID],
+			Community:      communities[ch.ID],
 		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"channels": channelsList})
+}
+
+func (h *Handler) communitiesByChannel(ctx context.Context, ids []int64) (map[int64]*CommunityRef, error) {
+	out := make(map[int64]*CommunityRef, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+	rows, err := h.q.ListChannelCommunities(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range rows {
+		out[r.ChannelID] = &CommunityRef{ID: r.ID, Name: r.Name, Slug: r.Slug}
+	}
+	return out, nil
 }

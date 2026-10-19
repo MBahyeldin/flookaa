@@ -8,6 +8,7 @@ import (
 	"app/internal/auth"
 	"app/internal/config"
 	"app/internal/db/postgres/handlers/channels"
+	"app/internal/db/postgres/handlers/communities"
 	"app/internal/db/postgres/handlers/followers"
 	"app/internal/db/postgres/handlers/geo"
 	"app/internal/db/postgres/handlers/interests"
@@ -107,7 +108,8 @@ func StartServer(cfg config.Server) error {
 	)
 	restHandlers := v1.Handlers{
 		Users:         usersHandler,
-		Channels:      channels.NewHandler(q, natsHelper),
+		Channels:      channels.NewHandler(pg, q, natsHelper),
+		Communities:   communities.NewHandler(pg, q, natsHelper),
 		Followers:     followersHandler,
 		Geo:           geo.NewHandler(q),
 		Interests:     interests.NewHandler(q),

@@ -160,6 +160,10 @@ WHERE c.deleted_at IS NULL
       JOIN interests i ON i.id = ci.interest_id
       WHERE ci.channel_id = c.id AND i.slug = $4::text
   ))
+  AND ($5::bigint IS NULL OR EXISTS (
+      SELECT 1 FROM community_channels cc
+      WHERE cc.channel_id = c.id AND cc.community_id = $5::bigint
+  ))
 LIMIT $2 OFFSET $3
 `
 
@@ -168,6 +172,7 @@ type GetAllChannelsParams struct {
 	Limit        int64
 	Offset       int64
 	InterestSlug sql.NullString
+	CommunityID  sql.NullInt64
 }
 
 type GetAllChannelsRow struct {
@@ -198,6 +203,7 @@ func (q *Queries) GetAllChannels(ctx context.Context, arg GetAllChannelsParams) 
 		arg.Limit,
 		arg.Offset,
 		arg.InterestSlug,
+		arg.CommunityID,
 	)
 	if err != nil {
 		return nil, err

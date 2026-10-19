@@ -28,9 +28,13 @@ type EventType =
   // Your own persona only (/control owner PERSONA); "follower" above too.
   | "follow_request"
   | "follow_invitation"
+  // A community's info or interests (info) or its channel list (channels)
+  // changed (/control owner COMMUNITY); no payload, refetch.
+  | "info"
+  | "channels"
   | "*";
 type EventActionType = "create" | "update" | "delete" | "*";
-type EventOwnerType = "CHANNEL" | "USER" | "PERSONA";
+type EventOwnerType = "CHANNEL" | "USER" | "PERSONA" | "COMMUNITY";
 
 type SubscribeChannelPayload = {
   event: EventType;
@@ -41,6 +45,11 @@ type SubscribeChannelPayload = {
 
 type SubscribePersonaPayload = {
   owner: "PERSONA";
+  owner_id: number;
+};
+
+type SubscribeCommunityPayload = {
+  owner: "COMMUNITY";
   owner_id: number;
 };
 
@@ -109,6 +118,7 @@ export type {
   SubscribeChannelPayload,
   SubscribeDefaultPayload,
   SubscribePersonaPayload,
+  SubscribeCommunityPayload,
   Event,
   EventType,
   EventActionType,

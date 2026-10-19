@@ -18,5 +18,6 @@ func SeedDb(cfg config.Seeder) error {
 	SeedRoles(q)
 	SeedUsers(q, cfg.AdminEmail, cfg.AdminPassword)
 	SeedInterests(q)
+	SeedCommunities(pg, q, cfg.AdminEmail)
 	return nil
 }

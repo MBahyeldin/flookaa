@@ -8,6 +8,9 @@ import DashboardSettingsProfile from "@/pages/(dashboard)/settings/profile";
 import AdminInterestsPage from "@/pages/(dashboard)/admin/interests";
 import ChannelsPage from "@/pages/(dashboard)/channels";
 import CreateChannelPage from "@/pages/(dashboard)/channels/create";
+import CommunitiesPage from "@/pages/(dashboard)/communities";
+import CreateCommunityPage from "@/pages/(dashboard)/communities/create";
+import CommunityPage from "@/pages/(dashboard)/communities/[slug]";
 import PersonaManagerPage from "@/pages/(dashboard)/persona-manager";
 import PersonaSettingsPage from "@/pages/(dashboard)/persona-manager/[id]";
 import NotificationsPage from "@/pages/(dashboard)/notifications";
@@ -23,6 +26,12 @@ export default function AppRouter() {
     <Routes>
       <Route path="/" element={<HomePage />} />
 
+
+      <Route path="/communities">
+        <Route index element={<CommunitiesPage />} />
+        <Route path="create" element={<CreateCommunityPage />} />
+        <Route path=":slug" element={<CommunityPage />} />
+      </Route>
 
       <Route path="/channels">
         {<Route index element={<ChannelsPage />} />}

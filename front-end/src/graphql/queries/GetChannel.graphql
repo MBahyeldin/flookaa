@@ -19,6 +19,11 @@ query GetChannel($id: Int64!) {
     isMember
     isFollower
     canModerate
+    community {
+      id
+      name
+      slug
+    }
     membersCount
     followersCount
   }

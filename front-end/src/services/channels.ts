@@ -7,9 +7,15 @@ if (!API_BASE_URL) {
   throw new Error("API_BASE_URL is not defined");
 }
 
-export async function getChannels(interest?: string): Promise<{ channels: Channel[] } | null> {
+export async function getChannels(
+  filter: { interest?: string; communityId?: number; limit?: number } = {},
+): Promise<{ channels: Channel[] } | null> {
   try {
-    const query = interest ? `?interest=${encodeURIComponent(interest)}` : "";
+    const params = new URLSearchParams();
+    if (filter.interest) params.set("interest", filter.interest);
+    if (filter.communityId) params.set("community_id", String(filter.communityId));
+    if (filter.limit) params.set("limit", String(filter.limit));
+    const query = params.size ? `?${params}` : "";
     const resp = await apiFetch(`${API_BASE_URL}/api/v1/channels/${query}`, {
       credentials: "include",
     });

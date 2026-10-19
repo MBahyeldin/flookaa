@@ -414,6 +414,7 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 	var posts []*models.Post
 	var ownerPersona models.Persona
 	var totalPostsCount int32
+	var community *models.CommunityRef
 	wg := sync.WaitGroup{}
 
 	// --- Fetch Channel Details + Owner ---
@@ -441,6 +442,15 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 			return
 		}
 		ownerPersona = *owners[channel.OwnerID]
+
+		refs, err := q.ListChannelCommunities(ctxTimeout, []int64{id})
+		if err != nil {
+			channelErr = err
+			return
+		}
+		if len(refs) > 0 {
+			community = &models.CommunityRef{ID: refs[0].ID, Name: refs[0].Name, Slug: refs[0].Slug}
+		}
 	}()
 
 	if canRead {
@@ -498,6 +508,7 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		MembersCount:   &channel.MembersCount,
 		FollowersCount: &channel.FollowersCount,
 		CanModerate:    channelAccess.CanModerate,
+		Community:      community,
 	}, nil
 }
 

@@ -1,4 +1,4 @@
-import { Blocks, Home, Inbox, Rss, Search, Settings, ScanFace, ShieldCheck, Tags, User2 } from "lucide-react";
+import { Blocks, Boxes, Home, Inbox, Rss, Search, Settings, ScanFace, ShieldCheck, Tags, User2 } from "lucide-react";
 
 import {
   Sidebar,
@@ -26,6 +26,11 @@ const items = [
     title: "Inbox",
     url: "/inbox",
     icon: Inbox,
+  },
+  {
+    title: "Communities",
+    url: "/communities",
+    icon: Boxes,
   },
   {
     title: "Channels",

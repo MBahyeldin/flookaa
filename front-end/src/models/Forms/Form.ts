@@ -3,6 +3,7 @@ import signupFormFieldsGroup from "@/lib/formFields/signup";
 import profileFieldsGroups from "@/lib/formFields/profile";
 import loginFormFieldsGroups from "@/lib/formFields/login";
 import channelFormFieldsGroups from "@/lib/formFields/channel";
+import communityFormFieldsGroups from "@/lib/formFields/community";
 import personaFormFieldsGroups, { personaSettingsFormGroups } from "@/lib/formFields/persona";
 import type { Persona } from "@/types/persona";
 
@@ -82,6 +83,26 @@ export class Form {
     relativeApiPath: "/api/v1/persona/create",
     method: "POST",
   });
+
+  static community(communityId?: number) {
+    return new Form({
+      id: "community_form",
+      name: "Community Form",
+      title: communityId ? "Edit community" : "Create a community",
+      description: "A community groups channels about the same topics.",
+      submitText: communityId ? "Save changes" : "Create community",
+      groups: communityFormFieldsGroups,
+      relativeApiPath: communityId ? `/api/v1/communities/${communityId}` : "/api/v1/communities/create",
+      method: communityId ? "PATCH" : "POST",
+      serverErrors: {
+        invalid_name: { field: "name", message: "Enter a name of at most 100 characters." },
+        invalid_slug: { field: "slug", message: "Use 3–50 lowercase letters, digits or single hyphens." },
+        slug_taken: { field: "slug", message: "Another community already uses this link." },
+        invalid_interests: { field: "interest_ids", message: "Pick 1 to 5 interests." },
+        invalid_interest: { field: "interest_ids", message: "One of these interests is no longer offered." },
+      },
+    });
+  }
 
   static personaSettings(persona: Persona) {
     return new Form({

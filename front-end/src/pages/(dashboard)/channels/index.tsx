@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Search, Filter, Plus } from "lucide-react";
+import { TrendingUp, Search, Plus } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { getChannels } from "@/services/channels";
-import { listInterests } from "@/services/interests";
-import type { Interest } from "@/types/interest";
+import InterestFilter from "@/components/interests/InterestFilter";
 import type { Channel } from "@/types/channel";
 import { Input } from "@/components/ui/input";
 import { ChannelCard } from "./ChannelCard";
@@ -19,18 +18,10 @@ export default function ChannelsPage() {
   const isUserLoggedIn = useIsUserLoggedIn();
   const [searchParams, setSearchParams] = useSearchParams();
   const interest = searchParams.get("interest") ?? "";
-  const [filters, setFilters] = useState<Interest[]>([]);
 
   if (!isUserLoggedIn) {
     nagivate("/");
   }
-
-
-  useEffect(() => {
-    listInterests().then((r) => {
-      if (r.ok) setFilters(r.data.flatMap((g) => g.interests));
-    });
-  }, []);
 
   const selectInterest = (slug: string) =>
     setSearchParams(
@@ -47,7 +38,7 @@ export default function ChannelsPage() {
     const fetchChannels = async () => {
       setLoading(true);
       try {
-        const response = await getChannels(interest || undefined);
+        const response = await getChannels({ interest: interest || undefined });
 
         if (response) {
           setChannels(response.channels ?? []);
@@ -89,31 +80,7 @@ export default function ChannelsPage() {
             <Input placeholder="Search channels..." className="pl-10 py-6" />
           </div>
 
-          {filters.length > 0 && (
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Interests:</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button variant={interest ? "outline" : "default"} size="sm" onClick={() => selectInterest("")}>
-                  All
-                </Button>
-                {filters.map((i) => (
-                  <Button
-                    key={i.id}
-                    variant={interest === i.slug ? "default" : "outline"}
-                    size="sm"
-                    aria-pressed={interest === i.slug}
-                    onClick={() => selectInterest(interest === i.slug ? "" : i.slug)}
-                  >
-                    <span aria-hidden>{i.emoji}</span>
-                    {i.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
+          <InterestFilter value={interest} onChange={selectInterest} />
         </div>
 
         {/* Channels Grid */}

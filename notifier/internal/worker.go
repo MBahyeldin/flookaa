@@ -56,7 +56,7 @@ func (w *Worker) Run(ctx context.Context) ([]jetstream.ConsumeContext, error) {
 		handle  handler
 	}{
 		{shared_nats.CONTENT_EVENTS_STREAM, "notifier-content", []string{shared_nats.CONTENT_EVENTS_STREAM + ".>"}, w.content},
-		{shared_nats.CHANNEL_EVENTS_STREAM, "notifier-channel", []string{shared_nats.CHANNEL_EVENTS_STREAM + ".>"}, w.channel},
+		{shared_nats.CHANNEL_EVENTS_STREAM, "notifier-channel", []string{shared_nats.CHANNEL_EVENTS_STREAM + ".CHANNEL.>"}, w.channel},
 		{user, "notifier-user", []string{
 			user + ".PERSONA.*." + string(shared_nats.EventFollower) + ".*",
 			user + ".PERSONA.*." + string(shared_nats.EventFollowRequest) + ".*",

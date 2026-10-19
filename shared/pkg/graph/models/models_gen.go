@@ -161,22 +161,23 @@ type CalloutBlockInput struct {
 }
 
 type Channel struct {
-	ID              int64     `json:"id"`
-	Name            string    `json:"name"`
-	Description     *string   `json:"description,omitempty"`
-	BannerImageURL  *string   `json:"bannerImageUrl,omitempty"`
-	ThumbnailURL    *string   `json:"thumbnailUrl,omitempty"`
-	ProfileImageURL *string   `json:"profileImageUrl,omitempty"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
-	Posts           []*Post   `json:"posts"`
-	TotalPosts      int32     `json:"totalPosts"`
-	Owner           *Persona  `json:"owner"`
-	MembersCount    *int32    `json:"membersCount,omitempty"`
-	FollowersCount  *int32    `json:"followersCount,omitempty"`
-	IsMember        bool      `json:"isMember"`
-	IsFollower      bool      `json:"isFollower"`
-	CanModerate     bool      `json:"canModerate"`
+	ID              int64         `json:"id"`
+	Name            string        `json:"name"`
+	Description     *string       `json:"description,omitempty"`
+	BannerImageURL  *string       `json:"bannerImageUrl,omitempty"`
+	ThumbnailURL    *string       `json:"thumbnailUrl,omitempty"`
+	ProfileImageURL *string       `json:"profileImageUrl,omitempty"`
+	CreatedAt       time.Time     `json:"createdAt"`
+	UpdatedAt       time.Time     `json:"updatedAt"`
+	Posts           []*Post       `json:"posts"`
+	TotalPosts      int32         `json:"totalPosts"`
+	Owner           *Persona      `json:"owner"`
+	MembersCount    *int32        `json:"membersCount,omitempty"`
+	FollowersCount  *int32        `json:"followersCount,omitempty"`
+	IsMember        bool          `json:"isMember"`
+	IsFollower      bool          `json:"isFollower"`
+	CanModerate     bool          `json:"canModerate"`
+	Community       *CommunityRef `json:"community,omitempty"`
 }
 
 type ChecklistBlock struct {
@@ -239,6 +240,12 @@ type CommentInput struct {
 	Privacy           Privacy      `json:"privacy"`
 	DeniedPersonaIds  []int64      `json:"deniedPersonaIds"`
 	AllowedPersonaIds []int64      `json:"allowedPersonaIds"`
+}
+
+type CommunityRef struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
 }
 
 type CountdownBlock struct {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, UserPlus, Heart, HeartOff, Lock, Clock } from "lucide-react";
+import { Users, UserPlus, Heart, HeartOff, Lock, Clock, Boxes } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ImageWithFallback } from "@/components/image-with-fallback";
 import { Badge } from "@/components/ui/badge";
@@ -12,9 +12,11 @@ import InterestChips from "@/components/interests/InterestChips";
 
 interface ChannelCardProps {
   channel: Channel;
+  /** On the community's own page the link would point back at it. */
+  hideCommunity?: boolean;
 }
 
-export function ChannelCard({ channel }: ChannelCardProps) {
+export function ChannelCard({ channel, hideCommunity = false }: ChannelCardProps) {
   const [joined, setJoined] = useState(
     channel.is_member || channel.is_owner || false
   );
@@ -104,6 +106,15 @@ export function ChannelCard({ channel }: ChannelCardProps) {
         <div className="space-y-4">
           <div>
             <h3 className="font-semibold mb-2 line-clamp-1">{channel.name}</h3>
+            {channel.community && !hideCommunity && (
+              <Link
+                to={`/communities/${channel.community.slug}`}
+                className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+              >
+                <Boxes className="h-3 w-3" />
+                Part of {channel.community.name}
+              </Link>
+            )}
             <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
               {channel.description}
             </p>

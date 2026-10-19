@@ -2,7 +2,13 @@ package channels
 
 import (
 	"app/internal/auth"
+	"app/internal/db/postgres/handlers/communities"
+	"context"
+	"database/sql"
+	"errors"
 	"net/http"
+	"shared/external/db/nats"
+	"shared/pkg/access"
 	"shared/pkg/db"
 
 	"github.com/gin-gonic/gin"
@@ -16,6 +22,72 @@ type CreateChannelRequest struct {
 	// public: readable by every persona; private: members only, joins need approval.
 	Visibility  string  `json:"visibility" binding:"required,oneof=public private"`
 	InterestIDs []int64 `json:"interest_ids"`
+	CommunityID int64   `json:"community_id"`
+}
+
+type CreateParams struct {
+	Name        string
+	Description string
+	Thumbnail   string
+	Banner      string
+	Visibility  db.ChannelVisibilityEnum
+	OwnerID     int64
+	InterestIDs []int64
+	// 0: standalone.
+	CommunityID int64
+}
+
+// Create stores a channel with its owner as active member, follower and
+// moderator, its interests and its community, in one transaction.
+func Create(ctx context.Context, pg *sql.DB, queries *db.Queries, p CreateParams) (db.Channel, error) {
+	tx, err := pg.BeginTx(ctx, nil)
+	if err != nil {
+		return db.Channel{}, err
+	}
+	defer tx.Rollback()
+	q := queries.WithTx(tx)
+
+	channel, err := q.CreateChannel(ctx, db.CreateChannelParams{
+		Name:        p.Name,
+		Description: p.Description,
+		Thumbnail:   p.Thumbnail,
+		Banner:      p.Banner,
+		OwnerID:     p.OwnerID,
+		Visibility:  p.Visibility,
+	})
+	if err != nil {
+		return db.Channel{}, err
+	}
+	if _, err := q.AddUserToChannel(ctx, db.AddUserToChannelParams{
+		ChannelID: channel.ID,
+		PersonaID: p.OwnerID,
+		Status:    db.ChannelMembershipStatusEnumActive,
+	}); err != nil {
+		return db.Channel{}, err
+	}
+	if _, err := q.FollowChannel(ctx, db.FollowChannelParams{ChannelID: channel.ID, PersonaID: p.OwnerID}); err != nil {
+		return db.Channel{}, err
+	}
+	moderatorRole, err := q.GetRoleByName(ctx, "moderator")
+	if err != nil {
+		return db.Channel{}, err
+	}
+	if _, err := q.AssignPersonaRoleInChannel(ctx, db.AssignPersonaRoleInChannelParams{
+		ChannelID: channel.ID,
+		PersonaID: p.OwnerID,
+		RoleID:    moderatorRole.ID,
+	}); err != nil {
+		return db.Channel{}, err
+	}
+	if err := q.ReplaceChannelInterests(ctx, db.ReplaceChannelInterestsParams{ChannelID: channel.ID, Ids: p.InterestIDs}); err != nil {
+		return db.Channel{}, err
+	}
+	if p.CommunityID != 0 {
+		if err := q.AddChannelToCommunity(ctx, db.AddChannelToCommunityParams{CommunityID: p.CommunityID, ChannelID: channel.ID}); err != nil {
+			return db.Channel{}, err
+		}
+	}
+	return channel, tx.Commit()
 }
 
 func (h *Handler) CreateChannel(c *gin.Context) {
@@ -41,66 +113,39 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 		return
 	}
 
-	q := h.q
+	if req.CommunityID != 0 {
+		community, err := access.LoadCommunity(ctx, h.q, req.CommunityID, personaId)
+		if errors.Is(err, access.ErrCommunityNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if !community.CanManage {
+			c.JSON(http.StatusForbidden, gin.H{"error": "not_community_manager"})
+			return
+		}
+	}
 
-	channel, err := q.CreateChannel(ctx, db.CreateChannelParams{
+	channel, err := Create(ctx, h.pg, h.q, CreateParams{
 		Name:        req.Name,
 		Description: req.Description,
 		Thumbnail:   req.Thumbnail,
 		Banner:      req.Banner,
-		OwnerID:     personaId,
 		Visibility:  db.ChannelVisibilityEnum(req.Visibility),
+		OwnerID:     personaId,
+		InterestIDs: req.InterestIDs,
+		CommunityID: req.CommunityID,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	_, err = q.AddUserToChannel(ctx, db.AddUserToChannelParams{
-		ChannelID: channel.ID,
-		PersonaID: personaId,
-		Status:    db.ChannelMembershipStatusEnumActive,
-	})
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	if req.CommunityID != 0 {
+		communities.Publish(ctx, h.nats, req.CommunityID, personaId, nats.EventCommunityChannels)
 	}
-
-	_, err = q.FollowChannel(ctx, db.FollowChannelParams{
-		ChannelID: channel.ID,
-		PersonaID: personaId,
-	})
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	moderatorRole, err := q.GetRoleByName(ctx, "moderator")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// AssignUserRoleInChannel
-	_, err = q.AssignPersonaRoleInChannel(ctx, db.AssignPersonaRoleInChannelParams{
-		ChannelID: channel.ID,
-		PersonaID: personaId,
-		RoleID:    moderatorRole.ID,
-	})
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := q.ReplaceChannelInterests(ctx, db.ReplaceChannelInterestsParams{ChannelID: channel.ID, Ids: req.InterestIDs}); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// create channel stream in jetStream to send notifications for members and subs
 
 	c.JSON(http.StatusOK, gin.H{"channel": channel})
-
 }
