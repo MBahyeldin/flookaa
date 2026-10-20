@@ -14,8 +14,8 @@ import (
 )
 
 const addChannelToCommunity = `-- name: AddChannelToCommunity :exec
-INSERT INTO community_channels (community_id, channel_id)
-VALUES ($1, $2)
+INSERT INTO community_channels (community_id, channel_id, status, resolved_at)
+VALUES ($1, $2, 'active', now())
 `
 
 type AddChannelToCommunityParams struct {
@@ -79,6 +79,26 @@ type AssignCommunityModeratorParams struct {
 // Only a live active member can be appointed; no row changed means it isn't one or already moderates.
 func (q *Queries) AssignCommunityModerator(ctx context.Context, arg AssignCommunityModeratorParams) (int64, error) {
 	result, err := q.db.ExecContext(ctx, assignCommunityModerator, arg.CommunityID, arg.PersonaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const cancelCommunityChannelRequest = `-- name: CancelCommunityChannelRequest :execrows
+UPDATE community_channels
+SET removed_at = now()
+WHERE community_id = $1 AND channel_id = $2
+  AND status = 'pending' AND removed_at IS NULL
+`
+
+type CancelCommunityChannelRequestParams struct {
+	CommunityID int64
+	ChannelID   int64
+}
+
+func (q *Queries) CancelCommunityChannelRequest(ctx context.Context, arg CancelCommunityChannelRequestParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, cancelCommunityChannelRequest, arg.CommunityID, arg.ChannelID)
 	if err != nil {
 		return 0, err
 	}
@@ -203,6 +223,41 @@ func (q *Queries) FollowCommunity(ctx context.Context, arg FollowCommunityParams
 	return result.RowsAffected()
 }
 
+const getChannelCommunityState = `-- name: GetChannelCommunityState :one
+SELECT cc.community_id, c.name, c.slug, cc.status, cc.resolved_at
+FROM community_channels cc
+JOIN communities c ON c.id = cc.community_id AND c.deleted_at IS NULL
+WHERE cc.channel_id = $1
+  AND (
+      (cc.status IN ('pending', 'active') AND cc.removed_at IS NULL)
+      OR (cc.status = 'rejected' AND cc.resolved_at >= now() - interval '30 days')
+  )
+ORDER BY (cc.status <> 'rejected') DESC, cc.resolved_at DESC NULLS LAST
+LIMIT 1
+`
+
+type GetChannelCommunityStateRow struct {
+	CommunityID int64
+	Name        string
+	Slug        string
+	Status      CommunityChannelStatusEnum
+	ResolvedAt  sql.NullTime
+}
+
+// For the channel's manage sheet: its live row, else its latest rejection inside the cooldown.
+func (q *Queries) GetChannelCommunityState(ctx context.Context, channelID int64) (GetChannelCommunityStateRow, error) {
+	row := q.db.QueryRowContext(ctx, getChannelCommunityState, channelID)
+	var i GetChannelCommunityStateRow
+	err := row.Scan(
+		&i.CommunityID,
+		&i.Name,
+		&i.Slug,
+		&i.Status,
+		&i.ResolvedAt,
+	)
+	return i, err
+}
+
 const getCommunityAccess = `-- name: GetCommunityAccess :one
 SELECT
     c.id,
@@ -277,7 +332,8 @@ func (q *Queries) GetCommunityAccess(ctx context.Context, arg GetCommunityAccess
 const getCommunityByID = `-- name: GetCommunityByID :one
 SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
-     WHERE cc.community_id = c.id AND ch.deleted_at IS NULL)::int AS channels_count
+     WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
+       AND ch.deleted_at IS NULL)::int AS channels_count
 FROM communities c
 WHERE c.id = $1 AND c.deleted_at IS NULL
 `
@@ -311,7 +367,8 @@ func (q *Queries) GetCommunityByID(ctx context.Context, id int64) (GetCommunityB
 const getCommunityBySlug = `-- name: GetCommunityBySlug :one
 SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
-     WHERE cc.community_id = c.id AND ch.deleted_at IS NULL)::int AS channels_count
+     WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
+       AND ch.deleted_at IS NULL)::int AS channels_count
 FROM communities c
 WHERE c.slug = $1 AND c.deleted_at IS NULL
 `
@@ -347,6 +404,7 @@ SELECT ch.id
 FROM community_channels cc
 JOIN channels ch ON ch.id = cc.channel_id
 WHERE cc.community_id = $1
+  AND cc.status = 'active' AND cc.removed_at IS NULL
   AND ch.name = $2
   AND ch.deleted_at IS NULL
 LIMIT 1
@@ -393,6 +451,27 @@ func (q *Queries) GetInterestIDsBySlugs(ctx context.Context, slugs []string) ([]
 		return nil, err
 	}
 	return items, nil
+}
+
+const getLiveChannelCommunity = `-- name: GetLiveChannelCommunity :one
+SELECT cc.community_id, cc.status
+FROM community_channels cc
+JOIN communities c ON c.id = cc.community_id AND c.deleted_at IS NULL
+WHERE cc.channel_id = $1
+  AND cc.status IN ('pending', 'active') AND cc.removed_at IS NULL
+`
+
+type GetLiveChannelCommunityRow struct {
+	CommunityID int64
+	Status      CommunityChannelStatusEnum
+}
+
+// The channel's live row: in a community, or a pending request to one.
+func (q *Queries) GetLiveChannelCommunity(ctx context.Context, channelID int64) (GetLiveChannelCommunityRow, error) {
+	row := q.db.QueryRowContext(ctx, getLiveChannelCommunity, channelID)
+	var i GetLiveChannelCommunityRow
+	err := row.Scan(&i.CommunityID, &i.Status)
+	return i, err
 }
 
 const joinCommunity = `-- name: JoinCommunity :one
@@ -455,6 +534,7 @@ SELECT cc.channel_id, c.id, c.name, c.slug
 FROM community_channels cc
 JOIN communities c ON c.id = cc.community_id
 WHERE cc.channel_id = ANY($1::bigint[])
+  AND cc.status = 'active' AND cc.removed_at IS NULL
   AND c.deleted_at IS NULL
 `
 
@@ -496,7 +576,8 @@ func (q *Queries) ListChannelCommunities(ctx context.Context, channelIds []int64
 const listCommunities = `-- name: ListCommunities :many
 SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
-     WHERE cc.community_id = c.id AND ch.deleted_at IS NULL)::int AS channels_count
+     WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
+       AND ch.deleted_at IS NULL)::int AS channels_count
 FROM communities c
 WHERE c.deleted_at IS NULL
   AND ($1::text IS NULL OR EXISTS (
@@ -543,6 +624,60 @@ func (q *Queries) ListCommunities(ctx context.Context, arg ListCommunitiesParams
 			&i.Community.DeletedAt,
 			&i.Community.Rules,
 			&i.ChannelsCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCommunityChannelRequests = `-- name: ListCommunityChannelRequests :many
+SELECT
+    ch.id AS channel_id,
+    ch.name,
+    ch.description,
+    ch.thumbnail,
+    ch.visibility,
+    cc.created_at AS requested_at
+FROM community_channels cc
+JOIN channels ch ON ch.id = cc.channel_id AND ch.deleted_at IS NULL
+WHERE cc.community_id = $1
+  AND cc.status = 'pending' AND cc.removed_at IS NULL
+ORDER BY cc.created_at, ch.id
+`
+
+type ListCommunityChannelRequestsRow struct {
+	ChannelID   int64
+	Name        string
+	Description string
+	Thumbnail   string
+	Visibility  ChannelVisibilityEnum
+	RequestedAt time.Time
+}
+
+func (q *Queries) ListCommunityChannelRequests(ctx context.Context, communityID int64) ([]ListCommunityChannelRequestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCommunityChannelRequests, communityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCommunityChannelRequestsRow
+	for rows.Next() {
+		var i ListCommunityChannelRequestsRow
+		if err := rows.Scan(
+			&i.ChannelID,
+			&i.Name,
+			&i.Description,
+			&i.Thumbnail,
+			&i.Visibility,
+			&i.RequestedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -795,6 +930,146 @@ func (q *Queries) ListCommunityStats(ctx context.Context, arg ListCommunityStats
 	return items, nil
 }
 
+const listCommunitySummaries = `-- name: ListCommunitySummaries :many
+SELECT id, name, slug, thumbnail
+FROM communities
+WHERE id = ANY($1::bigint[])
+  AND deleted_at IS NULL
+`
+
+type ListCommunitySummariesRow struct {
+	ID        int64
+	Name      string
+	Slug      string
+	Thumbnail string
+}
+
+func (q *Queries) ListCommunitySummaries(ctx context.Context, ids []int64) ([]ListCommunitySummariesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCommunitySummaries, pq.Array(ids))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCommunitySummariesRow
+	for rows.Next() {
+		var i ListCommunitySummariesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.Thumbnail,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listModeratedChannels = `-- name: ListModeratedChannels :many
+SELECT
+    ch.id,
+    ch.name,
+    ch.thumbnail,
+    ch.visibility,
+    COALESCE(lc.community_id, 0)::bigint AS community_id,
+    COALESCE(lc.name, '')::text AS community_name,
+    COALESCE(lc.slug, '')::text AS community_slug,
+    COALESCE(lc.status::text, '')::text AS community_status
+FROM channels ch
+LEFT JOIN LATERAL (
+    SELECT cc.community_id, c.name, c.slug, cc.status
+    FROM community_channels cc
+    JOIN communities c ON c.id = cc.community_id AND c.deleted_at IS NULL
+    WHERE cc.channel_id = ch.id
+      AND cc.status IN ('pending', 'active') AND cc.removed_at IS NULL
+) lc ON true
+WHERE ch.deleted_at IS NULL
+  AND (
+      ch.owner_id = $1
+      OR EXISTS (
+          SELECT 1
+          FROM channel_roles cr
+          JOIN roles r ON r.id = cr.role_id
+          WHERE cr.channel_id = ch.id
+            AND cr.persona_id = $1
+            AND cr.deleted_at IS NULL
+            AND r.name IN ('moderator', 'Administrator')
+      )
+  )
+ORDER BY ch.name, ch.id
+`
+
+type ListModeratedChannelsRow struct {
+	ID              int64
+	Name            string
+	Thumbnail       string
+	Visibility      ChannelVisibilityEnum
+	CommunityID     int64
+	CommunityName   string
+	CommunitySlug   string
+	CommunityStatus string
+}
+
+// Channels the persona owns or moderates, with their live community row.
+func (q *Queries) ListModeratedChannels(ctx context.Context, personaID int64) ([]ListModeratedChannelsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listModeratedChannels, personaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListModeratedChannelsRow
+	for rows.Next() {
+		var i ListModeratedChannelsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Thumbnail,
+			&i.Visibility,
+			&i.CommunityID,
+			&i.CommunityName,
+			&i.CommunitySlug,
+			&i.CommunityStatus,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const removeCommunityChannel = `-- name: RemoveCommunityChannel :execrows
+UPDATE community_channels
+SET removed_at = now()
+WHERE community_id = $1 AND channel_id = $2
+  AND status = 'active' AND removed_at IS NULL
+`
+
+type RemoveCommunityChannelParams struct {
+	CommunityID int64
+	ChannelID   int64
+}
+
+func (q *Queries) RemoveCommunityChannel(ctx context.Context, arg RemoveCommunityChannelParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, removeCommunityChannel, arg.CommunityID, arg.ChannelID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const removeCommunityMember = `-- name: RemoveCommunityMember :execrows
 UPDATE community_members
 SET left_at = now()
@@ -856,6 +1131,53 @@ type ReplaceCommunityInterestsParams struct {
 func (q *Queries) ReplaceCommunityInterests(ctx context.Context, arg ReplaceCommunityInterestsParams) error {
 	_, err := q.db.ExecContext(ctx, replaceCommunityInterests, arg.CommunityID, pq.Array(arg.Ids))
 	return err
+}
+
+const requestCommunityChannel = `-- name: RequestCommunityChannel :one
+INSERT INTO community_channels (community_id, channel_id, status, requested_by)
+VALUES ($1, $2, 'pending', $3)
+ON CONFLICT (community_id, channel_id) DO UPDATE
+SET status = 'pending', requested_by = EXCLUDED.requested_by, created_at = now(),
+    resolved_at = NULL, removed_at = NULL
+WHERE community_channels.removed_at IS NOT NULL
+   OR (community_channels.status = 'rejected' AND community_channels.resolved_at < now() - interval '30 days')
+RETURNING status
+`
+
+type RequestCommunityChannelParams struct {
+	CommunityID int64
+	ChannelID   int64
+	RequestedBy sql.NullInt64
+}
+
+// Revives a cancelled or removed row, or a rejection past its 30-day cooldown.
+// No row: a live row for this pair, or a rejection inside the cooldown.
+func (q *Queries) RequestCommunityChannel(ctx context.Context, arg RequestCommunityChannelParams) (CommunityChannelStatusEnum, error) {
+	row := q.db.QueryRowContext(ctx, requestCommunityChannel, arg.CommunityID, arg.ChannelID, arg.RequestedBy)
+	var status CommunityChannelStatusEnum
+	err := row.Scan(&status)
+	return status, err
+}
+
+const resolveCommunityChannelRequest = `-- name: ResolveCommunityChannelRequest :one
+UPDATE community_channels
+SET status = $1::community_channel_status_enum, resolved_at = now()
+WHERE community_id = $2 AND channel_id = $3
+  AND status = 'pending' AND removed_at IS NULL
+RETURNING requested_by
+`
+
+type ResolveCommunityChannelRequestParams struct {
+	Status      CommunityChannelStatusEnum
+	CommunityID int64
+	ChannelID   int64
+}
+
+func (q *Queries) ResolveCommunityChannelRequest(ctx context.Context, arg ResolveCommunityChannelRequestParams) (sql.NullInt64, error) {
+	row := q.db.QueryRowContext(ctx, resolveCommunityChannelRequest, arg.Status, arg.CommunityID, arg.ChannelID)
+	var requested_by sql.NullInt64
+	err := row.Scan(&requested_by)
+	return requested_by, err
 }
 
 const resolveCommunityJoinRequest = `-- name: ResolveCommunityJoinRequest :execrows

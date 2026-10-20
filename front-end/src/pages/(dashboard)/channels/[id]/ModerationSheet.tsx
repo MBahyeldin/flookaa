@@ -21,6 +21,7 @@ import type { ChannelMember, JoinRequest } from "@/types/channel";
 import { formatDateOnly } from "@/utils/formateDate";
 import type { Interest } from "@/types/interest";
 import ChannelInterestsEditor from "./ChannelInterestsEditor";
+import ChannelCommunityPanel from "./ChannelCommunityPanel";
 
 /**
  * Join requests and members for owners, channel moderators and admins. Both
@@ -32,11 +33,13 @@ export default function ModerationSheet({
   open,
   onOpenChange,
   onInterestsSaved,
+  communityKey,
 }: {
   channelId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onInterestsSaved?: (interests: Interest[]) => void;
+  communityKey: number;
 }) {
   const [requests, setRequests] = useState<JoinRequest[]>([]);
   const [members, setMembers] = useState<ChannelMember[]>([]);
@@ -106,7 +109,7 @@ export default function ModerationSheet({
         <SheetHeader>
           <SheetTitle>Manage channel</SheetTitle>
           <SheetDescription>
-            Approve people who asked to join, remove members, and tag the channel's interests.
+            Approve people who asked to join, remove members, tag the channel's interests, and see its community.
           </SheetDescription>
         </SheetHeader>
 
@@ -131,6 +134,7 @@ export default function ModerationSheet({
                 </TabsTrigger>
                 <TabsTrigger value="members">Members ({members.length})</TabsTrigger>
                 <TabsTrigger value="interests">Interests</TabsTrigger>
+                <TabsTrigger value="community">Community</TabsTrigger>
               </TabsList>
 
               <TabsContent value="requests" className="mt-2">
@@ -194,6 +198,9 @@ export default function ModerationSheet({
               </TabsContent>
               <TabsContent value="interests" className="mt-2">
                 <ChannelInterestsEditor channelId={channelId} onSaved={onInterestsSaved} />
+              </TabsContent>
+              <TabsContent value="community" className="mt-2">
+                <ChannelCommunityPanel channelId={channelId} reloadKey={communityKey} />
               </TabsContent>
             </Tabs>
           )}

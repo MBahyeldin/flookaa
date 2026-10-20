@@ -29,14 +29,16 @@ RETURNING *;
 -- name: GetCommunityByID :one
 SELECT sqlc.embed(c),
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
-     WHERE cc.community_id = c.id AND ch.deleted_at IS NULL)::int AS channels_count
+     WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
+       AND ch.deleted_at IS NULL)::int AS channels_count
 FROM communities c
 WHERE c.id = sqlc.arg(id) AND c.deleted_at IS NULL;
 
 -- name: GetCommunityBySlug :one
 SELECT sqlc.embed(c),
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
-     WHERE cc.community_id = c.id AND ch.deleted_at IS NULL)::int AS channels_count
+     WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
+       AND ch.deleted_at IS NULL)::int AS channels_count
 FROM communities c
 WHERE c.slug = sqlc.arg(slug) AND c.deleted_at IS NULL;
 
@@ -81,7 +83,8 @@ WHERE c.id = sqlc.arg(community_id)::bigint AND c.deleted_at IS NULL;
 -- name: ListCommunities :many
 SELECT sqlc.embed(c),
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
-     WHERE cc.community_id = c.id AND ch.deleted_at IS NULL)::int AS channels_count
+     WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
+       AND ch.deleted_at IS NULL)::int AS channels_count
 FROM communities c
 WHERE c.deleted_at IS NULL
   AND (sqlc.narg(interest_slug)::text IS NULL OR EXISTS (
@@ -121,14 +124,15 @@ SELECT sqlc.arg(community_id), unnest(sqlc.arg(ids)::bigint[])
 ON CONFLICT DO NOTHING;
 
 -- name: AddChannelToCommunity :exec
-INSERT INTO community_channels (community_id, channel_id)
-VALUES (sqlc.arg(community_id), sqlc.arg(channel_id));
+INSERT INTO community_channels (community_id, channel_id, status, resolved_at)
+VALUES (sqlc.arg(community_id), sqlc.arg(channel_id), 'active', now());
 
 -- name: ListChannelCommunities :many
 SELECT cc.channel_id, c.id, c.name, c.slug
 FROM community_channels cc
 JOIN communities c ON c.id = cc.community_id
 WHERE cc.channel_id = ANY(sqlc.arg(channel_ids)::bigint[])
+  AND cc.status = 'active' AND cc.removed_at IS NULL
   AND c.deleted_at IS NULL;
 
 -- name: GetCommunityChannelIDByName :one
@@ -136,6 +140,7 @@ SELECT ch.id
 FROM community_channels cc
 JOIN channels ch ON ch.id = cc.channel_id
 WHERE cc.community_id = sqlc.arg(community_id)
+  AND cc.status = 'active' AND cc.removed_at IS NULL
   AND ch.name = sqlc.arg(name)
   AND ch.deleted_at IS NULL
 LIMIT 1;
@@ -297,4 +302,110 @@ WHERE r.id = cr.role_id AND r.name = 'moderator'
 UPDATE community_roles
 SET deleted_at = now(), updated_at = now()
 WHERE community_id = sqlc.arg(community_id) AND persona_id = sqlc.arg(persona_id)
+  AND deleted_at IS NULL;
+
+-- The channel's live row: in a community, or a pending request to one.
+-- name: GetLiveChannelCommunity :one
+SELECT cc.community_id, cc.status
+FROM community_channels cc
+JOIN communities c ON c.id = cc.community_id AND c.deleted_at IS NULL
+WHERE cc.channel_id = sqlc.arg(channel_id)
+  AND cc.status IN ('pending', 'active') AND cc.removed_at IS NULL;
+
+-- For the channel's manage sheet: its live row, else its latest rejection inside the cooldown.
+-- name: GetChannelCommunityState :one
+SELECT cc.community_id, c.name, c.slug, cc.status, cc.resolved_at
+FROM community_channels cc
+JOIN communities c ON c.id = cc.community_id AND c.deleted_at IS NULL
+WHERE cc.channel_id = sqlc.arg(channel_id)
+  AND (
+      (cc.status IN ('pending', 'active') AND cc.removed_at IS NULL)
+      OR (cc.status = 'rejected' AND cc.resolved_at >= now() - interval '30 days')
+  )
+ORDER BY (cc.status <> 'rejected') DESC, cc.resolved_at DESC NULLS LAST
+LIMIT 1;
+
+-- Revives a cancelled or removed row, or a rejection past its 30-day cooldown.
+-- No row: a live row for this pair, or a rejection inside the cooldown.
+-- name: RequestCommunityChannel :one
+INSERT INTO community_channels (community_id, channel_id, status, requested_by)
+VALUES (sqlc.arg(community_id), sqlc.arg(channel_id), 'pending', sqlc.arg(requested_by))
+ON CONFLICT (community_id, channel_id) DO UPDATE
+SET status = 'pending', requested_by = EXCLUDED.requested_by, created_at = now(),
+    resolved_at = NULL, removed_at = NULL
+WHERE community_channels.removed_at IS NOT NULL
+   OR (community_channels.status = 'rejected' AND community_channels.resolved_at < now() - interval '30 days')
+RETURNING status;
+
+-- name: CancelCommunityChannelRequest :execrows
+UPDATE community_channels
+SET removed_at = now()
+WHERE community_id = sqlc.arg(community_id) AND channel_id = sqlc.arg(channel_id)
+  AND status = 'pending' AND removed_at IS NULL;
+
+-- name: ResolveCommunityChannelRequest :one
+UPDATE community_channels
+SET status = sqlc.arg(status)::community_channel_status_enum, resolved_at = now()
+WHERE community_id = sqlc.arg(community_id) AND channel_id = sqlc.arg(channel_id)
+  AND status = 'pending' AND removed_at IS NULL
+RETURNING requested_by;
+
+-- name: RemoveCommunityChannel :execrows
+UPDATE community_channels
+SET removed_at = now()
+WHERE community_id = sqlc.arg(community_id) AND channel_id = sqlc.arg(channel_id)
+  AND status = 'active' AND removed_at IS NULL;
+
+-- name: ListCommunityChannelRequests :many
+SELECT
+    ch.id AS channel_id,
+    ch.name,
+    ch.description,
+    ch.thumbnail,
+    ch.visibility,
+    cc.created_at AS requested_at
+FROM community_channels cc
+JOIN channels ch ON ch.id = cc.channel_id AND ch.deleted_at IS NULL
+WHERE cc.community_id = sqlc.arg(community_id)
+  AND cc.status = 'pending' AND cc.removed_at IS NULL
+ORDER BY cc.created_at, ch.id;
+
+-- Channels the persona owns or moderates, with their live community row.
+-- name: ListModeratedChannels :many
+SELECT
+    ch.id,
+    ch.name,
+    ch.thumbnail,
+    ch.visibility,
+    COALESCE(lc.community_id, 0)::bigint AS community_id,
+    COALESCE(lc.name, '')::text AS community_name,
+    COALESCE(lc.slug, '')::text AS community_slug,
+    COALESCE(lc.status::text, '')::text AS community_status
+FROM channels ch
+LEFT JOIN LATERAL (
+    SELECT cc.community_id, c.name, c.slug, cc.status
+    FROM community_channels cc
+    JOIN communities c ON c.id = cc.community_id AND c.deleted_at IS NULL
+    WHERE cc.channel_id = ch.id
+      AND cc.status IN ('pending', 'active') AND cc.removed_at IS NULL
+) lc ON true
+WHERE ch.deleted_at IS NULL
+  AND (
+      ch.owner_id = sqlc.arg(persona_id)
+      OR EXISTS (
+          SELECT 1
+          FROM channel_roles cr
+          JOIN roles r ON r.id = cr.role_id
+          WHERE cr.channel_id = ch.id
+            AND cr.persona_id = sqlc.arg(persona_id)
+            AND cr.deleted_at IS NULL
+            AND r.name IN ('moderator', 'Administrator')
+      )
+  )
+ORDER BY ch.name, ch.id;
+
+-- name: ListCommunitySummaries :many
+SELECT id, name, slug, thumbnail
+FROM communities
+WHERE id = ANY(sqlc.arg(ids)::bigint[])
   AND deleted_at IS NULL;

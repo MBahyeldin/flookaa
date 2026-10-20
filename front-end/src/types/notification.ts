@@ -11,7 +11,10 @@ type NotificationKind =
   | "follow_request"
   | "follow_request_approved"
   | "follow_invitation"
-  | "follow_invitation_accepted";
+  | "follow_invitation_accepted"
+  | "channel_request"
+  | "channel_request_approved"
+  | "channel_request_rejected";
 
 type NotificationActor = {
   id: number;
@@ -28,6 +31,13 @@ type NotificationChannel = {
   thumbnail: string;
 };
 
+type NotificationCommunity = {
+  id: number;
+  name: string;
+  slug: string;
+  thumbnail: string;
+};
+
 /**
  * Facts fixed for the notification's life (shared/pkg/notifications.Data).
  * Every field is optional: rows written before a field existed lack it.
@@ -35,13 +45,15 @@ type NotificationChannel = {
 type NotificationData = {
   /** The post at the top of the thread, for content kinds. */
   post_id?: string;
+  /** The channel a community kind is about. */
+  channel_id?: number;
 };
 
 type Notification = {
   id: number;
   /** A string, not NotificationKind: the backend may add kinds first. */
   kind: string;
-  subject: { type: "POST" | "COMMENT" | "CHANNEL" | "PERSONA"; id: string };
+  subject: { type: "POST" | "COMMENT" | "CHANNEL" | "PERSONA" | "COMMUNITY"; id: string };
   /** Null for personal (membership, follow) notifications. */
   scope: { type: "CHANNEL"; id: number } | null;
   /** How many personas are behind it (1 for single-actor kinds). */
@@ -50,6 +62,8 @@ type Notification = {
   latest_actor: NotificationActor | null;
   /** Read-time lookup; null when the channel was deleted. */
   channel: NotificationChannel | null;
+  /** The subject of community kinds, looked up at read time; null otherwise or when deleted. */
+  community: NotificationCommunity | null;
   data?: NotificationData;
   read: boolean;
   updated_at: string;
@@ -65,6 +79,7 @@ export type {
   NotificationKind,
   NotificationActor,
   NotificationChannel,
+  NotificationCommunity,
   NotificationData,
   Notification,
   NotificationPage,

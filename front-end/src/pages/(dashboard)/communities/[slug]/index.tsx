@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { Check, Clock, Lock, Pencil, Plus, Users } from "lucide-react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Check, Clock, Lock, Pencil, Plus, Send, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -25,29 +25,43 @@ import {
   getCommunityBySlug,
   joinCommunity,
   leaveCommunity,
+  listChannelRequests,
   listCommunityRequests,
+  listModeratedChannels,
+  removeCommunityChannel,
   unfollowCommunity,
 } from "@/services/communities";
 import { getChannels } from "@/services/channels";
 import { useWebsocketService } from "@/Websocket.context";
 import type { Channel } from "@/types/channel";
-import type { Community } from "@/types/community";
+import type { Community, ModeratedChannel } from "@/types/community";
 import { ChannelCard } from "../../channels/ChannelCard";
 import CommunityForm from "../CommunityForm";
 import MembersSheet, { type MembersTab } from "./MembersSheet";
+import SuggestChannelDialog from "./SuggestChannelDialog";
+
+const membersTabs: MembersTab[] = ["members", "requests", "channels"];
 
 export default function CommunityPage() {
   const { slug = "" } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { websocketService } = useWebsocketService();
   const [community, setCommunity] = useState<Community | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "missing" | "failed">("loading");
   const [channels, setChannels] = useState<Channel[] | null>(null);
   const [editing, setEditing] = useState(false);
-  const [membersTab, setMembersTab] = useState<MembersTab | null>(null);
+  const linkedTab = searchParams.get("members") as MembersTab | null;
+  const [membersTab, setMembersTab] = useState<MembersTab | null>(
+    linkedTab && membersTabs.includes(linkedTab) ? linkedTab : null,
+  );
   const [membersKey, setMembersKey] = useState(0);
   const [requestsKey, setRequestsKey] = useState(0);
   const [pendingRequests, setPendingRequests] = useState(0);
+  const [channelRequestsKey, setChannelRequestsKey] = useState(0);
+  const [pendingChannelRequests, setPendingChannelRequests] = useState(0);
+  const [moderated, setModerated] = useState<ModeratedChannel[] | null>(null);
+  const [suggestOpen, setSuggestOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
 
@@ -108,6 +122,26 @@ export default function CommunityPage() {
   }, [communityId, canManage, requestsKey]);
 
   useEffect(() => {
+    if (!communityId || !canManage) return;
+    let alive = true;
+    listChannelRequests(communityId).then((r) => {
+      if (alive && r.ok) setPendingChannelRequests(r.data.requests.length);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [communityId, canManage, channelRequestsKey]);
+
+  const loadModerated = useCallback(async () => {
+    const r = await listModeratedChannels();
+    if (r.ok) setModerated(r.data.channels);
+  }, []);
+
+  useEffect(() => {
+    loadModerated();
+  }, [loadModerated]);
+
+  useEffect(() => {
     if (!communityId || !websocketService) return;
     return websocketService.subscribeToCommunityEvents(communityId, (msg) => {
       if (msg.event.name === "info") reloadCommunity();
@@ -120,6 +154,7 @@ export default function CommunityPage() {
         setMembersKey((k) => k + 1);
       }
       if (msg.event.name === "join_request") setRequestsKey((k) => k + 1);
+      if (msg.event.name === "channel_request") setChannelRequestsKey((k) => k + 1);
       if (msg.event.name === "moderator") {
         reloadCommunity();
         setMembersKey((k) => k + 1);
@@ -148,6 +183,25 @@ export default function CommunityPage() {
     },
     [reloadCommunity],
   );
+
+  const openMembers = (tab: MembersTab | null) => {
+    setMembersTab(tab);
+    if (searchParams.has("members")) {
+      searchParams.delete("members");
+      setSearchParams(searchParams, { replace: true });
+    }
+  };
+
+  const removeChannel = async (channel: Channel) => {
+    if (!community || !confirm(`Remove ${channel.name} from ${community.name}?`)) return;
+    const r = await removeCommunityChannel(community.id, Number(channel.id));
+    if (!r.ok) {
+      toast.error("Couldn't remove the channel. Please try again.");
+      return;
+    }
+    toast.success(`${channel.name} was removed from the community`);
+    setChannels((prev) => prev?.filter((c) => c.id !== channel.id) ?? null);
+  };
 
   const join = () => {
     if (!community) return;
@@ -261,6 +315,19 @@ export default function CommunityPage() {
               {community.following ? "Following" : "Follow"}
             </Button>
           )}
+          {moderated?.some((c) => c.community_status === "none" || c.community?.id === community.id) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                loadModerated();
+                setSuggestOpen(true);
+              }}
+            >
+              <Send className="mr-2 h-4 w-4" />
+              Suggest a channel
+            </Button>
+          )}
           {community.can_manage && (
             <>
               <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
@@ -281,7 +348,7 @@ export default function CommunityPage() {
       <div className="mt-6 space-y-3 px-2 sm:px-6">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
           {canSeeInside ? (
-            <button type="button" className="flex items-center gap-1 hover:text-foreground hover:underline" onClick={() => setMembersTab("members")}>
+            <button type="button" className="flex items-center gap-1 hover:text-foreground hover:underline" onClick={() => openMembers("members")}>
               <Users className="h-4 w-4" />
               {community.members_count === 1 ? "1 member" : `${community.members_count} members`}
             </button>
@@ -295,8 +362,13 @@ export default function CommunityPage() {
             <span>{community.followers_count === 1 ? "1 follower" : `${community.followers_count} followers`}</span>
           )}
           {community.can_manage && pendingRequests > 0 && (
-            <button type="button" className="font-medium text-primary hover:underline" onClick={() => setMembersTab("requests")}>
+            <button type="button" className="font-medium text-primary hover:underline" onClick={() => openMembers("requests")}>
               {pendingRequests === 1 ? "1 request to join" : `${pendingRequests} requests to join`}
+            </button>
+          )}
+          {community.can_manage && pendingChannelRequests > 0 && (
+            <button type="button" className="font-medium text-primary hover:underline" onClick={() => openMembers("channels")}>
+              {pendingChannelRequests === 1 ? "1 channel wants to join" : `${pendingChannelRequests} channels want to join`}
             </button>
           )}
         </div>
@@ -337,9 +409,23 @@ export default function CommunityPage() {
           <p className="py-8 text-muted-foreground">No channels in this community yet.</p>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {channels.map((channel) => (
-              <ChannelCard key={channel.id} channel={channel} hideCommunity />
-            ))}
+            {channels.map((channel) =>
+              community.can_manage ? (
+                <div key={channel.id} className="flex flex-col gap-2">
+                  <ChannelCard channel={channel} hideCommunity />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="self-end text-destructive hover:text-destructive"
+                    onClick={() => removeChannel(channel)}
+                  >
+                    Remove from community
+                  </Button>
+                </div>
+              ) : (
+                <ChannelCard key={channel.id} channel={channel} hideCommunity />
+              ),
+            )}
           </div>
         )}
       </section>
@@ -348,9 +434,19 @@ export default function CommunityPage() {
         community={community}
         tab={membersTab}
         onTabChange={setMembersTab}
-        onClose={() => setMembersTab(null)}
+        onClose={() => openMembers(null)}
         membersKey={membersKey}
         requestsKey={requestsKey}
+        channelRequestsKey={channelRequestsKey}
+        onChannelAdded={() => setChannelRequestsKey((k) => k + 1)}
+      />
+
+      <SuggestChannelDialog
+        community={community}
+        channels={moderated}
+        open={suggestOpen}
+        onOpenChange={setSuggestOpen}
+        onChanged={loadModerated}
       />
 
       <Dialog open={rulesOpen} onOpenChange={setRulesOpen}>

@@ -25,13 +25,25 @@ CREATE TABLE community_interests (
 
 CREATE INDEX community_interests_interest_id_idx ON community_interests (interest_id);
 
+CREATE TYPE community_channel_status_enum AS ENUM ('pending', 'active', 'rejected');
+
+-- One row per pair: a channel's history with each community.
 CREATE TABLE community_channels (
     community_id BIGINT NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
-    channel_id BIGINT NOT NULL UNIQUE REFERENCES channels(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now()
+    channel_id BIGINT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    status community_channel_status_enum NOT NULL,
+    requested_by BIGINT REFERENCES personas(id) ON DELETE SET NULL,
+    resolved_at TIMESTAMP WITHOUT TIME ZONE,
+    removed_at TIMESTAMP WITHOUT TIME ZONE,
+    PRIMARY KEY (community_id, channel_id)
 );
 
 CREATE INDEX community_channels_community_id_idx ON community_channels (community_id);
+
+-- A channel is in one community or has one pending request, never both.
+CREATE UNIQUE INDEX community_channels_live_channel_idx ON community_channels (channel_id)
+    WHERE status IN ('pending', 'active') AND removed_at IS NULL;
 
 CREATE TYPE community_membership_status_enum AS ENUM ('pending', 'active', 'rejected');
 

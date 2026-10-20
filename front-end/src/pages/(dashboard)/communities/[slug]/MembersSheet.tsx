@@ -11,21 +11,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PersonRow, displayName } from "@/components/persona-link/PersonRow";
+import ChannelRequestRow from "./ChannelRequestRow";
 import {
   appointCommunityModerator,
+  listChannelRequests,
   listCommunityMembers,
   listCommunityRequests,
   removeCommunityMember,
   removeCommunityModerator,
+  resolveChannelRequest,
   resolveCommunityRequest,
 } from "@/services/communities";
-import type { Community, CommunityJoinRequest, CommunityMember } from "@/types/community";
+import type { Community, CommunityChannelRequest, CommunityJoinRequest, CommunityMember } from "@/types/community";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { formatDateOnly } from "@/utils/formateDate";
 
-export type MembersTab = "members" | "requests";
+export type MembersTab = "members" | "requests" | "channels";
 
-/** membersKey / requestsKey change when the page hears the lists changed. */
+/** membersKey / requestsKey / channelRequestsKey change when the page hears the lists changed. */
 export default function MembersSheet({
   community,
   tab,
@@ -33,6 +36,8 @@ export default function MembersSheet({
   onClose,
   membersKey,
   requestsKey,
+  channelRequestsKey,
+  onChannelAdded,
 }: {
   community: Community;
   tab: MembersTab | null;
@@ -40,6 +45,8 @@ export default function MembersSheet({
   onClose: () => void;
   membersKey: number;
   requestsKey: number;
+  channelRequestsKey: number;
+  onChannelAdded: () => void;
 }) {
   const open = tab !== null;
   const manager = !!community.can_manage;
@@ -47,8 +54,10 @@ export default function MembersSheet({
   const me = Number(useUserProfileStore((s) => s.persona?.id));
   const [members, setMembers] = useState<CommunityMember[] | null>(null);
   const [requests, setRequests] = useState<CommunityJoinRequest[] | null>(null);
+  const [channelRequests, setChannelRequests] = useState<CommunityChannelRequest[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [busyChannelId, setBusyChannelId] = useState<number | null>(null);
 
   const loadMembers = useCallback(async () => {
     const r = await listCommunityMembers(community.id);
@@ -70,6 +79,16 @@ export default function MembersSheet({
     if (open) loadRequests();
   }, [open, loadRequests, requestsKey]);
 
+  const loadChannelRequests = useCallback(async () => {
+    if (!manager) return;
+    const r = await listChannelRequests(community.id);
+    if (r.ok) setChannelRequests(r.data.requests);
+  }, [community.id, manager]);
+
+  useEffect(() => {
+    if (open) loadChannelRequests();
+  }, [open, loadChannelRequests, channelRequestsKey]);
+
   useEffect(() => {
     if (!open) setError(null);
   }, [open]);
@@ -87,6 +106,19 @@ export default function MembersSheet({
     );
     setRequests((prev) => prev?.filter((p) => p.persona_id !== request.persona_id) ?? null);
     if (decision === "approve") loadMembers();
+  };
+
+  const handleChannelResolve = async (request: CommunityChannelRequest, decision: "approve" | "reject") => {
+    setBusyChannelId(request.channel_id);
+    const r = await resolveChannelRequest(community.id, request.channel_id, decision);
+    setBusyChannelId(null);
+    if (!r.ok) {
+      toast.error("Couldn't update the request. Please try again.");
+      return;
+    }
+    toast.success(decision === "approve" ? `${request.name} was added` : `${request.name} was declined`);
+    setChannelRequests((prev) => prev?.filter((p) => p.channel_id !== request.channel_id) ?? null);
+    if (decision === "approve") onChannelAdded();
   };
 
   const handleRemove = async (member: CommunityMember) => {
@@ -201,6 +233,9 @@ export default function MembersSheet({
               <TabsList className="w-full">
                 <TabsTrigger value="members">Members</TabsTrigger>
                 <TabsTrigger value="requests">Requests{requests?.length ? ` (${requests.length})` : ""}</TabsTrigger>
+                <TabsTrigger value="channels">
+                  Channels{channelRequests?.length ? ` (${channelRequests.length})` : ""}
+                </TabsTrigger>
               </TabsList>
               <TabsContent value="members" className="mt-2">
                 {membersList}
@@ -237,6 +272,27 @@ export default function MembersSheet({
                           Decline
                         </Button>
                       </PersonRow>
+                    ))}
+                  </ul>
+                )}
+              </TabsContent>
+              <TabsContent value="channels" className="mt-2">
+                {channelRequests === null ? (
+                  <div role="status" className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading…
+                  </div>
+                ) : channelRequests.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-muted-foreground">No channels waiting to join.</p>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {channelRequests.map((request) => (
+                      <ChannelRequestRow
+                        key={request.channel_id}
+                        request={request}
+                        busy={busyChannelId === request.channel_id}
+                        onResolve={(decision) => handleChannelResolve(request, decision)}
+                      />
                     ))}
                   </ul>
                 )}

@@ -95,6 +95,47 @@ func (q *Queries) ListChannelModeratorIDs(ctx context.Context, channelID int64) 
 	return items, nil
 }
 
+const listCommunityManagerIDs = `-- name: ListCommunityManagerIDs :many
+SELECT c.owner_id AS persona_id
+FROM communities c
+WHERE c.id = $1::bigint
+  AND c.deleted_at IS NULL
+UNION
+SELECT cr.persona_id
+FROM community_roles cr
+JOIN roles r ON r.id = cr.role_id AND r.name = 'moderator'
+JOIN communities c ON c.id = cr.community_id AND c.deleted_at IS NULL
+JOIN community_members cm
+    ON cm.community_id = cr.community_id AND cm.persona_id = cr.persona_id
+   AND cm.status = 'active' AND cm.left_at IS NULL
+WHERE cr.community_id = $1::bigint
+  AND cr.deleted_at IS NULL
+`
+
+// The owner and the live moderators of a community.
+func (q *Queries) ListCommunityManagerIDs(ctx context.Context, communityID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listCommunityManagerIDs, communityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var persona_id int64
+		if err := rows.Scan(&persona_id); err != nil {
+			return nil, err
+		}
+		items = append(items, persona_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listNotificationKinds = `-- name: ListNotificationKinds :many
 SELECT unnest(enum_range(NULL::notification_kind_enum))::text AS kind
 `
@@ -435,6 +476,70 @@ func (q *Queries) RecountLikers(ctx context.Context, arg RecountLikersParams) ([
 	for rows.Next() {
 		var i RecountLikersRow
 		if err := rows.Scan(&i.ObjectID, &i.Count, &i.LatestActorID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const recountPendingChannelRequests = `-- name: RecountPendingChannelRequests :many
+SELECT
+    cc.community_id,
+    COUNT(*)::bigint AS count,
+    (ARRAY_AGG(cc.requested_by ORDER BY cc.created_at DESC, cc.channel_id DESC))[1]::bigint AS latest_actor_id
+FROM community_channels cc
+JOIN communities c ON c.id = cc.community_id AND c.deleted_at IS NULL
+JOIN channels ch ON ch.id = cc.channel_id AND ch.deleted_at IS NULL
+WHERE cc.community_id = ANY($1::bigint[])
+  AND cc.status = 'pending' AND cc.removed_at IS NULL
+  AND cc.requested_by IS NOT NULL
+  AND cc.requested_by <> $2::bigint
+  AND (
+      c.owner_id = $2::bigint
+      OR EXISTS (
+          SELECT 1
+          FROM community_roles cr
+          JOIN roles r ON r.id = cr.role_id AND r.name = 'moderator'
+          JOIN community_members cm
+              ON cm.community_id = cr.community_id AND cm.persona_id = cr.persona_id
+             AND cm.status = 'active' AND cm.left_at IS NULL
+          WHERE cr.community_id = c.id
+            AND cr.persona_id = $2::bigint
+            AND cr.deleted_at IS NULL
+      )
+  )
+GROUP BY cc.community_id
+`
+
+type RecountPendingChannelRequestsParams struct {
+	CommunityIds []int64
+	RecipientID  int64
+}
+
+type RecountPendingChannelRequestsRow struct {
+	CommunityID   int64
+	Count         int64
+	LatestActorID int64
+}
+
+// Pending channel requests to communities the recipient manages (channel_request).
+func (q *Queries) RecountPendingChannelRequests(ctx context.Context, arg RecountPendingChannelRequestsParams) ([]RecountPendingChannelRequestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, recountPendingChannelRequests, pq.Array(arg.CommunityIds), arg.RecipientID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RecountPendingChannelRequestsRow
+	for rows.Next() {
+		var i RecountPendingChannelRequestsRow
+		if err := rows.Scan(&i.CommunityID, &i.Count, &i.LatestActorID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

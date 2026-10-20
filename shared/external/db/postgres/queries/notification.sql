@@ -196,6 +196,23 @@ WHERE cr.channel_id = sqlc.arg(channel_id)::bigint
   AND cr.deleted_at IS NULL
   AND r.name IN ('moderator', 'Administrator');
 
+-- The owner and the live moderators of a community.
+-- name: ListCommunityManagerIDs :many
+SELECT c.owner_id AS persona_id
+FROM communities c
+WHERE c.id = sqlc.arg(community_id)::bigint
+  AND c.deleted_at IS NULL
+UNION
+SELECT cr.persona_id
+FROM community_roles cr
+JOIN roles r ON r.id = cr.role_id AND r.name = 'moderator'
+JOIN communities c ON c.id = cr.community_id AND c.deleted_at IS NULL
+JOIN community_members cm
+    ON cm.community_id = cr.community_id AND cm.persona_id = cr.persona_id
+   AND cm.status = 'active' AND cm.left_at IS NULL
+WHERE cr.community_id = sqlc.arg(community_id)::bigint
+  AND cr.deleted_at IS NULL;
+
 -- -------------------------------
 -- 9. Recounts for aggregated kinds
 -- -------------------------------
@@ -241,6 +258,35 @@ WHERE channel_id = ANY(sqlc.arg(channel_ids)::bigint[])
   AND left_at IS NULL
   AND status = 'pending'
 GROUP BY channel_id;
+
+-- Pending channel requests to communities the recipient manages (channel_request).
+-- name: RecountPendingChannelRequests :many
+SELECT
+    cc.community_id,
+    COUNT(*)::bigint AS count,
+    (ARRAY_AGG(cc.requested_by ORDER BY cc.created_at DESC, cc.channel_id DESC))[1]::bigint AS latest_actor_id
+FROM community_channels cc
+JOIN communities c ON c.id = cc.community_id AND c.deleted_at IS NULL
+JOIN channels ch ON ch.id = cc.channel_id AND ch.deleted_at IS NULL
+WHERE cc.community_id = ANY(sqlc.arg(community_ids)::bigint[])
+  AND cc.status = 'pending' AND cc.removed_at IS NULL
+  AND cc.requested_by IS NOT NULL
+  AND cc.requested_by <> sqlc.arg(recipient_id)::bigint
+  AND (
+      c.owner_id = sqlc.arg(recipient_id)::bigint
+      OR EXISTS (
+          SELECT 1
+          FROM community_roles cr
+          JOIN roles r ON r.id = cr.role_id AND r.name = 'moderator'
+          JOIN community_members cm
+              ON cm.community_id = cr.community_id AND cm.persona_id = cr.persona_id
+             AND cm.status = 'active' AND cm.left_at IS NULL
+          WHERE cr.community_id = c.id
+            AND cr.persona_id = sqlc.arg(recipient_id)::bigint
+            AND cr.deleted_at IS NULL
+      )
+  )
+GROUP BY cc.community_id;
 
 -- Active followers of personas (new_follower).
 -- name: RecountFollowers :many

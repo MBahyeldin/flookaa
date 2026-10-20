@@ -51,6 +51,34 @@ export type CommunityJoinRequest = CommunityPersona & { requested_at: string };
 
 export type CommunityRef = Pick<Community, "id" | "name" | "slug">;
 
+/** A channel asking to join a community, as its managers see it. */
+export type CommunityChannelRequest = {
+  channel_id: number;
+  name: string;
+  description: string;
+  thumbnail: string;
+  visibility: "public" | "private";
+  requested_at: string;
+};
+
+/** A channel the viewer moderates, with where it stands with communities. */
+export type ModeratedChannel = {
+  id: number;
+  name: string;
+  thumbnail: string;
+  visibility: "public" | "private";
+  community_status: "none" | "pending" | "active";
+  community: CommunityRef | null;
+};
+
+/** A channel's community row, for its moderators. */
+export type ChannelCommunityState = {
+  status: "none" | "pending" | "active" | "rejected";
+  community: CommunityRef | null;
+  /** Only when rejected: when the same community may be asked again. */
+  rejected_until?: string;
+};
+
 export const MAX_COMMUNITY_INTERESTS = 5;
 
 export const MAX_COMMUNITY_RULES = 5000;

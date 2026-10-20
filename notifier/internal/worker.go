@@ -56,7 +56,10 @@ func (w *Worker) Run(ctx context.Context) ([]jetstream.ConsumeContext, error) {
 		handle  handler
 	}{
 		{shared_nats.CONTENT_EVENTS_STREAM, "notifier-content", []string{shared_nats.CONTENT_EVENTS_STREAM + ".>"}, w.content},
-		{shared_nats.CHANNEL_EVENTS_STREAM, "notifier-channel", []string{shared_nats.CHANNEL_EVENTS_STREAM + ".CHANNEL.>"}, w.channel},
+		{shared_nats.CHANNEL_EVENTS_STREAM, "notifier-channel", []string{
+			shared_nats.CHANNEL_EVENTS_STREAM + ".CHANNEL.>",
+			shared_nats.CHANNEL_EVENTS_STREAM + ".COMMUNITY.*." + string(shared_nats.EventChannelRequest) + ".*",
+		}, w.channelOrCommunity},
 		{user, "notifier-user", []string{
 			user + ".PERSONA.*." + string(shared_nats.EventFollower) + ".*",
 			user + ".PERSONA.*." + string(shared_nats.EventFollowRequest) + ".*",
@@ -79,6 +82,13 @@ func (w *Worker) Run(ctx context.Context) ([]jetstream.ConsumeContext, error) {
 		consumeCtxs = append(consumeCtxs, c)
 	}
 	return consumeCtxs, nil
+}
+
+func (w *Worker) channelOrCommunity(ctx context.Context, m message, eventAt time.Time) error {
+	if m.Event.Owner == shared_nats.OwnerCommunity {
+		return w.community(ctx, m, eventAt)
+	}
+	return w.channel(ctx, m, eventAt)
 }
 
 func (w *Worker) consume(ctx context.Context, stream, durable string, filters []string, handle handler) (jetstream.ConsumeContext, error) {

@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Post } from "@/components/post-card";
 import { Link, useParams } from "react-router-dom";
-import { useGetChannelQuery, useGetPostsLazyQuery } from "@/generated/graphql";
+import { useGetChannelCommunityLazyQuery, useGetChannelQuery, useGetPostsLazyQuery } from "@/generated/graphql";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { PostCreator } from "@/components/post-creator";
@@ -72,6 +72,10 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   const [isManaging, setIsManaging] = useState(false);
   const [interests, setInterests] = useState<Interest[]>([]);
   const [interestsVersion, setInterestsVersion] = useState(0);
+  // Set once the community changes live; not cached, so the posts query isn't touched.
+  const [communityOverride, setCommunityOverride] = useState<{ id: number; name: string; slug: string } | null | undefined>(undefined);
+  const [communityKey, setCommunityKey] = useState(0);
+  const [fetchCommunity] = useGetChannelCommunityLazyQuery({ fetchPolicy: "no-cache" });
   const [membersCount, setMembersCount] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
   const [isFollowPending, setIsFollowPending] = useState(false);
@@ -223,6 +227,17 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   }, [channelId, interestsVersion]);
 
   useEffect(() => {
+    if (!channelId || communityKey === 0) return;
+    let alive = true;
+    fetchCommunity({ variables: { id: channelId } }).then((r) => {
+      if (alive && r.data?.getChannel) setCommunityOverride(r.data.getChannel.community ?? null);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [channelId, communityKey, fetchCommunity]);
+
+  useEffect(() => {
     if (!websocketService || !channelId) return;
 
     /*
@@ -265,6 +280,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
         setNewPosts,
         onMembershipEvent,
         onInterestsChanged: () => setInterestsVersion((v) => v + 1),
+        onCommunityChanged: () => setCommunityKey((k) => k + 1),
       })
     );
 
@@ -329,6 +345,8 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
       </div>
     );
   }
+
+  const community = communityOverride !== undefined ? communityOverride : channelData.getChannel.community;
 
   return (
     <div className="min-h-screen">
@@ -400,13 +418,13 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                     {/* The literal "category" badge was removed: Channel has no
                         category field in the schema, so it was always a stub. */}
                   </div>
-                  {channelData.getChannel.community && (
+                  {community && (
                     <Link
-                      to={`/communities/${channelData.getChannel.community.slug}`}
+                      to={`/communities/${community.slug}`}
                       className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
                     >
                       <Boxes className="h-4 w-4" />
-                      Part of {channelData.getChannel.community.name}
+                      Part of {community.name}
                     </Link>
                   )}
                 </div>
@@ -541,6 +559,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
             open={isManaging}
             onOpenChange={setIsManaging}
             onInterestsSaved={setInterests}
+            communityKey={communityKey}
           />
         )}
 

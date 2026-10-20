@@ -1,12 +1,19 @@
 import { apiFetch } from "@/lib/apiFetch";
-import type { Community, CommunityJoinRequest, CommunityMember } from "@/types/community";
+import type {
+  ChannelCommunityState,
+  Community,
+  CommunityChannelRequest,
+  CommunityJoinRequest,
+  CommunityMember,
+  ModeratedChannel,
+} from "@/types/community";
 import type { Result } from "@/services/interests";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-async function call<T>(path: string, method = "GET"): Promise<Result<T>> {
+async function call<T>(path: string, method = "GET", base = "/communities"): Promise<Result<T>> {
   try {
-    const resp = await apiFetch(`${API_BASE_URL}/api/v1/communities${path}`, { method, credentials: "include" });
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1${base}${path}`, { method, credentials: "include" });
     const body = await resp.json().catch(() => ({}));
     if (!resp.ok) return { ok: false, error: body.error ?? "request_failed" };
     return { ok: true, data: body as T };
@@ -47,3 +54,23 @@ export const listCommunityRequests = (id: number) => call<{ requests: CommunityJ
 
 export const resolveCommunityRequest = (id: number, personaId: number, decision: "approve" | "reject") =>
   call<{ status: string }>(`/${id}/requests/${personaId}/${decision}`, "POST");
+
+export const requestChannelJoin = (id: number, channelId: number) =>
+  call<{ status: "pending" }>(`/${id}/channels/${channelId}/request`, "POST");
+
+export const cancelChannelRequest = (id: number, channelId: number) =>
+  call<{ status: "none" }>(`/${id}/channels/${channelId}/cancel`, "POST");
+
+export const removeCommunityChannel = (id: number, channelId: number) =>
+  call<{ status: "none" }>(`/${id}/channels/${channelId}/remove`, "POST");
+
+export const listChannelRequests = (id: number) =>
+  call<{ requests: CommunityChannelRequest[] }>(`/${id}/channel-requests`);
+
+export const resolveChannelRequest = (id: number, channelId: number, decision: "approve" | "reject") =>
+  call<{ status: string }>(`/${id}/channel-requests/${channelId}/${decision}`, "POST");
+
+export const listModeratedChannels = () => call<{ channels: ModeratedChannel[] }>("/moderated", "GET", "/channels");
+
+export const getChannelCommunity = (channelId: number | string) =>
+  call<ChannelCommunityState>(`/${channelId}/community`, "GET", "/channels");

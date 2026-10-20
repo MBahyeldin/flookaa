@@ -785,6 +785,13 @@ export type GetChannelQueryVariables = Exact<{
 
 export type GetChannelQuery = { __typename?: 'Query', getChannel?: { __typename?: 'Channel', id: any, name: string, description?: string | null, bannerImageUrl?: string | null, thumbnailUrl?: string | null, createdAt: string, totalPosts: number, isMember: boolean, isFollower: boolean, canModerate: boolean, membersCount?: number | null, followersCount?: number | null, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, owner: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null }, community?: { __typename?: 'CommunityRef', id: any, name: string, slug: string } | null } | null };
 
+export type GetChannelCommunityQueryVariables = Exact<{
+  id: Scalars['Int64']['input'];
+}>;
+
+
+export type GetChannelCommunityQuery = { __typename?: 'Query', getChannel?: { __typename?: 'Channel', id: any, community?: { __typename?: 'CommunityRef', id: any, name: string, slug: string } | null } | null };
+
 export type GetCommentsQueryVariables = Exact<{
   parentId: Scalars['ObjectId']['input'];
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -1157,6 +1164,51 @@ export type GetChannelQueryHookResult = ReturnType<typeof useGetChannelQuery>;
 export type GetChannelLazyQueryHookResult = ReturnType<typeof useGetChannelLazyQuery>;
 export type GetChannelSuspenseQueryHookResult = ReturnType<typeof useGetChannelSuspenseQuery>;
 export type GetChannelQueryResult = Apollo.QueryResult<GetChannelQuery, GetChannelQueryVariables>;
+export const GetChannelCommunityDocument = gql`
+    query GetChannelCommunity($id: Int64!) {
+  getChannel(id: $id) {
+    id
+    community {
+      id
+      name
+      slug
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetChannelCommunityQuery__
+ *
+ * To run a query within a React component, call `useGetChannelCommunityQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetChannelCommunityQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetChannelCommunityQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetChannelCommunityQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetChannelCommunityQuery, GetChannelCommunityQueryVariables> & ({ variables: GetChannelCommunityQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>(GetChannelCommunityDocument, options);
+      }
+export function useGetChannelCommunityLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>(GetChannelCommunityDocument, options);
+        }
+export function useGetChannelCommunitySuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>(GetChannelCommunityDocument, options);
+        }
+export type GetChannelCommunityQueryHookResult = ReturnType<typeof useGetChannelCommunityQuery>;
+export type GetChannelCommunityLazyQueryHookResult = ReturnType<typeof useGetChannelCommunityLazyQuery>;
+export type GetChannelCommunitySuspenseQueryHookResult = ReturnType<typeof useGetChannelCommunitySuspenseQuery>;
+export type GetChannelCommunityQueryResult = Apollo.QueryResult<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>;
 export const GetCommentsDocument = gql`
     query GetComments($parentId: ObjectId!, $limit: Int, $offset: Int) {
   getComments(parentId: $parentId, limit: $limit, offset: $offset) {

@@ -118,6 +118,59 @@ func (e ChannelVisibilityEnum) Valid() bool {
 	return false
 }
 
+type CommunityChannelStatusEnum string
+
+const (
+	CommunityChannelStatusEnumPending  CommunityChannelStatusEnum = "pending"
+	CommunityChannelStatusEnumActive   CommunityChannelStatusEnum = "active"
+	CommunityChannelStatusEnumRejected CommunityChannelStatusEnum = "rejected"
+)
+
+func (e *CommunityChannelStatusEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = CommunityChannelStatusEnum(s)
+	case string:
+		*e = CommunityChannelStatusEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for CommunityChannelStatusEnum: %T", src)
+	}
+	return nil
+}
+
+type NullCommunityChannelStatusEnum struct {
+	CommunityChannelStatusEnum CommunityChannelStatusEnum
+	Valid                      bool // Valid is true if CommunityChannelStatusEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullCommunityChannelStatusEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.CommunityChannelStatusEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.CommunityChannelStatusEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullCommunityChannelStatusEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.CommunityChannelStatusEnum), nil
+}
+
+func (e CommunityChannelStatusEnum) Valid() bool {
+	switch e {
+	case CommunityChannelStatusEnumPending,
+		CommunityChannelStatusEnumActive,
+		CommunityChannelStatusEnumRejected:
+		return true
+	}
+	return false
+}
+
 type CommunityMembershipStatusEnum string
 
 const (
@@ -449,6 +502,9 @@ const (
 	NotificationKindEnumFollowRequestApproved    NotificationKindEnum = "follow_request_approved"
 	NotificationKindEnumFollowInvitation         NotificationKindEnum = "follow_invitation"
 	NotificationKindEnumFollowInvitationAccepted NotificationKindEnum = "follow_invitation_accepted"
+	NotificationKindEnumChannelRequest           NotificationKindEnum = "channel_request"
+	NotificationKindEnumChannelRequestApproved   NotificationKindEnum = "channel_request_approved"
+	NotificationKindEnumChannelRequestRejected   NotificationKindEnum = "channel_request_rejected"
 )
 
 func (e *NotificationKindEnum) Scan(src interface{}) error {
@@ -499,7 +555,10 @@ func (e NotificationKindEnum) Valid() bool {
 		NotificationKindEnumFollowRequest,
 		NotificationKindEnumFollowRequestApproved,
 		NotificationKindEnumFollowInvitation,
-		NotificationKindEnumFollowInvitationAccepted:
+		NotificationKindEnumFollowInvitationAccepted,
+		NotificationKindEnumChannelRequest,
+		NotificationKindEnumChannelRequestApproved,
+		NotificationKindEnumChannelRequestRejected:
 		return true
 	}
 	return false
@@ -557,10 +616,11 @@ func (e NotificationScopeEnum) Valid() bool {
 type NotificationSubjectEnum string
 
 const (
-	NotificationSubjectEnumPOST    NotificationSubjectEnum = "POST"
-	NotificationSubjectEnumCOMMENT NotificationSubjectEnum = "COMMENT"
-	NotificationSubjectEnumCHANNEL NotificationSubjectEnum = "CHANNEL"
-	NotificationSubjectEnumPERSONA NotificationSubjectEnum = "PERSONA"
+	NotificationSubjectEnumPOST      NotificationSubjectEnum = "POST"
+	NotificationSubjectEnumCOMMENT   NotificationSubjectEnum = "COMMENT"
+	NotificationSubjectEnumCHANNEL   NotificationSubjectEnum = "CHANNEL"
+	NotificationSubjectEnumPERSONA   NotificationSubjectEnum = "PERSONA"
+	NotificationSubjectEnumCOMMUNITY NotificationSubjectEnum = "COMMUNITY"
 )
 
 func (e *NotificationSubjectEnum) Scan(src interface{}) error {
@@ -603,7 +663,8 @@ func (e NotificationSubjectEnum) Valid() bool {
 	case NotificationSubjectEnumPOST,
 		NotificationSubjectEnumCOMMENT,
 		NotificationSubjectEnumCHANNEL,
-		NotificationSubjectEnumPERSONA:
+		NotificationSubjectEnumPERSONA,
+		NotificationSubjectEnumCOMMUNITY:
 		return true
 	}
 	return false
@@ -1065,6 +1126,10 @@ type CommunityChannel struct {
 	CommunityID int64
 	ChannelID   int64
 	CreatedAt   time.Time
+	Status      CommunityChannelStatusEnum
+	RequestedBy sql.NullInt64
+	ResolvedAt  sql.NullTime
+	RemovedAt   sql.NullTime
 }
 
 type CommunityFollower struct {

@@ -35,6 +35,8 @@ type CreateParams struct {
 	InterestIDs []int64
 	// 0: standalone.
 	CommunityID int64
+	// A pending request to CommunityID instead of being in it.
+	RequestCommunity bool
 }
 
 // Create stores a channel with its owner as active member, follower and
@@ -82,7 +84,15 @@ func Create(ctx context.Context, pg *sql.DB, queries *db.Queries, p CreateParams
 	if err := q.ReplaceChannelInterests(ctx, db.ReplaceChannelInterestsParams{ChannelID: channel.ID, Ids: p.InterestIDs}); err != nil {
 		return db.Channel{}, err
 	}
-	if p.CommunityID != 0 {
+	if p.CommunityID != 0 && p.RequestCommunity {
+		if _, err := q.RequestCommunityChannel(ctx, db.RequestCommunityChannelParams{
+			CommunityID: p.CommunityID,
+			ChannelID:   channel.ID,
+			RequestedBy: sql.NullInt64{Int64: p.OwnerID, Valid: true},
+		}); err != nil {
+			return db.Channel{}, err
+		}
+	} else if p.CommunityID != 0 {
 		if err := q.AddChannelToCommunity(ctx, db.AddChannelToCommunityParams{CommunityID: p.CommunityID, ChannelID: channel.ID}); err != nil {
 			return db.Channel{}, err
 		}
@@ -113,6 +123,8 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 		return
 	}
 
+	// A non-manager's channel is created standalone with a pending request.
+	request := false
 	if req.CommunityID != 0 {
 		community, err := access.LoadCommunity(ctx, h.q, req.CommunityID, personaId)
 		if errors.Is(err, access.ErrCommunityNotFound) {
@@ -123,29 +135,32 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		if !community.CanManage() {
-			c.JSON(http.StatusForbidden, gin.H{"error": "not_community_manager"})
-			return
-		}
+		request = !community.CanManage()
 	}
 
 	channel, err := Create(ctx, h.pg, h.q, CreateParams{
-		Name:        req.Name,
-		Description: req.Description,
-		Thumbnail:   req.Thumbnail,
-		Banner:      req.Banner,
-		Visibility:  db.ChannelVisibilityEnum(req.Visibility),
-		OwnerID:     personaId,
-		InterestIDs: req.InterestIDs,
-		CommunityID: req.CommunityID,
+		Name:             req.Name,
+		Description:      req.Description,
+		Thumbnail:        req.Thumbnail,
+		Banner:           req.Banner,
+		Visibility:       db.ChannelVisibilityEnum(req.Visibility),
+		OwnerID:          personaId,
+		InterestIDs:      req.InterestIDs,
+		CommunityID:      req.CommunityID,
+		RequestCommunity: request,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if req.CommunityID != 0 {
+	communityStatus := ""
+	if req.CommunityID != 0 && request {
+		communityStatus = string(db.CommunityChannelStatusEnumPending)
+		communities.PublishChannelRequest(ctx, h.nats, req.CommunityID, personaId, db.EventActionEnumCreate, channel.ID, nats.ReasonRequested, nil)
+	} else if req.CommunityID != 0 {
+		communityStatus = string(db.CommunityChannelStatusEnumActive)
 		communities.Publish(ctx, h.nats, req.CommunityID, personaId, nats.EventCommunityChannels)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"channel": channel})
+	c.JSON(http.StatusOK, gin.H{"channel": channel, "community_status": communityStatus})
 }

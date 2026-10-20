@@ -151,6 +151,7 @@ WHERE c.deleted_at IS NULL
   AND (sqlc.narg(community_id)::bigint IS NULL OR EXISTS (
       SELECT 1 FROM community_channels cc
       WHERE cc.channel_id = c.id AND cc.community_id = sqlc.narg(community_id)::bigint
+        AND cc.status = 'active' AND cc.removed_at IS NULL
   ))
 LIMIT $2 OFFSET $3;
 

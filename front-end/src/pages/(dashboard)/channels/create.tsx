@@ -2,6 +2,7 @@ import { Form } from "@/models/Forms/Form";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Boxes } from "lucide-react";
+import { toast } from "sonner";
 import { getCommunity } from "@/services/communities";
 import type { Community } from "@/types/community";
 import { useAuth } from "@/Auth.context";
@@ -27,7 +28,7 @@ export default function CreateChannelPage() {
     if (!communityId) return;
     let alive = true;
     getCommunity(communityId).then((r) => {
-      if (alive && r.ok && r.data.community.can_manage) setCommunity(r.data.community);
+      if (alive && r.ok) setCommunity(r.data.community);
     });
     return () => {
       alive = false;
@@ -47,9 +48,11 @@ export default function CreateChannelPage() {
     result: unknown;
   }) => {
     if (status && status.success) {
-      navigate(
-        `/channels/${(status.result as { channel: { ID: string } })?.channel?.ID}`
-      );
+      const result = status.result as { channel: { ID: string }; community_status?: string };
+      if (result?.community_status === "pending" && community) {
+        toast.success(`Channel created. ${community.name}'s managers will review your request to add it.`);
+      }
+      navigate(`/channels/${result?.channel?.ID}`);
     }
   };
 
@@ -65,11 +68,14 @@ export default function CreateChannelPage() {
           </CardDescription>
           {community && (
             <p className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Boxes className="h-4 w-4" />
-              In{" "}
-              <Link to={`/communities/${community.slug}`} className="font-medium text-foreground hover:underline">
-                {community.name}
-              </Link>
+              <Boxes className="h-4 w-4 shrink-0" />
+              <span>
+                {community.can_manage ? "In " : "Will be suggested to "}
+                <Link to={`/communities/${community.slug}`} className="font-medium text-foreground hover:underline">
+                  {community.name}
+                </Link>
+                {!community.can_manage && "; its managers decide whether it joins"}
+              </span>
             </p>
           )}
         </CardHeader>

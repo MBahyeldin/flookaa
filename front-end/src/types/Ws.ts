@@ -36,6 +36,10 @@ type EventType =
   | "counts"
   // A community's moderators changed (/control owner COMMUNITY); payload is ChannelEventPayload.
   | "moderator"
+  // A channel asked to join a community, or the request was resolved (managers only).
+  | "channel_request"
+  // A channel's community row changed (STREAM_CHANNEL_EVENTS); no payload, refetch.
+  | "community"
   | "*";
 type EventActionType = "create" | "update" | "delete" | "*";
 type EventOwnerType = "CHANNEL" | "USER" | "PERSONA" | "COMMUNITY";

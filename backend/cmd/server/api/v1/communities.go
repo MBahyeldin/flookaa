@@ -30,5 +30,13 @@ func AddCommunitiesRoutes(r *gin.RouterGroup, communities *communities.Handler) 
 		group.GET("/:community_id/requests", communities.ListJoinRequests)
 		group.POST("/:community_id/requests/:persona_id/approve", communities.ApproveJoinRequest)
 		group.POST("/:community_id/requests/:persona_id/reject", communities.RejectJoinRequest)
+
+		// Channels asking to join: the channel's moderators ask, cancel or leave; managers decide or remove.
+		group.POST("/:community_id/channels/:channel_id/request", communities.RequestChannelJoin)
+		group.POST("/:community_id/channels/:channel_id/cancel", communities.CancelChannelRequest)
+		group.POST("/:community_id/channels/:channel_id/remove", communities.RemoveChannel)
+		group.GET("/:community_id/channel-requests", communities.ListChannelRequests)
+		group.POST("/:community_id/channel-requests/:channel_id/approve", communities.ApproveChannelRequest)
+		group.POST("/:community_id/channel-requests/:channel_id/reject", communities.RejectChannelRequest)
 	}
 }

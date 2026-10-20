@@ -28,6 +28,14 @@ function channelName(n: Notification): string {
   return n.channel?.name ?? "a channel";
 }
 
+function communityName(n: Notification): string {
+  return n.community?.name ?? "a community";
+}
+
+function communityHref(n: Notification, query = ""): string {
+  return n.community ? `/communities/${n.community.slug}${query}` : "/communities";
+}
+
 /**
  * Where a content notification leads: the post itself when data.post_id is
  * known (rows written before it existed lack it), else its channel.
@@ -98,6 +106,24 @@ export function describeNotification(n: Notification): NotificationDescription |
         actor: actorName(n) ?? "Someone",
         message: "accepted your invitation and follows you",
         href: `/personas/${n.subject.id}`,
+      };
+    case "channel_request":
+      return {
+        actor: actors(n),
+        message: `suggested ${n.count === 1 ? "a channel" : "channels"} for ${communityName(n)}`,
+        href: communityHref(n, "?members=channels"),
+      };
+    case "channel_request_approved":
+      return {
+        actor: null,
+        message: `${channelName(n)} was added to ${communityName(n)}`,
+        href: communityHref(n),
+      };
+    case "channel_request_rejected":
+      return {
+        actor: null,
+        message: `${communityName(n)} declined ${channelName(n)}`,
+        href: n.channel ? `/channels/${n.channel.id}` : communityHref(n),
       };
     default:
       return null;

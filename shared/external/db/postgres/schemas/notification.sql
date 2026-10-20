@@ -11,10 +11,13 @@ CREATE TYPE notification_kind_enum AS ENUM (
     'follow_request',
     'follow_request_approved',
     'follow_invitation',
-    'follow_invitation_accepted'
+    'follow_invitation_accepted',
+    'channel_request',
+    'channel_request_approved',
+    'channel_request_rejected'
 );
 
-CREATE TYPE notification_subject_enum AS ENUM ('POST', 'COMMENT', 'CHANNEL', 'PERSONA');
+CREATE TYPE notification_subject_enum AS ENUM ('POST', 'COMMENT', 'CHANNEL', 'PERSONA', 'COMMUNITY');
 
 CREATE TYPE notification_scope_enum AS ENUM ('CHANNEL');
 

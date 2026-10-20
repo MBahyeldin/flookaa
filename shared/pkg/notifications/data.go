@@ -12,4 +12,6 @@ type Data struct {
 	// PostID is the post at the top of the thread a content notification
 	// is about (the subject itself for post kinds), for linking to it.
 	PostID string `json:"post_id,omitempty"`
+	// ChannelID is the channel a community notification is about.
+	ChannelID int64 `json:"channel_id,omitempty"`
 }

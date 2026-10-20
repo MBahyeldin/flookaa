@@ -163,6 +163,7 @@ WHERE c.deleted_at IS NULL
   AND ($5::bigint IS NULL OR EXISTS (
       SELECT 1 FROM community_channels cc
       WHERE cc.channel_id = c.id AND cc.community_id = $5::bigint
+        AND cc.status = 'active' AND cc.removed_at IS NULL
   ))
 LIMIT $2 OFFSET $3
 `

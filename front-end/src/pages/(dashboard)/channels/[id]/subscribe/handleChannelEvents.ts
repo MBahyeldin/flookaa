@@ -17,6 +17,7 @@ export default function handleChannelEvents({
   setNewPosts,
   onMembershipEvent,
   onInterestsChanged,
+  onCommunityChanged,
 }: {
   setNewPosts: React.Dispatch<React.SetStateAction<PostEventPayload[]>>;
   /** member, follower and join_request events; the page owns that state. */
@@ -25,6 +26,7 @@ export default function handleChannelEvents({
     payload: ChannelEventPayload
   ) => void;
   onInterestsChanged: () => void;
+  onCommunityChanged: () => void;
 }) {
   return (payload: WsEventMessage) => {
     if (!payload) return;
@@ -72,6 +74,9 @@ export default function handleChannelEvents({
         break;
       case "interests":
         onInterestsChanged();
+        break;
+      case "community":
+        onCommunityChanged();
         break;
       default:
         console.warn(`Unhandled event type: ${payload.event.name}`);
