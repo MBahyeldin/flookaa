@@ -1249,6 +1249,102 @@ func (q *Queries) RevokeCommunityRolesForPersona(ctx context.Context, arg Revoke
 	return result.RowsAffected()
 }
 
+const suggestCommunities = `-- name: SuggestCommunities :many
+WITH viewer AS (
+    SELECT u.gender
+    FROM personas p
+    JOIN users u ON u.id = p.user_id
+    WHERE p.id = $1::bigint
+)
+SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age,
+    (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
+     WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
+       AND ch.deleted_at IS NULL)::int AS channels_count
+FROM communities c
+CROSS JOIN LATERAL (
+    SELECT COUNT(*) AS overlap
+    FROM community_interests ci
+    JOIN persona_interests pi ON pi.interest_id = ci.interest_id AND pi.persona_id = $1::bigint
+    WHERE ci.community_id = c.id
+) o
+CROSS JOIN LATERAL (
+    SELECT
+        COUNT(*) AS members,
+        COUNT(*) FILTER (
+            WHERE (SELECT gender FROM viewer) IS NULL OR u.gender = (SELECT gender FROM viewer)
+        ) AS same_gender
+    FROM community_members cm
+    JOIN personas p ON p.id = cm.persona_id AND p.deleted_at IS NULL
+    JOIN users u ON u.id = p.user_id
+    WHERE cm.community_id = c.id AND cm.status = 'active' AND cm.left_at IS NULL
+) m
+WHERE c.deleted_at IS NULL
+  AND o.overlap > 0
+  AND persona_meets_min_age($1::bigint, c.min_age)
+  AND NOT EXISTS (
+      SELECT 1 FROM community_members cm
+      WHERE cm.community_id = c.id AND cm.persona_id = $1::bigint AND cm.left_at IS NULL
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM community_followers cf
+      WHERE cf.community_id = c.id AND cf.persona_id = $1::bigint AND cf.unfollowed_at IS NULL
+  )
+ORDER BY o.overlap DESC, m.members DESC, m.same_gender DESC, c.id DESC
+LIMIT $3 OFFSET $2
+`
+
+type SuggestCommunitiesParams struct {
+	PersonaID int64
+	Off       int64
+	Lim       int64
+}
+
+type SuggestCommunitiesRow struct {
+	Community     Community
+	ChannelsCount int32
+}
+
+// By shared interests (at least one), then live members, then members of the
+// persona's user's gender (everyone if unset). Leaves out communities the
+// persona has any live membership row in (active, pending or rejected) or follows.
+func (q *Queries) SuggestCommunities(ctx context.Context, arg SuggestCommunitiesParams) ([]SuggestCommunitiesRow, error) {
+	rows, err := q.db.QueryContext(ctx, suggestCommunities, arg.PersonaID, arg.Off, arg.Lim)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SuggestCommunitiesRow
+	for rows.Next() {
+		var i SuggestCommunitiesRow
+		if err := rows.Scan(
+			&i.Community.ID,
+			&i.Community.Name,
+			&i.Community.Slug,
+			&i.Community.Description,
+			&i.Community.Thumbnail,
+			&i.Community.Banner,
+			&i.Community.Visibility,
+			&i.Community.OwnerID,
+			&i.Community.CreatedAt,
+			&i.Community.UpdatedAt,
+			&i.Community.DeletedAt,
+			&i.Community.Rules,
+			&i.Community.MinAge,
+			&i.ChannelsCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const unfollowCommunity = `-- name: UnfollowCommunity :execrows
 UPDATE community_followers
 SET unfollowed_at = now()

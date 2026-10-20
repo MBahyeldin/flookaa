@@ -2,11 +2,8 @@ package interests
 
 import (
 	"app/internal/auth"
-	"database/sql"
-	"errors"
 	"net/http"
 	"shared/pkg/db"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,7 +17,7 @@ type PersonaInterests struct {
 }
 
 func (h *Handler) PersonaInterests(c *gin.Context) {
-	userID, personaID, ok := h.ownPersona(c)
+	userID, personaID, ok := auth.OwnPersona(c, h.q)
 	if !ok {
 		return
 	}
@@ -28,7 +25,7 @@ func (h *Handler) PersonaInterests(c *gin.Context) {
 }
 
 func (h *Handler) SetPersonaInterests(c *gin.Context) {
-	userID, personaID, ok := h.ownPersona(c)
+	userID, personaID, ok := auth.OwnPersona(c, h.q)
 	if !ok {
 		return
 	}
@@ -85,30 +82,6 @@ func (h *Handler) writePersonaInterests(c *gin.Context, userID, personaID int64)
 	c.JSON(http.StatusOK, out)
 }
 
-// Any persona of the signed-in user, current or not.
-func (h *Handler) ownPersona(c *gin.Context) (userID, personaID int64, ok bool) {
-	userID, ok = auth.UserID(c)
-	if !ok {
-		auth.Unauthorized(c)
-		return 0, 0, false
-	}
-	personaID, err := strconv.ParseInt(c.Param("persona_id"), 10, 64)
-	if err != nil || personaID <= 0 {
-		notYourPersona(c)
-		return 0, 0, false
-	}
-	_, err = h.q.GetPersonaByIdAndUserId(c.Request.Context(), db.GetPersonaByIdAndUserIdParams{ID: personaID, UserID: userID})
-	if errors.Is(err, sql.ErrNoRows) {
-		notYourPersona(c)
-		return 0, 0, false
-	}
-	if err != nil {
-		internalError(c, "persona owner", err)
-		return 0, 0, false
-	}
-	return userID, personaID, true
-}
-
 // ValidIDs: 1 to max distinct positive ids.
 func ValidIDs(ids []int64, max int) bool {
 	if len(ids) == 0 || len(ids) > max {
@@ -122,8 +95,4 @@ func ValidIDs(ids []int64, max int) bool {
 		seen[id] = true
 	}
 	return true
-}
-
-func notYourPersona(c *gin.Context) {
-	c.JSON(http.StatusForbidden, gin.H{"error": "not_your_persona"})
 }

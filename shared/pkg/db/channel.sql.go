@@ -181,17 +181,7 @@ type GetAllChannelsParams struct {
 }
 
 type GetAllChannelsRow struct {
-	ID             int64
-	Name           string
-	Description    string
-	Thumbnail      string
-	Banner         string
-	OwnerID        int64
-	Visibility     ChannelVisibilityEnum
-	CreatedAt      sql.NullTime
-	UpdatedAt      sql.NullTime
-	DeletedAt      sql.NullTime
-	MinAge         int16
+	Channel        Channel
 	IsOwner        bool
 	IsMember       bool
 	IsPending      bool
@@ -219,17 +209,17 @@ func (q *Queries) GetAllChannels(ctx context.Context, arg GetAllChannelsParams) 
 	for rows.Next() {
 		var i GetAllChannelsRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Description,
-			&i.Thumbnail,
-			&i.Banner,
-			&i.OwnerID,
-			&i.Visibility,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-			&i.MinAge,
+			&i.Channel.ID,
+			&i.Channel.Name,
+			&i.Channel.Description,
+			&i.Channel.Thumbnail,
+			&i.Channel.Banner,
+			&i.Channel.OwnerID,
+			&i.Channel.Visibility,
+			&i.Channel.CreatedAt,
+			&i.Channel.UpdatedAt,
+			&i.Channel.DeletedAt,
+			&i.Channel.MinAge,
 			&i.IsOwner,
 			&i.IsMember,
 			&i.IsPending,
@@ -868,6 +858,127 @@ type SetChannelMinAgeParams struct {
 func (q *Queries) SetChannelMinAge(ctx context.Context, arg SetChannelMinAgeParams) error {
 	_, err := q.db.ExecContext(ctx, setChannelMinAge, arg.MinAge, arg.ID)
 	return err
+}
+
+const suggestChannels = `-- name: SuggestChannels :many
+WITH viewer AS (
+    SELECT u.gender
+    FROM personas p
+    JOIN users u ON u.id = p.user_id
+    WHERE p.id = $1::bigint
+), my_communities AS (
+    SELECT cm.community_id
+    FROM community_members cm
+    WHERE cm.persona_id = $1::bigint AND cm.status = 'active' AND cm.left_at IS NULL
+    UNION
+    SELECT cf.community_id
+    FROM community_followers cf
+    WHERE cf.persona_id = $1::bigint AND cf.unfollowed_at IS NULL
+)
+SELECT
+    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age,
+    m.members::int AS members_count,
+    (
+        SELECT COUNT(DISTINCT cf.persona_id)
+        FROM channel_followers cf
+        WHERE cf.channel_id = c.id
+          AND cf.unfollowed_at IS NULL
+    )::int AS followers_count,
+    (CASE WHEN src.from_community THEN 'community' ELSE 'interest' END)::text AS source
+FROM channels c
+CROSS JOIN LATERAL (
+    SELECT EXISTS (
+        SELECT 1
+        FROM community_channels cc
+        JOIN my_communities mc ON mc.community_id = cc.community_id
+        JOIN communities co ON co.id = cc.community_id AND co.deleted_at IS NULL
+        WHERE cc.channel_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
+    ) AS from_community
+) src
+CROSS JOIN LATERAL (
+    SELECT COUNT(*) AS overlap
+    FROM channel_interests ci
+    JOIN persona_interests pi ON pi.interest_id = ci.interest_id AND pi.persona_id = $1::bigint
+    WHERE ci.channel_id = c.id
+) o
+CROSS JOIN LATERAL (
+    SELECT
+        COUNT(*) AS members,
+        COUNT(*) FILTER (
+            WHERE (SELECT gender FROM viewer) IS NULL OR u.gender = (SELECT gender FROM viewer)
+        ) AS same_gender
+    FROM channel_members cm
+    JOIN personas p ON p.id = cm.persona_id AND p.deleted_at IS NULL
+    JOIN users u ON u.id = p.user_id
+    WHERE cm.channel_id = c.id AND cm.left_at IS NULL AND cm.status = 'active'
+) m
+WHERE c.deleted_at IS NULL
+  AND (src.from_community OR o.overlap > 0)
+  AND persona_meets_min_age($1::bigint, c.min_age)
+  AND NOT EXISTS (
+      SELECT 1 FROM channel_members cm
+      WHERE cm.channel_id = c.id AND cm.persona_id = $1::bigint AND cm.left_at IS NULL
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM channel_followers cf
+      WHERE cf.channel_id = c.id AND cf.persona_id = $1::bigint AND cf.unfollowed_at IS NULL
+  )
+ORDER BY src.from_community DESC, o.overlap DESC, m.members DESC, m.same_gender DESC, c.id DESC
+LIMIT $3 OFFSET $2
+`
+
+type SuggestChannelsParams struct {
+	PersonaID int64
+	Off       int64
+	Lim       int64
+}
+
+type SuggestChannelsRow struct {
+	Channel        Channel
+	MembersCount   int32
+	FollowersCount int32
+	Source         string
+}
+
+// From the persona's communities (joined or followed) first, then by shared
+// interests, live members, and members of the persona's user's gender
+// (everyone if unset). Leaves out channels it has any live row in or follows.
+func (q *Queries) SuggestChannels(ctx context.Context, arg SuggestChannelsParams) ([]SuggestChannelsRow, error) {
+	rows, err := q.db.QueryContext(ctx, suggestChannels, arg.PersonaID, arg.Off, arg.Lim)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SuggestChannelsRow
+	for rows.Next() {
+		var i SuggestChannelsRow
+		if err := rows.Scan(
+			&i.Channel.ID,
+			&i.Channel.Name,
+			&i.Channel.Description,
+			&i.Channel.Thumbnail,
+			&i.Channel.Banner,
+			&i.Channel.OwnerID,
+			&i.Channel.Visibility,
+			&i.Channel.CreatedAt,
+			&i.Channel.UpdatedAt,
+			&i.Channel.DeletedAt,
+			&i.Channel.MinAge,
+			&i.MembersCount,
+			&i.FollowersCount,
+			&i.Source,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const unfollowChannel = `-- name: UnfollowChannel :execrows

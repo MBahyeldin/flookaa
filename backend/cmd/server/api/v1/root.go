@@ -35,7 +35,7 @@ func AddV1Group(r *gin.RouterGroup, h Handlers) *gin.RouterGroup {
 	AddGeoRoutes(v1Group, h.Geo)
 	AddChannelsGroups(v1Group, h.Channels)
 	AddCommunitiesRoutes(v1Group, h.Communities)
-	AddPersonaRoutes(v1Group, h.Users, h.Followers, h.Interests)
+	AddPersonaRoutes(v1Group, h.Users, h.Followers, h.Interests, h.Communities, h.Channels)
 	AddNotificationsRoutes(v1Group, h.Notifications)
 	AddInterestsRoutes(v1Group, h.Interests, h.IsAdmin)
 	return v1Group

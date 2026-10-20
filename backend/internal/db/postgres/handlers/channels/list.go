@@ -97,24 +97,54 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 		return
 	}
 
-	ids := make([]int64, len(channels))
+	items := make([]channelItem, len(channels))
 	for i, ch := range channels {
-		ids[i] = ch.ID
+		items[i] = channelItem{
+			Channel:        ch.Channel,
+			IsOwner:        ch.IsOwner,
+			IsMember:       ch.IsMember,
+			IsPending:      ch.IsPending,
+			IsFollower:     ch.IsFollower,
+			MembersCount:   ch.MembersCount,
+			FollowersCount: ch.FollowersCount,
+		}
 	}
-	tags, err := h.interestsByChannel(ctx, ids)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	communities, err := h.communitiesByChannel(ctx, personaId, ids)
+	channelsList, err := h.build(ctx, personaId, items)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	channelsList := []ChannelResponse{}
-	for _, ch := range channels {
-		channelsList = append(channelsList, ChannelResponse{
+	c.JSON(http.StatusOK, gin.H{"channels": channelsList})
+}
+
+type channelItem struct {
+	db.Channel
+	IsOwner        bool
+	IsMember       bool
+	IsPending      bool
+	IsFollower     bool
+	MembersCount   int32
+	FollowersCount int32
+}
+
+func (h *Handler) build(ctx context.Context, viewerID int64, items []channelItem) ([]ChannelResponse, error) {
+	ids := make([]int64, len(items))
+	for i, ch := range items {
+		ids[i] = ch.ID
+	}
+	tags, err := h.interestsByChannel(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	communities, err := h.communitiesByChannel(ctx, viewerID, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]ChannelResponse, len(items))
+	for i, ch := range items {
+		out[i] = ChannelResponse{
 			ID:             ch.ID,
 			Name:           ch.Name,
 			Description:    ch.Description,
@@ -133,10 +163,9 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 			Interests:      tags[ch.ID],
 			Community:      communities[ch.ID],
 			MinAge:         ch.MinAge,
-		})
+		}
 	}
-
-	c.JSON(http.StatusOK, gin.H{"channels": channelsList})
+	return out, nil
 }
 
 func (h *Handler) communitiesByChannel(ctx context.Context, viewerID int64, ids []int64) (map[int64]*CommunityRef, error) {

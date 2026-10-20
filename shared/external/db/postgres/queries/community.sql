@@ -100,6 +100,52 @@ WHERE c.deleted_at IS NULL
 ORDER BY c.created_at DESC, c.id DESC
 LIMIT sqlc.arg(lim) OFFSET sqlc.arg(off);
 
+-- By shared interests (at least one), then live members, then members of the
+-- persona's user's gender (everyone if unset). Leaves out communities the
+-- persona has any live membership row in (active, pending or rejected) or follows.
+-- name: SuggestCommunities :many
+WITH viewer AS (
+    SELECT u.gender
+    FROM personas p
+    JOIN users u ON u.id = p.user_id
+    WHERE p.id = sqlc.arg(persona_id)::bigint
+)
+SELECT sqlc.embed(c),
+    (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
+     WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
+       AND ch.deleted_at IS NULL)::int AS channels_count
+FROM communities c
+CROSS JOIN LATERAL (
+    SELECT COUNT(*) AS overlap
+    FROM community_interests ci
+    JOIN persona_interests pi ON pi.interest_id = ci.interest_id AND pi.persona_id = sqlc.arg(persona_id)::bigint
+    WHERE ci.community_id = c.id
+) o
+CROSS JOIN LATERAL (
+    SELECT
+        COUNT(*) AS members,
+        COUNT(*) FILTER (
+            WHERE (SELECT gender FROM viewer) IS NULL OR u.gender = (SELECT gender FROM viewer)
+        ) AS same_gender
+    FROM community_members cm
+    JOIN personas p ON p.id = cm.persona_id AND p.deleted_at IS NULL
+    JOIN users u ON u.id = p.user_id
+    WHERE cm.community_id = c.id AND cm.status = 'active' AND cm.left_at IS NULL
+) m
+WHERE c.deleted_at IS NULL
+  AND o.overlap > 0
+  AND persona_meets_min_age(sqlc.arg(persona_id)::bigint, c.min_age)
+  AND NOT EXISTS (
+      SELECT 1 FROM community_members cm
+      WHERE cm.community_id = c.id AND cm.persona_id = sqlc.arg(persona_id)::bigint AND cm.left_at IS NULL
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM community_followers cf
+      WHERE cf.community_id = c.id AND cf.persona_id = sqlc.arg(persona_id)::bigint AND cf.unfollowed_at IS NULL
+  )
+ORDER BY o.overlap DESC, m.members DESC, m.same_gender DESC, c.id DESC
+LIMIT sqlc.arg(lim) OFFSET sqlc.arg(off);
+
 -- name: ListCommunityInterests :many
 SELECT ci.community_id, i.id, i.name, i.slug, i.emoji
 FROM community_interests ci
