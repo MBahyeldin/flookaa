@@ -913,6 +913,7 @@ CROSS JOIN LATERAL (
     WHERE cm.channel_id = c.id AND cm.left_at IS NULL AND cm.status = 'active'
 ) m
 WHERE c.deleted_at IS NULL
+  AND c.visibility = 'public'
   AND (src.from_community OR o.overlap > 0)
   AND persona_meets_min_age($1::bigint, c.min_age)
   AND NOT EXISTS (
@@ -940,7 +941,7 @@ type SuggestChannelsRow struct {
 	Source         string
 }
 
-// From the persona's communities (joined or followed) first, then by shared
+// Public only. From the persona's communities (joined or followed) first, then by shared
 // interests, live members, and members of the persona's user's gender
 // (everyone if unset). Leaves out channels it has any live row in or follows.
 func (q *Queries) SuggestChannels(ctx context.Context, arg SuggestChannelsParams) ([]SuggestChannelsRow, error) {

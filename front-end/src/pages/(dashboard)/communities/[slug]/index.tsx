@@ -5,15 +5,8 @@ import { toast } from "sonner";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { AgeBadge } from "@/components/age-badge";
+import { CommunityRulesDialog } from "@/components/community-rules-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
@@ -483,29 +476,13 @@ export default function CommunityPage() {
         onChanged={loadModerated}
       />
 
-      <Dialog open={rulesOpen} onOpenChange={setRulesOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{community.name} rules</DialogTitle>
-            <DialogDescription>Please read them before you {isPrivate ? "ask to join" : "join"}.</DialogDescription>
-          </DialogHeader>
-          <p className="whitespace-pre-line text-sm">{community.rules}</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRulesOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              disabled={busy}
-              onClick={() => {
-                setRulesOpen(false);
-                runAction(() => joinCommunity(community.id), "Couldn't join. Please try again.");
-              }}
-            >
-              {isPrivate ? "Agree and request" : "Agree and join"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CommunityRulesDialog
+        community={community}
+        open={rulesOpen}
+        onOpenChange={setRulesOpen}
+        busy={busy}
+        onAgree={() => runAction(() => joinCommunity(community.id), "Couldn't join. Please try again.")}
+      />
 
       <Sheet open={editing} onOpenChange={setEditing}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">

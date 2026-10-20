@@ -45,9 +45,9 @@ step). Backend, plus a frontend service with no UI.
      or a live follow;
    - channels with a live `channel_members` row (any status; the owner is a
      member) or a live `channel_followers` row.
-6. **Private ones are suggested** by metadata, like the general lists: the
-   item's existing fields (`visibility`, `membership_status`, `is_pending`…)
-   tell the step to offer "Request to join".
+6. **Public only** (revised during WWW-70): private communities and
+   channels are never suggested. Originally they were suggested by
+   metadata.
 7. **Same item shapes as the lists**, built by the existing batch helpers, so
    the steps can reuse the community and channel cards:
    - communities: `{communities: [Community]}` (`communities.Handler.build`);

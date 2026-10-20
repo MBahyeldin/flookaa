@@ -93,6 +93,7 @@ func StartServer(cfg config.Server) error {
 	onboardingFlow, err := onboarding.New(
 		onboarding.Step{ID: 1, Key: "about_you", Done: q.UserAboutYouDone},
 		onboarding.Step{ID: 2, Key: "interests", Done: q.DefaultPersonaHasInterests},
+		onboarding.Step{ID: 3, Key: "communities", Skippable: true, Done: q.DefaultPersonaInCommunity},
 	)
 	if err != nil {
 		return err

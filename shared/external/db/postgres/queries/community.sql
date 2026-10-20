@@ -100,7 +100,7 @@ WHERE c.deleted_at IS NULL
 ORDER BY c.created_at DESC, c.id DESC
 LIMIT sqlc.arg(lim) OFFSET sqlc.arg(off);
 
--- By shared interests (at least one), then live members, then members of the
+-- Public only. By shared interests (at least one), then live members, then members of the
 -- persona's user's gender (everyone if unset). Leaves out communities the
 -- persona has any live membership row in (active, pending or rejected) or follows.
 -- name: SuggestCommunities :many
@@ -133,6 +133,7 @@ CROSS JOIN LATERAL (
     WHERE cm.community_id = c.id AND cm.status = 'active' AND cm.left_at IS NULL
 ) m
 WHERE c.deleted_at IS NULL
+  AND c.visibility = 'public'
   AND o.overlap > 0
   AND persona_meets_min_age(sqlc.arg(persona_id)::bigint, c.min_age)
   AND NOT EXISTS (
@@ -462,3 +463,20 @@ SELECT id, name, slug, thumbnail
 FROM communities
 WHERE id = ANY(sqlc.arg(ids)::bigint[])
   AND deleted_at IS NULL;
+
+-- name: DefaultPersonaInCommunity :one
+SELECT (EXISTS (
+    SELECT 1
+    FROM personas p
+    JOIN community_members cm ON cm.persona_id = p.id
+    JOIN communities c ON c.id = cm.community_id AND c.deleted_at IS NULL
+    WHERE p.user_id = $1 AND p.is_default AND p.deleted_at IS NULL
+      AND cm.status IN ('active', 'pending') AND cm.left_at IS NULL
+) OR EXISTS (
+    SELECT 1
+    FROM personas p
+    JOIN community_followers cf ON cf.persona_id = p.id
+    JOIN communities c ON c.id = cf.community_id AND c.deleted_at IS NULL
+    WHERE p.user_id = $1 AND p.is_default AND p.deleted_at IS NULL
+      AND cf.unfollowed_at IS NULL
+))::boolean AS done;
