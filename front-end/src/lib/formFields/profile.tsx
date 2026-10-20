@@ -4,6 +4,21 @@ import type { FormGroup } from "@/types/FormFields";
 import { CalendarDays, Mail, User } from "lucide-react";
 import { GENDERS, dateOfBirthSchema } from "@/types/user";
 
+export const dateOfBirthField = new FormField({
+  id: "date_of_birth",
+  label: "Date of Birth",
+  type: "date",
+  interfaceType: "text",
+  icon: <CalendarDays className="h-4 w-4" />,
+  width: "1/2",
+  // Once set it can be changed but not removed; untouched null stays valid.
+  validate: (value) => {
+    if (value == null) return null;
+    const result = dateOfBirthSchema.safeParse(value);
+    return result.success ? null : result.error.issues[0]?.message ?? "Enter a valid date";
+  },
+});
+
 const profilePicGroup: FormGroup = {
   id: "profile_picture",
   label: "Profile Picture",
@@ -78,20 +93,7 @@ const BasicInfoGroup: FormGroup = {
       icon: <Mail className="h-4 w-4" />,
       width: "full",
     }),
-    new FormField({
-      id: "date_of_birth",
-      label: "Date of Birth",
-      type: "date",
-      interfaceType: "text",
-      icon: <CalendarDays className="h-4 w-4" />,
-      width: "1/2",
-      // Once set it can be changed but not removed; untouched null stays valid.
-      validate: (value) => {
-        if (value == null) return null;
-        const result = dateOfBirthSchema.safeParse(value);
-        return result.success ? null : result.error.issues[0]?.message ?? "Enter a valid date";
-      },
-    }),
+    dateOfBirthField,
     new FormField({
       id: "gender",
       label: "Gender",

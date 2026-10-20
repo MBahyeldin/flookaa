@@ -7,6 +7,9 @@
 
 @theme {
   --font-inter: "Inter", sans-serif;
+  /* Flookaa brand gradient (Figma); fixed, not per palette. */
+  --color-brand-start: #2aa1fd;
+  --color-brand-end: #faf906;
 }
 
 @custom-variant dark (&:is(.dark *));

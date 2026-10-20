@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
-import { CalendarDays } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import TextInput from "@/components/inputs/text";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SectionLoader from "@/components/section-loader";
+import { dateOfBirthField } from "@/lib/formFields/profile";
 import { getUserData, updateProfile } from "@/services/user";
 import {
   GENDERS,
-  MIN_DATE_OF_BIRTH,
   dateOfBirthSchema,
   genderSchema,
-  maxDateOfBirth,
   type Gender,
 } from "@/types/user";
 import OnboardingFooter from "../OnboardingFooter";
@@ -68,27 +66,18 @@ export default function AboutYou() {
   return (
     <div className="flex flex-col gap-8">
       <div className="mx-auto w-full max-w-sm flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="date_of_birth">Date of birth</Label>
-          <div className="relative">
-            <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              id="date_of_birth"
-              type="date"
-              className="pl-9"
-              min={MIN_DATE_OF_BIRTH}
-              max={maxDateOfBirth()}
-              value={dateOfBirth}
-              aria-invalid={dobError ? true : undefined}
-              onChange={(e) => {
-                setDateOfBirth(e.target.value);
-                setServerError(null);
-              }}
-              onBlur={() => setDobTouched(true)}
-            />
-          </div>
-          {dobError && <p className="text-sm text-destructive">{dobError}</p>}
-        </div>
+        <TextInput
+          field={dateOfBirthField}
+          initValue={dateOfBirth}
+          error={dobError ?? undefined}
+          touched
+          className="w-full"
+          setFieldValue={async (_field, value) => {
+            setDateOfBirth(String(value ?? ""));
+            setServerError(null);
+          }}
+          handleBlur={() => setDobTouched(true)}
+        />
         <div className="flex flex-col gap-2">
           <Label htmlFor="gender">Gender</Label>
           <Select

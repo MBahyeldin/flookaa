@@ -127,6 +127,22 @@ Persona" modal `2647:609` (step 1), `2464:22585` (step 2), `2470:23364`
   - creating a persona from the persona manager still works (it sends a
     description).
 
+## Revision: onboarding polish
+
+Asked during review, folded into this ticket (frontend only).
+
+- **Progress bar** (Figma `2237:283`): 672 px wide (`max-w-2xl`), 12 px
+  tall, white track, the filled part a left-to-right gradient `#2aa1fd` →
+  `#faf906` (sampled from Figma's fill image, a plain two-stop ramp, so CSS
+  instead of the raster), "n / N" at 14 px under its right end. The two
+  colours are brand tokens in `index.css`'s `@theme`
+  (`--color-brand-start` / `--color-brand-end`, so `from-brand-start
+  to-brand-end`), fixed rather than per palette.
+- **Date of birth** (About you): the same field the profile form renders
+  (`TextInput` with the profile's `date_of_birth` field: label with the
+  calendar icon, the plain date input), instead of the step's own input with
+  an icon laid over it. Validation and server errors are unchanged.
+
 ## Implementation notes
 
 - `POST /persona/create` used to answer `{persona_id: <whole row with Go
