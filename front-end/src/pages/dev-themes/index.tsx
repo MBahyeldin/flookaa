@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import PostContent from "@/components/portable-text/PostContent";
 import { PALETTES, type PaletteId } from "@/themes/palettes";
 
-const GRADIENT_FROM = "oklch(0.40 calc(var(--gradient-c) * 1.115) var(--gradient-from-h))";
-const GRADIENT_TO = "oklch(0.50 calc(var(--gradient-c) * 0.885) var(--gradient-to-h))";
+const GRADIENT_FROM = "var(--primary-gradient-from)";
+const GRADIENT_TO = "var(--primary-gradient-to)";
 
 const PAIRS: [label: string, fg: string, bg: string, bar: number][] = [
   ["foreground / background", "var(--foreground)", "var(--background)", 4.5],
