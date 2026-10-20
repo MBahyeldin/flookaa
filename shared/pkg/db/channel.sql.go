@@ -87,6 +87,31 @@ func (q *Queries) CreateChannel(ctx context.Context, arg CreateChannelParams) (C
 	return i, err
 }
 
+const defaultPersonaInChannel = `-- name: DefaultPersonaInChannel :one
+SELECT (EXISTS (
+    SELECT 1
+    FROM personas p
+    JOIN channel_members cm ON cm.persona_id = p.id
+    JOIN channels c ON c.id = cm.channel_id AND c.deleted_at IS NULL
+    WHERE p.user_id = $1 AND p.is_default AND p.deleted_at IS NULL
+      AND cm.status IN ('active', 'pending') AND cm.left_at IS NULL
+) OR EXISTS (
+    SELECT 1
+    FROM personas p
+    JOIN channel_followers cf ON cf.persona_id = p.id
+    JOIN channels c ON c.id = cf.channel_id AND c.deleted_at IS NULL
+    WHERE p.user_id = $1 AND p.is_default AND p.deleted_at IS NULL
+      AND cf.unfollowed_at IS NULL
+))::boolean AS done
+`
+
+func (q *Queries) DefaultPersonaInChannel(ctx context.Context, userID int64) (bool, error) {
+	row := q.db.QueryRowContext(ctx, defaultPersonaInChannel, userID)
+	var done bool
+	err := row.Scan(&done)
+	return done, err
+}
+
 const followChannel = `-- name: FollowChannel :execrows
 INSERT INTO channel_followers (channel_id, persona_id)
 SELECT $1::bigint, $2::bigint

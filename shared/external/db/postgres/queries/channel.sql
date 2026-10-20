@@ -398,3 +398,20 @@ SELECT id, name, thumbnail
 FROM channels
 WHERE id = ANY(sqlc.arg(ids)::bigint[])
   AND deleted_at IS NULL;
+
+-- name: DefaultPersonaInChannel :one
+SELECT (EXISTS (
+    SELECT 1
+    FROM personas p
+    JOIN channel_members cm ON cm.persona_id = p.id
+    JOIN channels c ON c.id = cm.channel_id AND c.deleted_at IS NULL
+    WHERE p.user_id = $1 AND p.is_default AND p.deleted_at IS NULL
+      AND cm.status IN ('active', 'pending') AND cm.left_at IS NULL
+) OR EXISTS (
+    SELECT 1
+    FROM personas p
+    JOIN channel_followers cf ON cf.persona_id = p.id
+    JOIN channels c ON c.id = cf.channel_id AND c.deleted_at IS NULL
+    WHERE p.user_id = $1 AND p.is_default AND p.deleted_at IS NULL
+      AND cf.unfollowed_at IS NULL
+))::boolean AS done;
