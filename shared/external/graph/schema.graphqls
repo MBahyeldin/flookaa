@@ -217,6 +217,7 @@ type Channel {
   isFollower: Boolean!
   canModerate: Boolean!
   community: CommunityRef
+  minAge: Int!
 }
 
 type CommunityRef {

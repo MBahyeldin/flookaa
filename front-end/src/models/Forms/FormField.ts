@@ -23,6 +23,8 @@ export class FormField {
   public visibleWhen?: (values: Record<string, unknown>) => boolean;
   // Muted note under the input, recomputed as the value changes.
   public hint?: (value: string) => string | null;
+  // The value as the API takes it, when it differs from the input's.
+  public serialize?: (value: unknown) => unknown;
   // Pic fields only: the sibling fields that receive the picked file's size.
   public dimensions?: { width: string; height: string };
   // Voice fields only: the sibling field that receives the clip's length in seconds.
@@ -52,6 +54,7 @@ export class FormField {
     validate = () => null,
     visibleWhen,
     hint,
+    serialize,
     dimensions,
     duration,
     itemFields,
@@ -80,6 +83,7 @@ export class FormField {
     ) => string | null;
     visibleWhen?: (values: Record<string, unknown>) => boolean;
     hint?: (value: string) => string | null;
+    serialize?: (value: unknown) => unknown;
     dimensions?: { width: string; height: string };
     duration?: string;
     itemFields?: FormField[];
@@ -105,6 +109,7 @@ export class FormField {
     this.validate = validate;
     this.visibleWhen = visibleWhen;
     this.hint = hint;
+    this.serialize = serialize;
     this.dimensions = dimensions;
     this.duration = duration;
     this.itemFields = itemFields;

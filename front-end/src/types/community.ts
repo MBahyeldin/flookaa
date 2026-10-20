@@ -18,6 +18,8 @@ export type Community = {
   thumbnail: string;
   banner: string;
   visibility: "public" | "private";
+  /** 13, 16, 18 or 21. */
+  min_age: number;
   /** Null when the owner persona is gone. */
   owner: CommunityOwner | null;
   interests: Interest[];

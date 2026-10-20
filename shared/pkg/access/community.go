@@ -29,6 +29,9 @@ func LoadCommunity(ctx context.Context, q *db.Queries, communityID, personaID in
 	if err != nil {
 		return Community{}, fmt.Errorf("load community access: %w", err)
 	}
+	if !row.MeetsMinAge {
+		return Community{}, ErrCommunityNotFound
+	}
 	return Community{row}, nil
 }
 

@@ -1064,6 +1064,7 @@ type Channel struct {
 	CreatedAt   sql.NullTime
 	UpdatedAt   sql.NullTime
 	DeletedAt   sql.NullTime
+	MinAge      int16
 }
 
 type ChannelFollower struct {
@@ -1126,6 +1127,7 @@ type Community struct {
 	UpdatedAt   time.Time
 	DeletedAt   sql.NullTime
 	Rules       string
+	MinAge      int16
 }
 
 type CommunityChannel struct {

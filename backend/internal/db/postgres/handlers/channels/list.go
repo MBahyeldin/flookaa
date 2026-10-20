@@ -31,6 +31,7 @@ type ChannelResponse struct {
 	FollowersCount int32         `json:"followers_count"`
 	Interests      []InterestTag `json:"interests"`
 	Community      *CommunityRef `json:"community"`
+	MinAge         int16         `json:"min_age"`
 }
 
 type CommunityRef struct {
@@ -105,7 +106,7 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	communities, err := h.communitiesByChannel(ctx, ids)
+	communities, err := h.communitiesByChannel(ctx, personaId, ids)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -131,18 +132,19 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 			FollowersCount: ch.FollowersCount,
 			Interests:      tags[ch.ID],
 			Community:      communities[ch.ID],
+			MinAge:         ch.MinAge,
 		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"channels": channelsList})
 }
 
-func (h *Handler) communitiesByChannel(ctx context.Context, ids []int64) (map[int64]*CommunityRef, error) {
+func (h *Handler) communitiesByChannel(ctx context.Context, viewerID int64, ids []int64) (map[int64]*CommunityRef, error) {
 	out := make(map[int64]*CommunityRef, len(ids))
 	if len(ids) == 0 {
 		return out, nil
 	}
-	rows, err := h.q.ListChannelCommunities(ctx, ids)
+	rows, err := h.q.ListChannelCommunities(ctx, db.ListChannelCommunitiesParams{ChannelIds: ids, ViewerID: viewerID})
 	if err != nil {
 		return nil, err
 	}

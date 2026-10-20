@@ -23,6 +23,7 @@ type CreateChannelRequest struct {
 	Visibility  string  `json:"visibility" binding:"required,oneof=public private"`
 	InterestIDs []int64 `json:"interest_ids"`
 	CommunityID int64   `json:"community_id"`
+	MinAge      *int16  `json:"min_age"`
 }
 
 type CreateParams struct {
@@ -32,6 +33,7 @@ type CreateParams struct {
 	Banner      string
 	Visibility  db.ChannelVisibilityEnum
 	OwnerID     int64
+	MinAge      int16
 	InterestIDs []int64
 	// 0: standalone.
 	CommunityID int64
@@ -56,6 +58,7 @@ func Create(ctx context.Context, pg *sql.DB, queries *db.Queries, p CreateParams
 		Banner:      p.Banner,
 		OwnerID:     p.OwnerID,
 		Visibility:  p.Visibility,
+		MinAge:      p.MinAge,
 	})
 	if err != nil {
 		return db.Channel{}, err
@@ -123,6 +126,18 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 		return
 	}
 
+	if req.MinAge == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_min_age"})
+		return
+	}
+	if ok, err := access.ValidMinAge(ctx, h.q, personaId, *req.MinAge); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	} else if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_min_age"})
+		return
+	}
+
 	// A non-manager's channel is created standalone with a pending request.
 	request := false
 	if req.CommunityID != 0 {
@@ -145,6 +160,7 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 		Banner:           req.Banner,
 		Visibility:       db.ChannelVisibilityEnum(req.Visibility),
 		OwnerID:          personaId,
+		MinAge:           *req.MinAge,
 		InterestIDs:      req.InterestIDs,
 		CommunityID:      req.CommunityID,
 		RequestCommunity: request,

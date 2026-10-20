@@ -130,10 +130,10 @@ func (q *Queries) CountAllowedCommunityInterests(ctx context.Context, arg CountA
 
 const createCommunity = `-- name: CreateCommunity :one
 WITH created AS (
-    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, visibility, owner_id)
+    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, visibility, owner_id, min_age)
     VALUES (
         $1, $2, $3, $4, $5,
-        $6, $7, $8
+        $6, $7, $8, $9::smallint
     )
     RETURNING id, owner_id
 ), owner_member AS (
@@ -152,6 +152,7 @@ type CreateCommunityParams struct {
 	Banner      string
 	Visibility  CommunityVisibilityEnum
 	OwnerID     int64
+	MinAge      int16
 }
 
 // The owner is the first active member.
@@ -165,6 +166,7 @@ func (q *Queries) CreateCommunity(ctx context.Context, arg CreateCommunityParams
 		arg.Banner,
 		arg.Visibility,
 		arg.OwnerID,
+		arg.MinAge,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -286,7 +288,8 @@ SELECT
         JOIN roles r ON r.id = ur.role_id
         WHERE p.id = $1::bigint
           AND r.name = 'Administrator'
-    )::boolean AS is_admin
+    )::boolean AS is_admin,
+    persona_meets_min_age($1::bigint, c.min_age)::boolean AS meets_min_age
 FROM communities c
 LEFT JOIN community_members m
     ON m.community_id = c.id AND m.persona_id = $1::bigint AND m.left_at IS NULL
@@ -310,6 +313,7 @@ type GetCommunityAccessRow struct {
 	IsFollowing          bool
 	IsModerator          bool
 	IsAdmin              bool
+	MeetsMinAge          bool
 }
 
 // A missing row (sql.ErrNoRows) means the community does not exist or is deleted.
@@ -328,12 +332,13 @@ func (q *Queries) GetCommunityAccess(ctx context.Context, arg GetCommunityAccess
 		&i.IsFollowing,
 		&i.IsModerator,
 		&i.IsAdmin,
+		&i.MeetsMinAge,
 	)
 	return i, err
 }
 
 const getCommunityByID = `-- name: GetCommunityByID :one
-SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules,
+SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
      WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
        AND ch.deleted_at IS NULL)::int AS channels_count
@@ -362,13 +367,14 @@ func (q *Queries) GetCommunityByID(ctx context.Context, id int64) (GetCommunityB
 		&i.Community.UpdatedAt,
 		&i.Community.DeletedAt,
 		&i.Community.Rules,
+		&i.Community.MinAge,
 		&i.ChannelsCount,
 	)
 	return i, err
 }
 
 const getCommunityBySlug = `-- name: GetCommunityBySlug :one
-SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules,
+SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
      WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
        AND ch.deleted_at IS NULL)::int AS channels_count
@@ -397,6 +403,7 @@ func (q *Queries) GetCommunityBySlug(ctx context.Context, slug string) (GetCommu
 		&i.Community.UpdatedAt,
 		&i.Community.DeletedAt,
 		&i.Community.Rules,
+		&i.Community.MinAge,
 		&i.ChannelsCount,
 	)
 	return i, err
@@ -539,7 +546,13 @@ JOIN communities c ON c.id = cc.community_id
 WHERE cc.channel_id = ANY($1::bigint[])
   AND cc.status = 'active' AND cc.removed_at IS NULL
   AND c.deleted_at IS NULL
+  AND persona_meets_min_age($2::bigint, c.min_age)
 `
+
+type ListChannelCommunitiesParams struct {
+	ChannelIds []int64
+	ViewerID   int64
+}
 
 type ListChannelCommunitiesRow struct {
 	ChannelID int64
@@ -548,8 +561,8 @@ type ListChannelCommunitiesRow struct {
 	Slug      string
 }
 
-func (q *Queries) ListChannelCommunities(ctx context.Context, channelIds []int64) ([]ListChannelCommunitiesRow, error) {
-	rows, err := q.db.QueryContext(ctx, listChannelCommunities, pq.Array(channelIds))
+func (q *Queries) ListChannelCommunities(ctx context.Context, arg ListChannelCommunitiesParams) ([]ListChannelCommunitiesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listChannelCommunities, pq.Array(arg.ChannelIds), arg.ViewerID)
 	if err != nil {
 		return nil, err
 	}
@@ -577,23 +590,25 @@ func (q *Queries) ListChannelCommunities(ctx context.Context, channelIds []int64
 }
 
 const listCommunities = `-- name: ListCommunities :many
-SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules,
+SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
      WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
        AND ch.deleted_at IS NULL)::int AS channels_count
 FROM communities c
 WHERE c.deleted_at IS NULL
-  AND ($1::text IS NULL OR EXISTS (
+  AND persona_meets_min_age($1::bigint, c.min_age)
+  AND ($2::text IS NULL OR EXISTS (
       SELECT 1
       FROM community_interests ci
       JOIN interests i ON i.id = ci.interest_id
-      WHERE ci.community_id = c.id AND i.slug = $1::text
+      WHERE ci.community_id = c.id AND i.slug = $2::text
   ))
 ORDER BY c.created_at DESC, c.id DESC
-LIMIT $3 OFFSET $2
+LIMIT $4 OFFSET $3
 `
 
 type ListCommunitiesParams struct {
+	ViewerID     int64
 	InterestSlug sql.NullString
 	Off          int64
 	Lim          int64
@@ -605,7 +620,12 @@ type ListCommunitiesRow struct {
 }
 
 func (q *Queries) ListCommunities(ctx context.Context, arg ListCommunitiesParams) ([]ListCommunitiesRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCommunities, arg.InterestSlug, arg.Off, arg.Lim)
+	rows, err := q.db.QueryContext(ctx, listCommunities,
+		arg.ViewerID,
+		arg.InterestSlug,
+		arg.Off,
+		arg.Lim,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -626,6 +646,7 @@ func (q *Queries) ListCommunities(ctx context.Context, arg ListCommunitiesParams
 			&i.Community.UpdatedAt,
 			&i.Community.DeletedAt,
 			&i.Community.Rules,
+			&i.Community.MinAge,
 			&i.ChannelsCount,
 		); err != nil {
 			return nil, err
@@ -1009,6 +1030,7 @@ WHERE ch.deleted_at IS NULL
             AND r.name IN ('moderator', 'Administrator')
       )
   )
+  AND persona_meets_min_age($1::bigint, ch.min_age)
 ORDER BY ch.name, ch.id
 `
 
@@ -1256,9 +1278,10 @@ SET name = COALESCE($1, name),
     thumbnail = COALESCE($5, thumbnail),
     banner = COALESCE($6, banner),
     visibility = COALESCE($7::community_visibility_enum, visibility),
+    min_age = COALESCE($8::smallint, min_age),
     updated_at = now()
-WHERE id = $8 AND deleted_at IS NULL
-RETURNING id, name, slug, description, thumbnail, banner, visibility, owner_id, created_at, updated_at, deleted_at, rules
+WHERE id = $9 AND deleted_at IS NULL
+RETURNING id, name, slug, description, thumbnail, banner, visibility, owner_id, created_at, updated_at, deleted_at, rules, min_age
 `
 
 type UpdateCommunityParams struct {
@@ -1269,6 +1292,7 @@ type UpdateCommunityParams struct {
 	Thumbnail   sql.NullString
 	Banner      sql.NullString
 	Visibility  NullCommunityVisibilityEnum
+	MinAge      sql.NullInt16
 	ID          int64
 }
 
@@ -1281,6 +1305,7 @@ func (q *Queries) UpdateCommunity(ctx context.Context, arg UpdateCommunityParams
 		arg.Thumbnail,
 		arg.Banner,
 		arg.Visibility,
+		arg.MinAge,
 		arg.ID,
 	)
 	var i Community
@@ -1297,6 +1322,7 @@ func (q *Queries) UpdateCommunity(ctx context.Context, arg UpdateCommunityParams
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Rules,
+		&i.MinAge,
 	)
 	return i, err
 }

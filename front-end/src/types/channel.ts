@@ -20,6 +20,8 @@ type Channel = {
   followers_count: number;
   interests: Interest[];
   community: CommunityRef | null;
+  /** 13, 16, 18 or 21. */
+  min_age: number;
 };
 
 type ChannelInterests = { interests: Interest[]; can_edit: boolean };

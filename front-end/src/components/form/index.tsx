@@ -2,7 +2,7 @@ import clsx from "clsx";
 import FieldRender from "./FieldRender";
 import type { Form as FormType } from "@/models/Forms/Form";
 import useForm from "@/hooks/useForm";
-import { useEffect, type FormEventHandler } from "react";
+import { useEffect, useRef, type FormEventHandler } from "react";
 import { Card, CardContent } from "../ui/card";
 
 export default function Form({
@@ -60,26 +60,52 @@ export default function Form({
       .forEach(([key, value]) => setFieldValue(key, value));
   }, [values, derive, setFieldValue]);
 
+  const formRef = useRef<HTMLFormElement>(null);
+  // Set by a submit attempt, so errors shown while typing don't move the page.
+  const scrollToErrorRef = useRef(false);
+
+  const scrollToFirstError = (fieldErrors: Record<string, unknown>) => {
+    const target = Array.from(formRef.current?.querySelectorAll<HTMLElement>("[data-field]") ?? []).find(
+      (el) => el.dataset.field && fieldErrors[el.dataset.field]
+    );
+    const box = target?.firstElementChild as HTMLElement | null | undefined;
+    if (!box) return;
+    box.scrollIntoView({ behavior: "smooth", block: "center" });
+    box.querySelector<HTMLElement>("input, textarea, button, [tabindex]:not([tabindex='-1'])")?.focus({ preventScroll: true });
+  };
+
+  // Server errors mapped to a field arrive after the submit.
+  useEffect(() => {
+    if (!scrollToErrorRef.current || Object.keys(errors).length === 0) return;
+    scrollToErrorRef.current = false;
+    scrollToFirstError(errors);
+  }, [errors]);
+
   useEffect(() => {
     if (status) {
+      // useForm resets status when a submit starts; only an outcome ends the wait.
+      if (status.success || status.error) scrollToErrorRef.current = false;
       onStatusChange(status);
     }
   }, [status, onStatusChange]);
 
-  const onSubmit: FormEventHandler<HTMLFormElement> = (e) => {
+  const onSubmit: FormEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
     // mark all fields as touched to show validation errors
     const allFieldIds = form.groups.flatMap((group) =>
       group.fields.map((f) => f.id)
     );
-    setTouched(
+    const validationErrors = await setTouched(
       allFieldIds.reduce((acc, id) => ({ ...acc, [id]: true }), {}),
       true
     );
     // only submit if there are no errors
-    if (Object.keys(errors).length === 0) {
-      handleSubmit();
+    if (validationErrors && Object.keys(validationErrors).length > 0) {
+      scrollToFirstError(validationErrors);
+      return;
     }
+    scrollToErrorRef.current = true;
+    handleSubmit();
   };
 
   useEffect(() => {
@@ -87,6 +113,7 @@ export default function Form({
 
   return (
     <form
+      ref={formRef}
       className={clsx("", className, {
         "opacity-50 pointer-events-none":
           changeOpacityWhenSubmitting && isSubmitting,

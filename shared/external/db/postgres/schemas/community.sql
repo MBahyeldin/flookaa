@@ -13,7 +13,8 @@ CREATE TABLE communities (
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
     deleted_at TIMESTAMP WITHOUT TIME ZONE,
-    rules TEXT NOT NULL DEFAULT ''
+    rules TEXT NOT NULL DEFAULT '',
+    min_age SMALLINT NOT NULL CHECK (min_age IN (13, 16, 18, 21))
 );
 
 CREATE TABLE community_interests (

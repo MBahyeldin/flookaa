@@ -35,7 +35,10 @@ export default function CreateChannelPage() {
     };
   }, [communityId]);
 
-  const initialValues = useMemo(() => (community ? { community_id: community.id } : {}), [community]);
+  const initialValues = useMemo(
+    () => (community ? { community_id: community.id } : {}),
+    [community],
+  );
 
   if (!user) {
     navigate("/");

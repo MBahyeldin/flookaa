@@ -2,8 +2,8 @@
 -- 1. Create a channel
 -- -------------------------------
 -- name: CreateChannel :one
-INSERT INTO channels (name, description,  owner_id, thumbnail, banner, visibility, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, NOW())
+INSERT INTO channels (name, description,  owner_id, thumbnail, banner, visibility, min_age, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, sqlc.arg(min_age)::smallint, NOW())
 RETURNING *;
 
 -- -------------------------------
@@ -16,6 +16,15 @@ SET name = COALESCE($1, name),
     updated_at = NOW()
 WHERE id = $3
 RETURNING *;
+
+-- name: SetChannelMinAge :exec
+UPDATE channels
+SET min_age = sqlc.arg(min_age)::smallint,
+    updated_at = NOW()
+WHERE id = sqlc.arg(id) AND deleted_at IS NULL;
+
+-- name: PersonaMeetsMinAge :one
+SELECT persona_meets_min_age(sqlc.arg(persona_id)::bigint, sqlc.arg(min_age)::smallint)::boolean;
 
 -- -------------------------------
 -- 3. Remove a channel (soft delete)
@@ -142,6 +151,7 @@ SELECT
     )::int AS followers_count
 FROM channels c
 WHERE c.deleted_at IS NULL
+  AND persona_meets_min_age($1, c.min_age)
   AND (sqlc.narg(interest_slug)::text IS NULL OR EXISTS (
       SELECT 1
       FROM channel_interests ci
@@ -197,7 +207,8 @@ SELECT
           AND cf.unfollowed_at IS NULL
     )::int AS followers_count
 FROM channels c
-WHERE c.id = $2 AND c.deleted_at IS NULL;
+WHERE c.id = $2 AND c.deleted_at IS NULL
+  AND persona_meets_min_age($1, c.min_age);
 -- -------------------------------
 -- 11. What a persona may do in a channel
 -- -------------------------------
@@ -241,7 +252,8 @@ SELECT
             WHERE p.id = sqlc.arg(persona_id)::bigint
               AND r.name = 'Administrator'
         )
-    )::boolean AS can_moderate
+    )::boolean AS can_moderate,
+    persona_meets_min_age(sqlc.arg(persona_id)::bigint, c.min_age)::boolean AS meets_min_age
 FROM channels c
 WHERE c.id = sqlc.arg(channel_id)::bigint AND c.deleted_at IS NULL;
 

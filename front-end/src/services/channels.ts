@@ -137,3 +137,22 @@ export const getChannelInterests = (channelId: string) => channelInterestsCall(c
 
 export const setChannelInterests = (channelId: string, interestIds: number[]) =>
   channelInterestsCall(channelId, { method: "PUT", body: JSON.stringify({ interest_ids: interestIds }) });
+
+export async function setChannelMinAge(
+  channelId: string,
+  minAge: number,
+): Promise<{ ok: true; minAge: number } | { ok: false; error: string }> {
+  try {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/channels/${channelId}/min-age`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ min_age: minAge }),
+    });
+    const body = await resp.json().catch(() => ({}));
+    if (!resp.ok) return { ok: false, error: body.error ?? "request_failed" };
+    return { ok: true, minAge: body.min_age };
+  } catch {
+    return { ok: false, error: "request_failed" };
+  }
+}

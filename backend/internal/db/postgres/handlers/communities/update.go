@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"shared/external/db/nats"
 	"shared/external/db/postgres"
+	"shared/pkg/access"
 	"shared/pkg/db"
 	"strings"
 
@@ -22,6 +23,7 @@ type UpdateCommunityRequest struct {
 	Banner      *string  `json:"banner"`
 	Visibility  *string  `json:"visibility"`
 	InterestIDs *[]int64 `json:"interest_ids"`
+	MinAge      *int16   `json:"min_age"`
 }
 
 func optional(s *string) sql.NullString {
@@ -29,6 +31,13 @@ func optional(s *string) sql.NullString {
 		return sql.NullString{}
 	}
 	return sql.NullString{String: *s, Valid: true}
+}
+
+func optionalMinAge(v *int16) sql.NullInt16 {
+	if v == nil {
+		return sql.NullInt16{}
+	}
+	return sql.NullInt16{Int16: *v, Valid: true}
 }
 
 func (h *Handler) UpdateCommunity(c *gin.Context) {
@@ -82,6 +91,15 @@ func (h *Handler) UpdateCommunity(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
+	if req.MinAge != nil {
+		if ok, err := access.ValidMinAge(ctx, h.q, personaID, *req.MinAge); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		} else if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_min_age"})
+			return
+		}
+	}
 	if req.InterestIDs != nil {
 		if code, err := h.checkInterests(ctx, communityID, *req.InterestIDs); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -113,6 +131,7 @@ func (h *Handler) UpdateCommunity(c *gin.Context) {
 		Thumbnail:   optional(req.Thumbnail),
 		Banner:      optional(req.Banner),
 		Visibility:  visibility,
+		MinAge:      optionalMinAge(req.MinAge),
 	})
 	if postgres.IsUniqueViolation(err, slugConstraint) {
 		c.JSON(http.StatusConflict, gin.H{"error": "slug_taken"})

@@ -32,3 +32,15 @@ CREATE TABLE IF NOT EXISTS users (
     date_of_birth DATE CHECK (date_of_birth >= DATE '1900-01-01'),
     gender gender_enum
 );
+
+-- A user without a date of birth never meets a limit.
+CREATE FUNCTION persona_meets_min_age(p_persona_id BIGINT, p_min_age SMALLINT) RETURNS BOOLEAN
+LANGUAGE sql STABLE AS $$
+    SELECT EXISTS (
+        SELECT 1
+        FROM personas p
+        JOIN users u ON u.id = p.user_id
+        WHERE p.id = p_persona_id
+          AND u.date_of_birth <= ((now() AT TIME ZONE 'UTC')::date - make_interval(years => p_min_age))::date
+    )
+$$;

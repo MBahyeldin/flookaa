@@ -16,7 +16,8 @@ CREATE TABLE channels (
     visibility channel_visibility_enum NOT NULL DEFAULT 'public',
     created_at TIMESTAMP DEFAULT now(),
     updated_at TIMESTAMP DEFAULT now(),
-    deleted_at TIMESTAMP
+    deleted_at TIMESTAMP,
+    min_age SMALLINT NOT NULL CHECK (min_age IN (13, 16, 18, 21))
 );
 
 -- -------------------------------

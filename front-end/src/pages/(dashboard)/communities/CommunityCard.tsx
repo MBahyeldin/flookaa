@@ -3,6 +3,7 @@ import { Lock, Rss, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { AgeBadge } from "@/components/age-badge";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import InterestChips from "@/components/interests/InterestChips";
 import type { Community } from "@/types/community";
@@ -13,12 +14,15 @@ export function CommunityCard({ community }: { community: Community }) {
       <Card className="h-full overflow-hidden border-0 pt-0 shadow-sm transition-shadow hover:shadow-md">
         <div className="relative h-24 bg-gradient-to-br from-primary/30 to-secondary">
           {community.banner && <img src={community.banner} alt="" className="h-full w-full object-cover" />}
-          {community.visibility === "private" && (
-            <Badge variant="secondary" className="absolute right-3 top-3 border-0 bg-black/50 text-white">
-              <Lock className="mr-1 h-3 w-3" />
-              Private
-            </Badge>
-          )}
+          <div className="absolute right-3 top-3 flex gap-1">
+            <AgeBadge minAge={community.min_age} className="border-0 bg-black/50 text-white" />
+            {community.visibility === "private" && (
+              <Badge variant="secondary" className="border-0 bg-black/50 text-white">
+                <Lock className="mr-1 h-3 w-3" />
+                Private
+              </Badge>
+            )}
+          </div>
         </div>
         <CardContent className="-mt-8 space-y-3 px-6 pb-6">
           <Avatar className="h-14 w-14 rounded-xl border-4 border-card">

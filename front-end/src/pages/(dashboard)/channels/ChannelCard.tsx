@@ -3,6 +3,7 @@ import { Users, UserPlus, Heart, HeartOff, Lock, Clock, Boxes } from "lucide-rea
 import { Card, CardContent } from "@/components/ui/card";
 import { ImageWithFallback } from "@/components/image-with-fallback";
 import { Badge } from "@/components/ui/badge";
+import { AgeBadge } from "@/components/age-badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import type { Channel } from "@/types/channel";
@@ -91,15 +92,15 @@ export function ChannelCard({ channel, hideCommunity = false }: ChannelCardProps
             {channel.name}
           </Badge>
         )}
-        {isPrivate && (
-          <Badge
-            variant="secondary"
-            className="absolute top-3 right-3 bg-black/50 text-white border-0"
-          >
-            <Lock className="h-3 w-3 mr-1" />
-            Private
-          </Badge>
-        )}
+        <div className="absolute top-3 right-3 flex gap-1">
+          <AgeBadge minAge={channel.min_age} className="bg-black/50 text-white border-0" />
+          {isPrivate && (
+            <Badge variant="secondary" className="bg-black/50 text-white border-0">
+              <Lock className="h-3 w-3 mr-1" />
+              Private
+            </Badge>
+          )}
+        </div>
       </div>
 
       <CardContent className="p-6">

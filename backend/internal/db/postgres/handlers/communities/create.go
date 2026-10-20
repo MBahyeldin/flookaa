@@ -5,6 +5,7 @@ import (
 	"app/internal/slug"
 	"net/http"
 	"shared/external/db/postgres"
+	"shared/pkg/access"
 	"shared/pkg/db"
 	"strings"
 
@@ -20,6 +21,7 @@ type CreateCommunityRequest struct {
 	Banner      string  `json:"banner"`
 	Visibility  string  `json:"visibility"`
 	InterestIDs []int64 `json:"interest_ids"`
+	MinAge      *int16  `json:"min_age"`
 }
 
 const slugConstraint = "communities_slug_key"
@@ -69,6 +71,17 @@ func (h *Handler) CreateCommunity(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
+	if req.MinAge == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_min_age"})
+		return
+	}
+	if ok, err := access.ValidMinAge(ctx, h.q, personaID, *req.MinAge); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	} else if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_min_age"})
+		return
+	}
 	if code, err := h.checkInterests(ctx, 0, req.InterestIDs); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -94,6 +107,7 @@ func (h *Handler) CreateCommunity(c *gin.Context) {
 		Banner:      req.Banner,
 		Visibility:  db.CommunityVisibilityEnum(req.Visibility),
 		OwnerID:     personaID,
+		MinAge:      *req.MinAge,
 	})
 	if postgres.IsUniqueViolation(err, slugConstraint) {
 		c.JSON(http.StatusConflict, gin.H{"error": "slug_taken"})

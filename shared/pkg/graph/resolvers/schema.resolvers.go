@@ -443,7 +443,7 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		}
 		ownerPersona = *owners[channel.OwnerID]
 
-		refs, err := q.ListChannelCommunities(ctxTimeout, []int64{id})
+		refs, err := q.ListChannelCommunities(ctxTimeout, db.ListChannelCommunitiesParams{ChannelIds: []int64{id}, ViewerID: personaId})
 		if err != nil {
 			channelErr = err
 			return
@@ -509,6 +509,7 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		FollowersCount: &channel.FollowersCount,
 		CanModerate:    channelAccess.CanModerate,
 		Community:      community,
+		MinAge:         int32(channel.MinAge),
 	}, nil
 }
 

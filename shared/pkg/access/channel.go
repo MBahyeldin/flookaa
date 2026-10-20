@@ -42,6 +42,10 @@ func LoadChannel(ctx context.Context, q *db.Queries, channelID, personaID int64)
 	if err != nil {
 		return Channel{}, fmt.Errorf("load channel access: %w", err)
 	}
+	// Too young reads like missing, so it never reveals an age.
+	if !row.MeetsMinAge {
+		return Channel{}, ErrChannelNotFound
+	}
 	return Channel{row}, nil
 }
 

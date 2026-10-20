@@ -57,6 +57,12 @@ export default function useForm({
         }
 
 
+        form.groups
+          .flatMap((group) => group.fields)
+          .forEach((f) => {
+            if (f.serialize && f.id in data) data[f.id] = f.serialize(data[f.id]);
+          });
+
         if (Object.keys(data).length === 0) {
 
           setStatus({ success: true });

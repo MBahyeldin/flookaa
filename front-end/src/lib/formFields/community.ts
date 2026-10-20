@@ -2,6 +2,7 @@ import { FormField } from "@/models/Forms/FormField";
 import type { FormGroup } from "@/types/FormFields";
 import { MAX_COMMUNITY_INTERESTS, MAX_COMMUNITY_RULES } from "@/types/community";
 import { SLUG_PATTERN } from "@/lib/slug";
+import { minAgeField } from "@/lib/minAge";
 
 const communityFields = [
   new FormField({
@@ -62,6 +63,7 @@ const communityFields = [
     isRequired: true,
     width: "1/2",
   }),
+  minAgeField(),
   new FormField({
     id: "thumbnail",
     label: "Thumbnail",

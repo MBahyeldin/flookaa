@@ -1,6 +1,7 @@
 import { FormField } from "@/models/Forms/FormField";
 import type { FormGroup } from "@/types/FormFields";
 import { MAX_CHANNEL_INTERESTS } from "@/types/interest";
+import { minAgeField } from "@/lib/minAge";
 
 //
 // type CreateChannelRequest struct {
@@ -43,6 +44,7 @@ const channelFormFields = [
     isRequired: true,
     width: "1/2",
   }),
+  minAgeField(),
   new FormField({
     id: "thumbnail",
     label: "Thumbnail",

@@ -22,6 +22,7 @@ import { formatDateOnly } from "@/utils/formateDate";
 import type { Interest } from "@/types/interest";
 import ChannelInterestsEditor from "./ChannelInterestsEditor";
 import ChannelCommunityPanel from "./ChannelCommunityPanel";
+import ChannelSettingsPanel from "./ChannelSettingsPanel";
 
 /**
  * Join requests and members for owners, channel moderators and admins. Both
@@ -34,12 +35,16 @@ export default function ModerationSheet({
   onOpenChange,
   onInterestsSaved,
   communityKey,
+  minAge,
+  onMinAgeSaved,
 }: {
   channelId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onInterestsSaved?: (interests: Interest[]) => void;
   communityKey: number;
+  minAge: number;
+  onMinAgeSaved?: (minAge: number) => void;
 }) {
   const [requests, setRequests] = useState<JoinRequest[]>([]);
   const [members, setMembers] = useState<ChannelMember[]>([]);
@@ -109,7 +114,7 @@ export default function ModerationSheet({
         <SheetHeader>
           <SheetTitle>Manage channel</SheetTitle>
           <SheetDescription>
-            Approve people who asked to join, remove members, tag the channel's interests, and see its community.
+            Approve people who asked to join, remove members, tag the channel's interests, see its community, and set an age limit.
           </SheetDescription>
         </SheetHeader>
 
@@ -135,6 +140,7 @@ export default function ModerationSheet({
                 <TabsTrigger value="members">Members ({members.length})</TabsTrigger>
                 <TabsTrigger value="interests">Interests</TabsTrigger>
                 <TabsTrigger value="community">Community</TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
               </TabsList>
 
               <TabsContent value="requests" className="mt-2">
@@ -201,6 +207,9 @@ export default function ModerationSheet({
               </TabsContent>
               <TabsContent value="community" className="mt-2">
                 <ChannelCommunityPanel channelId={channelId} reloadKey={communityKey} />
+              </TabsContent>
+              <TabsContent value="settings" className="mt-2">
+                <ChannelSettingsPanel channelId={channelId} minAge={minAge} onSaved={onMinAgeSaved} />
               </TabsContent>
             </Tabs>
           )}

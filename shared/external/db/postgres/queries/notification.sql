@@ -94,8 +94,9 @@ RETURNING id, recipient_id;
 -- -------------------------------
 -- Keyset paged: pass the last row's (updated_at, id) as the cursor, or NULLs
 -- for the first page. Visibility is one rule per scope type; rows without a
--- scope are personal and always visible. CHANNEL mirrors access.CanRead:
--- public, or the recipient is an active member.
+-- scope are personal and visible unless about a community the recipient is
+-- too young for. CHANNEL mirrors access.CanRead: old enough, and public or the
+-- recipient is an active member.
 -- name: ListNotifications :many
 SELECT n.*
 FROM notifications n
@@ -106,12 +107,16 @@ WHERE n.recipient_id = sqlc.arg(recipient_id)::bigint
       OR (n.updated_at, n.id) < (sqlc.narg(cursor_updated_at)::timestamptz, sqlc.narg(cursor_id)::bigint)
   )
   AND (
-      n.scope_type IS NULL
+      (n.scope_type IS NULL AND (n.subject_type <> 'COMMUNITY' OR NOT EXISTS (
+          SELECT 1 FROM communities co
+          WHERE co.id::text = n.subject_id AND NOT persona_meets_min_age(n.recipient_id, co.min_age)
+      )))
       OR (n.scope_type = 'CHANNEL' AND EXISTS (
           SELECT 1
           FROM channels c
           WHERE c.id = n.scope_id
             AND c.deleted_at IS NULL
+            AND persona_meets_min_age(n.recipient_id, c.min_age)
             AND (
                 c.visibility = 'public'
                 OR EXISTS (
@@ -138,12 +143,16 @@ WHERE n.recipient_id = sqlc.arg(recipient_id)::bigint
   AND n.deleted_at IS NULL
   AND n.read_at IS NULL
   AND (
-      n.scope_type IS NULL
+      (n.scope_type IS NULL AND (n.subject_type <> 'COMMUNITY' OR NOT EXISTS (
+          SELECT 1 FROM communities co
+          WHERE co.id::text = n.subject_id AND NOT persona_meets_min_age(n.recipient_id, co.min_age)
+      )))
       OR (n.scope_type = 'CHANNEL' AND EXISTS (
           SELECT 1
           FROM channels c
           WHERE c.id = n.scope_id
             AND c.deleted_at IS NULL
+            AND persona_meets_min_age(n.recipient_id, c.min_age)
             AND (
                 c.visibility = 'public'
                 OR EXISTS (

@@ -4,6 +4,7 @@ import { Check, Clock, Lock, Pencil, Plus, Send, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { AgeBadge } from "@/components/age-badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -102,6 +103,8 @@ export default function CommunityPage() {
   const reloadCommunity = useCallback(async () => {
     if (!communityId) return;
     const r = await getCommunity(communityId);
+    // E.g. an age limit the viewer no longer meets.
+    if (!r.ok && r.error === "community not found") setState("missing");
     if (!r.ok) return;
     setCommunity(r.data.community);
     if (r.data.community.slug !== slug) navigate(`/communities/${r.data.community.slug}`, { replace: true });
@@ -265,6 +268,7 @@ export default function CommunityPage() {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-3xl font-bold">{community.name}</h1>
+            <AgeBadge minAge={community.min_age} />
             {community.visibility === "private" && (
               <Badge variant="secondary">
                 <Lock className="mr-1 h-3 w-3" />

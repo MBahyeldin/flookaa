@@ -1,0 +1,3 @@
+DROP FUNCTION IF EXISTS persona_meets_min_age(BIGINT, SMALLINT);
+ALTER TABLE channels DROP COLUMN IF EXISTS min_age;
+ALTER TABLE communities DROP COLUMN IF EXISTS min_age;

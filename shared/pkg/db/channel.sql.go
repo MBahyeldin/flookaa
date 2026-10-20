@@ -42,9 +42,9 @@ func (q *Queries) AddUserToChannel(ctx context.Context, arg AddUserToChannelPara
 }
 
 const createChannel = `-- name: CreateChannel :one
-INSERT INTO channels (name, description,  owner_id, thumbnail, banner, visibility, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, NOW())
-RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at
+INSERT INTO channels (name, description,  owner_id, thumbnail, banner, visibility, min_age, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7::smallint, NOW())
+RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at, min_age
 `
 
 type CreateChannelParams struct {
@@ -54,6 +54,7 @@ type CreateChannelParams struct {
 	Thumbnail   string
 	Banner      string
 	Visibility  ChannelVisibilityEnum
+	MinAge      int16
 }
 
 // -------------------------------
@@ -67,6 +68,7 @@ func (q *Queries) CreateChannel(ctx context.Context, arg CreateChannelParams) (C
 		arg.Thumbnail,
 		arg.Banner,
 		arg.Visibility,
+		arg.MinAge,
 	)
 	var i Channel
 	err := row.Scan(
@@ -80,6 +82,7 @@ func (q *Queries) CreateChannel(ctx context.Context, arg CreateChannelParams) (C
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.MinAge,
 	)
 	return i, err
 }
@@ -116,7 +119,7 @@ func (q *Queries) FollowChannel(ctx context.Context, arg FollowChannelParams) (i
 
 const getAllChannels = `-- name: GetAllChannels :many
 SELECT 
-    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at,
+    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age,
     (c.owner_id = $1) AS is_owner,
     EXISTS (
         SELECT 1 
@@ -154,6 +157,7 @@ SELECT
     )::int AS followers_count
 FROM channels c
 WHERE c.deleted_at IS NULL
+  AND persona_meets_min_age($1, c.min_age)
   AND ($4::text IS NULL OR EXISTS (
       SELECT 1
       FROM channel_interests ci
@@ -187,6 +191,7 @@ type GetAllChannelsRow struct {
 	CreatedAt      sql.NullTime
 	UpdatedAt      sql.NullTime
 	DeletedAt      sql.NullTime
+	MinAge         int16
 	IsOwner        bool
 	IsMember       bool
 	IsPending      bool
@@ -224,6 +229,7 @@ func (q *Queries) GetAllChannels(ctx context.Context, arg GetAllChannelsParams) 
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.MinAge,
 			&i.IsOwner,
 			&i.IsMember,
 			&i.IsPending,
@@ -246,7 +252,7 @@ func (q *Queries) GetAllChannels(ctx context.Context, arg GetAllChannelsParams) 
 
 const getChannel = `-- name: GetChannel :one
 SELECT 
-    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at,
+    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age,
     (c.owner_id = $1) AS is_owner,
     EXISTS (
         SELECT 1 
@@ -284,6 +290,7 @@ SELECT
     )::int AS followers_count
 FROM channels c
 WHERE c.id = $2 AND c.deleted_at IS NULL
+  AND persona_meets_min_age($1, c.min_age)
 `
 
 type GetChannelParams struct {
@@ -302,6 +309,7 @@ type GetChannelRow struct {
 	CreatedAt      sql.NullTime
 	UpdatedAt      sql.NullTime
 	DeletedAt      sql.NullTime
+	MinAge         int16
 	IsOwner        bool
 	IsMember       bool
 	IsPending      bool
@@ -327,6 +335,7 @@ func (q *Queries) GetChannel(ctx context.Context, arg GetChannelParams) (GetChan
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.MinAge,
 		&i.IsOwner,
 		&i.IsMember,
 		&i.IsPending,
@@ -375,7 +384,8 @@ SELECT
             WHERE p.id = $1::bigint
               AND r.name = 'Administrator'
         )
-    )::boolean AS can_moderate
+    )::boolean AS can_moderate,
+    persona_meets_min_age($1::bigint, c.min_age)::boolean AS meets_min_age
 FROM channels c
 WHERE c.id = $2::bigint AND c.deleted_at IS NULL
 `
@@ -392,6 +402,7 @@ type GetChannelAccessRow struct {
 	IsMember    bool
 	IsPending   bool
 	CanModerate bool
+	MeetsMinAge bool
 }
 
 // -------------------------------
@@ -409,12 +420,13 @@ func (q *Queries) GetChannelAccess(ctx context.Context, arg GetChannelAccessPara
 		&i.IsMember,
 		&i.IsPending,
 		&i.CanModerate,
+		&i.MeetsMinAge,
 	)
 	return i, err
 }
 
 const getChannelsForUser = `-- name: GetChannelsForUser :many
-SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at
+SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age
 FROM channel_members cm
 JOIN channels c ON cm.channel_id = c.id
 WHERE cm.persona_id = $1
@@ -444,6 +456,7 @@ func (q *Queries) GetChannelsForUser(ctx context.Context, personaID int64) ([]Ch
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.MinAge,
 		); err != nil {
 			return nil, err
 		}
@@ -459,7 +472,7 @@ func (q *Queries) GetChannelsForUser(ctx context.Context, personaID int64) ([]Ch
 }
 
 const getFollowedChannelsForUser = `-- name: GetFollowedChannelsForUser :many
-SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at
+SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age
 FROM channel_followers cf
 JOIN channels c ON cf.channel_id = c.id
 WHERE cf.persona_id = $1
@@ -489,6 +502,7 @@ func (q *Queries) GetFollowedChannelsForUser(ctx context.Context, personaID int6
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.MinAge,
 		); err != nil {
 			return nil, err
 		}
@@ -621,7 +635,7 @@ func (q *Queries) ListChannelSummaries(ctx context.Context, ids []int64) ([]List
 }
 
 const listChannels = `-- name: ListChannels :many
-SELECT id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at
+SELECT id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at, min_age
 FROM channels
 WHERE deleted_at IS NULL
 ORDER BY name
@@ -656,6 +670,7 @@ func (q *Queries) ListChannels(ctx context.Context, arg ListChannelsParams) ([]C
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.MinAge,
 		); err != nil {
 			return nil, err
 		}
@@ -731,11 +746,27 @@ func (q *Queries) ListPendingJoinRequests(ctx context.Context, channelID int64) 
 	return items, nil
 }
 
+const personaMeetsMinAge = `-- name: PersonaMeetsMinAge :one
+SELECT persona_meets_min_age($1::bigint, $2::smallint)::boolean
+`
+
+type PersonaMeetsMinAgeParams struct {
+	PersonaID int64
+	MinAge    int16
+}
+
+func (q *Queries) PersonaMeetsMinAge(ctx context.Context, arg PersonaMeetsMinAgeParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, personaMeetsMinAge, arg.PersonaID, arg.MinAge)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const removeChannel = `-- name: RemoveChannel :one
 UPDATE channels
 SET deleted_at = NOW()
 WHERE id = $1
-RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at
+RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at, min_age
 `
 
 // -------------------------------
@@ -755,6 +786,7 @@ func (q *Queries) RemoveChannel(ctx context.Context, id int64) (Channel, error) 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.MinAge,
 	)
 	return i, err
 }
@@ -821,6 +853,23 @@ func (q *Queries) ResolveJoinRequest(ctx context.Context, arg ResolveJoinRequest
 	return i, err
 }
 
+const setChannelMinAge = `-- name: SetChannelMinAge :exec
+UPDATE channels
+SET min_age = $1::smallint,
+    updated_at = NOW()
+WHERE id = $2 AND deleted_at IS NULL
+`
+
+type SetChannelMinAgeParams struct {
+	MinAge int16
+	ID     int64
+}
+
+func (q *Queries) SetChannelMinAge(ctx context.Context, arg SetChannelMinAgeParams) error {
+	_, err := q.db.ExecContext(ctx, setChannelMinAge, arg.MinAge, arg.ID)
+	return err
+}
+
 const unfollowChannel = `-- name: UnfollowChannel :execrows
 UPDATE channel_followers
 SET unfollowed_at = NOW()
@@ -851,7 +900,7 @@ SET name = COALESCE($1, name),
     description = COALESCE($2, description),
     updated_at = NOW()
 WHERE id = $3
-RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at
+RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at, min_age
 `
 
 type UpdateChannelParams struct {
@@ -877,6 +926,7 @@ func (q *Queries) UpdateChannel(ctx context.Context, arg UpdateChannelParams) (C
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.MinAge,
 	)
 	return i, err
 }

@@ -53,18 +53,13 @@ export default function useInputImage({
         dimensions ? measure(file) : undefined,
       ]);
 
-      setFieldValue(
-        id,
-        url,
-        // you might want to validate on file upload
-        // use some AI to validate image content?
-        false
-      );
       // Set together with src so a failed upload keeps the old pair.
       if (dimensions) {
         setFieldValue(dimensions.width, size?.width, false);
         setFieldValue(dimensions.height, size?.height, false);
       }
+      // Validates last, so a "required" error clears once the image is in.
+      setFieldValue(id, url, true);
     } catch (error) {
       console.error("Image upload failed:", error);
       setUrl(null);

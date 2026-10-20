@@ -1,4 +1,5 @@
 import type { FormGroup } from "@/types/FormFields";
+import { MIN_AGE_ERROR } from "@/lib/minAge";
 import signupFormFieldsGroup from "@/lib/formFields/signup";
 import profileFieldsGroups from "@/lib/formFields/profile";
 import loginFormFieldsGroups from "@/lib/formFields/login";
@@ -70,6 +71,7 @@ export class Form {
     serverErrors: {
       invalid_interests: { field: "interest_ids", message: "Pick 1 to 5 interests." },
       invalid_interest: { field: "interest_ids", message: "One of these interests is no longer offered." },
+      invalid_min_age: { field: "min_age", message: MIN_AGE_ERROR },
     },
   });
 
@@ -101,6 +103,7 @@ export class Form {
         slug_taken: { field: "slug", message: "Another community already uses this link." },
         invalid_interests: { field: "interest_ids", message: "Pick 1 to 5 interests." },
         invalid_interest: { field: "interest_ids", message: "One of these interests is no longer offered." },
+        invalid_min_age: { field: "min_age", message: MIN_AGE_ERROR },
       },
     });
   }

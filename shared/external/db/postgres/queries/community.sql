@@ -1,10 +1,10 @@
 -- The owner is the first active member.
 -- name: CreateCommunity :one
 WITH created AS (
-    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, visibility, owner_id)
+    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, visibility, owner_id, min_age)
     VALUES (
         sqlc.arg(name), sqlc.arg(slug), sqlc.arg(description), sqlc.arg(rules), sqlc.arg(thumbnail),
-        sqlc.arg(banner), sqlc.arg(visibility), sqlc.arg(owner_id)
+        sqlc.arg(banner), sqlc.arg(visibility), sqlc.arg(owner_id), sqlc.arg(min_age)::smallint
     )
     RETURNING id, owner_id
 ), owner_member AS (
@@ -22,6 +22,7 @@ SET name = COALESCE(sqlc.narg(name), name),
     thumbnail = COALESCE(sqlc.narg(thumbnail), thumbnail),
     banner = COALESCE(sqlc.narg(banner), banner),
     visibility = COALESCE(sqlc.narg(visibility)::community_visibility_enum, visibility),
+    min_age = COALESCE(sqlc.narg(min_age)::smallint, min_age),
     updated_at = now()
 WHERE id = sqlc.arg(id) AND deleted_at IS NULL
 RETURNING *;
@@ -73,7 +74,8 @@ SELECT
         JOIN roles r ON r.id = ur.role_id
         WHERE p.id = sqlc.arg(persona_id)::bigint
           AND r.name = 'Administrator'
-    )::boolean AS is_admin
+    )::boolean AS is_admin,
+    persona_meets_min_age(sqlc.arg(persona_id)::bigint, c.min_age)::boolean AS meets_min_age
 FROM communities c
 LEFT JOIN community_members m
     ON m.community_id = c.id AND m.persona_id = sqlc.arg(persona_id)::bigint AND m.left_at IS NULL
@@ -88,6 +90,7 @@ SELECT sqlc.embed(c),
        AND ch.deleted_at IS NULL)::int AS channels_count
 FROM communities c
 WHERE c.deleted_at IS NULL
+  AND persona_meets_min_age(sqlc.arg(viewer_id)::bigint, c.min_age)
   AND (sqlc.narg(interest_slug)::text IS NULL OR EXISTS (
       SELECT 1
       FROM community_interests ci
@@ -134,7 +137,8 @@ FROM community_channels cc
 JOIN communities c ON c.id = cc.community_id
 WHERE cc.channel_id = ANY(sqlc.arg(channel_ids)::bigint[])
   AND cc.status = 'active' AND cc.removed_at IS NULL
-  AND c.deleted_at IS NULL;
+  AND c.deleted_at IS NULL
+  AND persona_meets_min_age(sqlc.arg(viewer_id)::bigint, c.min_age);
 
 -- name: GetCommunityChannelIDByName :one
 SELECT ch.id
@@ -404,6 +408,7 @@ WHERE ch.deleted_at IS NULL
             AND r.name IN ('moderator', 'Administrator')
       )
   )
+  AND persona_meets_min_age(sqlc.arg(persona_id)::bigint, ch.min_age)
 ORDER BY ch.name, ch.id;
 
 -- name: ListCommunitySummaries :many

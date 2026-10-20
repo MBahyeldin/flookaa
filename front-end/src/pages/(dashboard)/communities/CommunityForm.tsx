@@ -25,6 +25,7 @@ export default function CommunityForm({
             description: community.description,
             rules: community.rules,
             visibility: community.visibility,
+            min_age: String(community.min_age),
             thumbnail: community.thumbnail,
             banner: community.banner,
             interest_ids: community.interests.map((i) => i.id),

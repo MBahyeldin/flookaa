@@ -39,6 +39,7 @@ import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { isCurrentOwner, useAppStore } from "@/stores/AppStore";
 import { formatDateOnly } from "@/utils/formateDate";
 import ModerationSheet from "./ModerationSheet";
+import { AgeBadge } from "@/components/age-badge";
 import PostDialog from "./PostDialog";
 
 export default function ChannelPage() {
@@ -54,6 +55,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     data: channelData,
     loading: channelLoading,
     error: channelError,
+    refetch: refetchChannel,
   } = useGetChannelQuery({
     variables: { id: channelId },
   });
@@ -281,6 +283,8 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
         onMembershipEvent,
         onInterestsChanged: () => setInterestsVersion((v) => v + 1),
         onCommunityChanged: () => setCommunityKey((k) => k + 1),
+        // An age limit the viewer no longer meets turns the page into "not found".
+        onInfoChanged: () => refetchChannel(),
       })
     );
 
@@ -288,7 +292,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     return () => {
       unsubscribe?.();
     };
-  }, [websocketService, channelId]);
+  }, [websocketService, channelId, refetchChannel]);
 
   useEffect(() => {
     addPosts(channelData?.getChannel?.posts || []);
@@ -325,7 +329,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   }
 
   if (channelError || !channelData?.getChannel) {
-    const isMissing = !channelError;
+    const isMissing = !channelError || channelError.message.includes("channel not found");
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="max-w-md text-center space-y-4" role="alert">
@@ -415,6 +419,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                     <h1 className="text-2xl font-bold text-card-foreground">
                       {channelData.getChannel.name}
                     </h1>
+                    <AgeBadge minAge={channelData.getChannel.minAge} />
                     {/* The literal "category" badge was removed: Channel has no
                         category field in the schema, so it was always a stub. */}
                   </div>
@@ -560,6 +565,8 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
             onOpenChange={setIsManaging}
             onInterestsSaved={setInterests}
             communityKey={communityKey}
+            minAge={channelData.getChannel.minAge}
+            onMinAgeSaved={() => refetchChannel()}
           />
         )}
 

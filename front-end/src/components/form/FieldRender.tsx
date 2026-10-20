@@ -45,7 +45,8 @@ export default function FieldRender({
     return null;
   }
   return (
-    <>
+    // display: contents keeps the field a direct grid child; the form scrolls to it by data-field.
+    <div data-field={field.id} className="contents">
       {["text", "password", "datetime"].includes(field.interfaceType) && (
         <TextInput
           field={field}
@@ -180,6 +181,6 @@ export default function FieldRender({
           />
         )
       }
-    </>
+    </div>
   );
 }

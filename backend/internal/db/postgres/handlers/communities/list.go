@@ -28,6 +28,7 @@ func (h *Handler) ListCommunities(c *gin.Context) {
 
 	ctx := c.Request.Context()
 	listed, err := h.q.ListCommunities(ctx, db.ListCommunitiesParams{
+		ViewerID:     personaID,
 		InterestSlug: sql.NullString{String: interest, Valid: interest != ""},
 		Lim:          limit,
 		Off:          offset,

@@ -26,6 +26,7 @@ query GetChannel($id: Int64!) {
     }
     membersCount
     followersCount
+    minAge
   }
 }
 

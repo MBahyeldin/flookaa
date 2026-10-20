@@ -54,6 +54,7 @@ type Community struct {
 	Thumbnail      string        `json:"thumbnail"`
 	Banner         string        `json:"banner"`
 	Visibility     string        `json:"visibility"`
+	MinAge         int16         `json:"min_age"`
 	Owner          *Owner        `json:"owner"`
 	Interests      []InterestTag `json:"interests"`
 	ChannelsCount  int32         `json:"channels_count"`
@@ -191,6 +192,7 @@ func (h *Handler) build(ctx context.Context, viewerID int64, rows []row) ([]Comm
 			Thumbnail:        r.Thumbnail,
 			Banner:           r.Banner,
 			Visibility:       string(r.Visibility),
+			MinAge:           r.MinAge,
 			Owner:            owners[r.OwnerID],
 			Interests:        tagList,
 			ChannelsCount:    r.ChannelsCount,
@@ -220,6 +222,10 @@ func (h *Handler) writeOne(c *gin.Context, id, personaID int64, status int) {
 func (h *Handler) writeRow(c *gin.Context, r row, personaID int64, status int) {
 	ctx := c.Request.Context()
 	community, err := access.LoadCommunity(ctx, h.q, r.ID, personaID)
+	if errors.Is(err, access.ErrCommunityNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

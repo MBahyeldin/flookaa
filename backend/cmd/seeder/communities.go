@@ -10,6 +10,8 @@ import (
 	"shared/pkg/db"
 )
 
+const seedMinAge = 13
+
 type seedChannel struct {
 	Name        string
 	Description string
@@ -134,6 +136,7 @@ func seedOneCommunity(ctx context.Context, pg *sql.DB, q *db.Queries, ownerID in
 			Description: ch.Description,
 			Visibility:  db.ChannelVisibilityEnumPublic,
 			OwnerID:     ownerID,
+			MinAge:      seedMinAge,
 			InterestIDs: ids,
 			CommunityID: communityID,
 		}); err != nil {
@@ -168,6 +171,7 @@ func seedCommunityRow(ctx context.Context, pg *sql.DB, q *db.Queries, ownerID in
 		Description: sc.Description,
 		Visibility:  db.CommunityVisibilityEnumPublic,
 		OwnerID:     ownerID,
+		MinAge:      seedMinAge,
 	})
 	if err != nil {
 		return 0, err

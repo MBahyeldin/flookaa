@@ -178,6 +178,7 @@ type Channel struct {
 	IsFollower      bool          `json:"isFollower"`
 	CanModerate     bool          `json:"canModerate"`
 	Community       *CommunityRef `json:"community,omitempty"`
+	MinAge          int32         `json:"minAge"`
 }
 
 type ChecklistBlock struct {
