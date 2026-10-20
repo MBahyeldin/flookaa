@@ -95,6 +95,7 @@ func StartServer(cfg config.Server) error {
 		onboarding.Step{ID: 2, Key: "interests", Done: q.DefaultPersonaHasInterests},
 		onboarding.Step{ID: 3, Key: "communities", Skippable: true, Done: q.DefaultPersonaInCommunity},
 		onboarding.Step{ID: 4, Key: "channels", Skippable: true, Done: q.DefaultPersonaInChannel},
+		onboarding.Step{ID: 5, Key: "personas", Skippable: true, Done: onboarding.Always},
 	)
 	if err != nil {
 		return err

@@ -20,11 +20,15 @@ export default function OnboardingFooter({
   onContinue,
   continueDisabled = false,
   continueLabel = "Continue",
+  onMoved,
+  hideSkip = false,
 }: {
   left?: ReactNode;
   onContinue?: () => Promise<boolean | void>;
   continueDisabled?: boolean;
   continueLabel?: string;
+  onMoved?: (action: OnboardingAction) => void;
+  hideSkip?: boolean;
 }) {
   const { step, index, move } = useOnboardingStep();
   const [busy, setBusy] = useState<OnboardingAction | null>(null);
@@ -38,6 +42,7 @@ export default function OnboardingFooter({
       if (action === "next" && onContinue && (await onContinue()) === false) return;
       const result = await move(action);
       if (!result.ok) setError(errorText(result.error));
+      else onMoved?.(action);
     } finally {
       setBusy(null);
     }
@@ -53,7 +58,7 @@ export default function OnboardingFooter({
             Back
           </Button>
         )}
-        {step.skippable && (
+        {step.skippable && !hideSkip && (
           <Button variant="outline" borderRadius="full" disabled={busy !== null} onClick={() => run("skip")}>
             Skip now
           </Button>

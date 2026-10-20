@@ -13,6 +13,9 @@ type Step struct {
 	Done      func(ctx context.Context, userID int64) (bool, error)
 }
 
+// Always is the Done of a step with nothing to check.
+func Always(context.Context, int64) (bool, error) { return true, nil }
+
 type Action string
 
 const (

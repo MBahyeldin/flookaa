@@ -195,3 +195,28 @@ export async function setCurrentPersona(personaId: string): Promise<boolean> {
   }
 }
 
+
+export type PersonaSaveResult<T> = { ok: true; data: T } | { ok: false; error: string };
+
+async function savePersona<T>(path: string, body: Record<string, unknown>): Promise<PersonaSaveResult<T>> {
+  try {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/persona/${path}`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) return { ok: false, error: data.error ?? "request_failed" };
+    return { ok: true, data: data as T };
+  } catch {
+    return { ok: false, error: "request_failed" };
+  }
+}
+
+/** Sends only the fields given; the rest keep their stored values. */
+export const updatePersona = (personaId: string, changes: Record<string, unknown>) =>
+  savePersona<Partial<Persona>>(`update/${personaId}`, changes);
+
+export const createPersona = (fields: Record<string, unknown>) =>
+  savePersona<{ persona_id: number }>("create", fields);

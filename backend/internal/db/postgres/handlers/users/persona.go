@@ -97,7 +97,7 @@ func (h *Handler) CreatePersona(c *gin.Context) {
 
 	var req struct {
 		Name          string `json:"name" binding:"required"`
-		Description   string `json:"description" binding:"required"`
+		Description   string `json:"description"`
 		FirstName     string `json:"first_name" binding:"required"`
 		LastName      string `json:"last_name" binding:"required"`
 		Privacy       string `json:"privacy" binding:"required"`
@@ -105,10 +105,15 @@ func (h *Handler) CreatePersona(c *gin.Context) {
 		Bio           string `json:"bio"`
 		ShowOnProfile *bool  `json:"show_on_profile"`
 		Theme         string `json:"theme"`
+		Slug          string `json:"slug"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("%v", err.Error())})
+		return
+	}
+	if req.Slug != "" && !slug.Valid(req.Slug) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_slug"})
 		return
 	}
 
@@ -126,28 +131,35 @@ func (h *Handler) CreatePersona(c *gin.Context) {
 
 	q := h.q
 
-	slug := generateSlug(req.FirstName, req.LastName)
+	personaSlug := req.Slug
+	if personaSlug == "" {
+		personaSlug = generateSlug(req.FirstName, req.LastName)
+	}
 
-	personaId, err := q.CreatePersona(ctx, db.CreatePersonaParams{
+	persona, err := q.CreatePersona(ctx, db.CreatePersonaParams{
 		UserID:        userId,
 		Name:          req.Name,
 		Description:   req.Description,
 		Bio:           sql.NullString{String: req.Bio, Valid: req.Bio != ""},
 		FirstName:     req.FirstName,
 		LastName:      req.LastName,
-		Slug:          slug,
+		Slug:          personaSlug,
 		Thumbnail:     sql.NullString{String: req.Thumbnail, Valid: req.Thumbnail != ""},
 		Privacy:       privacy,
 		ShowOnProfile: showOnProfile,
 		Theme:         theme,
 	})
+	if postgres.IsUniqueViolation(err, "personas_user_id_slug_key") {
+		c.JSON(http.StatusConflict, gin.H{"error": "slug_taken"})
+		return
+	}
 	if err != nil {
 		fmt.Println("Error creating persona:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create persona"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"persona_id": personaId})
+	c.JSON(http.StatusOK, gin.H{"persona_id": persona.ID})
 }
 
 func (h *Handler) SetCurrentPersona(c *gin.Context) {

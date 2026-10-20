@@ -117,7 +117,7 @@ const themeField = new FormField({
     width: "full",
   });
 
-function privacyChangeHint(persona: Persona) {
+export function privacyChangeHint(persona: Persona) {
   return (value: string) => {
     if (value === persona.privacy) return null;
     if (persona.privacy === "public" && persona.show_on_profile) {

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { personaPath } from "@/components/persona-link";
 import { Form } from "@/models/Forms/Form";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
+import { applySavedPersona } from "@/lib/applySavedPersona";
 import { DEFAULT_PALETTE, isPaletteId } from "@/themes/palettes";
 import type { Persona } from "@/types/persona";
 
@@ -26,7 +27,7 @@ const SETTINGS_FIELDS = [
   "bio",
 ] as const;
 
-function PersonaInterestsSection({ personaId }: { personaId: number }) {
+export function PersonaInterestsSection({ personaId }: { personaId: number }) {
   const { data, value, setValue, save, dirty, loadError } = usePersonaInterests(personaId);
   const [saving, setSaving] = useState(false);
 
@@ -66,8 +67,7 @@ function PersonaInterestsSection({ personaId }: { personaId: number }) {
   );
 }
 
-function PersonaSettingsForm({ persona }: { persona: Persona }) {
-  const { updatePersonaInStore } = useUserProfileStore();
+export function PersonaSettingsForm({ persona }: { persona: Persona }) {
   const form = useMemo(() => Form.personaSettings(persona), [persona]);
   // Formik keeps its own values, so the initial values only depend on which persona this is.
   const initialValues = useMemo(
@@ -84,20 +84,14 @@ function PersonaSettingsForm({ persona }: { persona: Persona }) {
   const onStatusChange = useCallback(
     (status: { success: boolean; error: string | null; result: unknown }) => {
       if (status.success && status.result) {
-        const saved = status.result as Partial<Persona>;
-        const { personas, persona: current, setPersona } = useUserProfileStore.getState();
-        const stored = personas.find((p) => String(p.id) === String(saved.id));
-        if (stored) updatePersonaInStore({ ...stored, ...saved, id: stored.id });
-        if (current && String(current.id) === String(saved.id)) {
-          setPersona({ ...current, ...saved, id: current.id });
-        }
+        applySavedPersona(status.result as Partial<Persona>);
         toast.success("Persona saved");
       }
       if (status.error) {
         toast.error(`Couldn't save the persona: ${status.error}`);
       }
     },
-    [updatePersonaInStore],
+    [],
   );
 
   return (
