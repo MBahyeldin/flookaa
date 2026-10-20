@@ -505,6 +505,9 @@ const (
 	NotificationKindEnumChannelRequest           NotificationKindEnum = "channel_request"
 	NotificationKindEnumChannelRequestApproved   NotificationKindEnum = "channel_request_approved"
 	NotificationKindEnumChannelRequestRejected   NotificationKindEnum = "channel_request_rejected"
+	NotificationKindEnumCommunityJoinRequest     NotificationKindEnum = "community_join_request"
+	NotificationKindEnumCommunityRequestApproved NotificationKindEnum = "community_request_approved"
+	NotificationKindEnumCommunityRequestRejected NotificationKindEnum = "community_request_rejected"
 )
 
 func (e *NotificationKindEnum) Scan(src interface{}) error {
@@ -558,7 +561,10 @@ func (e NotificationKindEnum) Valid() bool {
 		NotificationKindEnumFollowInvitationAccepted,
 		NotificationKindEnumChannelRequest,
 		NotificationKindEnumChannelRequestApproved,
-		NotificationKindEnumChannelRequestRejected:
+		NotificationKindEnumChannelRequestRejected,
+		NotificationKindEnumCommunityJoinRequest,
+		NotificationKindEnumCommunityRequestApproved,
+		NotificationKindEnumCommunityRequestRejected:
 		return true
 	}
 	return false

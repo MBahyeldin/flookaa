@@ -125,6 +125,24 @@ export function describeNotification(n: Notification): NotificationDescription |
         message: `${communityName(n)} declined ${channelName(n)}`,
         href: n.channel ? `/channels/${n.channel.id}` : communityHref(n),
       };
+    case "community_join_request":
+      return {
+        actor: actors(n),
+        message: `asked to join ${communityName(n)}`,
+        href: communityHref(n, "?members=requests"),
+      };
+    case "community_request_approved":
+      return {
+        actor: null,
+        message: `Your request to join ${communityName(n)} was approved`,
+        href: communityHref(n),
+      };
+    case "community_request_rejected":
+      return {
+        actor: null,
+        message: `Your request to join ${communityName(n)} was declined`,
+        href: communityHref(n),
+      };
     default:
       return null;
   }

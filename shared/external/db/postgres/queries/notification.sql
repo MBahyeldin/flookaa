@@ -288,6 +288,34 @@ WHERE cc.community_id = ANY(sqlc.arg(community_ids)::bigint[])
   )
 GROUP BY cc.community_id;
 
+-- Pending join requests to communities the recipient manages (community_join_request).
+-- name: RecountPendingCommunityJoinRequests :many
+SELECT
+    cm.community_id,
+    COUNT(*)::bigint AS count,
+    (ARRAY_AGG(cm.persona_id ORDER BY cm.joined_at DESC, cm.persona_id DESC))[1]::bigint AS latest_actor_id
+FROM community_members cm
+JOIN communities c ON c.id = cm.community_id AND c.deleted_at IS NULL
+JOIN personas p ON p.id = cm.persona_id AND p.deleted_at IS NULL
+WHERE cm.community_id = ANY(sqlc.arg(community_ids)::bigint[])
+  AND cm.status = 'pending' AND cm.left_at IS NULL
+  AND cm.persona_id <> sqlc.arg(recipient_id)::bigint
+  AND (
+      c.owner_id = sqlc.arg(recipient_id)::bigint
+      OR EXISTS (
+          SELECT 1
+          FROM community_roles cr
+          JOIN roles r ON r.id = cr.role_id AND r.name = 'moderator'
+          JOIN community_members rm
+              ON rm.community_id = cr.community_id AND rm.persona_id = cr.persona_id
+             AND rm.status = 'active' AND rm.left_at IS NULL
+          WHERE cr.community_id = c.id
+            AND cr.persona_id = sqlc.arg(recipient_id)::bigint
+            AND cr.deleted_at IS NULL
+      )
+  )
+GROUP BY cm.community_id;
+
 -- Active followers of personas (new_follower).
 -- name: RecountFollowers :many
 SELECT

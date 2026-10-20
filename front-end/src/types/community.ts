@@ -24,8 +24,10 @@ export type Community = {
   channels_count: number;
   members_count: number;
   followers_count: number;
-  /** The viewer's own; a rejected request reads as pending. */
-  membership_status: "none" | "pending" | "active";
+  /** The viewer's own; rejected only while the 7-day cooldown runs. */
+  membership_status: "none" | "pending" | "active" | "rejected";
+  /** Only when rejected: when the viewer may ask again. */
+  rejected_until?: string;
   following: boolean;
   /** Only on a single community: owner, moderator or global Administrator. */
   can_manage?: boolean;

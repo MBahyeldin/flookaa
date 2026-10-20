@@ -35,6 +35,8 @@ import { getChannels } from "@/services/channels";
 import { useWebsocketService } from "@/Websocket.context";
 import type { Channel } from "@/types/channel";
 import type { Community, ModeratedChannel } from "@/types/community";
+import { useNotificationStore } from "@/stores/NotificationStore";
+import { formatDateOnly } from "@/utils/formateDate";
 import { ChannelCard } from "../../channels/ChannelCard";
 import CommunityForm from "../CommunityForm";
 import MembersSheet, { type MembersTab } from "./MembersSheet";
@@ -163,6 +165,13 @@ export default function CommunityPage() {
     // canManage: /control only sends join requests to managers, so a new role resubscribes.
   }, [communityId, websocketService, loadChannels, reloadCommunity, canManage]);
 
+  // A requester can't hear join_request events; an answer reaches it as a notification.
+  const notificationsVersion = useNotificationStore((s) => s.version);
+  const isPending = community?.membership_status === "pending";
+  useEffect(() => {
+    if (isPending && notificationsVersion > 0) reloadCommunity();
+  }, [notificationsVersion, isPending, reloadCommunity]);
+
   const onSaved = useCallback(
     (saved: Community | null) => {
       setEditing(false);
@@ -178,7 +187,15 @@ export default function CommunityPage() {
       setBusy(true);
       const r = await action();
       setBusy(false);
-      if (!r.ok) toast.error(r.error === "cannot_follow_private" ? "Private communities can't be followed." : failure);
+      if (!r.ok) {
+        toast.error(
+          r.error === "cannot_follow_private"
+            ? "Private communities can't be followed."
+            : r.error === "recently_rejected"
+              ? "This community declined your request recently."
+              : failure,
+        );
+      }
       await reloadCommunity();
     },
     [reloadCommunity],
@@ -229,6 +246,9 @@ export default function CommunityPage() {
   const owner = community.owner;
   const isPrivate = community.visibility === "private";
 
+  const declinedNote = community.rejected_until
+    ? `Your request was declined. You can ask again on ${formatDateOnly(community.rejected_until)}.`
+    : "Your request was declined.";
   const ownerName = owner ? [owner.first_name, owner.last_name].filter(Boolean).join(" ") : "";
 
   return (
@@ -285,6 +305,11 @@ export default function CommunityPage() {
             >
               <Clock className="mr-2 h-4 w-4" />
               Requested
+            </Button>
+          )}
+          {community.membership_status === "rejected" && (
+            <Button size="sm" variant="secondary" disabled>
+              Request declined
             </Button>
           )}
           {community.membership_status === "active" && !community.is_owner && (
@@ -372,6 +397,9 @@ export default function CommunityPage() {
             </button>
           )}
         </div>
+        {community.membership_status === "rejected" && canSeeInside && (
+          <p className="text-sm text-muted-foreground">{declinedNote}</p>
+        )}
         {community.description && <p className="max-w-3xl text-muted-foreground">{community.description}</p>}
         <InterestChips interests={community.interests} />
         {community.rules && (
@@ -397,6 +425,8 @@ export default function CommunityPage() {
                 <Clock className="h-4 w-4" />
                 Your request to join is waiting for approval.
               </p>
+            ) : community.membership_status === "rejected" ? (
+              <p className="text-sm">{declinedNote}</p>
             ) : (
               <Button size="sm" disabled={busy} onClick={join}>
                 Request to join

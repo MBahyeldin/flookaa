@@ -59,6 +59,7 @@ func (w *Worker) Run(ctx context.Context) ([]jetstream.ConsumeContext, error) {
 		{shared_nats.CHANNEL_EVENTS_STREAM, "notifier-channel", []string{
 			shared_nats.CHANNEL_EVENTS_STREAM + ".CHANNEL.>",
 			shared_nats.CHANNEL_EVENTS_STREAM + ".COMMUNITY.*." + string(shared_nats.EventChannelRequest) + ".*",
+			shared_nats.CHANNEL_EVENTS_STREAM + ".COMMUNITY.*." + string(shared_nats.EventJoinRequest) + ".*",
 		}, w.channelOrCommunity},
 		{user, "notifier-user", []string{
 			user + ".PERSONA.*." + string(shared_nats.EventFollower) + ".*",

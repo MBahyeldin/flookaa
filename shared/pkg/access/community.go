@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"shared/pkg/db"
+	"time"
 )
 
 var ErrCommunityNotFound = errors.New("community not found")
@@ -39,15 +40,38 @@ func (c Community) IsMember() bool {
 	return c.MembershipStatus.Valid && c.MembershipStatus.CommunityMembershipStatusEnum == db.CommunityMembershipStatusEnumActive
 }
 
-// MembershipStatus is how a persona sees its own membership: a rejection reads as pending.
-func MembershipStatus(s db.NullCommunityMembershipStatusEnum) string {
+// RejectionCooldown is how long a rejected persona can't ask again.
+const RejectionCooldown = 7 * 24 * time.Hour
+
+// RejectedUntil is when a rejection's cooldown ends, or nil when the row isn't
+// a rejection inside it.
+func RejectedUntil(s db.NullCommunityMembershipStatusEnum, resolvedAt sql.NullTime) *time.Time {
+	if !s.Valid || s.CommunityMembershipStatusEnum != db.CommunityMembershipStatusEnumRejected || !resolvedAt.Valid {
+		return nil
+	}
+	until := resolvedAt.Time.Add(RejectionCooldown)
+	if !time.Now().Before(until) {
+		return nil
+	}
+	return &until
+}
+
+// MembershipStatus is how a persona sees its own membership: none, pending,
+// active, or rejected while the cooldown runs.
+func MembershipStatus(s db.NullCommunityMembershipStatusEnum, resolvedAt sql.NullTime) string {
 	if !s.Valid {
 		return "none"
 	}
-	if s.CommunityMembershipStatusEnum == db.CommunityMembershipStatusEnumActive {
+	switch s.CommunityMembershipStatusEnum {
+	case db.CommunityMembershipStatusEnumActive:
 		return "active"
+	case db.CommunityMembershipStatusEnumPending:
+		return "pending"
 	}
-	return "pending"
+	if RejectedUntil(s, resolvedAt) != nil {
+		return "rejected"
+	}
+	return "none"
 }
 
 // CanSeeInside: who may list a community's members and, on its page, its channels.

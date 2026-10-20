@@ -52,6 +52,7 @@ SELECT
     c.owner_id,
     (c.owner_id = sqlc.arg(persona_id)::bigint) AS is_owner,
     m.status AS membership_status,
+    m.resolved_at AS membership_resolved_at,
     (f.persona_id IS NOT NULL)::boolean AS is_following,
     COALESCE(
         m.status = 'active' AND EXISTS (
@@ -164,6 +165,7 @@ SELECT
      WHERE cf.community_id = c.id AND cf.unfollowed_at IS NULL
        AND p.deleted_at IS NULL)::int AS followers_count,
     vm.status AS viewer_status,
+    vm.resolved_at AS viewer_resolved_at,
     (vf.persona_id IS NOT NULL)::boolean AS viewer_following
 FROM communities c
 LEFT JOIN community_members vm

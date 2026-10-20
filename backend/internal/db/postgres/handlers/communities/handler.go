@@ -59,8 +59,9 @@ type Community struct {
 	ChannelsCount  int32         `json:"channels_count"`
 	MembersCount   int32         `json:"members_count"`
 	FollowersCount int32         `json:"followers_count"`
-	// The viewer's own: none, pending (a rejection too) or active.
+	// The viewer's own: none, pending, active, or rejected while the cooldown runs.
 	MembershipStatus string `json:"membership_status"`
+	RejectedUntil    string `json:"rejected_until,omitempty"`
 	Following        bool   `json:"following"`
 	CanManage        bool   `json:"can_manage,omitempty"`
 	CanOwn           bool   `json:"can_own,omitempty"`
@@ -195,8 +196,11 @@ func (h *Handler) build(ctx context.Context, viewerID int64, rows []row) ([]Comm
 			ChannelsCount:    r.ChannelsCount,
 			MembersCount:     stats[r.ID].MembersCount,
 			FollowersCount:   stats[r.ID].FollowersCount,
-			MembershipStatus: access.MembershipStatus(stats[r.ID].ViewerStatus),
+			MembershipStatus: access.MembershipStatus(stats[r.ID].ViewerStatus, stats[r.ID].ViewerResolvedAt),
 			Following:        stats[r.ID].ViewerFollowing,
+		}
+		if until := access.RejectedUntil(stats[r.ID].ViewerStatus, stats[r.ID].ViewerResolvedAt); until != nil {
+			out[i].RejectedUntil = until.UTC().Format(time.RFC3339)
 		}
 	}
 	return out, nil

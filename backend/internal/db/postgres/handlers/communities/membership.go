@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"shared/external/db/nats"
+	"shared/pkg/access"
 	"shared/pkg/db"
 
 	"github.com/gin-gonic/gin"
@@ -34,6 +35,10 @@ func (h *Handler) JoinCommunity(c *gin.Context) {
 		c.JSON(http.StatusAccepted, gin.H{"status": "pending"})
 		return
 	}
+	if access.RejectedUntil(community.MembershipStatus, community.MembershipResolvedAt) != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "recently_rejected"})
+		return
+	}
 
 	ctx := c.Request.Context()
 	status := db.CommunityMembershipStatusEnumActive
@@ -50,9 +55,9 @@ func (h *Handler) JoinCommunity(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	// A rejection inside its cooldown reads as pending and announces nothing.
+	// A cancelled rejection inside its cooldown comes back as it was.
 	if stored == db.CommunityMembershipStatusEnumRejected {
-		c.JSON(http.StatusAccepted, gin.H{"status": "pending"})
+		c.JSON(http.StatusConflict, gin.H{"error": "recently_rejected"})
 		return
 	}
 

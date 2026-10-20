@@ -76,11 +76,16 @@ func (h *Handler) resolveActors(ctx context.Context, recipientID int64, ids map[
 }
 
 // view is the actor as shown in one notification: anonymous ones are named
-// per channel, matching what the recipient sees inside that channel.
-func (a *actor) view(channelID int64) *ActorResponse {
+// per community for community kinds, otherwise per channel, matching what the
+// recipient sees there.
+func (a *actor) view(channelID, communityID int64) *ActorResponse {
 	if a.visible {
 		r := a.ActorResponse
 		return &r
 	}
-	return &ActorResponse{ID: a.ID, FirstName: access.AnonymousName(a.ID, channelID), Anonymous: true}
+	name := access.AnonymousName(a.ID, channelID)
+	if communityID != 0 {
+		name = access.AnonymousCommunityName(a.ID, communityID)
+	}
+	return &ActorResponse{ID: a.ID, FirstName: name, Anonymous: true}
 }

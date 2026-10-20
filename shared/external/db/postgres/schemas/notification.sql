@@ -14,7 +14,10 @@ CREATE TYPE notification_kind_enum AS ENUM (
     'follow_invitation_accepted',
     'channel_request',
     'channel_request_approved',
-    'channel_request_rejected'
+    'channel_request_rejected',
+    'community_join_request',
+    'community_request_approved',
+    'community_request_rejected'
 );
 
 CREATE TYPE notification_subject_enum AS ENUM ('POST', 'COMMENT', 'CHANNEL', 'PERSONA', 'COMMUNITY');

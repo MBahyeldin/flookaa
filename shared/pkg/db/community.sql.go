@@ -265,6 +265,7 @@ SELECT
     c.owner_id,
     (c.owner_id = $1::bigint) AS is_owner,
     m.status AS membership_status,
+    m.resolved_at AS membership_resolved_at,
     (f.persona_id IS NOT NULL)::boolean AS is_following,
     COALESCE(
         m.status = 'active' AND EXISTS (
@@ -300,14 +301,15 @@ type GetCommunityAccessParams struct {
 }
 
 type GetCommunityAccessRow struct {
-	ID               int64
-	Visibility       CommunityVisibilityEnum
-	OwnerID          int64
-	IsOwner          bool
-	MembershipStatus NullCommunityMembershipStatusEnum
-	IsFollowing      bool
-	IsModerator      bool
-	IsAdmin          bool
+	ID                   int64
+	Visibility           CommunityVisibilityEnum
+	OwnerID              int64
+	IsOwner              bool
+	MembershipStatus     NullCommunityMembershipStatusEnum
+	MembershipResolvedAt sql.NullTime
+	IsFollowing          bool
+	IsModerator          bool
+	IsAdmin              bool
 }
 
 // A missing row (sql.ErrNoRows) means the community does not exist or is deleted.
@@ -322,6 +324,7 @@ func (q *Queries) GetCommunityAccess(ctx context.Context, arg GetCommunityAccess
 		&i.OwnerID,
 		&i.IsOwner,
 		&i.MembershipStatus,
+		&i.MembershipResolvedAt,
 		&i.IsFollowing,
 		&i.IsModerator,
 		&i.IsAdmin,
@@ -877,6 +880,7 @@ SELECT
      WHERE cf.community_id = c.id AND cf.unfollowed_at IS NULL
        AND p.deleted_at IS NULL)::int AS followers_count,
     vm.status AS viewer_status,
+    vm.resolved_at AS viewer_resolved_at,
     (vf.persona_id IS NOT NULL)::boolean AS viewer_following
 FROM communities c
 LEFT JOIN community_members vm
@@ -892,11 +896,12 @@ type ListCommunityStatsParams struct {
 }
 
 type ListCommunityStatsRow struct {
-	ID              int64
-	MembersCount    int32
-	FollowersCount  int32
-	ViewerStatus    NullCommunityMembershipStatusEnum
-	ViewerFollowing bool
+	ID               int64
+	MembersCount     int32
+	FollowersCount   int32
+	ViewerStatus     NullCommunityMembershipStatusEnum
+	ViewerResolvedAt sql.NullTime
+	ViewerFollowing  bool
 }
 
 // Counts of live members and follows (deleted personas left out), and the
@@ -915,6 +920,7 @@ func (q *Queries) ListCommunityStats(ctx context.Context, arg ListCommunityStats
 			&i.MembersCount,
 			&i.FollowersCount,
 			&i.ViewerStatus,
+			&i.ViewerResolvedAt,
 			&i.ViewerFollowing,
 		); err != nil {
 			return nil, err

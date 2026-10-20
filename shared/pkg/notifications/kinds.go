@@ -52,8 +52,11 @@ var Kinds = map[db.NotificationKindEnum]Kind{
 	db.NotificationKindEnumFollowInvitationAccepted: {Subject: db.NotificationSubjectEnumPERSONA},
 	db.NotificationKindEnumChannelRequest:           {Subject: db.NotificationSubjectEnumCOMMUNITY, Recount: recountPendingChannelRequests},
 	// One row per community and requester; data.channel_id names the channel.
-	db.NotificationKindEnumChannelRequestApproved: {Subject: db.NotificationSubjectEnumCOMMUNITY},
-	db.NotificationKindEnumChannelRequestRejected: {Subject: db.NotificationSubjectEnumCOMMUNITY},
+	db.NotificationKindEnumChannelRequestApproved:   {Subject: db.NotificationSubjectEnumCOMMUNITY},
+	db.NotificationKindEnumChannelRequestRejected:   {Subject: db.NotificationSubjectEnumCOMMUNITY},
+	db.NotificationKindEnumCommunityJoinRequest:     {Subject: db.NotificationSubjectEnumCOMMUNITY, Recount: recountPendingCommunityJoinRequests},
+	db.NotificationKindEnumCommunityRequestApproved: {Subject: db.NotificationSubjectEnumCOMMUNITY},
+	db.NotificationKindEnumCommunityRequestRejected: {Subject: db.NotificationSubjectEnumCOMMUNITY},
 }
 
 // GroupKey names the thing a notification is about, e.g. "post_like:<post
@@ -175,6 +178,24 @@ func recountPendingChannelRequests(ctx context.Context, q *db.Queries, recipient
 		return nil, err
 	}
 	rows, err := q.RecountPendingChannelRequests(ctx, db.RecountPendingChannelRequestsParams{CommunityIds: communityIDs, RecipientID: recipientID})
+	if err != nil {
+		return nil, err
+	}
+	counts := make(map[string]Count, len(rows))
+	for _, r := range rows {
+		counts[strconv.FormatInt(r.CommunityID, 10)] = Count{Count: r.Count, LatestActorID: r.LatestActorID}
+	}
+	return counts, nil
+}
+
+// recountPendingCommunityJoinRequests: the subject is the community. A
+// recipient that no longer manages it counts zero.
+func recountPendingCommunityJoinRequests(ctx context.Context, q *db.Queries, recipientID int64, subjectIDs []string) (map[string]Count, error) {
+	communityIDs, err := parseIDs(subjectIDs)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.RecountPendingCommunityJoinRequests(ctx, db.RecountPendingCommunityJoinRequestsParams{CommunityIds: communityIDs, RecipientID: recipientID})
 	if err != nil {
 		return nil, err
 	}

@@ -553,6 +553,69 @@ func (q *Queries) RecountPendingChannelRequests(ctx context.Context, arg Recount
 	return items, nil
 }
 
+const recountPendingCommunityJoinRequests = `-- name: RecountPendingCommunityJoinRequests :many
+SELECT
+    cm.community_id,
+    COUNT(*)::bigint AS count,
+    (ARRAY_AGG(cm.persona_id ORDER BY cm.joined_at DESC, cm.persona_id DESC))[1]::bigint AS latest_actor_id
+FROM community_members cm
+JOIN communities c ON c.id = cm.community_id AND c.deleted_at IS NULL
+JOIN personas p ON p.id = cm.persona_id AND p.deleted_at IS NULL
+WHERE cm.community_id = ANY($1::bigint[])
+  AND cm.status = 'pending' AND cm.left_at IS NULL
+  AND cm.persona_id <> $2::bigint
+  AND (
+      c.owner_id = $2::bigint
+      OR EXISTS (
+          SELECT 1
+          FROM community_roles cr
+          JOIN roles r ON r.id = cr.role_id AND r.name = 'moderator'
+          JOIN community_members rm
+              ON rm.community_id = cr.community_id AND rm.persona_id = cr.persona_id
+             AND rm.status = 'active' AND rm.left_at IS NULL
+          WHERE cr.community_id = c.id
+            AND cr.persona_id = $2::bigint
+            AND cr.deleted_at IS NULL
+      )
+  )
+GROUP BY cm.community_id
+`
+
+type RecountPendingCommunityJoinRequestsParams struct {
+	CommunityIds []int64
+	RecipientID  int64
+}
+
+type RecountPendingCommunityJoinRequestsRow struct {
+	CommunityID   int64
+	Count         int64
+	LatestActorID int64
+}
+
+// Pending join requests to communities the recipient manages (community_join_request).
+func (q *Queries) RecountPendingCommunityJoinRequests(ctx context.Context, arg RecountPendingCommunityJoinRequestsParams) ([]RecountPendingCommunityJoinRequestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, recountPendingCommunityJoinRequests, pq.Array(arg.CommunityIds), arg.RecipientID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RecountPendingCommunityJoinRequestsRow
+	for rows.Next() {
+		var i RecountPendingCommunityJoinRequestsRow
+		if err := rows.Scan(&i.CommunityID, &i.Count, &i.LatestActorID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const recountPendingFollowRequests = `-- name: RecountPendingFollowRequests :many
 SELECT
     pf.persona_id,
