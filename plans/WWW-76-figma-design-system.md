@@ -100,3 +100,30 @@ Steps 1–6 can start as soon as WWW-75's values exist (its step 2). Steps
   `Breakpoint` mode updates the type sizes.
 - A script compares the Figma variable values with `themes.css` and finds
   no difference.
+
+## Implementation notes
+
+- File: "Flookaa Design System" (`m7eIIQHkTklctIoPSosLlR`) in the user's own team.
+- **Starter plan limits** (confirmed by the API): 1 mode per variable collection, and 3 pages per file. The user chose "Tide Light only":
+  - `Theme` holds Tide Light. Dark mode and the other palettes are not live in Figma; their values stay in `themes.css`.
+  - The Themes page is dropped.
+  - Breakpoint type sizes are separate text styles (`Heading/H1/Mobile`, `Heading/H1/md+`, …) instead of a `Breakpoint` collection.
+- Pages: **Design System** (foundations, icons, components), **Patterns**, **Screens** (Mobile / Tablet / Desktop sections).
+- Variables:
+  - `Theme` (48 colours, CSS code syntax `var(--…)`)
+  - `Primitives` (radius, spacing, the Tailwind palette pairs used by `GeneratedAvatarFallback`, black/white, brand start/end)
+- Icons are the app's own `lucide-react` 0.544 SVGs, stroke bound to `foreground`. The Google mark keeps its brand colours.
+- Real assets were uploaded: logo-light.png, welcon-bg.jpg, avatar.svg, avatar-bottom.svg.
+- Plugin API gotcha: spreading a variable-bound paint drops `opacity`. Create the paint with `opacity` before `setBoundVariableForPaint`.
+- **Figma MCP call limit**: on 2026-10-20 the Starter plan's MCP tool-call limit stopped the build after the foundations, the components, most patterns and the 9 public screens. It was resumed on 2026-10-21 from `plans/WWW-76-figma-handoff.md`.
+- **Post blocks** (Patterns): `Block/Callout` (Tone), `Quote`, `Steps`, `Accordion`, `Checklist`, `Divider` (Style), `Spoiler` (State), `Image`, from `portable-text/blocks/*.tsx`. Gallery, Voice note and Countdown have no component yet.
+- **Post Card** has a `Block` instance-swap slot (preferred values: the blocks) plus `Show block` / `Show text`, so a post shows any block without detaching.
+- **Screens**: 26 per width (Mobile 390, Tablet 834, Desktop 1440), named `<Width> / <Screen>`:
+  - Public: Visitor home, Login, Sign up.
+  - Logged in, from flookaa.com references (persona "Mo sport"): Feed, Channels, Channel, Communities, Community, Create community, Create channel, Profile, Personas, Persona settings, Notifications, Settings, Blocks.
+  - From code (the test account is onboarded and not an Administrator): Onboarding 1–5, Persona wizard 1–3 (dialog over the overlay), Select persona, Admin interests.
+  - Covers are the uploaded welcome illustration, not the real channel images; post blocks show the components' sample content.
+- **Paint opacity**: a variable-bound paint with opacity below 1 renders opaque in instances. Every such paint on a non-leaf component node now sits on a stretched `Tint` / `Fill` / `Border` child with layer opacity; leaf nodes use layer opacity directly.
+- `Onboarding Progress` is a `Step` 1–5 variant set; its fill scales with the track.
+- Verification: screenshots of each screen type against the references at 1440 (and spot checks at 834/390); no unbound solid fill or stroke outside instances in any screen frame. The variable-vs-`themes.css` comparison script was not run in this session.
+- The real Channel Card (name badge, image or placeholder cover, Join/Joined + icon-only Follow, `sm` buttons) replaced the first draft after comparing it with flookaa.com.
