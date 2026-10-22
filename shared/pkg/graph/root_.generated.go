@@ -109,6 +109,7 @@ type ComplexityRoot struct {
 		BannerImageURL  func(childComplexity int) int
 		CanModerate     func(childComplexity int) int
 		Community       func(childComplexity int) int
+		CoverPattern    func(childComplexity int) int
 		CreatedAt       func(childComplexity int) int
 		Description     func(childComplexity int) int
 		FollowersCount  func(childComplexity int) int
@@ -118,9 +119,11 @@ type ComplexityRoot struct {
 		MembersCount    func(childComplexity int) int
 		MinAge          func(childComplexity int) int
 		Name            func(childComplexity int) int
+		OwnTheme        func(childComplexity int) int
 		Owner           func(childComplexity int) int
 		Posts           func(childComplexity int) int
 		ProfileImageURL func(childComplexity int) int
+		Theme           func(childComplexity int) int
 		ThumbnailURL    func(childComplexity int) int
 		TotalPosts      func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
@@ -678,6 +681,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Channel.Community(childComplexity), true
 
+	case "Channel.coverPattern":
+		if e.complexity.Channel.CoverPattern == nil {
+			break
+		}
+
+		return e.complexity.Channel.CoverPattern(childComplexity), true
+
 	case "Channel.createdAt":
 		if e.complexity.Channel.CreatedAt == nil {
 			break
@@ -741,6 +751,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Channel.Name(childComplexity), true
 
+	case "Channel.ownTheme":
+		if e.complexity.Channel.OwnTheme == nil {
+			break
+		}
+
+		return e.complexity.Channel.OwnTheme(childComplexity), true
+
 	case "Channel.owner":
 		if e.complexity.Channel.Owner == nil {
 			break
@@ -761,6 +778,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Channel.ProfileImageURL(childComplexity), true
+
+	case "Channel.theme":
+		if e.complexity.Channel.Theme == nil {
+			break
+		}
+
+		return e.complexity.Channel.Theme(childComplexity), true
 
 	case "Channel.thumbnailUrl":
 		if e.complexity.Channel.ThumbnailURL == nil {
@@ -2412,6 +2436,23 @@ enum OwnerType {
   PAGE
 }
 
+# Palette ids, as in data-theme.
+enum Theme {
+  tide
+  forest
+  ember
+  plum
+  rose
+  slate
+}
+
+enum CoverPattern {
+  horizon
+  waves
+  hills
+  stripes
+}
+
 type Media {
   type: MediaType!
   url: String!
@@ -2602,6 +2643,9 @@ type Channel {
   canModerate: Boolean!
   community: CommunityRef
   minAge: Int!
+  theme: Theme!
+  ownTheme: Theme
+  coverPattern: CoverPattern!
 }
 
 type CommunityRef {

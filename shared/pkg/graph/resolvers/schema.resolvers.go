@@ -492,6 +492,12 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		posts = []*models.Post{}
 	}
 
+	var ownTheme *models.Theme
+	if channel.Theme.Valid {
+		t := models.Theme(channel.Theme.ThemeEnum)
+		ownTheme = &t
+	}
+
 	return &models.Channel{
 		ID:             channel.ID,
 		Name:           channel.Name,
@@ -510,6 +516,9 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		CanModerate:    channelAccess.CanModerate,
 		Community:      community,
 		MinAge:         int32(channel.MinAge),
+		Theme:          models.Theme(channel.EffectiveTheme),
+		OwnTheme:       ownTheme,
+		CoverPattern:   models.CoverPattern(channel.CoverPattern),
 	}, nil
 }
 

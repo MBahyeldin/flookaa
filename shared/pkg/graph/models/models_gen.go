@@ -179,6 +179,9 @@ type Channel struct {
 	CanModerate     bool          `json:"canModerate"`
 	Community       *CommunityRef `json:"community,omitempty"`
 	MinAge          int32         `json:"minAge"`
+	Theme           Theme         `json:"theme"`
+	OwnTheme        *Theme        `json:"ownTheme,omitempty"`
+	CoverPattern    CoverPattern  `json:"coverPattern"`
 }
 
 type ChecklistBlock struct {
@@ -839,6 +842,65 @@ func (e *CalloutTone) UnmarshalJSON(b []byte) error {
 }
 
 func (e CalloutTone) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type CoverPattern string
+
+const (
+	CoverPatternHorizon CoverPattern = "horizon"
+	CoverPatternWaves   CoverPattern = "waves"
+	CoverPatternHills   CoverPattern = "hills"
+	CoverPatternStripes CoverPattern = "stripes"
+)
+
+var AllCoverPattern = []CoverPattern{
+	CoverPatternHorizon,
+	CoverPatternWaves,
+	CoverPatternHills,
+	CoverPatternStripes,
+}
+
+func (e CoverPattern) IsValid() bool {
+	switch e {
+	case CoverPatternHorizon, CoverPatternWaves, CoverPatternHills, CoverPatternStripes:
+		return true
+	}
+	return false
+}
+
+func (e CoverPattern) String() string {
+	return string(e)
+}
+
+func (e *CoverPattern) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = CoverPattern(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid CoverPattern", str)
+	}
+	return nil
+}
+
+func (e CoverPattern) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *CoverPattern) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e CoverPattern) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
@@ -1526,6 +1588,69 @@ func (e *StyleType) UnmarshalJSON(b []byte) error {
 }
 
 func (e StyleType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type Theme string
+
+const (
+	ThemeTide   Theme = "tide"
+	ThemeForest Theme = "forest"
+	ThemeEmber  Theme = "ember"
+	ThemePlum   Theme = "plum"
+	ThemeRose   Theme = "rose"
+	ThemeSlate  Theme = "slate"
+)
+
+var AllTheme = []Theme{
+	ThemeTide,
+	ThemeForest,
+	ThemeEmber,
+	ThemePlum,
+	ThemeRose,
+	ThemeSlate,
+}
+
+func (e Theme) IsValid() bool {
+	switch e {
+	case ThemeTide, ThemeForest, ThemeEmber, ThemePlum, ThemeRose, ThemeSlate:
+		return true
+	}
+	return false
+}
+
+func (e Theme) String() string {
+	return string(e)
+}
+
+func (e *Theme) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Theme(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Theme", str)
+	}
+	return nil
+}
+
+func (e Theme) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *Theme) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e Theme) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

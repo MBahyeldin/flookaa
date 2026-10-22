@@ -1,4 +1,8 @@
 
+CREATE TYPE theme_enum AS ENUM ('tide', 'forest', 'ember', 'plum', 'rose', 'slate');
+
+CREATE TYPE cover_pattern_enum AS ENUM ('horizon', 'waves', 'hills', 'stripes');
+
 CREATE TYPE channel_visibility_enum AS ENUM ('public', 'private');
 
 CREATE TYPE channel_membership_status_enum AS ENUM ('pending', 'active', 'rejected');
@@ -17,7 +21,10 @@ CREATE TABLE channels (
     created_at TIMESTAMP DEFAULT now(),
     updated_at TIMESTAMP DEFAULT now(),
     deleted_at TIMESTAMP,
-    min_age SMALLINT NOT NULL CHECK (min_age IN (13, 16, 18, 21))
+    min_age SMALLINT NOT NULL CHECK (min_age IN (13, 16, 18, 21)),
+    -- NULL: the channel takes its community's.
+    theme theme_enum,
+    cover_pattern cover_pattern_enum NOT NULL DEFAULT 'horizon'
 );
 
 -- -------------------------------

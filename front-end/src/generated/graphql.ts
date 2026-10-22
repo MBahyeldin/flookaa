@@ -199,6 +199,7 @@ export type Channel = {
   bannerImageUrl?: Maybe<Scalars['String']['output']>;
   canModerate: Scalars['Boolean']['output'];
   community?: Maybe<CommunityRef>;
+  coverPattern: CoverPattern;
   createdAt: Scalars['DateTime']['output'];
   description?: Maybe<Scalars['String']['output']>;
   followersCount?: Maybe<Scalars['Int']['output']>;
@@ -208,9 +209,11 @@ export type Channel = {
   membersCount?: Maybe<Scalars['Int']['output']>;
   minAge: Scalars['Int']['output'];
   name: Scalars['String']['output'];
+  ownTheme?: Maybe<Theme>;
   owner: Persona;
   posts: Array<Post>;
   profileImageUrl?: Maybe<Scalars['String']['output']>;
+  theme: Theme;
   thumbnailUrl?: Maybe<Scalars['String']['output']>;
   totalPosts: Scalars['Int']['output'];
   updatedAt: Scalars['DateTime']['output'];
@@ -300,6 +303,12 @@ export type CountdownBlockInput = {
   endsAt: Scalars['DateTime']['input'];
   label?: InputMaybe<Scalars['String']['input']>;
 };
+
+export type CoverPattern =
+  | 'hills'
+  | 'horizon'
+  | 'stripes'
+  | 'waves';
 
 export type GalleryBlock = Block & {
   __typename?: 'GalleryBlock';
@@ -709,6 +718,14 @@ export type StyleType =
   | 'h5'
   | 'h6'
   | 'normal';
+
+export type Theme =
+  | 'ember'
+  | 'forest'
+  | 'plum'
+  | 'rose'
+  | 'slate'
+  | 'tide';
 
 export type VoiceNoteBlock = Block & {
   __typename?: 'VoiceNoteBlock';

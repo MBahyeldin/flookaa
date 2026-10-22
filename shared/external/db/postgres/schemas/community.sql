@@ -14,7 +14,9 @@ CREATE TABLE communities (
     updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
     deleted_at TIMESTAMP WITHOUT TIME ZONE,
     rules TEXT NOT NULL DEFAULT '',
-    min_age SMALLINT NOT NULL CHECK (min_age IN (13, 16, 18, 21))
+    min_age SMALLINT NOT NULL CHECK (min_age IN (13, 16, 18, 21)),
+    theme theme_enum NOT NULL DEFAULT 'tide',
+    cover_pattern cover_pattern_enum NOT NULL DEFAULT 'horizon'
 );
 
 CREATE TABLE community_interests (
@@ -83,3 +85,19 @@ CREATE TABLE community_roles (
 );
 
 CREATE INDEX community_roles_persona_id_idx ON community_roles (persona_id);
+
+CREATE FUNCTION channel_theme(p_theme theme_enum, p_channel_id BIGINT) RETURNS theme_enum
+LANGUAGE sql STABLE AS $$
+    SELECT COALESCE(
+        p_theme,
+        (
+            SELECT co.theme
+            FROM community_channels cc
+            JOIN communities co ON co.id = cc.community_id
+            WHERE cc.channel_id = p_channel_id
+              AND cc.status = 'active' AND cc.removed_at IS NULL
+              AND co.deleted_at IS NULL
+        ),
+        'tide'::theme_enum
+    )
+$$;

@@ -83,8 +83,11 @@ func PublishChannelRequest(ctx context.Context, nh *nats.NatsHelper, communityID
 
 // PublishChannelCommunity tells the channel's viewers its community row changed.
 func PublishChannelCommunity(ctx context.Context, nh *nats.NatsHelper, channelID, actorID int64) {
+	publishChannelUpdate(ctx, nh, channelID, actorID, nats.EventChannelCommunity)
+}
+
+func publishChannelUpdate(ctx context.Context, nh *nats.NatsHelper, channelID, actorID int64, event db.EventEnum) {
 	stream := nats.CHANNEL_EVENTS_STREAM
-	event := nats.EventChannelCommunity
 	subj := subject.New(&stream, &models.Owner{ID: channelID, Type: models.OwnerTypeChannel}, string(event), string(db.EventActionEnumUpdate)).GetSubject()
 	message := &nats.MessageType{Event: nats.Event{
 		Name:       event,

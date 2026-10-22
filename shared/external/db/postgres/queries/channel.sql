@@ -2,20 +2,23 @@
 -- 1. Create a channel
 -- -------------------------------
 -- name: CreateChannel :one
-INSERT INTO channels (name, description,  owner_id, thumbnail, banner, visibility, min_age, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, sqlc.arg(min_age)::smallint, NOW())
+INSERT INTO channels (name, description,  owner_id, thumbnail, banner, visibility, min_age, theme, cover_pattern, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, sqlc.arg(min_age)::smallint, sqlc.narg(theme)::theme_enum, sqlc.arg(cover_pattern), NOW())
 RETURNING *;
 
 -- -------------------------------
 -- 2. Update channel
 -- -------------------------------
 -- name: UpdateChannel :one
+-- clear_theme wins over theme: the channel goes back to its community's.
 UPDATE channels
-SET name = COALESCE($1, name),
-    description = COALESCE($2, description),
+SET theme = CASE WHEN sqlc.arg(clear_theme)::bool THEN NULL
+                 ELSE COALESCE(sqlc.narg(theme)::theme_enum, theme) END,
+    cover_pattern = COALESCE(sqlc.narg(cover_pattern)::cover_pattern_enum, cover_pattern),
+    thumbnail = COALESCE(sqlc.narg(thumbnail), thumbnail),
     updated_at = NOW()
-WHERE id = $3
-RETURNING *;
+WHERE id = sqlc.arg(id) AND deleted_at IS NULL
+RETURNING *, channel_theme(theme, id)::theme_enum AS effective_theme;
 
 -- name: SetChannelMinAge :exec
 UPDATE channels
@@ -114,6 +117,7 @@ WHERE channel_id = $1 AND persona_id = $2 AND unfollowed_at IS NULL;
 -- name: GetAllChannels :many
 SELECT 
     sqlc.embed(c),
+    channel_theme(c.theme, c.id)::theme_enum AS effective_theme,
     (c.owner_id = $1) AS is_owner,
     EXISTS (
         SELECT 1 
@@ -185,6 +189,7 @@ WITH viewer AS (
 )
 SELECT
     sqlc.embed(c),
+    channel_theme(c.theme, c.id)::theme_enum AS effective_theme,
     m.members::int AS members_count,
     (
         SELECT COUNT(DISTINCT cf.persona_id)
@@ -241,6 +246,7 @@ LIMIT sqlc.arg(lim) OFFSET sqlc.arg(off);
 -- name: GetChannel :one
 SELECT 
     c.*,
+    channel_theme(c.theme, c.id)::theme_enum AS effective_theme,
     (c.owner_id = $1) AS is_owner,
     EXISTS (
         SELECT 1 

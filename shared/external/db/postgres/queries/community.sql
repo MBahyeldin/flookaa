@@ -1,10 +1,11 @@
 -- The owner is the first active member.
 -- name: CreateCommunity :one
 WITH created AS (
-    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, visibility, owner_id, min_age)
+    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, visibility, owner_id, min_age, theme, cover_pattern)
     VALUES (
         sqlc.arg(name), sqlc.arg(slug), sqlc.arg(description), sqlc.arg(rules), sqlc.arg(thumbnail),
-        sqlc.arg(banner), sqlc.arg(visibility), sqlc.arg(owner_id), sqlc.arg(min_age)::smallint
+        sqlc.arg(banner), sqlc.arg(visibility), sqlc.arg(owner_id), sqlc.arg(min_age)::smallint,
+        sqlc.arg(theme)::theme_enum, sqlc.arg(cover_pattern)::cover_pattern_enum
     )
     RETURNING id, owner_id
 ), owner_member AS (
@@ -23,6 +24,8 @@ SET name = COALESCE(sqlc.narg(name), name),
     banner = COALESCE(sqlc.narg(banner), banner),
     visibility = COALESCE(sqlc.narg(visibility)::community_visibility_enum, visibility),
     min_age = COALESCE(sqlc.narg(min_age)::smallint, min_age),
+    theme = COALESCE(sqlc.narg(theme)::theme_enum, theme),
+    cover_pattern = COALESCE(sqlc.narg(cover_pattern)::cover_pattern_enum, cover_pattern),
     updated_at = now()
 WHERE id = sqlc.arg(id) AND deleted_at IS NULL
 RETURNING *;
@@ -429,6 +432,7 @@ SELECT
     ch.id,
     ch.name,
     ch.thumbnail,
+    channel_theme(ch.theme, ch.id)::theme_enum AS effective_theme,
     ch.visibility,
     COALESCE(lc.community_id, 0)::bigint AS community_id,
     COALESCE(lc.name, '')::text AS community_name,
@@ -480,3 +484,12 @@ SELECT (EXISTS (
     WHERE p.user_id = $1 AND p.is_default AND p.deleted_at IS NULL
       AND cf.unfollowed_at IS NULL
 ))::boolean AS done;
+
+-- Channels whose theme follows the community's.
+-- name: ListCommunityInheritingChannelIDs :many
+SELECT ch.id
+FROM community_channels cc
+JOIN channels ch ON ch.id = cc.channel_id
+WHERE cc.community_id = sqlc.arg(community_id)
+  AND cc.status = 'active' AND cc.removed_at IS NULL
+  AND ch.deleted_at IS NULL AND ch.theme IS NULL;

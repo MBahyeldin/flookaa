@@ -5,7 +5,6 @@ CREATE TYPE persona_privacy_enum AS ENUM (
     'only_me'
 );
 
-CREATE TYPE persona_theme_enum AS ENUM ('tide', 'forest', 'ember', 'plum', 'rose', 'slate');
    
 
 CREATE TYPE persona_follow_status_enum AS ENUM (
@@ -39,7 +38,7 @@ CREATE TABLE personas (
     privacy persona_privacy_enum NOT NULL DEFAULT 'public',
     is_default BOOLEAN DEFAULT false,
     show_on_profile BOOLEAN NOT NULL DEFAULT false,
-    theme persona_theme_enum NOT NULL DEFAULT 'tide',
+    theme theme_enum NOT NULL DEFAULT 'tide',
 
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),

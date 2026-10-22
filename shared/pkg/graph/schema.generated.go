@@ -890,6 +890,93 @@ func (ec *executionContext) fieldContext_Channel_minAge(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _Channel_theme(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_theme,
+		func(ctx context.Context) (any, error) {
+			return obj.Theme, nil
+		},
+		nil,
+		ec.marshalNTheme2sharedᚋpkgᚋgraphᚋmodelsᚐTheme,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_theme(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Theme does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Channel_ownTheme(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_ownTheme,
+		func(ctx context.Context) (any, error) {
+			return obj.OwnTheme, nil
+		},
+		nil,
+		ec.marshalOTheme2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐTheme,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_ownTheme(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Theme does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Channel_coverPattern(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_coverPattern,
+		func(ctx context.Context) (any, error) {
+			return obj.CoverPattern, nil
+		},
+		nil,
+		ec.marshalNCoverPattern2sharedᚋpkgᚋgraphᚋmodelsᚐCoverPattern,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_coverPattern(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CoverPattern does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Comment__id(ctx context.Context, field graphql.CollectedField, obj *models.Comment) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3475,6 +3562,12 @@ func (ec *executionContext) fieldContext_Query_getChannel(ctx context.Context, f
 				return ec.fieldContext_Channel_community(ctx, field)
 			case "minAge":
 				return ec.fieldContext_Channel_minAge(ctx, field)
+			case "theme":
+				return ec.fieldContext_Channel_theme(ctx, field)
+			case "ownTheme":
+				return ec.fieldContext_Channel_ownTheme(ctx, field)
+			case "coverPattern":
+				return ec.fieldContext_Channel_coverPattern(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Channel", field.Name)
 		},
@@ -4051,6 +4144,18 @@ func (ec *executionContext) _Channel(ctx context.Context, sel ast.SelectionSet, 
 			out.Values[i] = ec._Channel_community(ctx, field, obj)
 		case "minAge":
 			out.Values[i] = ec._Channel_minAge(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "theme":
+			out.Values[i] = ec._Channel_theme(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ownTheme":
+			out.Values[i] = ec._Channel_ownTheme(ctx, field, obj)
+		case "coverPattern":
+			out.Values[i] = ec._Channel_coverPattern(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4955,6 +5060,16 @@ func (ec *executionContext) unmarshalNCommentInput2sharedᚋpkgᚋgraphᚋmodels
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNCoverPattern2sharedᚋpkgᚋgraphᚋmodelsᚐCoverPattern(ctx context.Context, v any) (models.CoverPattern, error) {
+	var res models.CoverPattern
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCoverPattern2sharedᚋpkgᚋgraphᚋmodelsᚐCoverPattern(ctx context.Context, sel ast.SelectionSet, v models.CoverPattern) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNDateTime2timeᚐTime(ctx context.Context, v any) (time.Time, error) {
 	res, err := graphql.UnmarshalTime(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -5248,6 +5363,16 @@ func (ec *executionContext) marshalNSimpleInputType2sharedᚋpkgᚋgraphᚋmodel
 	return v
 }
 
+func (ec *executionContext) unmarshalNTheme2sharedᚋpkgᚋgraphᚋmodelsᚐTheme(ctx context.Context, v any) (models.Theme, error) {
+	var res models.Theme
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTheme2sharedᚋpkgᚋgraphᚋmodelsᚐTheme(ctx context.Context, sel ast.SelectionSet, v models.Theme) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalOChannel2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐChannel(ctx context.Context, sel ast.SelectionSet, v *models.Channel) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -5393,6 +5518,22 @@ func (ec *executionContext) marshalOOwner2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐOwn
 		return graphql.Null
 	}
 	return ec._Owner(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOTheme2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐTheme(ctx context.Context, v any) (*models.Theme, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(models.Theme)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTheme2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐTheme(ctx context.Context, sel ast.SelectionSet, v *models.Theme) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 // endregion ***************************** type.gotpl *****************************

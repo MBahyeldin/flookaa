@@ -28,6 +28,23 @@ enum OwnerType {
   PAGE
 }
 
+# Palette ids, as in data-theme.
+enum Theme {
+  tide
+  forest
+  ember
+  plum
+  rose
+  slate
+}
+
+enum CoverPattern {
+  horizon
+  waves
+  hills
+  stripes
+}
+
 type Media {
   type: MediaType!
   url: String!
@@ -218,6 +235,9 @@ type Channel {
   canModerate: Boolean!
   community: CommunityRef
   minAge: Int!
+  theme: Theme!
+  ownTheme: Theme
+  coverPattern: CoverPattern!
 }
 
 type CommunityRef {

@@ -275,6 +275,61 @@ func (e CommunityVisibilityEnum) Valid() bool {
 	return false
 }
 
+type CoverPatternEnum string
+
+const (
+	CoverPatternEnumHorizon CoverPatternEnum = "horizon"
+	CoverPatternEnumWaves   CoverPatternEnum = "waves"
+	CoverPatternEnumHills   CoverPatternEnum = "hills"
+	CoverPatternEnumStripes CoverPatternEnum = "stripes"
+)
+
+func (e *CoverPatternEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = CoverPatternEnum(s)
+	case string:
+		*e = CoverPatternEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for CoverPatternEnum: %T", src)
+	}
+	return nil
+}
+
+type NullCoverPatternEnum struct {
+	CoverPatternEnum CoverPatternEnum
+	Valid            bool // Valid is true if CoverPatternEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullCoverPatternEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.CoverPatternEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.CoverPatternEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullCoverPatternEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.CoverPatternEnum), nil
+}
+
+func (e CoverPatternEnum) Valid() bool {
+	switch e {
+	case CoverPatternEnumHorizon,
+		CoverPatternEnumWaves,
+		CoverPatternEnumHills,
+		CoverPatternEnumStripes:
+		return true
+	}
+	return false
+}
+
 type EventActionEnum string
 
 const (
@@ -941,65 +996,6 @@ func (e PersonaPrivacyEnum) Valid() bool {
 	return false
 }
 
-type PersonaThemeEnum string
-
-const (
-	PersonaThemeEnumTide   PersonaThemeEnum = "tide"
-	PersonaThemeEnumForest PersonaThemeEnum = "forest"
-	PersonaThemeEnumEmber  PersonaThemeEnum = "ember"
-	PersonaThemeEnumPlum   PersonaThemeEnum = "plum"
-	PersonaThemeEnumRose   PersonaThemeEnum = "rose"
-	PersonaThemeEnumSlate  PersonaThemeEnum = "slate"
-)
-
-func (e *PersonaThemeEnum) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = PersonaThemeEnum(s)
-	case string:
-		*e = PersonaThemeEnum(s)
-	default:
-		return fmt.Errorf("unsupported scan type for PersonaThemeEnum: %T", src)
-	}
-	return nil
-}
-
-type NullPersonaThemeEnum struct {
-	PersonaThemeEnum PersonaThemeEnum
-	Valid            bool // Valid is true if PersonaThemeEnum is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullPersonaThemeEnum) Scan(value interface{}) error {
-	if value == nil {
-		ns.PersonaThemeEnum, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.PersonaThemeEnum.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullPersonaThemeEnum) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.PersonaThemeEnum), nil
-}
-
-func (e PersonaThemeEnum) Valid() bool {
-	switch e {
-	case PersonaThemeEnumTide,
-		PersonaThemeEnumForest,
-		PersonaThemeEnumEmber,
-		PersonaThemeEnumPlum,
-		PersonaThemeEnumRose,
-		PersonaThemeEnumSlate:
-		return true
-	}
-	return false
-}
-
 type RelationshipEnum string
 
 const (
@@ -1053,18 +1049,79 @@ func (e RelationshipEnum) Valid() bool {
 	return false
 }
 
+type ThemeEnum string
+
+const (
+	ThemeEnumTide   ThemeEnum = "tide"
+	ThemeEnumForest ThemeEnum = "forest"
+	ThemeEnumEmber  ThemeEnum = "ember"
+	ThemeEnumPlum   ThemeEnum = "plum"
+	ThemeEnumRose   ThemeEnum = "rose"
+	ThemeEnumSlate  ThemeEnum = "slate"
+)
+
+func (e *ThemeEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ThemeEnum(s)
+	case string:
+		*e = ThemeEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ThemeEnum: %T", src)
+	}
+	return nil
+}
+
+type NullThemeEnum struct {
+	ThemeEnum ThemeEnum
+	Valid     bool // Valid is true if ThemeEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullThemeEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.ThemeEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ThemeEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullThemeEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ThemeEnum), nil
+}
+
+func (e ThemeEnum) Valid() bool {
+	switch e {
+	case ThemeEnumTide,
+		ThemeEnumForest,
+		ThemeEnumEmber,
+		ThemeEnumPlum,
+		ThemeEnumRose,
+		ThemeEnumSlate:
+		return true
+	}
+	return false
+}
+
 type Channel struct {
-	ID          int64
-	Name        string
-	Description string
-	Thumbnail   string
-	Banner      string
-	OwnerID     int64
-	Visibility  ChannelVisibilityEnum
-	CreatedAt   sql.NullTime
-	UpdatedAt   sql.NullTime
-	DeletedAt   sql.NullTime
-	MinAge      int16
+	ID           int64
+	Name         string
+	Description  string
+	Thumbnail    string
+	Banner       string
+	OwnerID      int64
+	Visibility   ChannelVisibilityEnum
+	CreatedAt    sql.NullTime
+	UpdatedAt    sql.NullTime
+	DeletedAt    sql.NullTime
+	MinAge       int16
+	Theme        NullThemeEnum
+	CoverPattern CoverPatternEnum
 }
 
 type ChannelFollower struct {
@@ -1115,19 +1172,21 @@ type City struct {
 }
 
 type Community struct {
-	ID          int64
-	Name        string
-	Slug        string
-	Description string
-	Thumbnail   string
-	Banner      string
-	Visibility  CommunityVisibilityEnum
-	OwnerID     int64
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   sql.NullTime
-	Rules       string
-	MinAge      int16
+	ID           int64
+	Name         string
+	Slug         string
+	Description  string
+	Thumbnail    string
+	Banner       string
+	Visibility   CommunityVisibilityEnum
+	OwnerID      int64
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    sql.NullTime
+	Rules        string
+	MinAge       int16
+	Theme        ThemeEnum
+	CoverPattern CoverPatternEnum
 }
 
 type CommunityChannel struct {
@@ -1268,7 +1327,7 @@ type Persona struct {
 	Privacy       PersonaPrivacyEnum
 	IsDefault     sql.NullBool
 	ShowOnProfile bool
-	Theme         PersonaThemeEnum
+	Theme         ThemeEnum
 	CreatedAt     sql.NullTime
 	UpdatedAt     sql.NullTime
 	DeletedAt     sql.NullTime

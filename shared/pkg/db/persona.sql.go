@@ -114,7 +114,7 @@ type CreatePersonaParams struct {
 	Slug          string
 	Privacy       PersonaPrivacyEnum
 	ShowOnProfile bool
-	Theme         PersonaThemeEnum
+	Theme         ThemeEnum
 }
 
 // ------------------------------
@@ -353,7 +353,7 @@ type GetPersonaBasicInfoRow struct {
 	CreatedAt        sql.NullTime
 	UpdatedAt        sql.NullTime
 	Privacy          PersonaPrivacyEnum
-	Theme            PersonaThemeEnum
+	Theme            ThemeEnum
 	JoinedChannels   pqtype.NullRawMessage
 	FollowedChannels pqtype.NullRawMessage
 }
@@ -513,7 +513,7 @@ func (q *Queries) GetPersonaFollowInfo(ctx context.Context, arg GetPersonaFollow
 }
 
 const getPersonaFollowedChannels = `-- name: GetPersonaFollowedChannels :many
-SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age
+SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern
 FROM channel_followers cf
 JOIN channels c ON cf.channel_id = c.id
 WHERE cf.persona_id = $1
@@ -544,6 +544,8 @@ func (q *Queries) GetPersonaFollowedChannels(ctx context.Context, personaID int6
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.MinAge,
+			&i.Theme,
+			&i.CoverPattern,
 		); err != nil {
 			return nil, err
 		}
@@ -559,7 +561,7 @@ func (q *Queries) GetPersonaFollowedChannels(ctx context.Context, personaID int6
 }
 
 const getPersonaJoinedChannels = `-- name: GetPersonaJoinedChannels :many
-SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age
+SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern
 FROM channel_members cm
 JOIN channels c ON cm.channel_id = c.id
 WHERE cm.persona_id = $1
@@ -590,6 +592,8 @@ func (q *Queries) GetPersonaJoinedChannels(ctx context.Context, personaID int64)
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.MinAge,
+			&i.Theme,
+			&i.CoverPattern,
 		); err != nil {
 			return nil, err
 		}
@@ -1148,7 +1152,7 @@ type UpdatePersonaByIdAndUserIdParams struct {
 	Slug          string
 	Privacy       PersonaPrivacyEnum
 	ShowOnProfile bool
-	Theme         PersonaThemeEnum
+	Theme         ThemeEnum
 }
 
 // -------------------------------

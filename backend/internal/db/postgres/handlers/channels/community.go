@@ -55,10 +55,11 @@ func (h *Handler) ChannelCommunity(c *gin.Context) {
 }
 
 type ModeratedChannel struct {
-	ID         int64  `json:"id"`
-	Name       string `json:"name"`
-	Thumbnail  string `json:"thumbnail"`
-	Visibility string `json:"visibility"`
+	ID         int64        `json:"id"`
+	Name       string       `json:"name"`
+	Thumbnail  string       `json:"thumbnail"`
+	Theme      db.ThemeEnum `json:"theme"`
+	Visibility string       `json:"visibility"`
 	// none, pending or active.
 	CommunityStatus string        `json:"community_status"`
 	Community       *CommunityRef `json:"community"`
@@ -78,7 +79,7 @@ func (h *Handler) ModeratedChannels(c *gin.Context) {
 	}
 	out := make([]ModeratedChannel, len(rows))
 	for i, r := range rows {
-		out[i] = ModeratedChannel{ID: r.ID, Name: r.Name, Thumbnail: r.Thumbnail, Visibility: string(r.Visibility), CommunityStatus: "none"}
+		out[i] = ModeratedChannel{ID: r.ID, Name: r.Name, Thumbnail: r.Thumbnail, Theme: r.EffectiveTheme, Visibility: string(r.Visibility), CommunityStatus: "none"}
 		if r.CommunityID != 0 {
 			out[i].CommunityStatus = r.CommunityStatus
 			out[i].Community = &CommunityRef{ID: r.CommunityID, Name: r.CommunityName, Slug: r.CommunitySlug}

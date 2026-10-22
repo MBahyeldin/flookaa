@@ -37,7 +37,7 @@ func (h *Handler) Suggest(c *gin.Context) {
 	// Members, pending requesters and followers are left out by the query.
 	items := make([]channelItem, len(rows))
 	for i, r := range rows {
-		items[i] = channelItem{Channel: r.Channel, MembersCount: r.MembersCount, FollowersCount: r.FollowersCount}
+		items[i] = channelItem{Channel: r.Channel, EffectiveTheme: r.EffectiveTheme, MembersCount: r.MembersCount, FollowersCount: r.FollowersCount}
 	}
 	built, err := h.build(ctx, personaID, items)
 	if err != nil {

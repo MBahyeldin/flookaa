@@ -123,7 +123,7 @@ func (h *Handler) CreatePersona(c *gin.Context) {
 		showOnProfileRequiresPublic(c)
 		return
 	}
-	theme, ok := resolveTheme(req.Theme, db.PersonaThemeEnumTide)
+	theme, ok := resolveTheme(req.Theme, db.ThemeEnumTide)
 	if !ok {
 		invalidTheme(c)
 		return
@@ -349,11 +349,11 @@ func showOnProfileRequiresPublic(c *gin.Context) {
 	c.JSON(http.StatusBadRequest, gin.H{"error": "show_on_profile_requires_public"})
 }
 
-func resolveTheme(requested string, current db.PersonaThemeEnum) (db.PersonaThemeEnum, bool) {
+func resolveTheme(requested string, current db.ThemeEnum) (db.ThemeEnum, bool) {
 	if requested == "" {
 		return current, true
 	}
-	theme := db.PersonaThemeEnum(requested)
+	theme := db.ThemeEnum(requested)
 	return theme, theme.Valid()
 }
 

@@ -16,12 +16,15 @@ type seedChannel struct {
 	Name        string
 	Description string
 	Interests   []db.SeedInterestParams
+	Cover       db.CoverPatternEnum
 }
 
 type seedCommunity struct {
 	Name        string
 	Slug        string
 	Description string
+	Theme       db.ThemeEnum
+	Cover       db.CoverPatternEnum
 	Interests   []db.SeedInterestParams
 	Channels    []seedChannel
 }
@@ -30,69 +33,76 @@ type seedCommunity struct {
 var communities = []seedCommunity{
 	{
 		Name: "Tech Builders", Slug: "tech-builders",
+		Theme: db.ThemeEnumSlate, Cover: db.CoverPatternEnumStripes,
 		Description: "For people who build software, products and companies.",
 		Interests:   []db.SeedInterestParams{interestTechnology, interestProgramming, interestStartups},
 		Channels: []seedChannel{
-			{"Programming Help", "Stuck on a bug? Ask here and help others.", []db.SeedInterestParams{interestProgramming}},
-			{"AI Corner", "News, tools and experiments in artificial intelligence.", []db.SeedInterestParams{interestArtificialIntelligence}},
-			{"Startup Founders", "Building a company: ideas, launches and lessons.", []db.SeedInterestParams{interestStartups, interestBusiness}},
+			{"Programming Help", "Stuck on a bug? Ask here and help others.", []db.SeedInterestParams{interestProgramming}, db.CoverPatternEnumHorizon},
+			{"AI Corner", "News, tools and experiments in artificial intelligence.", []db.SeedInterestParams{interestArtificialIntelligence}, db.CoverPatternEnumWaves},
+			{"Startup Founders", "Building a company: ideas, launches and lessons.", []db.SeedInterestParams{interestStartups, interestBusiness}, db.CoverPatternEnumHills},
 		},
 	},
 	{
 		Name: "Screen & Sound", Slug: "screen-and-sound",
+		Theme: db.ThemeEnumPlum, Cover: db.CoverPatternEnumWaves,
 		Description: "Films, series, music and anime: what you're watching and listening to.",
 		Interests:   []db.SeedInterestParams{interestMoviesTV, interestMusic, interestAnimeManga},
 		Channels: []seedChannel{
-			{"Movie Nights", "Recommendations, reviews and watch-alongs.", []db.SeedInterestParams{interestMoviesTV}},
-			{"Music Discovery", "Share the tracks and artists you love.", []db.SeedInterestParams{interestMusic}},
-			{"Anime Club", "Seasonal picks, classics and manga talk.", []db.SeedInterestParams{interestAnimeManga}},
+			{"Movie Nights", "Recommendations, reviews and watch-alongs.", []db.SeedInterestParams{interestMoviesTV}, db.CoverPatternEnumStripes},
+			{"Music Discovery", "Share the tracks and artists you love.", []db.SeedInterestParams{interestMusic}, db.CoverPatternEnumHorizon},
+			{"Anime Club", "Seasonal picks, classics and manga talk.", []db.SeedInterestParams{interestAnimeManga}, db.CoverPatternEnumWaves},
 		},
 	},
 	{
 		Name: "Creators Hub", Slug: "creators-hub",
+		Theme: db.ThemeEnumRose, Cover: db.CoverPatternEnumHills,
 		Description: "A home for artists, photographers and writers.",
 		Interests:   []db.SeedInterestParams{interestArt, interestPhotography, interestWriting},
 		Channels: []seedChannel{
-			{"Art Showcase", "Show your work and get feedback.", []db.SeedInterestParams{interestArt}},
-			{"Photo Walk", "Photos, gear and technique.", []db.SeedInterestParams{interestPhotography}},
-			{"Writers' Room", "Drafts, prompts and the books that inspire you.", []db.SeedInterestParams{interestWriting, interestBooksReading}},
+			{"Art Showcase", "Show your work and get feedback.", []db.SeedInterestParams{interestArt}, db.CoverPatternEnumHills},
+			{"Photo Walk", "Photos, gear and technique.", []db.SeedInterestParams{interestPhotography}, db.CoverPatternEnumStripes},
+			{"Writers' Room", "Drafts, prompts and the books that inspire you.", []db.SeedInterestParams{interestWriting, interestBooksReading}, db.CoverPatternEnumHorizon},
 		},
 	},
 	{
 		Name: "Healthy Living", Slug: "healthy-living",
+		Theme: db.ThemeEnumForest, Cover: db.CoverPatternEnumHills,
 		Description: "Moving, eating well and looking after your home.",
 		Interests:   []db.SeedInterestParams{interestFitness, interestHealthWellness, interestCooking},
 		Channels: []seedChannel{
-			{"Fitness Journey", "Workouts, progress and motivation.", []db.SeedInterestParams{interestFitness}},
-			{"Cooking Together", "Recipes and kitchen wins.", []db.SeedInterestParams{interestCooking, interestFood}},
-			{"Home & Garden", "DIY projects and green corners.", []db.SeedInterestParams{interestHomeDIY, interestGardening}},
+			{"Fitness Journey", "Workouts, progress and motivation.", []db.SeedInterestParams{interestFitness}, db.CoverPatternEnumWaves},
+			{"Cooking Together", "Recipes and kitchen wins.", []db.SeedInterestParams{interestCooking, interestFood}, db.CoverPatternEnumHills},
+			{"Home & Garden", "DIY projects and green corners.", []db.SeedInterestParams{interestHomeDIY, interestGardening}, db.CoverPatternEnumStripes},
 		},
 	},
 	{
 		Name: "Explorers", Slug: "explorers",
+		Theme: db.ThemeEnumTide, Cover: db.CoverPatternEnumHorizon,
 		Description: "Travel, the outdoors and the animals we meet there.",
 		Interests:   []db.SeedInterestParams{interestTravel, interestNatureOutdoors, interestAnimals},
 		Channels: []seedChannel{
-			{"Travel Stories", "Trips, tips and places worth seeing.", []db.SeedInterestParams{interestTravel}},
-			{"Into the Wild", "Hikes, camping and wildlife.", []db.SeedInterestParams{interestNatureOutdoors, interestAnimals}},
+			{"Travel Stories", "Trips, tips and places worth seeing.", []db.SeedInterestParams{interestTravel}, db.CoverPatternEnumHorizon},
+			{"Into the Wild", "Hikes, camping and wildlife.", []db.SeedInterestParams{interestNatureOutdoors, interestAnimals}, db.CoverPatternEnumWaves},
 		},
 	},
 	{
 		Name: "Game Night", Slug: "game-night",
+		Theme: db.ThemeEnumEmber, Cover: db.CoverPatternEnumStripes,
 		Description: "Video games and board games, solo or together.",
 		Interests:   []db.SeedInterestParams{interestGaming, interestBoardGames},
 		Channels: []seedChannel{
-			{"Gamers Lounge", "What you're playing and who to play with.", []db.SeedInterestParams{interestGaming}},
-			{"Board Game Café", "Favourites, rules questions and game nights.", []db.SeedInterestParams{interestBoardGames}},
+			{"Gamers Lounge", "What you're playing and who to play with.", []db.SeedInterestParams{interestGaming}, db.CoverPatternEnumHills},
+			{"Board Game Café", "Favourites, rules questions and game nights.", []db.SeedInterestParams{interestBoardGames}, db.CoverPatternEnumStripes},
 		},
 	},
 	{
 		Name: "Egypt & Arabic", Slug: "egypt-and-arabic",
+		Theme: db.ThemeEnumEmber, Cover: db.CoverPatternEnumHorizon,
 		Description: "Egyptian culture, history and the Arabic language.",
 		Interests:   []db.SeedInterestParams{interestEgyptianCulture, interestArabicLanguage, interestHistory},
 		Channels: []seedChannel{
-			{"Egyptian Culture", "Traditions, history and everyday life in Egypt.", []db.SeedInterestParams{interestEgyptianCulture, interestHistory}},
-			{"Learn Arabic", "Practise and ask questions, at any level.", []db.SeedInterestParams{interestArabicLanguage}},
+			{"Egyptian Culture", "Traditions, history and everyday life in Egypt.", []db.SeedInterestParams{interestEgyptianCulture, interestHistory}, db.CoverPatternEnumHorizon},
+			{"Learn Arabic", "Practise and ask questions, at any level.", []db.SeedInterestParams{interestArabicLanguage}, db.CoverPatternEnumWaves},
 		},
 	},
 }
@@ -132,13 +142,14 @@ func seedOneCommunity(ctx context.Context, pg *sql.DB, q *db.Queries, ownerID in
 			return err
 		}
 		if _, err := channels.Create(ctx, pg, q, channels.CreateParams{
-			Name:        ch.Name,
-			Description: ch.Description,
-			Visibility:  db.ChannelVisibilityEnumPublic,
-			OwnerID:     ownerID,
-			MinAge:      seedMinAge,
-			InterestIDs: ids,
-			CommunityID: communityID,
+			Name:         ch.Name,
+			Description:  ch.Description,
+			Visibility:   db.ChannelVisibilityEnumPublic,
+			OwnerID:      ownerID,
+			MinAge:       seedMinAge,
+			CoverPattern: ch.Cover,
+			InterestIDs:  ids,
+			CommunityID:  communityID,
 		}); err != nil {
 			return fmt.Errorf("channel %s: %w", ch.Name, err)
 		}
@@ -166,12 +177,14 @@ func seedCommunityRow(ctx context.Context, pg *sql.DB, q *db.Queries, ownerID in
 	defer tx.Rollback()
 	qtx := q.WithTx(tx)
 	communityID, err := qtx.CreateCommunity(ctx, db.CreateCommunityParams{
-		Name:        sc.Name,
-		Slug:        sc.Slug,
-		Description: sc.Description,
-		Visibility:  db.CommunityVisibilityEnumPublic,
-		OwnerID:     ownerID,
-		MinAge:      seedMinAge,
+		Name:         sc.Name,
+		Slug:         sc.Slug,
+		Description:  sc.Description,
+		Visibility:   db.CommunityVisibilityEnumPublic,
+		OwnerID:      ownerID,
+		MinAge:       seedMinAge,
+		Theme:        sc.Theme,
+		CoverPattern: sc.Cover,
 	})
 	if err != nil {
 		return 0, err
