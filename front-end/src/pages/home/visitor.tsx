@@ -9,10 +9,10 @@ export default function VisitorPage() {
       <div className="container min-h-full grid grid-cols-1 md:grid-cols-2">
         <div className="flex flex-col items-start justify-center p-6 gap-4">
           {/* Left section content */}
-          <h1 className="font-[var(--font-inter)] font-extrabold text-[3.34rem] leading-[100%] tracking-[-0.02em] align-middle">
+          <h1 className="font-extrabold text-[3.34rem] leading-[100%] tracking-[-0.02em] align-middle">
             Welcome to FLOOKA!
           </h1>
-          <p className="font-[var(--font-inter)] font-semibold text-[1.5rem] text-muted-foreground leading-[100%] tracking-[0] md:w-[80%]">
+          <p className="font-semibold text-[1.5rem] text-muted-foreground leading-[100%] tracking-[0] md:w-[80%]">
             Comming Soon, Stay tuned! ^_^
           </p>
           <Button className="mt-6" variant="default" size="lg" borderRadius="full">

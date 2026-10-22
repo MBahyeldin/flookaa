@@ -9,10 +9,10 @@ export default function OnboardingProgress({ current, total }: { current: number
         aria-valuemax={total}
         aria-valuenow={current}
         aria-label="Onboarding progress"
-        className="h-3 w-full rounded-full bg-white overflow-hidden"
+        className="h-3 w-full rounded-full bg-muted overflow-hidden"
       >
         <div
-          className="h-full rounded-full bg-linear-to-r from-brand-start to-brand-end transition-[width] duration-300"
+          className="h-full rounded-full bg-primary transition-[width] duration-300"
           style={{ width: `${percent}%` }}
         />
       </div>

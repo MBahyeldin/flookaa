@@ -6,9 +6,6 @@ import { Input } from "@/components/ui/input";
 import PostContent from "@/components/portable-text/PostContent";
 import { PALETTES, type PaletteId } from "@/themes/palettes";
 
-const GRADIENT_FROM = "var(--primary-gradient-from)";
-const GRADIENT_TO = "var(--primary-gradient-to)";
-
 const PAIRS: [label: string, fg: string, bg: string, bar: number][] = [
   ["foreground / background", "var(--foreground)", "var(--background)", 4.5],
   ["foreground / card", "var(--foreground)", "var(--card)", 4.5],
@@ -16,12 +13,16 @@ const PAIRS: [label: string, fg: string, bg: string, bar: number][] = [
   ["muted-fg / background", "var(--muted-foreground)", "var(--background)", 4.5],
   ["muted-fg / card", "var(--muted-foreground)", "var(--card)", 4.5],
   ["muted-fg / muted", "var(--muted-foreground)", "var(--muted)", 4.5],
-  ["primary-fg / gradient from", "var(--primary-foreground)", GRADIENT_FROM, 4.5],
-  ["primary-fg / gradient to", "var(--primary-foreground)", GRADIENT_TO, 4.5],
+  ["foreground / surface-sunken", "var(--foreground)", "var(--surface-sunken)", 4.5],
+  ["muted-fg / surface-sunken", "var(--muted-foreground)", "var(--surface-sunken)", 4.5],
+  ["primary-fg / primary", "var(--primary-foreground)", "var(--primary)", 4.5],
   ["secondary-fg / secondary", "var(--secondary-foreground)", "var(--secondary)", 4.5],
   ["accent-fg / accent", "var(--accent-foreground)", "var(--accent)", 4.5],
   ["primary / background", "var(--primary)", "var(--background)", 4.5],
   ["primary / card", "var(--primary)", "var(--card)", 4.5],
+  ["primary / muted", "var(--primary)", "var(--muted)", 4.5],
+  ["primary / surface-sunken", "var(--primary)", "var(--surface-sunken)", 4.5],
+  ["success / muted", "var(--success)", "var(--muted)", 4.5],
   ["success / background", "var(--success)", "var(--background)", 4.5],
   ["success / card", "var(--success)", "var(--card)", 4.5],
   ["warning / background", "var(--warning)", "var(--background)", 4.5],
@@ -157,6 +158,11 @@ function Swatch({ id, label, dark }: { id: PaletteId; label: string; dark: boole
               <span className="rounded bg-warning px-2 py-1 text-warning-foreground">warning</span>
               <span className="rounded bg-destructive px-2 py-1 text-destructive-foreground">destructive</span>
               <span className="rounded bg-accent px-2 py-1 text-accent-foreground">accent</span>
+            </div>
+            <div className="flex gap-2 text-xs">
+              <span className="rounded border bg-surface-sunken px-2 py-1">surface-sunken</span>
+              <span className="rounded bg-hero-overlay px-2 py-1 text-white">hero-overlay</span>
+              <span className="rounded border bg-card px-2 py-1 shadow-sm">shadow-sm</span>
             </div>
             <Input placeholder="Input" />
           </CardContent>
