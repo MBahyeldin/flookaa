@@ -33,7 +33,7 @@ import type { Channel } from "@/types/channel";
 import type { Community, ModeratedChannel } from "@/types/community";
 import { useNotificationStore } from "@/stores/NotificationStore";
 import { formatDateOnly } from "@/utils/formateDate";
-import { ChannelCard } from "../../channels/ChannelCard";
+import { ChannelTile } from "@/components/tile/ChannelTile";
 import CommunityForm from "../CommunityForm";
 import MembersSheet, { type MembersTab } from "./MembersSheet";
 import SuggestChannelDialog from "./SuggestChannelDialog";
@@ -469,11 +469,11 @@ export default function CommunityPage() {
             }
           />
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {channels.map((channel) =>
               community.can_manage ? (
                 <div key={channel.id} className="flex flex-col gap-2">
-                  <ChannelCard channel={channel} hideCommunity />
+                  <ChannelTile channel={channel} />
                   <Button
                     variant="ghost"
                     size="sm"
@@ -484,7 +484,7 @@ export default function CommunityPage() {
                   </Button>
                 </div>
               ) : (
-                <ChannelCard key={channel.id} channel={channel} hideCommunity />
+                <ChannelTile key={channel.id} channel={channel} />
               ),
             )}
           </div>

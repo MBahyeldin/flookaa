@@ -1,4 +1,6 @@
 import type { Interest } from "./interest";
+import type { PaletteId } from "@/themes/palettes";
+import type { CoverPattern } from "./cover";
 
 export type CommunityOwner = {
   id: number;
@@ -20,6 +22,8 @@ export type Community = {
   visibility: "public" | "private";
   /** 13, 16, 18 or 21. */
   min_age: number;
+  theme: PaletteId;
+  cover_pattern: CoverPattern;
   /** Null when the owner persona is gone. */
   owner: CommunityOwner | null;
   interests: Interest[];
