@@ -116,6 +116,9 @@ type ComplexityRoot struct {
 		ID              func(childComplexity int) int
 		IsFollower      func(childComplexity int) int
 		IsMember        func(childComplexity int) int
+		IsOwner         func(childComplexity int) int
+		IsPending       func(childComplexity int) int
+		IsPrivate       func(childComplexity int) int
 		MembersCount    func(childComplexity int) int
 		MinAge          func(childComplexity int) int
 		Name            func(childComplexity int) int
@@ -729,6 +732,27 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Channel.IsMember(childComplexity), true
+
+	case "Channel.isOwner":
+		if e.complexity.Channel.IsOwner == nil {
+			break
+		}
+
+		return e.complexity.Channel.IsOwner(childComplexity), true
+
+	case "Channel.isPending":
+		if e.complexity.Channel.IsPending == nil {
+			break
+		}
+
+		return e.complexity.Channel.IsPending(childComplexity), true
+
+	case "Channel.isPrivate":
+		if e.complexity.Channel.IsPrivate == nil {
+			break
+		}
+
+		return e.complexity.Channel.IsPrivate(childComplexity), true
 
 	case "Channel.membersCount":
 		if e.complexity.Channel.MembersCount == nil {
@@ -2640,6 +2664,9 @@ type Channel {
   followersCount: Int
   isMember: Boolean!
   isFollower: Boolean!
+  isPending: Boolean!
+  isOwner: Boolean!
+  isPrivate: Boolean!
   canModerate: Boolean!
   community: CommunityRef
   minAge: Int!

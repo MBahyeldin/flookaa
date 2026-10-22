@@ -21,9 +21,9 @@ type MemberResponse struct {
 	IsModerator bool   `json:"is_moderator"`
 }
 
-// ListMembers lists active members. Owner, moderators and admins only.
+// ListMembers lists active members to every persona that can read the channel.
 func (h *Handler) ListMembers(c *gin.Context) {
-	channelId, ok := h.requireModerator(c)
+	channelId, ok := h.requireReader(c)
 	if !ok {
 		return
 	}

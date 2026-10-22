@@ -1,49 +1,32 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Users,
-  Heart,
-  Settings,
-  UserPlus,
-  HeartOff,
-  Boxes,
-  MessageSquare,
-  // Bell,
-  // BellOff,
-} from "lucide-react";
-import { ImageWithFallback } from "@/components/image-with-fallback";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { SkeletonList } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
-// import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Post } from "@/components/post-card";
-import { Link, useParams } from "react-router-dom";
-import { useGetChannelCommunityLazyQuery, useGetChannelQuery, useGetPostsLazyQuery } from "@/generated/graphql";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { GeneratedAvatarFallback } from "@/components/generated-avatar";
-import { PostCreator } from "@/components/post-creator";
-import { getChannelInterests, joinChannel, leaveChannel, setFollowing } from "@/services/channels";
-import InterestChips from "@/components/interests/InterestChips";
-import type { Interest } from "@/types/interest";
+import { Lock, MessageSquare } from "lucide-react";
+import { useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Skeleton, SkeletonList } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { SectionNav, SectionNavContent, SectionNavList, SectionNavTab } from "@/components/ui/section-nav";
+import NotFound from "@/components/not-found";
+import { Post } from "@/components/post-card";
+import { useGetChannelCommunityLazyQuery, useGetChannelQuery, useGetPostsLazyQuery } from "@/generated/graphql";
+import { getChannelInterests, joinChannel, leaveChannel, setFollowing } from "@/services/channels";
+import type { Interest } from "@/types/interest";
 import { useWebsocketService } from "@/Websocket.context";
 import loadNewPosts from "./subscribe/loadNewPosts";
 import handleChannelEvents from "./subscribe/handleChannelEvents";
 import type { ChannelEventPayload, PostEventPayload, WsEventMessage } from "@/types/Ws";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { isCurrentOwner, useAppStore } from "@/stores/AppStore";
-import { formatDateOnly } from "@/utils/formateDate";
 import ModerationSheet from "./ModerationSheet";
-import { AgeBadge } from "@/components/age-badge";
 import PostDialog from "./PostDialog";
+import { ChannelHero } from "./ChannelHero";
+import { ChannelAbout } from "./ChannelAbout";
+import { ChannelPeople } from "./ChannelPeople";
+import { ComposerBar } from "./ComposerBar";
+
+const TABS = ["posts", "about", "people"] as const;
+type Tab = (typeof TABS)[number];
 
 export default function ChannelPage() {
   const { id: channelId } = useParams<{ id: string }>();
@@ -63,15 +46,12 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     variables: { id: channelId },
   });
   const { websocketService } = useWebsocketService();
-  const [isJoined, setIsJoined] = useState(
-    channelData?.getChannel?.isMember || false
-  );
-  // Set after a join request on a private channel; getChannel doesn't expose
-  // pending state yet, so this only lasts for the current page view.
-  const [isRequested, setIsRequested] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(
-    channelData?.getChannel?.isFollower || false
-  );
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isJoined, setIsJoined] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [busy, setBusy] = useState<"join" | "follow" | null>(null);
+  const [peopleVersion, setPeopleVersion] = useState(0);
 
   const [newPosts, setNewPosts] = useState<PostEventPayload[]>([]);
   const [isManaging, setIsManaging] = useState(false);
@@ -83,7 +63,6 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   const [fetchCommunity] = useGetChannelCommunityLazyQuery({ fetchPolicy: "no-cache" });
   const [membersCount, setMembersCount] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
-  const [isFollowPending, setIsFollowPending] = useState(false);
   const canModerate = channelData?.getChannel?.canModerate || false;
 
   const setOwner = useAppStore((state) => state.setOwner);
@@ -157,51 +136,41 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     [posts, isStoreOnThisChannel]
   );
 
-  const handleJoin = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!channelId) return;
+  // No success toasts: the button state is the feedback.
+  const handleJoin = async () => {
+    if (!channelId || busy) return;
+    const name = channelData?.getChannel?.name ?? "this channel";
+    if (isJoined && !confirm(`Leave ${name}?`)) return;
+    setBusy("join");
     // Leaving also cancels a pending request.
-    if (isJoined || isRequested) {
+    if (isJoined || isPending) {
       const error = await leaveChannel(channelId);
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-      toast.success(isRequested ? "Join request cancelled" : "Successfully left channel");
+      setBusy(null);
+      if (error) return toast.error(error.message);
       // A cancelled request was never counted.
       if (isJoined) setMembersCount((n) => Math.max(0, n - 1));
       setIsJoined(false);
-      setIsRequested(false);
+      setIsPending(false);
       return;
     }
-
     const result = await joinChannel(channelId);
-    if (result.error) {
-      toast.error(result.error.message);
-      return;
-    }
+    setBusy(null);
+    if (result.error) return toast.error(result.error.message);
     if (result.status === "pending") {
-      // Private channel: posts stay hidden until a moderator approves.
-      toast.success("Join request sent. A moderator will review it.");
-      setIsRequested(true);
+      setIsPending(true);
       return;
     }
-    toast.success("Successfully joined channel");
     setMembersCount((n) => n + 1);
     setIsJoined(true);
   };
 
-  const handleFollow = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!channelId || isFollowPending) return;
+  const handleFollow = async () => {
+    if (!channelId || busy) return;
     const next = !isFollowing;
-    setIsFollowPending(true);
+    setBusy("follow");
     const error = await setFollowing(channelId, next);
-    setIsFollowPending(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    setBusy(null);
+    if (error) return toast.error(error.message);
     setIsFollowing(next);
     setFollowersCount((n) => Math.max(0, n + (next ? 1 : -1)));
   };
@@ -262,6 +231,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
       payload: ChannelEventPayload
     ) => {
       const me = useUserProfileStore.getState().persona?.id;
+      if (event.name === "member") setPeopleVersion((v) => v + 1);
       if (me != null && Number(event.actor_id) === Number(me)) return;
       const isMe = me != null && Number(payload.persona_id) === Number(me);
       const delta = event.action === "create" ? 1 : event.action === "delete" ? -1 : 0;
@@ -271,7 +241,9 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
           setMembersCount((n) => Math.max(0, n + delta));
           if (isMe && payload.reason === "approved") {
             setIsJoined(true);
-            setIsRequested(false);
+            setIsPending(false);
+            // The posts weren't readable before.
+            refetchChannel();
           }
           if (isMe && payload.reason === "removed") {
             setIsJoined(false);
@@ -281,7 +253,9 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
         case "follower":
           setFollowersCount((n) => Math.max(0, n + delta));
           break;
-        // join_request: nothing on this page tracks pending requests live yet.
+        case "join_request":
+          if (isMe && event.action === "delete" && payload.reason === "rejected") setIsPending(false);
+          break;
       }
     };
 
@@ -314,10 +288,10 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     }
   }, [channelData, addPosts]);
 
-  // Sync join/follow once the channel loads: the useState initialisers above
-  // only see the first render, when the data is usually not there yet.
+  // Server state wins on every (re)load; actions and events adjust it in between.
   useEffect(() => {
     setIsJoined(channelData?.getChannel?.isMember || false);
+    setIsPending(channelData?.getChannel?.isPending || false);
     setIsFollowing(channelData?.getChannel?.isFollower || false);
     setMembersCount(channelData?.getChannel?.membersCount ?? 0);
     setFollowersCount(channelData?.getChannel?.followersCount ?? 0);
@@ -326,312 +300,152 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   }, [channelData, setCanModerate]);
 
 
-  // Loading, failed and missing are three different things — collapsing them
-  // into one "Loading channel..." left errors looking like an indefinite hang.
-  if (channelLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground" role="status">
-          Loading channel…
-        </p>
-      </div>
-    );
-  }
+  // Refetches (info.update, approval) keep the page instead of flashing the skeleton.
+  if (channelLoading && !channelData) return <ChannelSkeleton />;
 
   if (channelError || !channelData?.getChannel) {
     const isMissing = !channelError || channelError.message.includes("channel not found");
+    if (isMissing) return <NotFound />;
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="max-w-md text-center space-y-4" role="alert">
-          <h1 className="text-2xl font-bold">
-            {isMissing ? "Channel not found" : "Couldn’t load this channel"}
-          </h1>
-          <p className="text-muted-foreground">
-            {isMissing
-              ? "This channel may have been deleted, or you may not have access to it."
-              : channelError?.message ||
-                "Something went wrong while loading this channel. Please try again."}
-          </p>
-          <Button asChild variant="outline">
-            <Link to="/channels">Back to Channels</Link>
-          </Button>
-        </div>
-      </div>
+      <ErrorState
+        className="mx-4 mt-24"
+        title="Couldn't load this channel"
+        onRetry={() => refetchChannel()}
+      />
     );
   }
 
-  const community = communityOverride !== undefined ? communityOverride : channelData.getChannel.community;
+  const channel = channelData.getChannel;
+  const community = communityOverride !== undefined ? communityOverride : channel.community;
+  const canRead = !channel.isPrivate || isJoined;
+  const tab = TABS.includes(searchParams.get("tab") as Tab) ? (searchParams.get("tab") as Tab) : "posts";
+  const setTab = (next: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (next === "posts") params.delete("tab");
+    else params.set("tab", next);
+    setSearchParams(params);
+  };
+
+  const membersOnly = (
+    <EmptyState
+      icon={Lock}
+      title="Members only"
+      body="Join to read and post here."
+      action={
+        !isPending && (
+          <Button onClick={handleJoin} loading={busy === "join"}>
+            Request to join
+          </Button>
+        )
+      }
+    />
+  );
 
   return (
-    <div className="min-h-screen">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-4xl">
-        {/*
-          Replaces a standalone "Back to Channels" ghost button. That button
-          consumed a full row above the hero, was the only back affordance in
-          the app, duplicated the sidebar's own Channels link, and was
-          mislabelled: it always routed to /channels regardless of where the
-          user actually came from, so "Back" was inaccurate.
+    <div data-theme={channel.theme} className="min-h-full bg-background text-foreground">
+      <ChannelHero
+        channel={channel}
+        community={community}
+        membersCount={membersCount}
+        followersCount={followersCount}
+        isJoined={isJoined}
+        isPending={isPending}
+        isFollowing={isFollowing}
+        busy={busy}
+        canModerate={canModerate}
+        onJoin={handleJoin}
+        onFollow={handleFollow}
+        onManage={() => setIsManaging(true)}
+      />
 
-          A breadcrumb states the hierarchy, offers the same one-tap way up,
-          and costs one compact line.
-        */}
-        <Breadcrumb className="mb-4">
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                {/* py/-my expands the tap area to 44px without moving the
-                    row: the bare text link was only 20px tall. */}
-                <Link to="/channels" className="inline-flex items-center py-3 -my-3">
-                  Channels
-                </Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>{channelData.getChannel.name}</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-        {/* Channel Header */}
-        {/*
-          py-0 gap-0: shadcn's Card ships `py-6 gap-6`, which put 24px of card
-          background above the banner — the stray white strip before the image.
-          The banner is meant to sit flush against the card's top edge, and
-          CardContent below supplies its own padding.
-        */}
-        <Card className="mb-8 overflow-hidden py-0 gap-0">
-          {/* Banner Image */}
-          <div className="relative h-40 sm:h-52 overflow-hidden">
-            <ImageWithFallback
-              src={channelData.getChannel.bannerImageUrl || ""}
-              alt={`${channelData.getChannel.name} banner`}
-              className="w-full h-full object-cover"
-            />
-            {/* Navy scrim rather than flat black, so the banner sits in the
-                same colour family as the rest of the theme. It also keeps the
-                thumbnail readable against a busy photo. */}
-            <div className="absolute inset-0 bg-gradient-to-t from-scrim/80 via-scrim/25 to-transparent" />
-          </div>
+      {canModerate && channelId && (
+        <ModerationSheet
+          channelId={channelId}
+          open={isManaging}
+          onOpenChange={setIsManaging}
+          onInterestsSaved={setInterests}
+          communityKey={communityKey}
+          minAge={channel.minAge}
+          onMinAgeSaved={() => refetchChannel()}
+        />
+      )}
 
-          <CardContent className="p-4 sm:p-6">
-            {/* Smaller overlap on mobile so the thumbnail doesn't eat the banner */}
-            <div className="relative -mt-12 sm:-mt-16 mb-5 sm:mb-6">
-              <div className="flex items-end gap-3 sm:gap-4">
-                <div className="relative shrink-0">
-                  <ImageWithFallback
-                    src={channelData.getChannel.thumbnailUrl || ""}
-                    alt=""
-                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg border-3 border-card object-cover"
-                  />
-                </div>
-                <div className="flex-1 min-w-0 pb-2">
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <h1 className="text-2xl font-bold text-card-foreground">
-                      {channelData.getChannel.name}
-                    </h1>
-                    <AgeBadge minAge={channelData.getChannel.minAge} />
-                    {/* The literal "category" badge was removed: Channel has no
-                        category field in the schema, so it was always a stub. */}
-                  </div>
-                  {community && (
-                    <Link
-                      to={`/communities/${community.slug}`}
-                      className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
-                    >
-                      <Boxes className="h-4 w-4" />
-                      Part of {community.name}
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </div>
+      <SectionNav value={tab} onValueChange={setTab}>
+        <SectionNavList className="top-14 px-4 md:top-0 md:px-8 xl:px-16">
+          <SectionNavTab value="posts">Posts</SectionNavTab>
+          <SectionNavTab value="about">About</SectionNavTab>
+          <SectionNavTab value="people">People</SectionNavTab>
+        </SectionNavList>
 
-            <div className="space-y-6">
-              {/* Channel Description */}
-              <p className="text-muted-foreground leading-relaxed">
-                {channelData.getChannel.description}
-              </p>
-              <InterestChips interests={interests} />
+        <div className="mx-auto w-full max-w-[1192px] px-4 py-6 md:px-8 md:py-8 xl:px-16">
+          <SectionNavContent value="posts" className="flex flex-col gap-6">
+            {!canRead ? (
+              membersOnly
+            ) : (
+              <>
+                {isJoined && <ComposerBar channelName={channel.name} />}
 
-              {/* Channel Stats — flex-wrap so these don't overflow on mobile */}
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">
-                    {membersCount}
-                  </span>
-                  <span className="text-muted-foreground">members</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Heart className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">
-                    {followersCount}
-                  </span>
-                  <span className="text-muted-foreground">followers</span>
-                </div>
-                {channelData.getChannel.createdAt && (
-                  <div className="text-muted-foreground">
-                    Created on{" "}
-                    <time dateTime={channelData.getChannel.createdAt}>
-                      {formatDateOnly(channelData.getChannel.createdAt)}
-                    </time>
-                  </div>
-                )}
-
-                {/*
-                  The owner used to sit in its own filled p-4 box with a 40px
-                  avatar, a bold name and a badge — as visually heavy as the
-                  CTA row, for attribution nobody comes to this page for. It's
-                  now one muted item in the metadata line: same information,
-                  proportionate weight.
-                */}
-                <div className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
-                  <span>by</span>
-                  <Avatar className="h-5 w-5 shrink-0">
-                    <AvatarImage
-                      src={channelData.getChannel.owner.profileImageUrl || ""}
-                    />
-                    <GeneratedAvatarFallback
-                      name={channelData.getChannel.owner.fullName}
-                    />
-                  </Avatar>
-                  <span className="truncate text-foreground">
-                    {channelData.getChannel.owner.username}
-                  </span>
-                </div>
-              </div>
-
-              {/* Action Buttons — flex-wrap so they don't clip on mobile.
-                  gap-2 at phone width: at gap-3 the four buttons totalled ~349px
-                  against 343px available, so the last one wrapped on its own. */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                <Button
-                  onClick={handleJoin}
-                  variant={isJoined || isRequested ? "secondary" : "default"}
-                  className="flex items-center space-x-2"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  {/* Measured: the four buttons need 341px but only 311px is
-                      available at 375px. Shortening just this label to "Join"
-                      on phones brings the row to ~275px so it fits on one line;
-                      the full wording returns from sm: up. */}
-                  <span className="sm:hidden">
-                    {isJoined ? "Joined" : isRequested ? "Requested" : "Join"}
-                  </span>
-                  <span className="hidden sm:inline">
-                    {isJoined ? "Joined" : isRequested ? "Request Sent" : "Join Channel"}
-                  </span>
-                </Button>
-
-                <Button
-                  onClick={handleFollow}
-                  disabled={isFollowPending}
-                  variant={isFollowing ? "secondary" : "outline"}
-                  className="flex items-center space-x-2"
-                >
-                  {isFollowing ? (
-                    <HeartOff className="h-4 w-4" />
-                  ) : (
-                    <Heart className="h-4 w-4" />
-                  )}
-                  <span>{isFollowing ? "Following" : "Follow"}</span>
-                </Button>
-                {/* 
-                <Button
-                  onClick={handleNotify}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center space-x-2"
-                >
-                  {isNotifying ? (
-                    <BellOff className="h-4 w-4" />
-                  ) : (
-                    <Bell className="h-4 w-4" />
-                  )}
-                </Button> */}
-
-                {/* Controls that don't apply to this persona, or aren't built
-                    yet, are left out rather than shown disabled. */}
-                {canModerate && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsManaging(true)}
-                    aria-label="Manage channel"
-                    title="Manage channel"
+                {newPosts.length ? (
+                  <button
+                    type="button"
+                    onClick={handleLoadNewPosts}
+                    className="w-full cursor-pointer rounded-lg border border-success/40 bg-success/10 px-4 py-3 text-center text-sm font-medium text-success transition-colors hover:bg-success/20"
                   >
-                    <Settings className="h-4 w-4" />
-                  </Button>
+                    {newPosts.length} new post{newPosts.length > 1 ? "s" : ""} available
+                  </button>
+                ) : null}
+
+                {!isStoreOnThisChannel ? null : sortedPosts.length ? (
+                  sortedPosts.map((post) => <Post key={post._id} post={post} isNew={newlyAddedIds.has(post._id)} />)
+                ) : (
+                  <EmptyState icon={MessageSquare} title="No posts yet" body={`Be the first to post in ${channel.name}.`} />
                 )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {canModerate && channelId && (
-          <ModerationSheet
-            channelId={channelId}
-            open={isManaging}
-            onOpenChange={setIsManaging}
-            onInterestsSaved={setInterests}
-            communityKey={communityKey}
-            minAge={channelData.getChannel.minAge}
-            onMinAgeSaved={() => refetchChannel()}
-          />
-        )}
+                {loadingMore && <SkeletonList count={2} variant="post" className="space-y-6" />}
+                {showLoadMore && !loadingMore && (
+                  <div className="text-center">
+                    <Button variant="outline" size="lg" className="px-8" onClick={handleLoadMorePosts}>
+                      Load more posts
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </SectionNavContent>
 
-        <PostCreator />
-
-        {/* Channel Posts */}
-        <div className="space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-xl font-semibold">Recent Posts</h2>
-          </div>
-
-          {newPosts.length ? (
-            // Was a clickable <div>: no keyboard access, invisible to AT.
-            // bg-success/10 alone was all but invisible against the gradient
-            // page — it read as plain centred text rather than something you
-            // can click. A border plus a hover state makes it an affordance.
-            <button
-              type="button"
-              onClick={handleLoadNewPosts}
-              className="w-full rounded-lg border border-success/40 bg-success/10 px-4 py-3 text-center text-sm font-medium text-success transition-colors cursor-pointer hover:bg-success/20"
-            >
-              {newPosts.length} new post{newPosts.length > 1 ? "s" : ""} available
-            </button>
-          ) : null}
-
-          {!isStoreOnThisChannel ? null : sortedPosts.length ? (
-            sortedPosts.map((post) => (
-              <Post
-                key={post._id}
-                post={post}
-                isNew={newlyAddedIds.has(post._id)}
-              />
-            ))
-          ) : (
-            <EmptyState
-              icon={MessageSquare}
-              title="No posts yet"
-              body={`Be the first to post in ${channelData.getChannel.name}.`}
+          <SectionNavContent value="about">
+            <ChannelAbout
+              description={channel.description}
+              interests={interests}
+              isPrivate={channel.isPrivate}
+              minAge={channel.minAge}
+              createdAt={channel.createdAt}
+              owner={channel.owner}
+              community={community}
             />
-          )}
+          </SectionNavContent>
+
+          <SectionNavContent value="people">
+            {canRead && channelId ? <ChannelPeople channelId={channelId} version={peopleVersion} /> : membersOnly}
+          </SectionNavContent>
         </div>
+      </SectionNav>
 
-        {/* Load More */}
-        {loadingMore && <SkeletonList count={2} variant="post" className="mt-6 space-y-6" />}
-        {showLoadMore && !loadingMore &&
-          <div className="text-center mt-8">
-            <Button variant="outline" size="lg" className="px-8" onClick={handleLoadMorePosts}>
-              Load More Posts
-            </Button>
-          </div>
-        }
+      {/* ?post=<id> from a notification */}
+      <PostDialog channelId={channelId} isStoreOnThisChannel={isStoreOnThisChannel} />
+    </div>
+  );
+}
 
-        {/* ?post=<id> from a notification */}
-        <PostDialog channelId={channelId} isStoreOnThisChannel={isStoreOnThisChannel} />
+function ChannelSkeleton() {
+  return (
+    <div role="status" aria-label="Loading channel" className="pb-8">
+      <Skeleton className="h-[150px] rounded-none md:h-[280px]" />
+      <div className="-mt-10 flex flex-col gap-3 px-4 md:-mt-14 md:px-8 xl:px-16">
+        <Skeleton className="size-20 rounded-lg border-3 border-background md:size-28" />
+        <Skeleton className="h-10 w-2/3 max-w-md" />
+        <Skeleton className="h-5 w-full max-w-xl" />
       </div>
-    </div >
+    </div>
   );
 }

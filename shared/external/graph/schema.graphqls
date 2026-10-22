@@ -232,6 +232,9 @@ type Channel {
   followersCount: Int
   isMember: Boolean!
   isFollower: Boolean!
+  isPending: Boolean!
+  isOwner: Boolean!
+  isPrivate: Boolean!
   canModerate: Boolean!
   community: CommunityRef
   minAge: Int!

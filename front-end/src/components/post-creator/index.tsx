@@ -40,7 +40,7 @@ function draftContent(blocks: PortableTextTextBlock<PortableTextSpan | PortableT
 }
 
 
-export function PostCreator() {
+export function PostCreator({ onCancel, onPosted }: { onCancel?: () => void; onPosted?: () => void } = {}) {
   const [blocks, setBlocks] = useState<PortableTextTextBlock<PortableTextSpan | PortableTextObject>[]>([]);
   const { persona } = useUserProfileStore();
   const [createPost] = useCreatePostMutation();
@@ -98,6 +98,7 @@ export function PostCreator() {
       setBlocks(() => []);
       setSyncPortableTextEditor(!syncPortableTextEditor);
       setMode("write");
+      onPosted?.();
     } catch (error) {
       // Without this the draft was cleared even when the mutation failed.
       console.error("Failed to publish post:", error);
@@ -204,6 +205,11 @@ export function PostCreator() {
               >
                 {charCount}/{MAX_POST_LENGTH}
               </span>
+              {onCancel && (
+                <Button variant="outline" onClick={onCancel} disabled={isPosting}>
+                  Cancel
+                </Button>
+              )}
               <Button
                 onClick={handleSubmit}
                 disabled={!canSubmit}

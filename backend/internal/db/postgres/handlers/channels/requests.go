@@ -131,3 +131,28 @@ func (h *Handler) requireModerator(c *gin.Context) (int64, bool) {
 	}
 	return channelId, true
 }
+
+// requireReader resolves :channel_id for personas that may read the channel;
+// others get 404.
+func (h *Handler) requireReader(c *gin.Context) (int64, bool) {
+	personaId, ok := auth.PersonaID(c)
+	if !ok {
+		auth.PersonaRequired(c)
+		return 0, false
+	}
+
+	channelId, ok := channelIDParam(c)
+	if !ok {
+		return 0, false
+	}
+
+	channel, ok := h.loadChannel(c, channelId, personaId)
+	if !ok {
+		return 0, false
+	}
+	if !channel.CanRead() {
+		c.JSON(http.StatusNotFound, gin.H{"error": access.ErrChannelNotFound.Error()})
+		return 0, false
+	}
+	return channelId, true
+}

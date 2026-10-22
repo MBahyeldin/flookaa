@@ -176,6 +176,9 @@ type Channel struct {
 	FollowersCount  *int32        `json:"followersCount,omitempty"`
 	IsMember        bool          `json:"isMember"`
 	IsFollower      bool          `json:"isFollower"`
+	IsPending       bool          `json:"isPending"`
+	IsOwner         bool          `json:"isOwner"`
+	IsPrivate       bool          `json:"isPrivate"`
 	CanModerate     bool          `json:"canModerate"`
 	Community       *CommunityRef `json:"community,omitempty"`
 	MinAge          int32         `json:"minAge"`
