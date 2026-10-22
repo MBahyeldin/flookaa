@@ -254,9 +254,9 @@ export default function CommunityPage() {
       </div>
 
       <div className="-mt-10 flex flex-col gap-4 px-2 sm:flex-row sm:items-end sm:px-6">
-        <Avatar className="h-20 w-20 rounded-2xl border-4 border-background">
+        <Avatar className="h-20 w-20 rounded-lg border-3 border-card">
           <AvatarImage src={community.thumbnail || ""} className="object-cover" />
-          <GeneratedAvatarFallback name={community.name} className="rounded-2xl" />
+          <GeneratedAvatarFallback name={community.name} className="rounded-lg" />
         </Avatar>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">

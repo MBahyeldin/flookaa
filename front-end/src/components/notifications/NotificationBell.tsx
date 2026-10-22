@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Bell } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useNotificationStore } from "@/stores/NotificationStore";
 import { describeNotification } from "./describe";
 import NotificationItem from "./NotificationItem";
@@ -33,9 +34,9 @@ export default function NotificationBell() {
         >
           <Bell size={24} />
           {unreadCount > 0 && (
-            <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] font-semibold leading-none text-destructive-foreground">
+            <Badge variant="count" className="absolute -right-2 -top-2">
               {badge}
-            </span>
+            </Badge>
           )}
         </button>
       </PopoverTrigger>

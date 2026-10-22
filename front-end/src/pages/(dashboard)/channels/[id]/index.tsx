@@ -389,7 +389,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
           The banner is meant to sit flush against the card's top edge, and
           CardContent below supplies its own padding.
         */}
-        <Card className="mb-8 border-0 shadow-sm overflow-hidden py-0 gap-0">
+        <Card className="mb-8 overflow-hidden py-0 gap-0">
           {/* Banner Image */}
           <div className="relative h-40 sm:h-52 overflow-hidden">
             <ImageWithFallback
@@ -411,7 +411,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                   <ImageWithFallback
                     src={channelData.getChannel.thumbnailUrl || ""}
                     alt=""
-                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-4 border-card object-cover shadow-md"
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg border-3 border-card object-cover"
                   />
                 </div>
                 <div className="flex-1 min-w-0 pb-2">
@@ -586,7 +586,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
             <button
               type="button"
               onClick={handleLoadNewPosts}
-              className="w-full rounded-xl border border-success/40 bg-success/10 px-4 py-3 text-center text-sm font-medium text-success shadow-sm transition-colors cursor-pointer hover:bg-success/20"
+              className="w-full rounded-lg border border-success/40 bg-success/10 px-4 py-3 text-center text-sm font-medium text-success transition-colors cursor-pointer hover:bg-success/20"
             >
               {newPosts.length} new post{newPosts.length > 1 ? "s" : ""} available
             </button>

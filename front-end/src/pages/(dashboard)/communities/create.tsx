@@ -15,7 +15,7 @@ export default function CreateCommunityPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-4xl shadow-xl">
+      <Card className="w-full max-w-4xl">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-foreground">Create a community</CardTitle>
           <CardDescription>A community groups channels about the same topics. You can add channels once it exists.</CardDescription>

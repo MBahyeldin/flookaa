@@ -81,7 +81,7 @@ export function ChannelCard({ channel, hideCommunity = false }: ChannelCardProps
       membersCount={localMemberCount}
       followersCount={localFollowerCount}
       hideCommunity={hideCommunity}
-      className="hover:shadow-md transition-shadow cursor-pointer"
+      className="hover:border-primary/40 transition-colors cursor-pointer"
     >
           <div className="flex items-center space-x-2">
             <Button
@@ -160,7 +160,7 @@ export function ChannelCardBody({
   );
 
   return (
-    <Card className={cn("border-0 shadow-sm overflow-hidden pt-0", className)}>
+    <Card className={cn("overflow-hidden pt-0", className)}>
       <div className="relative h-32 overflow-hidden">
         {linked ? <Link to={`/channels/${channel.id}`}>{image}</Link> : image}
         {channel.name && (

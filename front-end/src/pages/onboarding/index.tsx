@@ -61,7 +61,7 @@ export default function OnboardingPage() {
       <main className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
         <p className="text-muted-foreground">We couldn't open your persona.</p>
         <Button
-          borderRadius="full"
+         
           onClick={() => {
             clearAttempt();
             window.location.reload();

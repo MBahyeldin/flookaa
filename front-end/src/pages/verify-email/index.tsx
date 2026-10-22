@@ -4,7 +4,6 @@ import { useAuth } from "@/Auth.context";
 import {
   InputOTP,
   InputOTPGroup,
-  InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
@@ -105,7 +104,7 @@ export default function VerifyEmailPage() {
     <div className="min-h-screen flex justify-center px-4 pt-28 pb-16 welcome-bg-bottom bg-no-repeat bg-bottom bg-cover">
       <Header onlyLogo={true} />
       <div className="w-full max-w-sm">
-        <div className="rounded-2xl bg-background/80 backdrop-blur-md shadow-xl p-6 flex flex-col items-center gap-5 text-center">
+        <div className="rounded-xl border bg-background/80 backdrop-blur-md shadow-sm p-6 flex flex-col items-center gap-5 text-center">
           <div className="bg-primary w-20 h-20 rounded-full flex items-center justify-center">
             <Mail className="text-primary-foreground w-10 h-10" />
           </div>
@@ -129,13 +128,10 @@ export default function VerifyEmailPage() {
             onComplete={submit}
             disabled={isVerifying}
           >
-            <InputOTPGroup>
+            <InputOTPGroup aria-invalid={!!error || undefined}>
               <InputOTPSlot index={0} />
               <InputOTPSlot index={1} />
               <InputOTPSlot index={2} />
-            </InputOTPGroup>
-            <InputOTPSeparator />
-            <InputOTPGroup>
               <InputOTPSlot index={3} />
               <InputOTPSlot index={4} />
               <InputOTPSlot index={5} />
@@ -146,7 +142,7 @@ export default function VerifyEmailPage() {
           {!error && notice && <p className="text-sm text-muted-foreground">{notice}</p>}
 
           <Button
-            className="w-full rounded-full"
+            className="w-full"
             disabled={code.length !== 6 || isVerifying}
             onClick={() => submit(code)}
           >

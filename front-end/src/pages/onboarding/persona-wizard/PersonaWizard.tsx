@@ -224,7 +224,7 @@ export default function PersonaWizard({
 
         <div className="flex items-center justify-between gap-2 border-t pt-4">
           {step > 1 ? (
-            <Button variant="outline" borderRadius="full" disabled={saving} onClick={() => setStep(step - 1)}>
+            <Button variant="outline" disabled={saving} onClick={() => setStep(step - 1)}>
               <ArrowLeft />
               Back
             </Button>
@@ -232,12 +232,12 @@ export default function PersonaWizard({
             <span />
           )}
           {step < 3 ? (
-            <Button borderRadius="full" disabled={step === 1 && !basicsValid} onClick={() => setStep(step + 1)}>
+            <Button disabled={step === 1 && !basicsValid} onClick={() => setStep(step + 1)}>
               Next
               <ArrowRight />
             </Button>
           ) : (
-            <Button borderRadius="full" disabled={saving || interests.length === 0 || !catalogue} onClick={save}>
+            <Button disabled={saving || interests.length === 0 || !catalogue} onClick={save}>
               {saving ? "Saving…" : "Save persona"}
               <Sparkles />
             </Button>

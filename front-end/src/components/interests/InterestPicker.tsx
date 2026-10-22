@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { Chip } from "@/components/ui/chip";
 import { cn } from "@/lib/utils";
 import { MAX_PERSONA_INTERESTS, type InterestGroup, type Interest } from "@/types/interest";
 
@@ -32,17 +33,10 @@ export default function InterestPicker({
           <p className="text-sm text-muted-foreground">No longer offered</p>
           <div className="flex flex-wrap gap-2">
             {keptRetired.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => toggle(r.id)}
-                className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-sm text-foreground hover:bg-accent"
-                aria-label={`Remove ${r.name}`}
-              >
-                <span aria-hidden>{r.emoji}</span>
+              <Chip key={r.id} emoji={r.emoji} onClick={() => toggle(r.id)} aria-label={`Remove ${r.name}`}>
                 {r.name}
-                <X className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
+                <X className="text-muted-foreground" />
+              </Chip>
             ))}
           </div>
         </div>
@@ -66,7 +60,7 @@ export default function InterestPicker({
                   className={cn(
                     "flex min-h-24 flex-col items-center justify-center gap-1.5 rounded-xl px-3 py-4 text-sm font-semibold transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
-                    on ? "bg-primary text-primary-foreground shadow-sm" : "bg-card text-primary hover:bg-accent",
+                    on ? "bg-primary text-primary-foreground" : "bg-card text-primary hover:bg-accent",
                   )}
                 >
                   <span className="text-2xl leading-none" aria-hidden>

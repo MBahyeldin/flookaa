@@ -95,7 +95,7 @@ export default function Communities() {
           {items.map((c) => {
             const busy = busyId === c.id;
             return (
-              <Card key={c.id} className="overflow-hidden border-0 pt-0 shadow-sm">
+              <Card key={c.id} className="overflow-hidden pt-0">
                 <CommunityCardBody community={c}>
                   <div className="flex flex-wrap gap-2">
                     {c.membership_status === "active" ? (

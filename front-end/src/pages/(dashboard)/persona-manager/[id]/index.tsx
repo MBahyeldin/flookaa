@@ -40,7 +40,7 @@ export function PersonaInterestsSection({ personaId }: { personaId: number }) {
   };
 
   return (
-    <section className="mt-6 rounded-2xl bg-background p-4 text-foreground md:p-6" aria-labelledby="persona-interests">
+    <section className="mt-6 rounded-xl bg-background p-4 text-foreground md:p-6" aria-labelledby="persona-interests">
       <div className="mb-4 flex flex-col gap-1">
         <h2 id="persona-interests" className="text-lg font-semibold">
           Interests
@@ -95,7 +95,7 @@ export function PersonaSettingsForm({ persona }: { persona: Persona }) {
   );
 
   return (
-    <div data-theme={draftTheme ?? DEFAULT_PALETTE} className="rounded-2xl bg-background p-4 text-foreground md:p-6">
+    <div data-theme={draftTheme ?? DEFAULT_PALETTE} className="rounded-xl bg-background p-4 text-foreground md:p-6">
       <FormComponent
         form={form}
         initialValues={initialValues}

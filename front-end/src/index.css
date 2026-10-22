@@ -256,3 +256,11 @@
     color: var(--primary);
   }
 }
+
+/* Figma's hover on filled controls: scrim at 12% over whatever fill is there. */
+@utility tint {
+  background-image: linear-gradient(
+    color-mix(in oklab, var(--scrim) 12%, transparent),
+    color-mix(in oklab, var(--scrim) 12%, transparent)
+  );
+}

@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User2, Loader2 } from "lucide-react";
+import { User2 } from "lucide-react";
 import { useCreatePostMutation } from "@/generated/graphql";
 import { type PortableTextObject, type PortableTextSpan, type PortableTextTextBlock } from "@portabletext/editor";
 import { useActorRef } from "@xstate/react";
@@ -206,18 +206,10 @@ export function PostCreator() {
               </span>
               <Button
                 onClick={handleSubmit}
-                disabled={!canSubmit || isPosting}
-                aria-busy={isPosting}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                disabled={!canSubmit}
+                loading={isPosting}
               >
-                {isPosting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    Posting…
-                  </>
-                ) : (
-                  "Post"
-                )}
+                {isPosting ? "Posting…" : "Post"}
               </Button>
             </div>
           </div>

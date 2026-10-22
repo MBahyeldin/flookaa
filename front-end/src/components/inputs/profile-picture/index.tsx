@@ -92,20 +92,12 @@ export default function ProfilePictureInput({
         <Button
           variant="outline"
           size="sm"
-          className="mt-2 bg-transparent"
+          className="mt-2"
           onClick={() => thumbnailInputField.current?.click()}
-          disabled={isUploading}
-          aria-busy={isUploading}
+          loading={isUploading}
           type="button"
         >
-          {isUploading ? (
-            <>
-              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-              Uploading…
-            </>
-          ) : (
-            "Change Avatar"
-          )}
+          {isUploading ? "Uploading…" : "Change Avatar"}
         </Button>
       </div>
       {url && showPreview && (

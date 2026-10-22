@@ -147,7 +147,7 @@ export function Post({
     // gradient page the shadow-only edge was vague. rounded-xl matches the
     // hero card so the column shares one silhouette.
     <Card
-      className={`rounded-xl border border-border/70 shadow-sm ${
+      className={`rounded-lg border ${
         isNew ? "post-enter" : ""
       }`}
     >

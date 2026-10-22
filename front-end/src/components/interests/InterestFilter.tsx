@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Filter } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
 import { listInterests } from "@/services/interests";
 import type { Interest } from "@/types/interest";
 
@@ -23,20 +23,19 @@ export default function InterestFilter({ value, onChange }: { value: string; onC
         <span className="text-sm font-medium">Interests:</span>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button variant={value ? "outline" : "default"} size="sm" onClick={() => onChange("")}>
+        <Chip kind="filter" selected={!value} onClick={() => onChange("")}>
           All
-        </Button>
+        </Chip>
         {interests.map((i) => (
-          <Button
+          <Chip
             key={i.id}
-            variant={value === i.slug ? "default" : "outline"}
-            size="sm"
-            aria-pressed={value === i.slug}
+            kind="filter"
+            emoji={i.emoji}
+            selected={value === i.slug}
             onClick={() => onChange(value === i.slug ? "" : i.slug)}
           >
-            <span aria-hidden>{i.emoji}</span>
             {i.name}
-          </Button>
+          </Chip>
         ))}
       </div>
     </div>

@@ -3,8 +3,72 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Chip } from "@/components/ui/chip";
+import { FormField } from "@/components/ui/form-field";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Logo } from "@/components/ui/logo";
+import { SectionHeader } from "@/components/ui/section-header";
+import { SectionNav, SectionNavList, SectionNavTab } from "@/components/ui/section-nav";
+import { Lock, Plus } from "lucide-react";
 import PostContent from "@/components/portable-text/PostContent";
 import { PALETTES, type PaletteId } from "@/themes/palettes";
+
+function Components() {
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <Button>Primary</Button>
+        <Button variant="secondary">Secondary</Button>
+        <Button variant="outline">Outline</Button>
+        <Button variant="ghost">Ghost</Button>
+        <Button variant="destructive">Delete</Button>
+        <Button loading>Saving…</Button>
+        <Button disabled>Disabled</Button>
+        <Button size="icon" variant="outline" aria-label="Add">
+          <Plus />
+        </Button>
+        <Button size="icon-sm" variant="ghost" aria-label="Add">
+          <Plus />
+        </Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Chip emoji="⚽">Sports</Chip>
+        <Chip emoji="⚽" selected>Sports</Chip>
+        <Chip kind="filter" onClick={() => {}}>All</Chip>
+        <Chip kind="filter" selected onClick={() => {}}>Music</Chip>
+        <Badge variant="secondary"><Lock />Private</Badge>
+        <Badge variant="secondary">18+</Badge>
+        <Badge variant="count">2</Badge>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <FormField label="Channel name" helper="Shown on the channel hero.">
+          <Input defaultValue="Sunday League" />
+        </FormField>
+        <FormField label="Channel name" error="That name is taken.">
+          <Input defaultValue="Sunday League" />
+        </FormField>
+      </div>
+      <div className="flex flex-wrap items-end gap-2">
+        {(["xs", "sm", "md", "lg", "xl"] as const).map((size) => (
+          <Avatar key={size} size={size}>
+            <AvatarFallback>MS</AvatarFallback>
+          </Avatar>
+        ))}
+        {(["sm", "md", "lg", "xl"] as const).map((size) => (
+          <Logo key={size} size={size} name="Tech Builders" />
+        ))}
+      </div>
+      <SectionHeader overline="Channels" title="In this community" seeAllTo="/dev/themes" />
+      <SectionNav defaultValue="posts">
+        <SectionNavList className="px-0">
+          <SectionNavTab value="posts">Posts</SectionNavTab>
+          <SectionNavTab value="about">About</SectionNavTab>
+          <SectionNavTab value="people">People</SectionNavTab>
+        </SectionNavList>
+      </SectionNav>
+    </div>
+  );
+}
 
 const PAIRS: [label: string, fg: string, bg: string, bar: number][] = [
   ["foreground / background", "var(--foreground)", "var(--background)", 4.5],
@@ -33,6 +97,8 @@ const PAIRS: [label: string, fg: string, bg: string, bar: number][] = [
   ["warning-fg / warning", "var(--warning-foreground)", "var(--warning)", 4.5],
   ["destructive-fg / destructive", "var(--destructive-foreground)", "var(--destructive)", 4.5],
   ["ring / card", "var(--ring)", "var(--card)", 3],
+  ["background / foreground", "var(--background)", "var(--foreground)", 4.5],
+  ["primary / accent", "var(--primary)", "var(--accent)", 4.5],
 ];
 
 const SAMPLE_POST = JSON.stringify({
@@ -165,6 +231,7 @@ function Swatch({ id, label, dark }: { id: PaletteId; label: string; dark: boole
               <span className="rounded border bg-card px-2 py-1 shadow-sm">shadow-sm</span>
             </div>
             <Input placeholder="Input" />
+            <Components />
           </CardContent>
         </Card>
         <ContrastTable rows={rows} />

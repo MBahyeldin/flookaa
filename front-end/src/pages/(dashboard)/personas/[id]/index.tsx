@@ -149,7 +149,7 @@ export default function PersonaProfilePage() {
               onDone={() => load(true)}
             />
           )}
-          <Card className="rounded-xl border border-border/70 shadow-sm">
+          <Card className="rounded-lg border">
             <CardContent className="flex flex-col items-center gap-4 p-6 text-center sm:flex-row sm:items-start sm:text-left">
               <Avatar className="h-24 w-24 shrink-0">
                 <AvatarImage src={state.persona.thumbnail || ""} />
@@ -212,7 +212,7 @@ export default function PersonaProfilePage() {
                 {state.connected.map((p) => (
                   <li
                     key={p.id}
-                    className="flex items-center gap-3 rounded-xl border border-border/70 p-3 shadow-sm transition-colors hover:bg-muted/50"
+                    className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50"
                   >
                     <Link to={personaPath(p.id)} className="flex min-w-0 flex-1 items-center gap-3">
                       <Avatar className="h-10 w-10 shrink-0">
@@ -280,7 +280,7 @@ function InvitationBanner({
   };
 
   return (
-    <Card className="mb-4 rounded-xl border border-primary/40 shadow-sm">
+    <Card className="mb-4 rounded-lg border border-primary/40">
       <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm">
           <span className="font-medium">{name}</span> invited you to follow them.

@@ -442,20 +442,16 @@ export default function SimpleInputComponent({ onSend, avatar }: {
                             className="ml-auto shrink-0"
                             onClick={handleSend}
                             disabled={
-                                isSending ||
                                 isProcessingAudio ||
                                 (!newComment.trim() && !mediaBlobUrl && !mediaUrl)
                             }
-                            aria-busy={isSending}
+                            loading={isSending}
                         >
                             {isSending ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                                    Sending…
-                                </>
+                                "Sending…"
                             ) : (
                                 <>
-                                    <Send className="h-4 w-4 mr-1" /> Post
+                                    <Send /> Post
                                 </>
                             )}
                         </Button>

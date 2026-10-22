@@ -15,7 +15,7 @@ export default function VisitorPage() {
           <p className="font-semibold text-[1.5rem] text-muted-foreground leading-[100%] tracking-[0] md:w-[80%]">
             Comming Soon, Stay tuned! ^_^
           </p>
-          <Button className="mt-6" variant="default" size="lg" borderRadius="full">
+          <Button className="mt-6" variant="default" size="lg">
             <Link to="/sign-up">Get Started</Link>
           </Button>
         </div>

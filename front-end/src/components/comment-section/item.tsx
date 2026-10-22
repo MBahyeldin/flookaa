@@ -222,7 +222,7 @@ const CommentItem = React.memo(({
             )}
 
             <div className="min-w-0 space-y-2">
-                <div className="bg-muted rounded-2xl px-3 py-2 sm:px-4 shadow-sm">
+                <div className="bg-muted rounded-xl px-3 py-2 sm:px-4">
                     {/* Author row: avatar + name + handle */}
                     <div className="flex items-center gap-2 mb-1">
                         <PersonaLink

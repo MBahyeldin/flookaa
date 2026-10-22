@@ -12,7 +12,7 @@ import type { Community } from "@/types/community";
 export function CommunityCard({ community }: { community: Community }) {
   return (
     <Link to={`/communities/${community.slug}`} className="block rounded-xl focus-visible:outline-2 focus-visible:outline-ring">
-      <Card className="h-full overflow-hidden border-0 pt-0 shadow-sm transition-shadow hover:shadow-md">
+      <Card className="h-full overflow-hidden pt-0 transition-colors hover:border-primary/40">
         <CommunityCardBody community={community} />
       </Card>
     </Link>

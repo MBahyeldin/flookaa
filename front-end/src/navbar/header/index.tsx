@@ -22,8 +22,8 @@ export default function Header({
   const { isDarkMode } = useTheme();
 
   const items = [
-    { to: "/login", label: "Login", variant: "outline", borderRadius: "full" },
-    { to: "/sign-up", label: "Join FLOOKA", variant: "default", borderRadius: "full" },
+    { to: "/login", label: "Login", variant: "outline" },
+    { to: "/sign-up", label: "Join FLOOKA", variant: "default" },
   ];
 
   return (
@@ -42,7 +42,7 @@ export default function Header({
                 <NavigationMenuItem>
                   <NavigationMenuLink asChild>
                     <Link to={item.to}>
-                      <Button variant={item.variant as "outline" | "default"} borderRadius={item.borderRadius as "full" | "md" | "sm"}>
+                      <Button variant={item.variant as "outline" | "default"}>
                         {item.label}
                       </Button>
                     </Link>

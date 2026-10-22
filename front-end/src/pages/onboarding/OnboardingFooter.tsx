@@ -54,17 +54,17 @@ export default function OnboardingFooter({
       <div className="flex flex-wrap items-center justify-end gap-2">
         <div className="w-full sm:w-auto sm:flex-1 min-w-0 text-sm font-medium text-foreground truncate">{left}</div>
         {index > 0 && (
-          <Button variant="ghost" borderRadius="full" disabled={busy !== null} onClick={() => run("back")}>
+          <Button variant="ghost" disabled={busy !== null} onClick={() => run("back")}>
             Back
           </Button>
         )}
         {step.skippable && !hideSkip && (
-          <Button variant="outline" borderRadius="full" disabled={busy !== null} onClick={() => run("skip")}>
+          <Button variant="outline" disabled={busy !== null} onClick={() => run("skip")}>
             Skip now
           </Button>
         )}
         <Button
-          borderRadius="full"
+         
           size="lg"
           disabled={continueDisabled || busy !== null}
           onClick={() => run("next")}

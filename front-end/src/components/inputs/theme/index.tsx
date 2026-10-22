@@ -35,7 +35,7 @@ export default function ThemeInput({
               className={cn(
                 "flex flex-col gap-2 rounded-xl border bg-background p-3 text-left text-foreground transition-shadow",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                checked ? "border-primary ring-2 ring-primary" : "border-border hover:shadow-sm",
+                checked ? "border-primary ring-2 ring-primary" : "border-border hover:bg-muted",
               )}
             >
               <div className="flex items-center justify-between">

@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Chip } from "@/components/ui/chip";
 import type { Interest } from "@/types/interest";
 
 export default function InterestChips({
@@ -16,12 +17,10 @@ export default function InterestChips({
   return (
     <ul className={cn("flex flex-wrap gap-1.5", className)} aria-label="Interests">
       {shown.map((i) => (
-        <li
-          key={i.id}
-          className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground"
-        >
-          <span aria-hidden>{i.emoji}</span>
-          {i.name}
+        <li key={i.id}>
+          <Chip size="sm" emoji={i.emoji}>
+            {i.name}
+          </Chip>
         </li>
       ))}
       {more > 0 && (

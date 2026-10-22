@@ -74,7 +74,7 @@ export default function AuthScreen({ mode }: { mode: "login" | "signup" }) {
   return (
     <div className="min-h-screen flex justify-center px-4 pt-28 pb-16 welcome-bg-bottom bg-no-repeat bg-bottom bg-cover">
       <div className="w-full max-w-sm">
-        <div className="rounded-2xl bg-background/80 backdrop-blur-md shadow-xl p-6 flex flex-col gap-5">
+        <div className="rounded-xl border bg-background/80 backdrop-blur-md shadow-sm p-6 flex flex-col gap-5">
           <div className="text-center flex flex-col gap-1">
             <h1 className="font-extrabold text-3xl tracking-tight text-foreground">
               Welcome To Flookaa
@@ -96,7 +96,7 @@ export default function AuthScreen({ mode }: { mode: "login" | "signup" }) {
             changeOpacityWhenSubmitting={true}
             className="grid grid-cols-12 gap-4"
           >
-            <Button type="submit" size="lg" borderRadius="full" className="w-full">
+            <Button type="submit" size="lg" className="w-full">
               {form.submitText}
             </Button>
           </FormComponent>
