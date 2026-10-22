@@ -1,126 +1,61 @@
-import { Blocks, Boxes, Home, Inbox, Rss, Search, Settings, ScanFace, ShieldCheck, Tags, User2 } from "lucide-react";
+import { Bell, Hash, House, Sailboat, Settings, ShieldCheck, UserRound, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
   SidebarMenu,
-  SidebarMenuButton,
+  SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
-
-import CollapsibleItem from "./CollapsibleItem";
-import AppSidebarFooter from "./AppSidebarFooter";
-import MainMenuItem from "./MainMenuItem";
 import { useAuth } from "@/Auth.context";
-import React from "react";
+import { useNotificationStore } from "@/stores/NotificationStore";
 
-// Menu items.
-const items = [
-  {
-    title: "Home",
-    url: "/",
-    icon: Home,
-  },
-    {
-    title: "Inbox",
-    url: "/inbox",
-    icon: Inbox,
-  },
-  {
-    title: "Communities",
-    url: "/communities",
-    icon: Boxes,
-  },
-  {
-    title: "Channels",
-    url: "/channels",
-    icon: Rss,
-  },
-  {
-    title: "Blocks",
-    url: "/blocks",
-    icon: Blocks,
-  },
-    {
-    title: "Search",
-    url: "/search",
-    icon: Search,
-  },
-  {
-    title: "Persona",
-    url: "/persona-manager",
-    icon: ScanFace,
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
-    items: [
-      { title: "Profile", url: "/profile", icon:  <User2 className="w-5 h-5" /> },
-    ],
-  },
-];
+import AppSidebarFooter from "./AppSidebarFooter";
+import SidebarNavItem, { type NavEntry } from "./SidebarNavItem";
 
-const adminItem = {
-  title: "Admin",
-  url: "/admin",
-  icon: ShieldCheck,
-  items: [{ title: "Interests", url: "/interests", icon: <Tags className="w-5 h-5" /> }],
-};
-
-export function AppSidebar({
-  setOpen,
-  open,
-}: {
-  setOpen: (open: boolean) => void;
-  open: boolean;
-}) {
+export function AppSidebar() {
   const { user } = useAuth();
-  const sidebarItems = React.useMemo(() => {
-    if (user?.is_verified) {
-      return user.is_admin ? [...items, adminItem] : items;
-    }
-    return [
-      {
-        title: "Home",
-        url: "/",
-        icon: Home,
-      },
-    ];
-  }, [user]);
+  const { canToggle } = useSidebar();
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+
+  const entries: NavEntry[] = [
+    { title: "Home", to: "/", icon: House },
+    { title: "Channels", to: "/channels", icon: Hash },
+    { title: "Communities", to: "/communities", icon: Users },
+    { title: "Notifications", to: "/notifications", icon: Bell, badge: unreadCount },
+    { title: "Personas", to: "/persona-manager", icon: UserRound },
+    { title: "Settings", to: "/settings/profile", icon: Settings, match: "/settings" },
+  ];
+  if (user?.is_admin) {
+    entries.push({ title: "Admin", to: "/admin/interests", icon: ShieldCheck, match: "/admin" });
+  }
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar>
+      <div className="flex w-full items-center justify-between pb-4 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1 group-data-[collapsible=icon]:pb-1">
+        <Link
+          to="/"
+          aria-label="Flookaa, home"
+          className="flex items-center gap-2.5 rounded-md pl-3 outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:pb-3 group-data-[collapsible=icon]:pl-0"
+        >
+          <Sailboat aria-hidden="true" className="size-6 text-primary" />
+          <span className="text-xl font-semibold text-foreground group-data-[collapsible=icon]:hidden">
+            Flookaa
+          </span>
+        </Link>
+        {canToggle && <SidebarTrigger />}
+      </div>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <nav aria-label="Main">
-            <SidebarMenu>
-              <SidebarMenuButton
-                onClick={() => setOpen(!open)}
-                aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
-                aria-expanded={open}
-                className="flex items-center space-x-2 border-b border-muted no-draggable justify-between"
-              >
-                <MainMenuItem open={open} />
-              </SidebarMenuButton>
-              {sidebarItems.map((item) => {
-                return (
-                  <CollapsibleItem
-                    key={item.title}
-                    item={item}
-                    setSidebarOpen={setOpen}
-                    sidebarOpen={open}
-                  />
-                );
-              })}
-            </SidebarMenu>
-            </nav>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <nav aria-label="Main" className="w-full">
+          <SidebarMenu>
+            {entries.map((entry) => (
+              <SidebarNavItem key={entry.to} {...entry} />
+            ))}
+          </SidebarMenu>
+        </nav>
       </SidebarContent>
-      <AppSidebarFooter open={open} />
+      <AppSidebarFooter />
     </Sidebar>
   );
 }

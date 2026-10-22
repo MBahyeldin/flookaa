@@ -27,18 +27,14 @@ export default function NotificationBell() {
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="relative cursor-pointer"
+        <Button
+          variant="ghost"
+          className="h-9 gap-1 px-2 -mr-2"
           aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
         >
-          <Bell size={24} />
-          {unreadCount > 0 && (
-            <Badge variant="count" className="absolute -right-2 -top-2">
-              {badge}
-            </Badge>
-          )}
-        </button>
+          <Bell aria-hidden="true" className="size-[22px]" />
+          {unreadCount > 0 && <Badge variant="count">{badge}</Badge>}
+        </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[min(24rem,calc(100vw-2rem))] p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
