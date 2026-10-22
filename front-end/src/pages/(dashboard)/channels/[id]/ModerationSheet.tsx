@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -10,6 +10,9 @@ import {
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { SkeletonList } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { PersonRow, displayName } from "@/components/persona-link/PersonRow";
 import {
   listJoinRequests,
@@ -48,14 +51,15 @@ export default function ModerationSheet({
 }) {
   const [requests, setRequests] = useState<JoinRequest[]>([]);
   const [members, setMembers] = useState<ChannelMember[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  // True until the first load, so an empty list never flashes before it.
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   // The persona whose row has a request in flight, so its buttons disable.
   const [busyId, setBusyId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setLoadError(null);
+    setLoadError(false);
     try {
       const [nextRequests, nextMembers] = await Promise.all([
         listJoinRequests(channelId),
@@ -63,8 +67,8 @@ export default function ModerationSheet({
       ]);
       setRequests(nextRequests);
       setMembers(nextMembers);
-    } catch (err) {
-      setLoadError((err as Error).message);
+    } catch {
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -120,17 +124,9 @@ export default function ModerationSheet({
 
         <div className="px-4 pb-6">
           {loading && !requests.length && !members.length ? (
-            <div role="status" className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading…
-            </div>
+            <SkeletonList count={3} />
           ) : loadError ? (
-            <div role="alert" className="space-y-3 py-6 text-sm">
-              <p className="text-destructive">{loadError}</p>
-              <Button variant="outline" size="sm" onClick={load}>
-                Try again
-              </Button>
-            </div>
+            <ErrorState compact title="Couldn't load members" onRetry={load} />
           ) : (
             <Tabs defaultValue="requests">
               <TabsList className="w-full">
@@ -145,9 +141,7 @@ export default function ModerationSheet({
 
               <TabsContent value="requests" className="mt-2">
                 {requests.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-muted-foreground">
-                    No pending requests.
-                  </p>
+                  <EmptyState compact icon={UserPlus} title="No pending requests" />
                 ) : (
                   <ul className="divide-y divide-border">
                     {requests.map((request) => (

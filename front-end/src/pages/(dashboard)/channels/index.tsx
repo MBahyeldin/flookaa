@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Search, Plus } from "lucide-react";
+import { TrendingUp, Search, Plus, Hash } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { getChannels } from "@/services/channels";
 import InterestFilter from "@/components/interests/InterestFilter";
@@ -10,11 +10,16 @@ import type { Channel } from "@/types/channel";
 import { Input } from "@/components/ui/input";
 import { ChannelCard } from "./ChannelCard";
 import { useIsUserLoggedIn } from "@/stores/UserProfileStore";
+import { SkeletonList } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 
 export default function ChannelsPage() {
   const nagivate = useNavigate();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const isUserLoggedIn = useIsUserLoggedIn();
   const [searchParams, setSearchParams] = useSearchParams();
   const interest = searchParams.get("interest") ?? "";
@@ -35,23 +40,18 @@ export default function ChannelsPage() {
     );
 
   useEffect(() => {
-    const fetchChannels = async () => {
-      setLoading(true);
-      try {
-        const response = await getChannels({ interest: interest || undefined });
-
-        if (response) {
-          setChannels(response.channels ?? []);
-        }
-      } catch (error) {
-        console.error("Error fetching channels:", error);
-      } finally {
-        setLoading(false);
-      }
+    let alive = true;
+    setLoading(true);
+    getChannels({ interest: interest || undefined }).then((response) => {
+      if (!alive) return;
+      setFailed(!response);
+      setChannels(response?.channels ?? []);
+      setLoading(false);
+    });
+    return () => {
+      alive = false;
     };
-
-    fetchChannels();
-  }, [interest]);
+  }, [interest, attempt]);
 
   return (
     <div className="min-h-screen">
@@ -85,11 +85,29 @@ export default function ChannelsPage() {
 
         {/* Channels Grid */}
         {loading ? (
-          <p className="py-16 text-center text-muted-foreground">Loading channels...</p>
+          <SkeletonList count={6} variant="post" className="grid md:grid-cols-2 lg:grid-cols-3 gap-6" />
+        ) : failed ? (
+          <ErrorState title="Couldn't load channels" onRetry={() => setAttempt((n) => n + 1)} />
         ) : channels.length === 0 ? (
-          <p className="py-16 text-center text-muted-foreground">
-            {interest ? "No channels with this interest yet." : "No channels yet."}
-          </p>
+          interest ? (
+            <EmptyState
+              icon={Hash}
+              title="No channels with this interest yet"
+              body="Try another interest, or start the first one."
+              action={<Button onClick={() => selectInterest("")}>Show all</Button>}
+            />
+          ) : (
+            <EmptyState
+              icon={Hash}
+              title="No channels yet"
+              body="Start the first one."
+              action={
+                <Button asChild>
+                  <Link to="/channels/create">Create channel</Link>
+                </Button>
+              }
+            />
+          )
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {channels.map((channel) => (

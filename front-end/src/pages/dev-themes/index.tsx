@@ -9,7 +9,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
 import { SectionHeader } from "@/components/ui/section-header";
 import { SectionNav, SectionNavList, SectionNavTab } from "@/components/ui/section-nav";
-import { Lock, Plus } from "lucide-react";
+import { SkeletonPost, SkeletonRow, Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { Compass, Lock, Plus } from "lucide-react";
 import PostContent from "@/components/portable-text/PostContent";
 import { PALETTES, type PaletteId } from "@/themes/palettes";
 
@@ -66,6 +69,19 @@ function Components() {
           <SectionNavTab value="people">People</SectionNavTab>
         </SectionNavList>
       </SectionNav>
+      <Skeleton className="h-3 w-50" />
+      <SkeletonPost />
+      <SkeletonRow />
+      <EmptyState
+        icon={Compass}
+        title="Your feed is quiet"
+        body="Join a few channels and their posts will show up here."
+        action={<Button>Discover channels</Button>}
+      />
+      <ErrorState title="Couldn't load posts" onRetry={() => {}} />
+      <div className="rounded-lg border bg-card">
+        <EmptyState compact icon={Compass} title="No pending requests" />
+      </div>
     </div>
   );
 }

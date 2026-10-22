@@ -6,12 +6,15 @@ import {
   UserPlus,
   HeartOff,
   Boxes,
+  MessageSquare,
   // Bell,
   // BellOff,
 } from "lucide-react";
 import { ImageWithFallback } from "@/components/image-with-fallback";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SkeletonList } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 // import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Breadcrumb,
@@ -90,6 +93,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   const posts = useAppStore((s) => s.posts);
   const storeOwner = useAppStore((s) => s.owner);
   const [showLoadMore, setShowLoadMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [offset, setOffset] = useState(0);
   const [loadMorePosts] = useGetPostsLazyQuery();
 
@@ -114,7 +118,8 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
 
   const handleLoadMorePosts = async () => {
     if (!channelId) return;
-    const { data } = await loadMorePosts({
+    setLoadingMore(true);
+    const { data, error } = await loadMorePosts({
       variables: {
         owner: {
           id: channelId,
@@ -123,9 +128,14 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
         limit: 10,
         offset,
       },
-    });
+    }).catch((error: Error) => ({ data: undefined, error }));
+    setLoadingMore(false);
     // The user may have switched channels while this was in flight.
     if (!isCurrentOwner(pageOwner)) return;
+    if (error) {
+      toast.error("Couldn't load more posts");
+      return;
+    }
     if (data?.getPosts) {
       addPosts(data.getPosts);
       if (data.getPosts.length < 10 || (channelData?.getChannel?.totalPosts || 0) <= offset + data.getPosts.length) {
@@ -601,17 +611,17 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
               />
             ))
           ) : (
-            <div className="rounded-lg border border-dashed border-border p-10 text-center">
-              <p className="font-medium">No posts yet</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Be the first to post in {channelData.getChannel.name}.
-              </p>
-            </div>
+            <EmptyState
+              icon={MessageSquare}
+              title="No posts yet"
+              body={`Be the first to post in ${channelData.getChannel.name}.`}
+            />
           )}
         </div>
 
         {/* Load More */}
-        {showLoadMore &&
+        {loadingMore && <SkeletonList count={2} variant="post" className="mt-6 space-y-6" />}
+        {showLoadMore && !loadingMore &&
           <div className="text-center mt-8">
             <Button variant="outline" size="lg" className="px-8" onClick={handleLoadMorePosts}>
               Load More Posts

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, MoreHorizontal, Pencil, Plus } from "lucide-react";
+import { ArrowDown, ArrowUp, MoreHorizontal, Pencil, Plus, Tags } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -9,7 +9,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import NotFound from "@/components/not-found";
-import SectionLoader from "@/components/section-loader";
+import { SkeletonList } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { useAuth } from "@/Auth.context";
 import { cn } from "@/lib/utils";
 import {
@@ -93,7 +95,13 @@ function InterestsAdmin() {
     setBusy(false);
   };
 
-  if (catalogue === null && !error) return <SectionLoader />;
+  if (catalogue === null) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-8">
+        {error ? <ErrorState title="Couldn't load interests" onRetry={load} /> : <SkeletonList count={6} />}
+      </div>
+    );
+  }
 
   const groups = catalogue?.groups ?? [];
   const interests = catalogue?.interests ?? [];
@@ -176,7 +184,12 @@ function InterestsAdmin() {
         </p>
       )}
       {groups.length === 0 && (
-        <p className="py-10 text-center text-sm text-muted-foreground">Add a group first, then its interests.</p>
+        <EmptyState
+          icon={Tags}
+          title="No interests yet"
+          body="Add a group first, then its interests."
+          action={<Button onClick={() => setEditing({ kind: "group", group: null })}>Add group</Button>}
+        />
       )}
       <div className="flex flex-col gap-6">
         {groups.map((group, gi) => (

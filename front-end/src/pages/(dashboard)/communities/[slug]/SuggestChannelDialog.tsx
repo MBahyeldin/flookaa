@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Clock, Loader2, Lock, Plus } from "lucide-react";
+import { Clock, Hash, Lock, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { SkeletonList } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { cancelChannelRequest, requestChannelJoin } from "@/services/communities";
@@ -79,12 +81,18 @@ export default function SuggestChannelDialog({
           </DialogDescription>
         </DialogHeader>
         {channels === null ? (
-          <div role="status" className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading…
-          </div>
+          <SkeletonList count={3} />
         ) : channels.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">You don't moderate any channels yet.</p>
+          <EmptyState
+            compact
+            icon={Hash}
+            title="You don't moderate any channels yet"
+            action={
+              <Button asChild>
+                <Link to={`/channels/create?community=${community.id}`}>Create channel</Link>
+              </Button>
+            }
+          />
         ) : (
           <ul className="divide-y divide-border">
             {channels.map((channel) => (

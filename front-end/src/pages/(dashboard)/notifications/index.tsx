@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SkeletonList } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { Bell } from "lucide-react";
+import { toast } from "sonner";
 import NotificationItem from "@/components/notifications/NotificationItem";
 import { describeNotification } from "@/components/notifications/describe";
 import { getNotifications } from "@/services/notifications";
@@ -17,6 +22,7 @@ export default function NotificationsPage() {
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
   const unreadCount = useNotificationStore((s) => s.unreadCount);
   const markAllRead = useNotificationStore((s) => s.markAllRead);
   const version = useNotificationStore((s) => s.version);
@@ -31,17 +37,21 @@ export default function NotificationsPage() {
   const load = useCallback(async (from: string | null, replace: boolean) => {
     const gen = replace ? ++generation.current : generation.current;
     setLoading(true);
+    setFailed(false);
     let next = from;
     const collected: Notification[] = [];
     let more = true;
     for (let empty = 0; empty < MAX_EMPTY_PAGES; empty++) {
       const page = await getNotifications(next, PAGE_SIZE);
       if (gen !== generation.current) return;
-      if (!page) {
-        // Request failed: keep the button so the user can retry.
-        more = true;
-        break;
+      if (!page && collected.length === 0) {
+        // Nothing new: keep what's shown, and say so.
+        if (replace) setFailed(true);
+        else toast.error("Couldn't load more notifications");
+        setLoading(false);
+        return;
       }
+      if (!page) break;
       collected.push(...page.notifications);
       next = page.next_cursor;
       more = next !== null;
@@ -71,12 +81,16 @@ export default function NotificationsPage() {
           </Button>
         )}
       </div>
-      <Card>
-        <CardContent className="p-1">
-          {shown.length === 0 && !loading && !hasMore ? (
-            <p className="px-3 py-10 text-center text-sm text-muted-foreground">No notifications yet</p>
-          ) : (
-            shown.map((n) => (
+      {shown.length === 0 && loading ? (
+        <SkeletonList count={5} className="px-3" />
+      ) : shown.length === 0 && failed ? (
+        <ErrorState title="Couldn't load notifications" onRetry={() => load(null, true)} />
+      ) : shown.length === 0 && !hasMore ? (
+        <EmptyState icon={Bell} title="You're all caught up" body="Follows, requests and replies show up here." />
+      ) : (
+        <Card>
+          <CardContent className="p-1">
+            {shown.map((n) => (
               <NotificationItem
                 key={n.id}
                 notification={n}
@@ -84,12 +98,16 @@ export default function NotificationsPage() {
                   setItems((prev) => prev.map((p) => (p.id === n.id ? { ...p, read: true } : p)))
                 }
               />
-            ))
-          )}
-          {loading && <p className="px-3 py-4 text-center text-sm text-muted-foreground">Loading…</p>}
-        </CardContent>
-      </Card>
-      {hasMore && !loading && (
+            ))}
+            {loading && (
+              <p role="status" className="px-3 py-4 text-center text-sm text-muted-foreground">
+                Loading…
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+      {hasMore && !loading && shown.length > 0 && (
         <div className="mt-4 flex justify-center">
           <Button variant="outline" onClick={() => load(cursor, false)}>
             Load more

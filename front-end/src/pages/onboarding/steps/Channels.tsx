@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { Check, Heart, UserPlus } from "lucide-react";
+import { Check, Hash, Heart, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import SectionLoader from "@/components/section-loader";
+import { SkeletonList } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { joinChannel, leaveChannel, setFollowing } from "@/services/channels";
 import { getSuggestedChannels, type SuggestedChannel } from "@/services/suggestions";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
@@ -19,11 +21,13 @@ export default function Channels() {
   const persona = useUserProfileStore((s) => s.persona);
   const [items, setItems] = useState<SuggestedChannel[] | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!persona) return;
     let cancelled = false;
+    setLoadError(false);
     getSuggestedChannels(Number(persona.id), { limit: 50 }).then((r) => {
       if (cancelled) return;
       if (r.ok) setItems(r.data.channels);
@@ -32,12 +36,12 @@ export default function Channels() {
     return () => {
       cancelled = true;
     };
-  }, [persona]);
+  }, [persona, attempt]);
 
   if (loadError) {
-    return <p className="text-center text-sm text-destructive">Couldn't load channels. Please reload.</p>;
+    return <ErrorState title="Couldn't load channels" onRetry={() => setAttempt((n) => n + 1)} />;
   }
-  if (!items) return <SectionLoader />;
+  if (!items) return <SkeletonList count={3} variant="post" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" />;
 
   const update = (id: string, patch: (c: SuggestedChannel) => Partial<SuggestedChannel>) =>
     setItems((prev) => prev?.map((c) => (c.id === id ? { ...c, ...patch(c) } : c)) ?? null);
@@ -90,7 +94,11 @@ export default function Channels() {
   return (
     <div className="flex flex-col gap-8">
       {shown.length === 0 && (
-        <p className="text-center text-muted-foreground">No channels match your interests yet.</p>
+        <EmptyState
+          icon={Hash}
+          title="No suggestions yet"
+          body="Nothing matches your interests yet. You can skip this step."
+        />
       )}
       {shown.map((g) => (
         <section key={g.source} className="flex flex-col gap-4">

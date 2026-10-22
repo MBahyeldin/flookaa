@@ -14,6 +14,8 @@ export interface NotificationState {
   unreadCount: number;
   /** The popover's list; null until first opened. */
   recent: Notification[] | null;
+  /** The last popover fetch failed. */
+  recentFailed: boolean;
   /**
    * Bumped on every realtime notification frame, so open lists (the
    * /notifications page) know to reload.
@@ -37,6 +39,7 @@ let recentRequest = 0;
 export const useNotificationStore = create<NotificationState>((set, get) => ({
   unreadCount: 0,
   recent: null,
+  recentFailed: false,
   version: 0,
 
   refreshUnread: async () => {
@@ -47,8 +50,11 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
   refreshRecent: async () => {
     const request = ++recentRequest;
+    set({ recentFailed: false });
     const page = await getNotifications(null, RECENT_LIMIT);
-    if (page && request === recentRequest) set({ recent: page.notifications });
+    if (request !== recentRequest) return;
+    if (page) set({ recent: page.notifications });
+    else set({ recentFailed: true });
   },
 
   onRealtimeEvent: () => {
@@ -78,6 +84,6 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   reset: () => {
     unreadRequest++;
     recentRequest++;
-    set({ unreadCount: 0, recent: null });
+    set({ unreadCount: 0, recent: null, recentFailed: false });
   },
 }));

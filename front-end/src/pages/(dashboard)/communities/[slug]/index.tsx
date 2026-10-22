@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Check, Clock, Lock, Pencil, Plus, Send, Users } from "lucide-react";
+import { Check, Clock, Hash, Lock, Pencil, Plus, Send, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { AgeBadge } from "@/components/age-badge";
 import { CommunityRulesDialog } from "@/components/community-rules-dialog";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonList } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import InterestChips from "@/components/interests/InterestChips";
@@ -46,6 +48,7 @@ export default function CommunityPage() {
   const [community, setCommunity] = useState<Community | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "missing" | "failed">("loading");
   const [channels, setChannels] = useState<Channel[] | null>(null);
+  const [channelsFailed, setChannelsFailed] = useState(false);
   const [editing, setEditing] = useState(false);
   const linkedTab = searchParams.get("members") as MembersTab | null;
   const [membersTab, setMembersTab] = useState<MembersTab | null>(
@@ -65,6 +68,7 @@ export default function CommunityPage() {
     let alive = true;
     setCommunity(null);
     setChannels(null);
+    setChannelsFailed(false);
     setState("loading");
     getCommunityBySlug(slug).then((r) => {
       if (!alive) return;
@@ -89,7 +93,9 @@ export default function CommunityPage() {
   const loadChannels = useCallback(async () => {
     if (!communityId || !canSeeInside) return;
     const response = await getChannels({ communityId, limit: 100 });
-    setChannels(response?.channels ?? []);
+    // A failed refresh keeps the list already shown.
+    setChannelsFailed(!response);
+    if (response) setChannels(response.channels ?? []);
   }, [communityId, canSeeInside]);
 
   // By id, so a slug change made elsewhere is followed.
@@ -241,6 +247,7 @@ export default function CommunityPage() {
 
   const owner = community.owner;
   const isPrivate = community.visibility === "private";
+  const canSuggest = !!moderated?.some((c) => c.community_status === "none" || c.community?.id === community.id);
 
   const declinedNote = community.rejected_until
     ? `Your request was declined. You can ask again on ${formatDateOnly(community.rejected_until)}.`
@@ -337,7 +344,7 @@ export default function CommunityPage() {
               {community.following ? "Following" : "Follow"}
             </Button>
           )}
-          {moderated?.some((c) => c.community_status === "none" || c.community?.id === community.id) && (
+          {canSuggest && (
             <Button
               variant="outline"
               size="sm"
@@ -430,10 +437,37 @@ export default function CommunityPage() {
               </Button>
             )}
           </div>
+        ) : channels === null && channelsFailed ? (
+          <ErrorState
+            title="Couldn't load channels"
+            onRetry={() => {
+              setChannelsFailed(false);
+              return loadChannels();
+            }}
+          />
         ) : channels === null ? (
-          <p className="py-8 text-muted-foreground">Loading channels...</p>
+          <SkeletonList count={3} variant="post" className="grid gap-6 md:grid-cols-2 lg:grid-cols-3" />
         ) : channels.length === 0 ? (
-          <p className="py-8 text-muted-foreground">No channels in this community yet.</p>
+          <EmptyState
+            icon={Hash}
+            title="No channels in this community yet"
+            action={
+              community.can_manage ? (
+                <Button asChild>
+                  <Link to={`/channels/create?community=${community.id}`}>Create channel</Link>
+                </Button>
+              ) : canSuggest ? (
+                <Button
+                  onClick={() => {
+                    loadModerated();
+                    setSuggestOpen(true);
+                  }}
+                >
+                  Suggest a channel
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {channels.map((channel) =>

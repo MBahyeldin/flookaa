@@ -5,12 +5,16 @@ import { Button } from "@/components/ui/button";
 import InterestFilter from "@/components/interests/InterestFilter";
 import { listCommunities } from "@/services/communities";
 import type { Community } from "@/types/community";
+import { SkeletonList } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { CommunityCard } from "./CommunityCard";
 
 export default function CommunitiesPage() {
   const [communities, setCommunities] = useState<Community[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const interest = searchParams.get("interest") ?? "";
 
@@ -37,7 +41,7 @@ export default function CommunitiesPage() {
     return () => {
       alive = false;
     };
-  }, [interest]);
+  }, [interest, attempt]);
 
   return (
     <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -60,13 +64,29 @@ export default function CommunitiesPage() {
       </div>
 
       {loading ? (
-        <p className="py-16 text-center text-muted-foreground">Loading communities...</p>
+        <SkeletonList count={6} variant="post" className="grid gap-6 md:grid-cols-2 lg:grid-cols-3" />
       ) : failed ? (
-        <p className="py-16 text-center text-destructive">Couldn't load communities. Please reload.</p>
+        <ErrorState title="Couldn't load communities" onRetry={() => setAttempt((n) => n + 1)} />
       ) : communities.length === 0 ? (
-        <p className="py-16 text-center text-muted-foreground">
-          {interest ? "No communities with this interest yet." : "No communities yet."}
-        </p>
+        interest ? (
+          <EmptyState
+            icon={Boxes}
+            title="No communities with this interest yet"
+            body="Try another interest, or start the first one."
+            action={<Button onClick={() => selectInterest("")}>Show all</Button>}
+          />
+        ) : (
+          <EmptyState
+            icon={Boxes}
+            title="No communities yet"
+            body="Start the first one."
+            action={
+              <Button asChild>
+                <Link to="/communities/create">Create community</Link>
+              </Button>
+            }
+          />
+        )
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {communities.map((community) => (

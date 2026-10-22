@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, MoreHorizontal } from "lucide-react";
+import { Hash, MoreHorizontal, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { SkeletonList } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,19 +59,24 @@ export default function MembersSheet({
   const [requests, setRequests] = useState<CommunityJoinRequest[] | null>(null);
   const [channelRequests, setChannelRequests] = useState<CommunityChannelRequest[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [requestsFailed, setRequestsFailed] = useState(false);
+  const [channelRequestsFailed, setChannelRequestsFailed] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [busyChannelId, setBusyChannelId] = useState<number | null>(null);
 
   const loadMembers = useCallback(async () => {
+    setError(null);
     const r = await listCommunityMembers(community.id);
     if (r.ok) setMembers(r.data.members);
-    else setError(r.error === "members_only" ? "Only members can see who's in this community." : "Couldn't load members.");
+    else setError(r.error === "members_only" ? "Only members can see who's in this community." : "Check your connection and try again.");
   }, [community.id]);
 
   const loadRequests = useCallback(async () => {
     if (!manager) return;
+    setRequestsFailed(false);
     const r = await listCommunityRequests(community.id);
     if (r.ok) setRequests(r.data.requests);
+    else setRequestsFailed(true);
   }, [community.id, manager]);
 
   useEffect(() => {
@@ -81,8 +89,10 @@ export default function MembersSheet({
 
   const loadChannelRequests = useCallback(async () => {
     if (!manager) return;
+    setChannelRequestsFailed(false);
     const r = await listChannelRequests(community.id);
     if (r.ok) setChannelRequests(r.data.requests);
+    else setChannelRequestsFailed(true);
   }, [community.id, manager]);
 
   useEffect(() => {
@@ -172,14 +182,9 @@ export default function MembersSheet({
 
   const membersList =
     error ? (
-      <p role="alert" className="py-6 text-center text-sm text-muted-foreground">
-        {error}
-      </p>
+      <ErrorState compact title="Couldn't load members" body={error} onRetry={loadMembers} />
     ) : members === null ? (
-      <div role="status" className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Loading…
-      </div>
+      <SkeletonList count={3} />
     ) : (
       <ul className="divide-y divide-border">
         {members.map((member) => {
@@ -241,13 +246,12 @@ export default function MembersSheet({
                 {membersList}
               </TabsContent>
               <TabsContent value="requests" className="mt-2">
-                {requests === null ? (
-                  <div role="status" className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading…
-                  </div>
+                {requests === null && requestsFailed ? (
+                  <ErrorState compact title="Couldn't load requests" onRetry={loadRequests} />
+                ) : requests === null ? (
+                  <SkeletonList count={3} />
                 ) : requests.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-muted-foreground">No pending requests.</p>
+                  <EmptyState compact icon={UserPlus} title="No pending requests" />
                 ) : (
                   <ul className="divide-y divide-border">
                     {requests.map((request) => (
@@ -277,13 +281,12 @@ export default function MembersSheet({
                 )}
               </TabsContent>
               <TabsContent value="channels" className="mt-2">
-                {channelRequests === null ? (
-                  <div role="status" className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading…
-                  </div>
+                {channelRequests === null && channelRequestsFailed ? (
+                  <ErrorState compact title="Couldn't load channel requests" onRetry={loadChannelRequests} />
+                ) : channelRequests === null ? (
+                  <SkeletonList count={3} />
                 ) : channelRequests.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-muted-foreground">No channels waiting to join.</p>
+                  <EmptyState compact icon={Hash} title="No channels waiting to join" />
                 ) : (
                   <ul className="divide-y divide-border">
                     {channelRequests.map((request) => (

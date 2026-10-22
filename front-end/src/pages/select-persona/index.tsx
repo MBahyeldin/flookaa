@@ -2,6 +2,8 @@ import { DialogTrigger } from "@/components/ui/dialog";
 import { setCurrentPersona } from "@/services/persona";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import CreatePersona from "./CreatePersona";
+import { EmptyState } from "@/components/ui/empty-state";
+import { UserRound } from "lucide-react";
 
 export default function SelectPersonaPage() {
     const { personas } = useUserProfileStore();
@@ -70,9 +72,12 @@ export default function SelectPersonaPage() {
             </div>
 
             {personas.length === 0 && (
-                <p className="mt-8">
-                    No personas found. Create one to continue.
-                </p>
+                <EmptyState
+                    className="mt-8"
+                    icon={UserRound}
+                    title="No personas yet"
+                    body="Add one to continue."
+                />
             )}
 
             <CreatePersona />

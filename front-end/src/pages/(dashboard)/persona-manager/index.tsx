@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,108 +44,101 @@ export default function PersonaManagerPage() {
         </DialogTrigger>
       </div>
 
-      {/* Table */}
-      <div className="rounded-lg border bg-background">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Profile Name</TableHead>
-              <TableHead>Visibility</TableHead>
-              <TableHead>Theme</TableHead>
-              <TableHead className="w-[60px]" />
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {personas.map((persona) => (
-              <TableRow
-                key={persona.id}
-                onClick={() => navigate(settingsPath(persona.id))}
-                className="group cursor-pointer hover:bg-muted/50 transition-colors"
-              >
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    {persona.thumbnail ? (
-                      <img
-                        src={persona.thumbnail}
-                        alt=""
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-foreground font-bold">
-                        {persona.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <Link
-                      to={settingsPath(persona.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="font-medium hover:underline"
-                    >
-                      {persona.name}
-                    </Link>
-                  </div>
-                </TableCell>
-
-                <TableCell>
-                  <div>{persona.first_name} {persona.last_name}</div>
-                  <div className="text-sm text-muted-foreground">@{persona.slug}</div>
-                </TableCell>
-
-                <TableCell className="capitalize">
-                  {persona.privacy.replace("_", " ")}
-                </TableCell>
-
-                <TableCell>
-                  <ThemeSwatch theme={persona.theme} />
-                </TableCell>
-
-                {/* Hover Actions */}
-                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  <div className="md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link to={settingsPath(persona.id)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link to={personaPath(persona.id)}>
-                            <UserRound className="mr-2 h-4 w-4" />
-                            View profile
-                          </Link>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-
-            {personas.length === 0 && (
+      {personas.length === 0 ? (
+        <EmptyState icon={UserRound} title="No personas yet" body="A persona is how you show up in channels and communities." />
+      ) : (
+        <div className="rounded-lg border bg-background">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="py-8 text-center text-muted-foreground"
-                >
-                  No personas created yet
-                </TableCell>
+                <TableHead>Name</TableHead>
+                <TableHead>Profile Name</TableHead>
+                <TableHead>Visibility</TableHead>
+                <TableHead>Theme</TableHead>
+                <TableHead className="w-[60px]" />
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+
+            <TableBody>
+              {personas.map((persona) => (
+                <TableRow
+                  key={persona.id}
+                  onClick={() => navigate(settingsPath(persona.id))}
+                  className="group cursor-pointer hover:bg-muted/50 transition-colors"
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      {persona.thumbnail ? (
+                        <img
+                          src={persona.thumbnail}
+                          alt=""
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-foreground font-bold">
+                          {persona.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <Link
+                        to={settingsPath(persona.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="font-medium hover:underline"
+                      >
+                        {persona.name}
+                      </Link>
+                    </div>
+                  </TableCell>
+
+                  <TableCell>
+                    <div>{persona.first_name} {persona.last_name}</div>
+                    <div className="text-sm text-muted-foreground">@{persona.slug}</div>
+                  </TableCell>
+
+                  <TableCell className="capitalize">
+                    {persona.privacy.replace("_", " ")}
+                  </TableCell>
+
+                  <TableCell>
+                    <ThemeSwatch theme={persona.theme} />
+                  </TableCell>
+
+                  {/* Hover Actions */}
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <div className="md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link to={settingsPath(persona.id)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link to={personaPath(persona.id)}>
+                              <UserRound className="mr-2 h-4 w-4" />
+                              View profile
+                            </Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       <CreatePersona />
     </div>

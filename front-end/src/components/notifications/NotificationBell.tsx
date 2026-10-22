@@ -4,6 +4,9 @@ import { Bell } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SkeletonList } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { useNotificationStore } from "@/stores/NotificationStore";
 import { describeNotification } from "./describe";
 import NotificationItem from "./NotificationItem";
@@ -13,6 +16,7 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const unreadCount = useNotificationStore((s) => s.unreadCount);
   const recent = useNotificationStore((s) => s.recent);
+  const recentFailed = useNotificationStore((s) => s.recentFailed);
   const refreshRecent = useNotificationStore((s) => s.refreshRecent);
   const markAllRead = useNotificationStore((s) => s.markAllRead);
 
@@ -46,10 +50,12 @@ export default function NotificationBell() {
           )}
         </div>
         <div className="max-h-[60vh] overflow-y-auto p-1">
-          {shown === null ? (
-            <p className="px-3 py-6 text-center text-sm text-muted-foreground">Loading…</p>
+          {shown === null && recentFailed ? (
+            <ErrorState compact title="Couldn't load notifications" onRetry={refreshRecent} />
+          ) : shown === null ? (
+            <SkeletonList count={3} className="px-2" />
           ) : shown.length === 0 ? (
-            <p className="px-3 py-6 text-center text-sm text-muted-foreground">No notifications yet</p>
+            <EmptyState compact icon={Bell} title="No notifications yet" />
           ) : (
             shown.map((n) => <NotificationItem key={n.id} notification={n} onOpen={() => setOpen(false)} />)
           )}
