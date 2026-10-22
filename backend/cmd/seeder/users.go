@@ -41,4 +41,16 @@ func SeedUsers(q *db.Queries, adminEmail, adminPassword string) {
 			log.Fatal(err)
 		}
 	}
+
+	if err := makeAdministrator(ctx, q, adminEmail); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func makeAdministrator(ctx context.Context, q *db.Queries, email string) error {
+	user, err := q.GetUserHashedPasswordByEmail(ctx, email)
+	if err != nil {
+		return err
+	}
+	return q.GrantUserRoleByName(ctx, db.GrantUserRoleByNameParams{UserID: user.ID, RoleName: "Administrator"})
 }

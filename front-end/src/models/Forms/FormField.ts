@@ -20,6 +20,21 @@ export class FormField {
     value?: unknown,
     values?: Record<string, unknown>
   ) => string | null;
+  public visibleWhen?: (values: Record<string, unknown>) => boolean;
+  // Muted note under the input, recomputed as the value changes.
+  public hint?: (value: string) => string | null;
+  // The value as the API takes it, when it differs from the input's.
+  public serialize?: (value: unknown) => unknown;
+  // Pic fields only: the sibling fields that receive the picked file's size.
+  public dimensions?: { width: string; height: string };
+  // Voice fields only: the sibling field that receives the clip's length in seconds.
+  public duration?: string;
+  // List fields only.
+  public itemFields?: FormField[];
+  public itemLabel?: string;
+  public addLabel?: string;
+  public minItems?: number;
+  public maxItems?: number;
 
   constructor({
     id,
@@ -37,12 +52,22 @@ export class FormField {
     value,
     name,
     validate = () => null,
+    visibleWhen,
+    hint,
+    serialize,
+    dimensions,
+    duration,
+    itemFields,
+    itemLabel,
+    addLabel,
+    minItems,
+    maxItems,
   }: {
     id: string;
     label: string;
     type: string;
     placeholder?: string;
-    interfaceType: FormFieldInterfaceTypes;
+    interfaceType?: FormFieldInterfaceTypes;
     value?: string;
     error?: string;
     touched?: boolean;
@@ -56,6 +81,16 @@ export class FormField {
       value?: unknown,
       values?: Record<string, unknown>
     ) => string | null;
+    visibleWhen?: (values: Record<string, unknown>) => boolean;
+    hint?: (value: string) => string | null;
+    serialize?: (value: unknown) => unknown;
+    dimensions?: { width: string; height: string };
+    duration?: string;
+    itemFields?: FormField[];
+    itemLabel?: string;
+    addLabel?: string;
+    minItems?: number;
+    maxItems?: number;
   }) {
     this.id = id;
     this.label = label;
@@ -72,6 +107,20 @@ export class FormField {
     this.name = name;
     this.width = this.geWidthClass(width);
     this.validate = validate;
+    this.visibleWhen = visibleWhen;
+    this.hint = hint;
+    this.serialize = serialize;
+    this.dimensions = dimensions;
+    this.duration = duration;
+    this.itemFields = itemFields;
+    this.itemLabel = itemLabel;
+    this.addLabel = addLabel;
+    this.minItems = minItems;
+    this.maxItems = maxItems;
+  }
+
+  isVisible(values: Record<string, unknown>) {
+    return this.visibleWhen ? this.visibleWhen(values) : true;
   }
 
   geWidthClass(width: string) {

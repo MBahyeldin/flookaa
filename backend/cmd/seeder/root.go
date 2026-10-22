@@ -17,5 +17,7 @@ func SeedDb(cfg config.Seeder) error {
 	q := db.New(pg)
 	SeedRoles(q)
 	SeedUsers(q, cfg.AdminEmail, cfg.AdminPassword)
+	SeedInterests(q)
+	SeedCommunities(pg, q, cfg.AdminEmail)
 	return nil
 }

@@ -10,57 +10,20 @@ import (
 	"database/sql"
 )
 
-const canResendVerificationCode = `-- name: CanResendVerificationCode :one
-SELECT CASE
-         WHEN last_sent_at IS NULL THEN TRUE
-         WHEN now() - last_sent_at >= interval '1 minute' THEN TRUE
-         ELSE FALSE
-       END AS can_resend
-FROM user_verifications
-WHERE user_id = $1
-  AND verified_at IS NULL
-  AND is_expired = FALSE
-  AND expires_at > now()
-`
-
-// -------------------------------
-// 2a. Check if user can get a new verification code
-// -------------------------------
-func (q *Queries) CanResendVerificationCode(ctx context.Context, userID sql.NullInt64) (bool, error) {
-	row := q.db.QueryRowContext(ctx, canResendVerificationCode, userID)
-	var can_resend bool
-	err := row.Scan(&can_resend)
-	return can_resend, err
-}
-
-const expirePreviousUserVerification = `-- name: ExpirePreviousUserVerification :one
+const expireOpenUserVerifications = `-- name: ExpireOpenUserVerifications :exec
 UPDATE user_verifications
 SET is_expired = TRUE
 WHERE user_id = $1
   AND verified_at IS NULL
   AND is_expired = FALSE
-RETURNING id, user_id, verification_code, expires_at, created_at, failed_attempts, max_attempts, last_sent_at, verified_at, is_expired
 `
 
 // -------------------------------
-// 6. Expire previous user verification
+// 6. Expire every open code of a user
 // -------------------------------
-func (q *Queries) ExpirePreviousUserVerification(ctx context.Context, userID sql.NullInt64) (UserVerification, error) {
-	row := q.db.QueryRowContext(ctx, expirePreviousUserVerification, userID)
-	var i UserVerification
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.VerificationCode,
-		&i.ExpiresAt,
-		&i.CreatedAt,
-		&i.FailedAttempts,
-		&i.MaxAttempts,
-		&i.LastSentAt,
-		&i.VerifiedAt,
-		&i.IsExpired,
-	)
-	return i, err
+func (q *Queries) ExpireOpenUserVerifications(ctx context.Context, userID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, expireOpenUserVerifications, userID)
+	return err
 }
 
 const getActiveUserVerificationByUserID = `-- name: GetActiveUserVerificationByUserID :one
@@ -70,6 +33,8 @@ WHERE user_id = $1
   AND verified_at IS NULL
   AND is_expired = FALSE
   AND expires_at > now()
+ORDER BY id DESC
+LIMIT 1
 `
 
 // -------------------------------
@@ -93,6 +58,25 @@ func (q *Queries) GetActiveUserVerificationByUserID(ctx context.Context, userID 
 	return i, err
 }
 
+const getVerificationResendWait = `-- name: GetVerificationResendWait :one
+SELECT GREATEST(
+         COALESCE(CEIL(EXTRACT(EPOCH FROM (MAX(last_sent_at) + interval '1 minute' - now()))), 0),
+         0
+       )::int AS wait_seconds
+FROM user_verifications
+WHERE user_id = $1
+`
+
+// -------------------------------
+// 2a. Seconds left before the user can get a new code (0 = now)
+// -------------------------------
+func (q *Queries) GetVerificationResendWait(ctx context.Context, userID sql.NullInt64) (int32, error) {
+	row := q.db.QueryRowContext(ctx, getVerificationResendWait, userID)
+	var wait_seconds int32
+	err := row.Scan(&wait_seconds)
+	return wait_seconds, err
+}
+
 const incrementFailedAttemptsAndExpireIfMaxReached = `-- name: IncrementFailedAttemptsAndExpireIfMaxReached :one
 UPDATE user_verifications
 SET failed_attempts = failed_attempts + 1,
@@ -100,18 +84,15 @@ SET failed_attempts = failed_attempts + 1,
                    WHEN failed_attempts + 1 >= max_attempts THEN TRUE
                    ELSE is_expired
                  END
-WHERE user_id = $1
-  AND verified_at IS NULL
-  AND is_expired = FALSE
-  AND expires_at > now()
+WHERE id = $1
 RETURNING id, user_id, verification_code, expires_at, created_at, failed_attempts, max_attempts, last_sent_at, verified_at, is_expired
 `
 
 // -------------------------------
 // 4. Increment failed attempts and expire if max attempts reached
 // -------------------------------
-func (q *Queries) IncrementFailedAttemptsAndExpireIfMaxReached(ctx context.Context, userID sql.NullInt64) (UserVerification, error) {
-	row := q.db.QueryRowContext(ctx, incrementFailedAttemptsAndExpireIfMaxReached, userID)
+func (q *Queries) IncrementFailedAttemptsAndExpireIfMaxReached(ctx context.Context, id int64) (UserVerification, error) {
+	row := q.db.QueryRowContext(ctx, incrementFailedAttemptsAndExpireIfMaxReached, id)
 	var i UserVerification
 	err := row.Scan(
 		&i.ID,
@@ -130,8 +111,8 @@ func (q *Queries) IncrementFailedAttemptsAndExpireIfMaxReached(ctx context.Conte
 
 const insertUserVerification = `-- name: InsertUserVerification :one
 
-INSERT INTO user_verifications (user_id, verification_code)
-VALUES ($1, $2)
+INSERT INTO user_verifications (user_id, verification_code, last_sent_at)
+VALUES ($1, $2, now())
 RETURNING id, user_id, verification_code, expires_at, created_at, failed_attempts, max_attempts, last_sent_at, verified_at, is_expired
 `
 
@@ -164,65 +145,38 @@ func (q *Queries) InsertUserVerification(ctx context.Context, arg InsertUserVeri
 	return i, err
 }
 
+const lockUserForVerification = `-- name: LockUserForVerification :one
+SELECT id, is_verified FROM users WHERE id = $1 AND deleted_at IS NULL FOR UPDATE
+`
+
+type LockUserForVerificationRow struct {
+	ID         int64
+	IsVerified sql.NullBool
+}
+
+// -------------------------------
+// 2b. Serialize code issuing per user
+// -------------------------------
+func (q *Queries) LockUserForVerification(ctx context.Context, id int64) (LockUserForVerificationRow, error) {
+	row := q.db.QueryRowContext(ctx, lockUserForVerification, id)
+	var i LockUserForVerificationRow
+	err := row.Scan(&i.ID, &i.IsVerified)
+	return i, err
+}
+
 const markVerificationAsVerified = `-- name: MarkVerificationAsVerified :one
 UPDATE user_verifications
 SET verified_at = now()
-WHERE user_id = $1
-  AND verification_code = $2
+WHERE id = $1
   AND verified_at IS NULL
-  AND is_expired = FALSE
-  AND expires_at > now()
 RETURNING id, user_id, verification_code, expires_at, created_at, failed_attempts, max_attempts, last_sent_at, verified_at, is_expired
 `
-
-type MarkVerificationAsVerifiedParams struct {
-	UserID           sql.NullInt64
-	VerificationCode string
-}
 
 // -------------------------------
 // 5. Mark verification as verified
 // -------------------------------
-func (q *Queries) MarkVerificationAsVerified(ctx context.Context, arg MarkVerificationAsVerifiedParams) (UserVerification, error) {
-	row := q.db.QueryRowContext(ctx, markVerificationAsVerified, arg.UserID, arg.VerificationCode)
-	var i UserVerification
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.VerificationCode,
-		&i.ExpiresAt,
-		&i.CreatedAt,
-		&i.FailedAttempts,
-		&i.MaxAttempts,
-		&i.LastSentAt,
-		&i.VerifiedAt,
-		&i.IsExpired,
-	)
-	return i, err
-}
-
-const updateUserVerificationCode = `-- name: UpdateUserVerificationCode :one
-UPDATE user_verifications
-SET verification_code = $2,
-    expires_at = (now() + interval '24 hours'),
-    last_sent_at = now(),
-    failed_attempts = 0,
-    is_expired = FALSE
-WHERE user_id = $1
-  AND verified_at IS NULL
-RETURNING id, user_id, verification_code, expires_at, created_at, failed_attempts, max_attempts, last_sent_at, verified_at, is_expired
-`
-
-type UpdateUserVerificationCodeParams struct {
-	UserID           sql.NullInt64
-	VerificationCode string
-}
-
-// -------------------------------
-// 3. Update verification code and reset failed attempts
-// -------------------------------
-func (q *Queries) UpdateUserVerificationCode(ctx context.Context, arg UpdateUserVerificationCodeParams) (UserVerification, error) {
-	row := q.db.QueryRowContext(ctx, updateUserVerificationCode, arg.UserID, arg.VerificationCode)
+func (q *Queries) MarkVerificationAsVerified(ctx context.Context, id int64) (UserVerification, error) {
+	row := q.db.QueryRowContext(ctx, markVerificationAsVerified, id)
 	var i UserVerification
 	err := row.Scan(
 		&i.ID,

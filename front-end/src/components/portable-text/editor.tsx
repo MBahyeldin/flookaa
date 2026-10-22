@@ -14,19 +14,13 @@ import {
   type PortableTextTextBlock,
   type RangeDecoration,
   type RenderAnnotationFunction,
-  type RenderChildFunction,
   type RenderDecoratorFunction,
   type RenderListItemFunction,
   type RenderPlaceholderFunction,
   type RenderStyleFunction,
 } from "@portabletext/editor";
-import {
-  ActivityIcon,
-  Loader,
-  SeparatorHorizontalIcon,
-} from "lucide-react";
+import { Loader } from "lucide-react";
 import { useContext, useEffect, useState, type JSX } from "react";
-import { tv } from "tailwind-variants";
 import "./editor.css";
 import { OneLinePlugin } from "@portabletext/plugin-one-line";
 
@@ -37,36 +31,29 @@ import {
 } from "./toolbar/feature-flags";
 import { ErrorBoundary } from "./toolbar/error-boundary";
 import { ErrorScreen } from "./toolbar/error-screen";
-import {
-  CommentAnnotationSchema,
-  LinkAnnotationSchema,
-  playgroundSchemaDefinition,
-  StockTickerSchema,
-} from "./schema";
+import { LinkAnnotationSchema, playgroundSchemaDefinition } from "./schema";
 import { PortableTextToolbar } from "./toolbar/portable-text-toolbar";
 import { EmojiPickerPlugin } from "./toolbar/plugin-emoji";
+import { SlashMenuPlugin } from "./toolbar/plugin.slash-menu";
 import { CodeEditorPlugin } from "./toolbar/plugin.code-editor";
 import { LinkPlugin } from "./toolbar/plugin.link";
 import { ImageDeserializerPlugin } from "./toolbar/plugin.image-deserializer";
 import { HtmlDeserializerPlugin } from "./toolbar/plugin.html-deserializer";
 import { TextFileDeserializerPlugin } from "./toolbar/plugin.text-file-deserializer";
 import { MarkdownShortcutsPlugin } from "@portabletext/plugin-markdown-shortcuts";
-import { DebugMenu } from "./debug-menu";
 import { markdownShortcutsPluginProps } from "./toolbar/plugin.markdown";
 import { useSelector } from "@xstate/react";
-import { useBlockObjectsProvider } from "@/BlockObjectsProvider.context";
+import { blockByName, blocks } from "./blocks";
 
-const editorStyle = tv({
-  // min-w-0: grid items also default to min-width:auto, so without this the
-  // toolbar's intrinsic width propagates up and widens the whole page.
-  base: "grid gap-2 items-start min-w-0 [&>*]:min-w-0",
-  variants: {
-    debugModeEnabled: {
-      true: "grid-cols-1 md:grid-cols-2",
-      false: "grid-cols-1",
-    },
-  },
-});
+// min-w-0: grid items also default to min-width:auto, so without this the
+// toolbar's intrinsic width propagates up and widens the whole page.
+const editorClassName = "grid grid-cols-1 gap-2 items-start min-w-0 [&>*]:min-w-0";
+
+const schemaBlockObjects = blocks.map(({ name, title, fields }) => ({
+  name,
+  title,
+  fields,
+}));
 
 export default function Editor(props: {
   editorRef: EditorActorRef;
@@ -78,9 +65,6 @@ export default function Editor(props: {
     props.editorRef,
     (s) => s?.context?.keyGenerator
   );
-  const debugModeEnabled = useSelector(props.editorRef, (s) =>
-    s?.matches({ "debug mode": "shown" })
-  );
   const [loading, setLoading] = useState(false);
   const [readOnly, setReadOnly] = useState(false);
   const playgroundFeatureFlags = useContext(PlaygroundFeatureFlagsContext);
@@ -88,8 +72,6 @@ export default function Editor(props: {
     props.editorRef,
     (s) => s?.context?.featureFlags
   );
-  const { blockObjectsProvider } = useBlockObjectsProvider();
-  const blockObjects = blockObjectsProvider?.BlockObjects ?? [];
 
   /*
    * Deps are [value, setValue], NOT [value, props].
@@ -108,9 +90,7 @@ export default function Editor(props: {
   return (
     <div
       data-testid={props.editorRef.id}
-      className={editorStyle({
-        debugModeEnabled: debugModeEnabled as unknown as boolean,
-      })}
+      className={editorClassName}
     >
       <ErrorBoundary
         fallbackProps={{ area: "PortableTextEditor" }}
@@ -122,7 +102,7 @@ export default function Editor(props: {
             initialValue: value,
             keyGenerator,
             readOnly,
-            schemaDefinition: playgroundSchemaDefinition(blockObjects as any),
+            schemaDefinition: playgroundSchemaDefinition(schemaBlockObjects as any),
           }}
         >
           <EditorEventListener
@@ -188,6 +168,7 @@ export default function Editor(props: {
               <MarkdownShortcutsPlugin {...markdownShortcutsPluginProps} />
             ) : null}
             {featureFlags.oneLinePlugin ? <OneLinePlugin /> : null}
+            {featureFlags.slashMenuPlugin ? <SlashMenuPlugin /> : null}
             <div className="flex gap-2 items-center">
               <ErrorBoundary
                 fallbackProps={{ area: "PortableTextEditable" }}
@@ -209,7 +190,6 @@ export default function Editor(props: {
                     rangeDecorations={props.rangeDecorations}
                     renderAnnotation={renderAnnotation}
                     renderBlock={RenderBlock as any}
-                    renderChild={renderChild}
                     renderDecorator={renderDecorator}
                     renderListItem={renderListItem}
                     renderPlaceholder={renderPlaceholder}
@@ -220,9 +200,6 @@ export default function Editor(props: {
               {loading ? <Loader /> : null}
             </div>
           </div>
-          {debugModeEnabled ? (
-            <DebugMenu editorRef={props.editorRef} readOnly={readOnly} />
-          ) : null}
         </EditorProvider>
       </ErrorBoundary>
     </div>
@@ -275,28 +252,12 @@ function EditorEventListener(props: {
 }
 
 const renderAnnotation: RenderAnnotationFunction = (props: any) => {
-  if (CommentAnnotationSchema.safeParse(props).success) {
-    return <span className="bg-warning">{props.children}</span>;
-  }
-
   if (LinkAnnotationSchema.safeParse(props).success) {
     return <span className="text-foreground underline">{props.children}</span>;
   }
 
   return props.children;
 };
-
-const breakStyle = tv({
-  base: "my-1 p-1 flex items-center justify-center gap-1 border-2 border-muted rounded",
-  variants: {
-    selected: {
-      true: "border-",
-    },
-    focused: {
-      true: "bg-blue-50",
-    },
-  },
-});
 
 const RenderBlock = (props: BlockRenderProps) => {
   const enableDragHandles = useContext(EditorFeatureFlagsContext).dragHandles;
@@ -306,29 +267,28 @@ const RenderBlock = (props: BlockRenderProps) => {
     (s: { context: { readOnly: boolean } }) => s?.context?.readOnly
   );
 
-  let children = props.children;
+  const children = props.children;
 
-  if (props.schemaType.name === "break") {
-    children = (
+  const block = blockByName(props.schemaType.name);
+  if (block) {
+    if (block.Editor) {
+      return (
+        <block.Editor
+          value={props.value}
+          selected={props.selected}
+          focused={props.focused}
+        />
+      );
+    }
+    return (
       <div
-        className={breakStyle({
-          selected: props.selected,
-          focused: props.focused,
-        })}
+        className={`rounded-md border-2 ${
+          props.selected ? "border-primary" : "border-transparent"
+        }`}
       >
-        <SeparatorHorizontalIcon className="size-4" />
+        <block.View value={props.value} />
       </div>
     );
-  }
-
-  const { blockObjectsProvider } = useBlockObjectsProvider();
-  const blockObject = blockObjectsProvider?.getBlockObjectByNameOrNull(
-    props.schemaType.name
-  );
-
-  if (blockObject) {
-    return blockObject.renderBlock ? blockObject.renderBlock(props as any) : null;
-    // return props.schemaType
   }
 
   if (props.level === undefined && enableDragHandles) {
@@ -354,74 +314,6 @@ const renderDecorator: RenderDecoratorFunction = (
   props: BlockDecoratorRenderProps
 ) => {
   return (decoratorMap.get(props.value) ?? ((props) => props.children))(props);
-};
-
-const stockTickerStyle = tv({
-  base: "max-w-30 inline-flex items-center gap-1 border-2 border-muted rounded px-1 font-mono text-xs",
-  variants: {
-    selected: {
-      true: "border-primary",
-    },
-    focused: {
-      true: "bg-primary/10",
-    },
-  },
-});
-
-const inlineImageStyle = tv({
-  base: "max-w-35 grid grid-cols-[auto_1fr] items-start gap-1 border-2 border-muted rounded text-sm",
-  variants: {
-    selected: {
-      true: "border-primary",
-    },
-    focused: {
-      true: "bg-primary/10",
-    },
-  },
-});
-
-const renderChild: RenderChildFunction = (props: any) => {
-  const stockTicker = StockTickerSchema.safeParse(props).data;
-
-  if (stockTicker) {
-    return (
-      <span
-        className={stockTickerStyle({
-          selected: props.selected,
-          focused: props.focused,
-        })}
-      >
-        <ActivityIcon className="size-3 shrink-0" />
-        {stockTicker.value.symbol}
-      </span>
-    );
-  }
-
-  const isImage = props.schemaType.name === "inlineImage";
-  if (isImage) {
-    const image = props;
-    return (
-      <span
-        className={inlineImageStyle({
-          selected: props.selected,
-          focused: props.focused,
-        })}
-      >
-        <span className="bg-muted size-5 overflow-clip flex items-center justify-center">
-          <img
-            className="object-scale-down max-w-full"
-            src={image.value.src}
-            alt={image.value.alt ?? ""}
-          />
-        </span>
-        <span className="text-ellipsis overflow-hidden whitespace-nowrap">
-          {image.value.src}
-        </span>
-      </span>
-    );
-  }
-
-  return props.children;
 };
 
 const renderListItem: RenderListItemFunction = (props: any) => {
@@ -491,7 +383,7 @@ const styleMap: Map<string, (props: BlockStyleRenderProps) => JSX.Element> =
     [
       "blockquote",
       (props) => (
-        <blockquote className="my-1 pl-2 py-1 border-muted border-l-4">
+        <blockquote className="my-1 ps-2 py-1 border-muted border-s-4">
           {props.children}
         </blockquote>
       ),

@@ -25,8 +25,11 @@ func newPersonaStore(client *redis.Client, ttl time.Duration) *PersonaStore {
 
 const personaInfoKeyPattern = "persona:%s:info"
 
-// SetPersona caches a persona profile in Redis
+// SetPersona caches a persona profile in Redis. Only public personas are cached.
 func (s *PersonaStore) SetPersonaInfo(ctx context.Context, persona *db.ResolvePersonaByIDRow) error {
+	if persona.Privacy != db.PersonaPrivacyEnumPublic {
+		return nil
+	}
 	data, err := json.Marshal(persona)
 	if err != nil {
 		return fmt.Errorf("failed to marshal persona: %w", err)
@@ -51,6 +54,9 @@ func (s *PersonaStore) GetPersonaInfo(ctx context.Context, personaID string) (*d
 	var persona db.ResolvePersonaByIDRow
 	if err := json.Unmarshal([]byte(val), &persona); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal persona: %w", err)
+	}
+	if persona.Privacy != db.PersonaPrivacyEnumPublic {
+		return nil, s.client.Del(ctx, key).Err()
 	}
 	return &persona, nil
 }

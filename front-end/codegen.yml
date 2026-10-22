@@ -1,4 +1,4 @@
-schema: https://api.flookaa.com/query
+schema: "../shared/external/graph/*.graphqls"
 documents: "src/graphql/**/*.graphql"
 generates:
   src/generated/graphql.ts:

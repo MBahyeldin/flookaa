@@ -19,12 +19,51 @@ type Blocks = PortableTextTextBlock<PortableTextSpan | PortableTextObject>[];
  * clearing the field.
  */
 
-/** Total number of characters across every text span. */
+// Text fields of block objects that count toward the post's limit.
+const objectTextFields: Record<string, string[]> = {
+  callout: ["title", "description"],
+  quote: ["text", "name", "role"],
+  countdown: ["label", "endedText"],
+};
+
+/** Total number of characters across every text span and text-bearing block object. */
 export function portableTextLength(blocks: Blocks | undefined): number {
   if (!blocks?.length) return 0;
 
   return blocks.reduce((total, block) => {
-    // Block objects (images, breaks) carry no text of their own.
+    if (block._type === "steps" || block._type === "accordion") {
+      const { title, items = [] } = block as unknown as {
+        title?: unknown;
+        items?: { title?: unknown; text?: unknown }[];
+      };
+      return items.reduce(
+        (sum, item) =>
+          sum +
+          (typeof item.title === "string" ? item.title.length : 0) +
+          (typeof item.text === "string" ? item.text.length : 0),
+        total + (typeof title === "string" ? title.length : 0)
+      );
+    }
+    if (block._type === "checklist") {
+      const { title, items = [] } = block as unknown as { title?: unknown; items?: { text?: unknown }[] };
+      return items.reduce(
+        (sum, item) => sum + (typeof item.text === "string" ? item.text.length : 0),
+        total + (typeof title === "string" ? title.length : 0)
+      );
+    }
+    if (block._type === "spoiler") {
+      const { label, content } = block as unknown as { label?: unknown; content?: Blocks };
+      return total + (typeof label === "string" ? label.length : 0) + portableTextLength(content);
+    }
+    const textFields = objectTextFields[block._type];
+    if (textFields) {
+      const fields = block as unknown as Record<string, unknown>;
+      return textFields.reduce(
+        (sum, field) => sum + (typeof fields[field] === "string" ? (fields[field] as string).length : 0),
+        total
+      );
+    }
+    // Other block objects (images, breaks) carry no text of their own.
     if (block._type !== "block") return total;
 
     const children = (block.children ?? []) as { text?: unknown }[];

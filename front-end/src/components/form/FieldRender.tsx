@@ -8,6 +8,11 @@ import CountrySelector from "../inputs/geo/CountrySelector";
 import StateSelector from "../inputs/geo/StateSelector";
 import CitySelector from "../inputs/geo/CitySelector";
 import SelectInput from "../inputs/select";
+import SwitchInput from "../inputs/switch";
+import ListInput from "../inputs/list";
+import VoiceInput from "../inputs/voice";
+import ThemeInput from "../inputs/theme";
+import InterestsInput from "../inputs/interests";
 
 export default function FieldRender({
   field,
@@ -36,12 +41,13 @@ export default function FieldRender({
     shouldValidate?: boolean
   ) => Promise<FormikErrors<Record<string, unknown>>> | Promise<void>;
 }) {
-  if (!field.interfaceType) {
+  if (!field.interfaceType || !field.isVisible(values ?? {})) {
     return null;
   }
   return (
-    <>
-      {["text", "password"].includes(field.interfaceType) && (
+    // display: contents keeps the field a direct grid child; the form scrolls to it by data-field.
+    <div data-field={field.id} className="contents">
+      {["text", "password", "datetime"].includes(field.interfaceType) && (
         <TextInput
           field={field}
           error={error}
@@ -70,6 +76,17 @@ export default function FieldRender({
           handleBlur={handleBlur}
           touched={touched}
           setTouched={setTouched}
+          values={values}
+        />
+      )}
+      {field.interfaceType === "voice" && (
+        <VoiceInput
+          error={error}
+          setFieldValue={setFieldValue}
+          field={field}
+          initValue={value as string}
+          touched={touched}
+          values={values}
         />
       )}
       {/* Profile Picture Input */}
@@ -122,6 +139,36 @@ export default function FieldRender({
           handleBlur={handleBlur}
         />
       )}
+      {field.interfaceType === "switch" && (
+        <SwitchInput
+          field={field}
+          error={error}
+          touched={touched}
+          value={value}
+          setFieldValue={setFieldValue}
+        />
+      )}
+      {field.interfaceType === "theme" && (
+        <ThemeInput
+          field={field}
+          error={error}
+          touched={touched}
+          value={value}
+          setFieldValue={setFieldValue}
+        />
+      )}
+      {field.interfaceType === "interests" && (
+        <InterestsInput
+          field={field}
+          error={error}
+          touched={touched}
+          value={value}
+          setFieldValue={setFieldValue}
+        />
+      )}
+      {field.interfaceType === "list" && (
+        <ListInput field={field} value={value} setFieldValue={setFieldValue} />
+      )}
       {
         field.interfaceType === "select" && (
           <SelectInput
@@ -134,6 +181,6 @@ export default function FieldRender({
           />
         )
       }
-    </>
+    </div>
   );
 }

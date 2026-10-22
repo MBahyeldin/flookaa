@@ -1,10 +1,12 @@
 import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField } from "@/models/Forms/FormField";
 import type { FormGroup } from "@/types/FormFields";
-import { User } from "lucide-react";
+import type { Persona } from "@/types/persona";
+import { Palette, User } from "lucide-react";
+import { SLUG_PATTERN } from "@/lib/slug";
 
-const personaFormFields = [
-  new FormField({
+
+const nameField = new FormField({
     id: "name",
     label: "Persona Name",
     type: "text",
@@ -12,18 +14,32 @@ const personaFormFields = [
     interfaceType: "text",
     isRequired: true,
     width: "1/2",
-  }),
+  });
+
+const privacyOptions = [
+  { label: "Public", value: "public" },
+  { label: "Private", value: "private" },
+  { label: "Only Me", value: "only_me" },
+];
+
+const showOnProfileField = new FormField({
+    id: "show_on_profile",
+    label: "Show on my profile",
+    type: "switch",
+    interfaceType: "switch",
+    width: "full",
+    visibleWhen: (values) => values.privacy === "public",
+  });
+
+const personaFormFields = [
+  nameField,
   new FormField({
     id: "privacy",
     label: "Privacy Setting",
     type: "select",
     placeholder: "Select privacy setting",
     interfaceType: "select",
-    options: [
-      { label: "Public", value: "public" },
-      { label: "Private", value: "private" },
-      { label: "Only Me", value: "only_me" },
-    ],
+    options: privacyOptions,
     isRequired: true,
     width: "1/2",
   }),
@@ -36,6 +52,7 @@ const personaFormFields = [
     isRequired: true,
     width: "full",
   }),
+  showOnProfileField,
 ];
 
 const profileFormFields = [
@@ -76,6 +93,101 @@ const profileFormFields = [
     width: "full",
   }),
 ];
+
+const slugField = new FormField({
+    id: "slug",
+    label: "Slug",
+    type: "text",
+    placeholder: "quiet-otter",
+    interfaceType: "text",
+    isRequired: true,
+    width: "full",
+    hint: (value) => (value ? `Shown as @${value}` : null),
+    validate: (value) =>
+      typeof value === "string" && value !== "" && !SLUG_PATTERN.test(value)
+        ? "Use 3–50 lowercase letters, digits or single hyphens."
+        : null,
+  });
+
+const themeField = new FormField({
+    id: "theme",
+    label: "Theme",
+    type: "theme",
+    interfaceType: "theme",
+    width: "full",
+  });
+
+export function privacyChangeHint(persona: Persona) {
+  return (value: string) => {
+    if (value === persona.privacy) return null;
+    if (persona.privacy === "public" && persona.show_on_profile) {
+      return "It will no longer show on your profile.";
+    }
+    if (persona.privacy === "private") {
+      return "Your follow-request link stops working and your pending invitations are cancelled.";
+    }
+    return null;
+  };
+}
+
+export function personaSettingsFormGroups(persona: Persona): FormGroup[] {
+  return [
+    {
+      id: "persona_settings_group_1",
+      label: "Persona",
+      fields: [
+        nameField,
+        new FormField({
+          id: "privacy",
+          label: "Privacy Setting",
+          type: "select",
+          interfaceType: "select",
+          options: privacyOptions,
+          isRequired: true,
+          width: "1/2",
+          hint: privacyChangeHint(persona),
+        }),
+        new FormField({
+          id: "description",
+          label: "Description",
+          type: "text",
+          placeholder: "Describe your persona",
+          interfaceType: "text",
+          width: "full",
+        }),
+        showOnProfileField,
+        themeField,
+      ],
+      displayInCard: {
+        header: (
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="h-5 w-5" />
+              Persona
+            </CardTitle>
+            <CardDescription>Only you see the name and description.</CardDescription>
+          </CardHeader>
+        ),
+      },
+    },
+    {
+      id: "persona_settings_group_2",
+      label: "Profile",
+      fields: [...profileFormFields.slice(0, 3), slugField, ...profileFormFields.slice(3)],
+      displayInCard: {
+        header: (
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Profile
+            </CardTitle>
+            <CardDescription>What other personas see.</CardDescription>
+          </CardHeader>
+        ),
+      },
+    },
+  ];
+}
 
 const groupOne: FormGroup = {
     id: "manage_persona_group_1",

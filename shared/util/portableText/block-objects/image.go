@@ -1,20 +1,22 @@
 package blockobjects
 
 import (
-	"fmt"
 	"shared/pkg/graph/models"
 )
 
-type ImageBlockParser struct{}
+const maxImageSide = 4096
 
-func (b *ImageBlockParser) Type() string {
-	return "Image"
-}
-
-func (b *ImageBlockParser) Parse(input interface{}) (*models.Blocks, error) {
-	in, ok := input.(*models.ImageBlockInput)
-	if !ok || in == nil {
-		return nil, fmt.Errorf("invalid input type")
+func parseImage(in *models.ImageBlockInput) (*models.Blocks, error) {
+	if err := requireKey("image", in.Key); err != nil {
+		return nil, err
+	}
+	if !safeURL(in.Src, "http", "https") {
+		return nil, invalid("image", in.Key, "src must be http(s) or a same-site path")
+	}
+	for _, side := range []*int32{in.Width, in.Height} {
+		if side != nil && (*side < 1 || *side > maxImageSide) {
+			return nil, invalid("image", in.Key, "width and height must be 1-%d", maxImageSide)
+		}
 	}
 	return &models.Blocks{
 		Image: &models.ImageBlock{
@@ -25,7 +27,7 @@ func (b *ImageBlockParser) Parse(input interface{}) (*models.Blocks, error) {
 			Caption: in.Caption,
 			Width:   in.Width,
 			Height:  in.Height,
+			Size:    in.Size,
+			Align:   in.Align,
 		}}, nil
 }
-
-var ImageBlock = &ImageBlockParser{}

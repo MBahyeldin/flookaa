@@ -50,6 +50,21 @@ type ComplexityRoot struct {
 		CanView    func(childComplexity int) int
 	}
 
+	AccordionBlock struct {
+		AllowMultiple    func(childComplexity int) int
+		DefaultFirstOpen func(childComplexity int) int
+		Items            func(childComplexity int) int
+		Key              func(childComplexity int) int
+		Title            func(childComplexity int) int
+		Type             func(childComplexity int) int
+	}
+
+	AccordionItem struct {
+		Key   func(childComplexity int) int
+		Text  func(childComplexity int) int
+		Title func(childComplexity int) int
+	}
+
 	BlockBlock struct {
 		Children func(childComplexity int) int
 		Key      func(childComplexity int) int
@@ -61,19 +76,39 @@ type ComplexityRoot struct {
 	}
 
 	Blocks struct {
-		Block func(childComplexity int) int
-		Break func(childComplexity int) int
-		Image func(childComplexity int) int
+		Accordion func(childComplexity int) int
+		Block     func(childComplexity int) int
+		Break     func(childComplexity int) int
+		Callout   func(childComplexity int) int
+		Checklist func(childComplexity int) int
+		Countdown func(childComplexity int) int
+		Gallery   func(childComplexity int) int
+		Image     func(childComplexity int) int
+		Quote     func(childComplexity int) int
+		Spoiler   func(childComplexity int) int
+		Steps     func(childComplexity int) int
+		VoiceNote func(childComplexity int) int
 	}
 
 	BreakBlock struct {
-		Key  func(childComplexity int) int
-		Type func(childComplexity int) int
+		Key   func(childComplexity int) int
+		Style func(childComplexity int) int
+		Type  func(childComplexity int) int
+	}
+
+	CalloutBlock struct {
+		Description func(childComplexity int) int
+		Icon        func(childComplexity int) int
+		Key         func(childComplexity int) int
+		Title       func(childComplexity int) int
+		Tone        func(childComplexity int) int
+		Type        func(childComplexity int) int
 	}
 
 	Channel struct {
 		BannerImageURL  func(childComplexity int) int
 		CanModerate     func(childComplexity int) int
+		Community       func(childComplexity int) int
 		CreatedAt       func(childComplexity int) int
 		Description     func(childComplexity int) int
 		FollowersCount  func(childComplexity int) int
@@ -81,6 +116,7 @@ type ComplexityRoot struct {
 		IsFollower      func(childComplexity int) int
 		IsMember        func(childComplexity int) int
 		MembersCount    func(childComplexity int) int
+		MinAge          func(childComplexity int) int
 		Name            func(childComplexity int) int
 		Owner           func(childComplexity int) int
 		Posts           func(childComplexity int) int
@@ -88,6 +124,19 @@ type ComplexityRoot struct {
 		ThumbnailURL    func(childComplexity int) int
 		TotalPosts      func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
+	}
+
+	ChecklistBlock struct {
+		Items func(childComplexity int) int
+		Key   func(childComplexity int) int
+		Title func(childComplexity int) int
+		Type  func(childComplexity int) int
+	}
+
+	ChecklistItem struct {
+		Checked func(childComplexity int) int
+		Key     func(childComplexity int) int
+		Text    func(childComplexity int) int
 	}
 
 	Comment struct {
@@ -110,17 +159,43 @@ type ComplexityRoot struct {
 		UpdatedAt         func(childComplexity int) int
 	}
 
-	CommentMarkDef struct {
-		Key  func(childComplexity int) int
-		Text func(childComplexity int) int
-		Type func(childComplexity int) int
+	CommunityRef struct {
+		ID   func(childComplexity int) int
+		Name func(childComplexity int) int
+		Slug func(childComplexity int) int
 	}
 
-	ImageBlock struct {
+	CountdownBlock struct {
+		EndedText func(childComplexity int) int
+		EndsAt    func(childComplexity int) int
+		Key       func(childComplexity int) int
+		Label     func(childComplexity int) int
+		Type      func(childComplexity int) int
+	}
+
+	GalleryBlock struct {
+		Items  func(childComplexity int) int
+		Key    func(childComplexity int) int
+		Layout func(childComplexity int) int
+		Type   func(childComplexity int) int
+	}
+
+	GalleryItem struct {
 		Alt     func(childComplexity int) int
 		Caption func(childComplexity int) int
 		Height  func(childComplexity int) int
 		Key     func(childComplexity int) int
+		Src     func(childComplexity int) int
+		Width   func(childComplexity int) int
+	}
+
+	ImageBlock struct {
+		Align   func(childComplexity int) int
+		Alt     func(childComplexity int) int
+		Caption func(childComplexity int) int
+		Height  func(childComplexity int) int
+		Key     func(childComplexity int) int
+		Size    func(childComplexity int) int
 		Src     func(childComplexity int) int
 		Type    func(childComplexity int) int
 		Width   func(childComplexity int) int
@@ -134,8 +209,7 @@ type ComplexityRoot struct {
 	}
 
 	MarkDefs struct {
-		Comment func(childComplexity int) int
-		Link    func(childComplexity int) int
+		Link func(childComplexity int) int
 	}
 
 	Media struct {
@@ -164,6 +238,7 @@ type ComplexityRoot struct {
 	}
 
 	Persona struct {
+		Anonymous       func(childComplexity int) int
 		FullName        func(childComplexity int) int
 		ID              func(childComplexity int) int
 		ProfileImageURL func(childComplexity int) int
@@ -225,11 +300,47 @@ type ComplexityRoot struct {
 		GetPosts    func(childComplexity int, owner models.OwnerInput, ids []string, limit *int32, offset *int32) int
 	}
 
+	QuoteBlock struct {
+		Key  func(childComplexity int) int
+		Name func(childComplexity int) int
+		Role func(childComplexity int) int
+		Text func(childComplexity int) int
+		Type func(childComplexity int) int
+	}
+
 	Span struct {
 		Key   func(childComplexity int) int
 		Marks func(childComplexity int) int
 		Text  func(childComplexity int) int
 		Type  func(childComplexity int) int
+	}
+
+	SpoilerBlock struct {
+		Content func(childComplexity int) int
+		Key     func(childComplexity int) int
+		Label   func(childComplexity int) int
+		Type    func(childComplexity int) int
+	}
+
+	StepItem struct {
+		Key   func(childComplexity int) int
+		Text  func(childComplexity int) int
+		Title func(childComplexity int) int
+	}
+
+	StepsBlock struct {
+		Items func(childComplexity int) int
+		Key   func(childComplexity int) int
+		Title func(childComplexity int) int
+		Type  func(childComplexity int) int
+	}
+
+	VoiceNoteBlock struct {
+		Duration func(childComplexity int) int
+		Key      func(childComplexity int) int
+		Src      func(childComplexity int) int
+		Title    func(childComplexity int) int
+		Type     func(childComplexity int) int
 	}
 }
 
@@ -287,6 +398,69 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ACL.CanView(childComplexity), true
 
+	case "AccordionBlock.allowMultiple":
+		if e.complexity.AccordionBlock.AllowMultiple == nil {
+			break
+		}
+
+		return e.complexity.AccordionBlock.AllowMultiple(childComplexity), true
+
+	case "AccordionBlock.defaultFirstOpen":
+		if e.complexity.AccordionBlock.DefaultFirstOpen == nil {
+			break
+		}
+
+		return e.complexity.AccordionBlock.DefaultFirstOpen(childComplexity), true
+
+	case "AccordionBlock.items":
+		if e.complexity.AccordionBlock.Items == nil {
+			break
+		}
+
+		return e.complexity.AccordionBlock.Items(childComplexity), true
+
+	case "AccordionBlock._key":
+		if e.complexity.AccordionBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.AccordionBlock.Key(childComplexity), true
+
+	case "AccordionBlock.title":
+		if e.complexity.AccordionBlock.Title == nil {
+			break
+		}
+
+		return e.complexity.AccordionBlock.Title(childComplexity), true
+
+	case "AccordionBlock._type":
+		if e.complexity.AccordionBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.AccordionBlock.Type(childComplexity), true
+
+	case "AccordionItem._key":
+		if e.complexity.AccordionItem.Key == nil {
+			break
+		}
+
+		return e.complexity.AccordionItem.Key(childComplexity), true
+
+	case "AccordionItem.text":
+		if e.complexity.AccordionItem.Text == nil {
+			break
+		}
+
+		return e.complexity.AccordionItem.Text(childComplexity), true
+
+	case "AccordionItem.title":
+		if e.complexity.AccordionItem.Title == nil {
+			break
+		}
+
+		return e.complexity.AccordionItem.Title(childComplexity), true
+
 	case "BlockBlock.children":
 		if e.complexity.BlockBlock.Children == nil {
 			break
@@ -336,6 +510,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.BlockBlock.Type(childComplexity), true
 
+	case "Blocks.accordion":
+		if e.complexity.Blocks.Accordion == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Accordion(childComplexity), true
+
 	case "Blocks.block":
 		if e.complexity.Blocks.Block == nil {
 			break
@@ -350,12 +531,68 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Blocks.Break(childComplexity), true
 
+	case "Blocks.callout":
+		if e.complexity.Blocks.Callout == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Callout(childComplexity), true
+
+	case "Blocks.checklist":
+		if e.complexity.Blocks.Checklist == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Checklist(childComplexity), true
+
+	case "Blocks.countdown":
+		if e.complexity.Blocks.Countdown == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Countdown(childComplexity), true
+
+	case "Blocks.gallery":
+		if e.complexity.Blocks.Gallery == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Gallery(childComplexity), true
+
 	case "Blocks.image":
 		if e.complexity.Blocks.Image == nil {
 			break
 		}
 
 		return e.complexity.Blocks.Image(childComplexity), true
+
+	case "Blocks.quote":
+		if e.complexity.Blocks.Quote == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Quote(childComplexity), true
+
+	case "Blocks.spoiler":
+		if e.complexity.Blocks.Spoiler == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Spoiler(childComplexity), true
+
+	case "Blocks.steps":
+		if e.complexity.Blocks.Steps == nil {
+			break
+		}
+
+		return e.complexity.Blocks.Steps(childComplexity), true
+
+	case "Blocks.voiceNote":
+		if e.complexity.Blocks.VoiceNote == nil {
+			break
+		}
+
+		return e.complexity.Blocks.VoiceNote(childComplexity), true
 
 	case "BreakBlock._key":
 		if e.complexity.BreakBlock.Key == nil {
@@ -364,12 +601,61 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.BreakBlock.Key(childComplexity), true
 
+	case "BreakBlock.style":
+		if e.complexity.BreakBlock.Style == nil {
+			break
+		}
+
+		return e.complexity.BreakBlock.Style(childComplexity), true
+
 	case "BreakBlock._type":
 		if e.complexity.BreakBlock.Type == nil {
 			break
 		}
 
 		return e.complexity.BreakBlock.Type(childComplexity), true
+
+	case "CalloutBlock.description":
+		if e.complexity.CalloutBlock.Description == nil {
+			break
+		}
+
+		return e.complexity.CalloutBlock.Description(childComplexity), true
+
+	case "CalloutBlock.icon":
+		if e.complexity.CalloutBlock.Icon == nil {
+			break
+		}
+
+		return e.complexity.CalloutBlock.Icon(childComplexity), true
+
+	case "CalloutBlock._key":
+		if e.complexity.CalloutBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.CalloutBlock.Key(childComplexity), true
+
+	case "CalloutBlock.title":
+		if e.complexity.CalloutBlock.Title == nil {
+			break
+		}
+
+		return e.complexity.CalloutBlock.Title(childComplexity), true
+
+	case "CalloutBlock.tone":
+		if e.complexity.CalloutBlock.Tone == nil {
+			break
+		}
+
+		return e.complexity.CalloutBlock.Tone(childComplexity), true
+
+	case "CalloutBlock._type":
+		if e.complexity.CalloutBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.CalloutBlock.Type(childComplexity), true
 
 	case "Channel.bannerImageUrl":
 		if e.complexity.Channel.BannerImageURL == nil {
@@ -384,6 +670,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Channel.CanModerate(childComplexity), true
+
+	case "Channel.community":
+		if e.complexity.Channel.Community == nil {
+			break
+		}
+
+		return e.complexity.Channel.Community(childComplexity), true
 
 	case "Channel.createdAt":
 		if e.complexity.Channel.CreatedAt == nil {
@@ -434,6 +727,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Channel.MembersCount(childComplexity), true
 
+	case "Channel.minAge":
+		if e.complexity.Channel.MinAge == nil {
+			break
+		}
+
+		return e.complexity.Channel.MinAge(childComplexity), true
+
 	case "Channel.name":
 		if e.complexity.Channel.Name == nil {
 			break
@@ -482,6 +782,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Channel.UpdatedAt(childComplexity), true
+
+	case "ChecklistBlock.items":
+		if e.complexity.ChecklistBlock.Items == nil {
+			break
+		}
+
+		return e.complexity.ChecklistBlock.Items(childComplexity), true
+
+	case "ChecklistBlock._key":
+		if e.complexity.ChecklistBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.ChecklistBlock.Key(childComplexity), true
+
+	case "ChecklistBlock.title":
+		if e.complexity.ChecklistBlock.Title == nil {
+			break
+		}
+
+		return e.complexity.ChecklistBlock.Title(childComplexity), true
+
+	case "ChecklistBlock._type":
+		if e.complexity.ChecklistBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.ChecklistBlock.Type(childComplexity), true
+
+	case "ChecklistItem.checked":
+		if e.complexity.ChecklistItem.Checked == nil {
+			break
+		}
+
+		return e.complexity.ChecklistItem.Checked(childComplexity), true
+
+	case "ChecklistItem._key":
+		if e.complexity.ChecklistItem.Key == nil {
+			break
+		}
+
+		return e.complexity.ChecklistItem.Key(childComplexity), true
+
+	case "ChecklistItem.text":
+		if e.complexity.ChecklistItem.Text == nil {
+			break
+		}
+
+		return e.complexity.ChecklistItem.Text(childComplexity), true
 
 	case "Comment.allowedPersonaIds":
 		if e.complexity.Comment.AllowedPersonaIds == nil {
@@ -602,26 +951,138 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Comment.UpdatedAt(childComplexity), true
 
-	case "CommentMarkDef._key":
-		if e.complexity.CommentMarkDef.Key == nil {
+	case "CommunityRef.id":
+		if e.complexity.CommunityRef.ID == nil {
 			break
 		}
 
-		return e.complexity.CommentMarkDef.Key(childComplexity), true
+		return e.complexity.CommunityRef.ID(childComplexity), true
 
-	case "CommentMarkDef.text":
-		if e.complexity.CommentMarkDef.Text == nil {
+	case "CommunityRef.name":
+		if e.complexity.CommunityRef.Name == nil {
 			break
 		}
 
-		return e.complexity.CommentMarkDef.Text(childComplexity), true
+		return e.complexity.CommunityRef.Name(childComplexity), true
 
-	case "CommentMarkDef._type":
-		if e.complexity.CommentMarkDef.Type == nil {
+	case "CommunityRef.slug":
+		if e.complexity.CommunityRef.Slug == nil {
 			break
 		}
 
-		return e.complexity.CommentMarkDef.Type(childComplexity), true
+		return e.complexity.CommunityRef.Slug(childComplexity), true
+
+	case "CountdownBlock.endedText":
+		if e.complexity.CountdownBlock.EndedText == nil {
+			break
+		}
+
+		return e.complexity.CountdownBlock.EndedText(childComplexity), true
+
+	case "CountdownBlock.endsAt":
+		if e.complexity.CountdownBlock.EndsAt == nil {
+			break
+		}
+
+		return e.complexity.CountdownBlock.EndsAt(childComplexity), true
+
+	case "CountdownBlock._key":
+		if e.complexity.CountdownBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.CountdownBlock.Key(childComplexity), true
+
+	case "CountdownBlock.label":
+		if e.complexity.CountdownBlock.Label == nil {
+			break
+		}
+
+		return e.complexity.CountdownBlock.Label(childComplexity), true
+
+	case "CountdownBlock._type":
+		if e.complexity.CountdownBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.CountdownBlock.Type(childComplexity), true
+
+	case "GalleryBlock.items":
+		if e.complexity.GalleryBlock.Items == nil {
+			break
+		}
+
+		return e.complexity.GalleryBlock.Items(childComplexity), true
+
+	case "GalleryBlock._key":
+		if e.complexity.GalleryBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.GalleryBlock.Key(childComplexity), true
+
+	case "GalleryBlock.layout":
+		if e.complexity.GalleryBlock.Layout == nil {
+			break
+		}
+
+		return e.complexity.GalleryBlock.Layout(childComplexity), true
+
+	case "GalleryBlock._type":
+		if e.complexity.GalleryBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.GalleryBlock.Type(childComplexity), true
+
+	case "GalleryItem.alt":
+		if e.complexity.GalleryItem.Alt == nil {
+			break
+		}
+
+		return e.complexity.GalleryItem.Alt(childComplexity), true
+
+	case "GalleryItem.caption":
+		if e.complexity.GalleryItem.Caption == nil {
+			break
+		}
+
+		return e.complexity.GalleryItem.Caption(childComplexity), true
+
+	case "GalleryItem.height":
+		if e.complexity.GalleryItem.Height == nil {
+			break
+		}
+
+		return e.complexity.GalleryItem.Height(childComplexity), true
+
+	case "GalleryItem._key":
+		if e.complexity.GalleryItem.Key == nil {
+			break
+		}
+
+		return e.complexity.GalleryItem.Key(childComplexity), true
+
+	case "GalleryItem.src":
+		if e.complexity.GalleryItem.Src == nil {
+			break
+		}
+
+		return e.complexity.GalleryItem.Src(childComplexity), true
+
+	case "GalleryItem.width":
+		if e.complexity.GalleryItem.Width == nil {
+			break
+		}
+
+		return e.complexity.GalleryItem.Width(childComplexity), true
+
+	case "ImageBlock.align":
+		if e.complexity.ImageBlock.Align == nil {
+			break
+		}
+
+		return e.complexity.ImageBlock.Align(childComplexity), true
 
 	case "ImageBlock.alt":
 		if e.complexity.ImageBlock.Alt == nil {
@@ -650,6 +1111,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ImageBlock.Key(childComplexity), true
+
+	case "ImageBlock.size":
+		if e.complexity.ImageBlock.Size == nil {
+			break
+		}
+
+		return e.complexity.ImageBlock.Size(childComplexity), true
 
 	case "ImageBlock.src":
 		if e.complexity.ImageBlock.Src == nil {
@@ -699,13 +1167,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.LinkMarkDef.Type(childComplexity), true
-
-	case "MarkDefs.comment":
-		if e.complexity.MarkDefs.Comment == nil {
-			break
-		}
-
-		return e.complexity.MarkDefs.Comment(childComplexity), true
 
 	case "MarkDefs.link":
 		if e.complexity.MarkDefs.Link == nil {
@@ -829,6 +1290,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Owner.Type(childComplexity), true
+
+	case "Persona.anonymous":
+		if e.complexity.Persona.Anonymous == nil {
+			break
+		}
+
+		return e.complexity.Persona.Anonymous(childComplexity), true
 
 	case "Persona.fullName":
 		if e.complexity.Persona.FullName == nil {
@@ -1153,6 +1621,41 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.GetPosts(childComplexity, args["owner"].(models.OwnerInput), args["ids"].([]string), args["limit"].(*int32), args["offset"].(*int32)), true
 
+	case "QuoteBlock._key":
+		if e.complexity.QuoteBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.QuoteBlock.Key(childComplexity), true
+
+	case "QuoteBlock.name":
+		if e.complexity.QuoteBlock.Name == nil {
+			break
+		}
+
+		return e.complexity.QuoteBlock.Name(childComplexity), true
+
+	case "QuoteBlock.role":
+		if e.complexity.QuoteBlock.Role == nil {
+			break
+		}
+
+		return e.complexity.QuoteBlock.Role(childComplexity), true
+
+	case "QuoteBlock.text":
+		if e.complexity.QuoteBlock.Text == nil {
+			break
+		}
+
+		return e.complexity.QuoteBlock.Text(childComplexity), true
+
+	case "QuoteBlock._type":
+		if e.complexity.QuoteBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.QuoteBlock.Type(childComplexity), true
+
 	case "Span._key":
 		if e.complexity.Span.Key == nil {
 			break
@@ -1181,6 +1684,118 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Span.Type(childComplexity), true
 
+	case "SpoilerBlock.content":
+		if e.complexity.SpoilerBlock.Content == nil {
+			break
+		}
+
+		return e.complexity.SpoilerBlock.Content(childComplexity), true
+
+	case "SpoilerBlock._key":
+		if e.complexity.SpoilerBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.SpoilerBlock.Key(childComplexity), true
+
+	case "SpoilerBlock.label":
+		if e.complexity.SpoilerBlock.Label == nil {
+			break
+		}
+
+		return e.complexity.SpoilerBlock.Label(childComplexity), true
+
+	case "SpoilerBlock._type":
+		if e.complexity.SpoilerBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.SpoilerBlock.Type(childComplexity), true
+
+	case "StepItem._key":
+		if e.complexity.StepItem.Key == nil {
+			break
+		}
+
+		return e.complexity.StepItem.Key(childComplexity), true
+
+	case "StepItem.text":
+		if e.complexity.StepItem.Text == nil {
+			break
+		}
+
+		return e.complexity.StepItem.Text(childComplexity), true
+
+	case "StepItem.title":
+		if e.complexity.StepItem.Title == nil {
+			break
+		}
+
+		return e.complexity.StepItem.Title(childComplexity), true
+
+	case "StepsBlock.items":
+		if e.complexity.StepsBlock.Items == nil {
+			break
+		}
+
+		return e.complexity.StepsBlock.Items(childComplexity), true
+
+	case "StepsBlock._key":
+		if e.complexity.StepsBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.StepsBlock.Key(childComplexity), true
+
+	case "StepsBlock.title":
+		if e.complexity.StepsBlock.Title == nil {
+			break
+		}
+
+		return e.complexity.StepsBlock.Title(childComplexity), true
+
+	case "StepsBlock._type":
+		if e.complexity.StepsBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.StepsBlock.Type(childComplexity), true
+
+	case "VoiceNoteBlock.duration":
+		if e.complexity.VoiceNoteBlock.Duration == nil {
+			break
+		}
+
+		return e.complexity.VoiceNoteBlock.Duration(childComplexity), true
+
+	case "VoiceNoteBlock._key":
+		if e.complexity.VoiceNoteBlock.Key == nil {
+			break
+		}
+
+		return e.complexity.VoiceNoteBlock.Key(childComplexity), true
+
+	case "VoiceNoteBlock.src":
+		if e.complexity.VoiceNoteBlock.Src == nil {
+			break
+		}
+
+		return e.complexity.VoiceNoteBlock.Src(childComplexity), true
+
+	case "VoiceNoteBlock.title":
+		if e.complexity.VoiceNoteBlock.Title == nil {
+			break
+		}
+
+		return e.complexity.VoiceNoteBlock.Title(childComplexity), true
+
+	case "VoiceNoteBlock._type":
+		if e.complexity.VoiceNoteBlock.Type == nil {
+			break
+		}
+
+		return e.complexity.VoiceNoteBlock.Type(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -1189,11 +1804,18 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputAccordionBlockInput,
+		ec.unmarshalInputAccordionItemInput,
 		ec.unmarshalInputBlockBlockInput,
 		ec.unmarshalInputBlockInput,
 		ec.unmarshalInputBreakBlockInput,
+		ec.unmarshalInputCalloutBlockInput,
+		ec.unmarshalInputChecklistBlockInput,
+		ec.unmarshalInputChecklistItemInput,
 		ec.unmarshalInputCommentInput,
-		ec.unmarshalInputCommentMarkDefInput,
+		ec.unmarshalInputCountdownBlockInput,
+		ec.unmarshalInputGalleryBlockInput,
+		ec.unmarshalInputGalleryItemInput,
 		ec.unmarshalInputImageBlockInput,
 		ec.unmarshalInputLikeInput,
 		ec.unmarshalInputLinkMarkDefInput,
@@ -1202,8 +1824,13 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputOwnerInput,
 		ec.unmarshalInputPortableTextInput,
 		ec.unmarshalInputPostInput,
+		ec.unmarshalInputQuoteBlockInput,
 		ec.unmarshalInputSimpleInput,
 		ec.unmarshalInputSpanInput,
+		ec.unmarshalInputSpoilerBlockInput,
+		ec.unmarshalInputStepItemInput,
+		ec.unmarshalInputStepsBlockInput,
+		ec.unmarshalInputVoiceNoteBlockInput,
 	)
 	first := true
 
@@ -1327,7 +1954,6 @@ interface MarkDef {
 
 enum MarkDefType {
   link
-  comment
 }
 
 """
@@ -1341,20 +1967,10 @@ type LinkMarkDef implements MarkDef {
 }
 
 """
-MarkDef for comments
-"""
-type CommentMarkDef implements MarkDef {
-  _key: ID!
-  _type: MarkDefType!
-  text: String!
-}
-
-"""
 Union of all possible markDefs
 """
 type MarkDefs {
   link: LinkMarkDef
-  comment: CommentMarkDef
 }
 
 """
@@ -1364,6 +1980,60 @@ enum BlockType {
   block
   image
   break
+  callout
+  quote
+  steps
+  accordion
+  spoiler
+  countdown
+  checklist
+  gallery
+  voiceNote
+}
+
+enum ImageSize {
+  xs
+  s
+  m
+  l
+  xl
+}
+
+enum ImageAlign {
+  left
+  center
+  right
+}
+
+enum GalleryLayout {
+  grid
+  carousel
+}
+
+enum BreakStyle {
+  line
+  dashed
+  dots
+  ornament
+}
+
+enum CalloutTone {
+  info
+  success
+  warning
+  error
+}
+
+enum CalloutIcon {
+  info
+  check
+  alert
+  error
+  lightbulb
+  star
+  heart
+  megaphone
+  none
 }
 
 enum StyleType {
@@ -1403,13 +2073,113 @@ type ImageBlock implements Block {
   src: String!
   alt: String
   caption: String
-  width: String # tailwind css classes only, sanitized
-  height: String # tailwind css classes only, sanitized
+  width: Int
+  height: Int
+  size: ImageSize
+  align: ImageAlign
 }
 
 type BreakBlock implements Block {
   _type: BlockType!
   _key: ID!
+  style: BreakStyle
+}
+
+type CalloutBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  tone: CalloutTone
+  icon: CalloutIcon
+  title: String
+  description: String!
+}
+
+type QuoteBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  text: String!
+  name: String
+  role: String
+}
+
+type StepItem {
+  _key: ID!
+  title: String!
+  text: String
+}
+
+type StepsBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [StepItem!]!
+}
+
+type AccordionItem {
+  _key: ID!
+  title: String!
+  text: String!
+}
+
+type AccordionBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [AccordionItem!]!
+  allowMultiple: Boolean
+  defaultFirstOpen: Boolean
+}
+
+type SpoilerBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  label: String
+  content: [Blocks!]!
+}
+
+type CountdownBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  endsAt: DateTime!
+  label: String
+  endedText: String
+}
+
+type ChecklistItem {
+  _key: ID!
+  text: String!
+  checked: Boolean!
+}
+
+type ChecklistBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [ChecklistItem!]!
+}
+
+type GalleryItem {
+  _key: ID!
+  src: String!
+  alt: String
+  caption: String
+  width: Int
+  height: Int
+}
+
+type GalleryBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  layout: GalleryLayout
+  items: [GalleryItem!]!
+}
+
+type VoiceNoteBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  src: String!
+  title: String
+  duration: Int
 }
 
 """
@@ -1419,6 +2189,15 @@ type Blocks {
   block: BlockBlock
   image: ImageBlock
   break: BreakBlock
+  callout: CalloutBlock
+  quote: QuoteBlock
+  steps: StepsBlock
+  accordion: AccordionBlock
+  spoiler: SpoilerBlock
+  countdown: CountdownBlock
+  checklist: ChecklistBlock
+  gallery: GalleryBlock
+  voiceNote: VoiceNoteBlock
 }
 
 """
@@ -1446,18 +2225,11 @@ input LinkMarkDefInput {
   title: String
 }
 
-input CommentMarkDefInput {
-  _key: ID!
-  _type: MarkDefType!
-  text: String!
-}
-
 """
 Oneof input for markDefs
 """
 input MarkDefInput @oneof {
   link: LinkMarkDefInput
-  comment: CommentMarkDefInput
 }
 
 """
@@ -1479,13 +2251,113 @@ input ImageBlockInput {
   src: String!
   alt: String
   caption: String
-  width: String
-  height: String
+  width: Int
+  height: Int
+  size: ImageSize
+  align: ImageAlign
 }
 
 input BreakBlockInput {
   _type: BlockType!
   _key: ID!
+  style: BreakStyle
+}
+
+input CalloutBlockInput {
+  _type: BlockType!
+  _key: ID!
+  tone: CalloutTone
+  icon: CalloutIcon
+  title: String
+  description: String!
+}
+
+input QuoteBlockInput {
+  _type: BlockType!
+  _key: ID!
+  text: String!
+  name: String
+  role: String
+}
+
+input StepItemInput {
+  _key: ID!
+  title: String!
+  text: String
+}
+
+input StepsBlockInput {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [StepItemInput!]!
+}
+
+input AccordionItemInput {
+  _key: ID!
+  title: String!
+  text: String!
+}
+
+input AccordionBlockInput {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [AccordionItemInput!]!
+  allowMultiple: Boolean
+  defaultFirstOpen: Boolean
+}
+
+input SpoilerBlockInput {
+  _type: BlockType!
+  _key: ID!
+  label: String
+  content: [BlockInput!]!
+}
+
+input CountdownBlockInput {
+  _type: BlockType!
+  _key: ID!
+  endsAt: DateTime!
+  label: String
+  endedText: String
+}
+
+input ChecklistItemInput {
+  _key: ID!
+  text: String!
+  checked: Boolean
+}
+
+input ChecklistBlockInput {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [ChecklistItemInput!]!
+}
+
+input GalleryItemInput {
+  _key: ID!
+  src: String!
+  alt: String
+  caption: String
+  width: Int
+  height: Int
+}
+
+input GalleryBlockInput {
+  _type: BlockType!
+  _key: ID!
+  layout: GalleryLayout
+  items: [GalleryItemInput!]!
+}
+
+input VoiceNoteBlockInput {
+  _type: BlockType!
+  _key: ID!
+  src: String!
+  title: String
+  duration: Int
 }
 
 """
@@ -1495,6 +2367,15 @@ input BlockInput @oneof {
   block: BlockBlockInput
   image: ImageBlockInput
   break: BreakBlockInput
+  callout: CalloutBlockInput
+  quote: QuoteBlockInput
+  steps: StepsBlockInput
+  accordion: AccordionBlockInput
+  spoiler: SpoilerBlockInput
+  countdown: CountdownBlockInput
+  checklist: ChecklistBlockInput
+  gallery: GalleryBlockInput
+  voiceNote: VoiceNoteBlockInput
 }
 
 input PortableTextInput {
@@ -1581,6 +2462,7 @@ type Persona {
   username: String!
   fullName: String!
   profileImageUrl: String
+  anonymous: Boolean!
 }
 
 # Generic object for posts, comments, and replies
@@ -1718,6 +2600,14 @@ type Channel {
   isMember: Boolean!
   isFollower: Boolean!
   canModerate: Boolean!
+  community: CommunityRef
+  minAge: Int!
+}
+
+type CommunityRef {
+  id: Int64!
+  name: String!
+  slug: String!
 }
 
 # Queries

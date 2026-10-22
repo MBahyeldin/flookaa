@@ -1,0 +1,10 @@
+query GetChannelCommunity($id: Int64!) {
+  getChannel(id: $id) {
+    id
+    community {
+      id
+      name
+      slug
+    }
+  }
+}

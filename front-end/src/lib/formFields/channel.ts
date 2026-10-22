@@ -1,5 +1,7 @@
 import { FormField } from "@/models/Forms/FormField";
 import type { FormGroup } from "@/types/FormFields";
+import { MAX_CHANNEL_INTERESTS } from "@/types/interest";
+import { minAgeField } from "@/lib/minAge";
 
 //
 // type CreateChannelRequest struct {
@@ -42,6 +44,7 @@ const channelFormFields = [
     isRequired: true,
     width: "1/2",
   }),
+  minAgeField(),
   new FormField({
     id: "thumbnail",
     label: "Thumbnail",
@@ -61,6 +64,18 @@ const channelFormFields = [
     isRequired: true,
     width: "1/2",
     height: "h-32",
+  }),
+  new FormField({
+    id: "interest_ids",
+    label: "Interests",
+    type: "text",
+    interfaceType: "interests",
+    isRequired: true,
+    width: "full",
+    validate: (value) => {
+      const n = Array.isArray(value) ? value.length : 0;
+      return n < 1 || n > MAX_CHANNEL_INTERESTS ? `Pick 1 to ${MAX_CHANNEL_INTERESTS} interests.` : null;
+    },
   }),
 ];
 

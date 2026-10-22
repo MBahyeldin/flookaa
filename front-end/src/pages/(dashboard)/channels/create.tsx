@@ -1,5 +1,10 @@
 import { Form } from "@/models/Forms/Form";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Boxes } from "lucide-react";
+import { toast } from "sonner";
+import { getCommunity } from "@/services/communities";
+import type { Community } from "@/types/community";
 import { useAuth } from "@/Auth.context";
 import FormComponent from "@/components/form";
 import { Button } from "@/components/ui/button";
@@ -15,6 +20,25 @@ import {
 export default function CreateChannelPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const communityId = Number(searchParams.get("community")) || 0;
+  const [community, setCommunity] = useState<Community | null>(null);
+
+  useEffect(() => {
+    if (!communityId) return;
+    let alive = true;
+    getCommunity(communityId).then((r) => {
+      if (alive && r.ok) setCommunity(r.data.community);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [communityId]);
+
+  const initialValues = useMemo(
+    () => (community ? { community_id: community.id } : {}),
+    [community],
+  );
 
   if (!user) {
     navigate("/");
@@ -27,9 +51,11 @@ export default function CreateChannelPage() {
     result: unknown;
   }) => {
     if (status && status.success) {
-      navigate(
-        `/channels/${(status.result as { channel: { ID: string } })?.channel?.ID}`
-      );
+      const result = status.result as { channel: { ID: string }; community_status?: string };
+      if (result?.community_status === "pending" && community) {
+        toast.success(`Channel created. ${community.name}'s managers will review your request to add it.`);
+      }
+      navigate(`/channels/${result?.channel?.ID}`);
     }
   };
 
@@ -43,9 +69,23 @@ export default function CreateChannelPage() {
           <CardDescription className="mb-4">
             {Form.channel.description}
           </CardDescription>
+          {community && (
+            <p className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Boxes className="h-4 w-4 shrink-0" />
+              <span>
+                {community.can_manage ? "In " : "Will be suggested to "}
+                <Link to={`/communities/${community.slug}`} className="font-medium text-foreground hover:underline">
+                  {community.name}
+                </Link>
+                {!community.can_manage && "; its managers decide whether it joins"}
+              </span>
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           <FormComponent
+            key={community?.id ?? 0}
+            initialValues={initialValues}
             onStatusChange={onStatusChange}
             form={Form.channel}
             className="gap-4 max-w-4xl mx-auto grid grid-cols-12"

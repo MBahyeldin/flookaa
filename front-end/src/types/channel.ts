@@ -1,3 +1,6 @@
+import type { CommunityRef } from "./community";
+import type { Interest } from "./interest";
+
 type Channel = {
   id: string;
   name: string;
@@ -15,7 +18,13 @@ type Channel = {
   visibility: "public" | "private";
   members_count: number;
   followers_count: number;
+  interests: Interest[];
+  community: CommunityRef | null;
+  /** 13, 16, 18 or 21. */
+  min_age: number;
 };
+
+type ChannelInterests = { interests: Interest[]; can_edit: boolean };
 
 /** A pending request to join a private channel (moderators only). */
 type JoinRequest = {
@@ -24,6 +33,7 @@ type JoinRequest = {
   first_name: string;
   last_name: string;
   thumbnail: string;
+  anonymous: boolean;
   requested_at: string;
 };
 
@@ -34,9 +44,10 @@ type ChannelMember = {
   first_name: string;
   last_name: string;
   thumbnail: string;
+  anonymous: boolean;
   joined_at: string;
   is_owner: boolean;
   is_moderator: boolean;
 };
 
-export type { Channel, JoinRequest, ChannelMember };
+export type { Channel, ChannelInterests, JoinRequest, ChannelMember };

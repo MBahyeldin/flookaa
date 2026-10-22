@@ -5,9 +5,9 @@ import {
   Settings,
   UserPlus,
   HeartOff,
+  Boxes,
   // Bell,
   // BellOff,
-  User2,
 } from "lucide-react";
 import { ImageWithFallback } from "@/components/image-with-fallback";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,10 +23,13 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Post } from "@/components/post-card";
 import { Link, useParams } from "react-router-dom";
-import { useGetChannelQuery, useGetPostsLazyQuery } from "@/generated/graphql";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useGetChannelCommunityLazyQuery, useGetChannelQuery, useGetPostsLazyQuery } from "@/generated/graphql";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { PostCreator } from "@/components/post-creator";
-import { joinChannel, leaveChannel, setFollowing } from "@/services/channels";
+import { getChannelInterests, joinChannel, leaveChannel, setFollowing } from "@/services/channels";
+import InterestChips from "@/components/interests/InterestChips";
+import type { Interest } from "@/types/interest";
 import { toast } from "sonner";
 import { useWebsocketService } from "@/Websocket.context";
 import loadNewPosts from "./subscribe/loadNewPosts";
@@ -36,6 +39,7 @@ import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { isCurrentOwner, useAppStore } from "@/stores/AppStore";
 import { formatDateOnly } from "@/utils/formateDate";
 import ModerationSheet from "./ModerationSheet";
+import { AgeBadge } from "@/components/age-badge";
 import PostDialog from "./PostDialog";
 
 export default function ChannelPage() {
@@ -51,6 +55,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     data: channelData,
     loading: channelLoading,
     error: channelError,
+    refetch: refetchChannel,
   } = useGetChannelQuery({
     variables: { id: channelId },
   });
@@ -67,6 +72,12 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
 
   const [newPosts, setNewPosts] = useState<PostEventPayload[]>([]);
   const [isManaging, setIsManaging] = useState(false);
+  const [interests, setInterests] = useState<Interest[]>([]);
+  const [interestsVersion, setInterestsVersion] = useState(0);
+  // Set once the community changes live; not cached, so the posts query isn't touched.
+  const [communityOverride, setCommunityOverride] = useState<{ id: number; name: string; slug: string } | null | undefined>(undefined);
+  const [communityKey, setCommunityKey] = useState(0);
+  const [fetchCommunity] = useGetChannelCommunityLazyQuery({ fetchPolicy: "no-cache" });
   const [membersCount, setMembersCount] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
   const [isFollowPending, setIsFollowPending] = useState(false);
@@ -207,6 +218,28 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   }, [newlyAddedIds]);
 
   useEffect(() => {
+    if (!channelId) return;
+    let alive = true;
+    getChannelInterests(channelId).then((r) => {
+      if (alive && r.ok) setInterests(r.data.interests);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [channelId, interestsVersion]);
+
+  useEffect(() => {
+    if (!channelId || communityKey === 0) return;
+    let alive = true;
+    fetchCommunity({ variables: { id: channelId } }).then((r) => {
+      if (alive && r.data?.getChannel) setCommunityOverride(r.data.getChannel.community ?? null);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [channelId, communityKey, fetchCommunity]);
+
+  useEffect(() => {
     if (!websocketService || !channelId) return;
 
     /*
@@ -248,6 +281,10 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
       handleChannelEvents({
         setNewPosts,
         onMembershipEvent,
+        onInterestsChanged: () => setInterestsVersion((v) => v + 1),
+        onCommunityChanged: () => setCommunityKey((k) => k + 1),
+        // An age limit the viewer no longer meets turns the page into "not found".
+        onInfoChanged: () => refetchChannel(),
       })
     );
 
@@ -255,7 +292,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     return () => {
       unsubscribe?.();
     };
-  }, [websocketService, channelId]);
+  }, [websocketService, channelId, refetchChannel]);
 
   useEffect(() => {
     addPosts(channelData?.getChannel?.posts || []);
@@ -292,7 +329,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   }
 
   if (channelError || !channelData?.getChannel) {
-    const isMissing = !channelError;
+    const isMissing = !channelError || channelError.message.includes("channel not found");
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="max-w-md text-center space-y-4" role="alert">
@@ -312,6 +349,8 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
       </div>
     );
   }
+
+  const community = communityOverride !== undefined ? communityOverride : channelData.getChannel.community;
 
   return (
     <div className="min-h-screen">
@@ -361,7 +400,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
             {/* Navy scrim rather than flat black, so the banner sits in the
                 same colour family as the rest of the theme. It also keeps the
                 thumbnail readable against a busy photo. */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[oklch(0.22_0.05_258)]/80 via-[oklch(0.22_0.05_258)]/25 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-scrim/80 via-scrim/25 to-transparent" />
           </div>
 
           <CardContent className="p-4 sm:p-6">
@@ -380,9 +419,19 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                     <h1 className="text-2xl font-bold text-card-foreground">
                       {channelData.getChannel.name}
                     </h1>
+                    <AgeBadge minAge={channelData.getChannel.minAge} />
                     {/* The literal "category" badge was removed: Channel has no
                         category field in the schema, so it was always a stub. */}
                   </div>
+                  {community && (
+                    <Link
+                      to={`/communities/${community.slug}`}
+                      className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
+                    >
+                      <Boxes className="h-4 w-4" />
+                      Part of {community.name}
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
@@ -392,6 +441,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
               <p className="text-muted-foreground leading-relaxed">
                 {channelData.getChannel.description}
               </p>
+              <InterestChips interests={interests} />
 
               {/* Channel Stats — flex-wrap so these don't overflow on mobile */}
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
@@ -431,9 +481,9 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                     <AvatarImage
                       src={channelData.getChannel.owner.profileImageUrl || ""}
                     />
-                    <AvatarFallback>
-                      <User2 className="h-3 w-3" />
-                    </AvatarFallback>
+                    <GeneratedAvatarFallback
+                      name={channelData.getChannel.owner.fullName}
+                    />
                   </Avatar>
                   <span className="truncate text-foreground">
                     {channelData.getChannel.owner.username}
@@ -513,6 +563,10 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
             channelId={channelId}
             open={isManaging}
             onOpenChange={setIsManaging}
+            onInterestsSaved={setInterests}
+            communityKey={communityKey}
+            minAge={channelData.getChannel.minAge}
+            onMinAgeSaved={() => refetchChannel()}
           />
         )}
 

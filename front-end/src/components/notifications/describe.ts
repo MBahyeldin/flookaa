@@ -28,6 +28,14 @@ function channelName(n: Notification): string {
   return n.channel?.name ?? "a channel";
 }
 
+function communityName(n: Notification): string {
+  return n.community?.name ?? "a community";
+}
+
+function communityHref(n: Notification, query = ""): string {
+  return n.community ? `/communities/${n.community.slug}${query}` : "/communities";
+}
+
 /**
  * Where a content notification leads: the post itself when data.post_id is
  * known (rows written before it existed lack it), else its channel.
@@ -72,6 +80,68 @@ export function describeNotification(n: Notification): NotificationDescription |
         actor: null,
         message: `You were removed from ${channelName(n)}`,
         href: `/channels/${n.subject.id}`,
+      };
+    case "new_follower":
+      return { actor: actors(n), message: "followed you", href: `/personas/${n.subject.id}` };
+    case "follow_request":
+      return {
+        actor: actors(n),
+        message: "asked to follow you",
+        href: `/personas/${n.subject.id}?followers=requests`,
+      };
+    case "follow_request_approved":
+      return {
+        actor: actorName(n) ?? "Someone",
+        message: "accepted your follow request",
+        href: `/personas/${n.subject.id}`,
+      };
+    case "follow_invitation":
+      return {
+        actor: actorName(n) ?? "Someone",
+        message: "invited you to follow them",
+        href: `/personas/${n.subject.id}`,
+      };
+    case "follow_invitation_accepted":
+      return {
+        actor: actorName(n) ?? "Someone",
+        message: "accepted your invitation and follows you",
+        href: `/personas/${n.subject.id}`,
+      };
+    case "channel_request":
+      return {
+        actor: actors(n),
+        message: `suggested ${n.count === 1 ? "a channel" : "channels"} for ${communityName(n)}`,
+        href: communityHref(n, "?members=channels"),
+      };
+    case "channel_request_approved":
+      return {
+        actor: null,
+        message: `${channelName(n)} was added to ${communityName(n)}`,
+        href: communityHref(n),
+      };
+    case "channel_request_rejected":
+      return {
+        actor: null,
+        message: `${communityName(n)} declined ${channelName(n)}`,
+        href: n.channel ? `/channels/${n.channel.id}` : communityHref(n),
+      };
+    case "community_join_request":
+      return {
+        actor: actors(n),
+        message: `asked to join ${communityName(n)}`,
+        href: communityHref(n, "?members=requests"),
+      };
+    case "community_request_approved":
+      return {
+        actor: null,
+        message: `Your request to join ${communityName(n)} was approved`,
+        href: communityHref(n),
+      };
+    case "community_request_rejected":
+      return {
+        actor: null,
+        message: `Your request to join ${communityName(n)} was declined`,
+        href: communityHref(n),
       };
     default:
       return null;

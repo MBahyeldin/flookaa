@@ -1,19 +1,24 @@
-import { useState } from "react";
-import { Users, UserPlus, Heart, HeartOff, Lock, Clock } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Users, UserPlus, Heart, HeartOff, Lock, Clock, Boxes } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ImageWithFallback } from "@/components/image-with-fallback";
 import { Badge } from "@/components/ui/badge";
+import { AgeBadge } from "@/components/age-badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import type { Channel } from "@/types/channel";
 import { joinChannel, leaveChannel, setFollowing as saveFollowing } from "@/services/channels";
 import { toast } from "sonner";
+import InterestChips from "@/components/interests/InterestChips";
+import { cn } from "@/lib/utils";
 
 interface ChannelCardProps {
   channel: Channel;
+  /** On the community's own page the link would point back at it. */
+  hideCommunity?: boolean;
 }
 
-export function ChannelCard({ channel }: ChannelCardProps) {
+export function ChannelCard({ channel, hideCommunity = false }: ChannelCardProps) {
   const [joined, setJoined] = useState(
     channel.is_member || channel.is_owner || false
   );
@@ -71,56 +76,13 @@ export function ChannelCard({ channel }: ChannelCardProps) {
   };
 
   return (
-    <Card className="border-0 shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden pt-0">
-      <div className="relative h-32 overflow-hidden">
-        <Link to={`/channels/${channel.id}`}>
-          <ImageWithFallback
-            src={channel.thumbnail || "/placeholder.svg"}
-            alt={`${channel.name} channel`}
-            className="w-full h-full object-cover transform hover:scale-105 transition-transform"
-          />
-        </Link>
-        {channel.name && (
-          <Badge
-            variant="secondary"
-            className="absolute top-3 left-3 bg-black/50 text-white border-0"
-          >
-            {channel.name}
-          </Badge>
-        )}
-        {isPrivate && (
-          <Badge
-            variant="secondary"
-            className="absolute top-3 right-3 bg-black/50 text-white border-0"
-          >
-            <Lock className="h-3 w-3 mr-1" />
-            Private
-          </Badge>
-        )}
-      </div>
-
-      <CardContent className="p-6">
-        <div className="space-y-4">
-          <div>
-            <h3 className="font-semibold mb-2 line-clamp-1">{channel.name}</h3>
-            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-              {channel.description}
-            </p>
-          </div>
-
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-1">
-                <Users className="h-4 w-4" />
-                <span>{localMemberCount.toLocaleString()}</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Heart className="h-4 w-4" />
-                <span>{localFollowerCount.toLocaleString()}</span>
-              </div>
-            </div>
-          </div>
-
+    <ChannelCardBody
+      channel={channel}
+      membersCount={localMemberCount}
+      followersCount={localFollowerCount}
+      hideCommunity={hideCommunity}
+      className="hover:shadow-md transition-shadow cursor-pointer"
+    >
           <div className="flex items-center space-x-2">
             <Button
               variant={joined || pending ? "secondary" : "default"}
@@ -157,6 +119,103 @@ export function ChannelCard({ channel }: ChannelCardProps) {
               )}
             </Button>
           </div>
+    </ChannelCardBody>
+  );
+}
+
+interface ChannelCardBodyProps {
+  channel: Channel;
+  membersCount: number;
+  followersCount: number;
+  hideCommunity?: boolean;
+  /** Off where the card mustn't navigate away (onboarding). */
+  linked?: boolean;
+  className?: string;
+  children?: ReactNode;
+}
+
+export function ChannelCardBody({
+  channel,
+  membersCount,
+  followersCount,
+  hideCommunity = false,
+  linked = true,
+  className,
+  children,
+}: ChannelCardBodyProps) {
+  const isPrivate = channel.visibility === "private";
+  const image = (
+    <ImageWithFallback
+      src={channel.thumbnail || "/placeholder.svg"}
+      alt={`${channel.name} channel`}
+      className={cn("w-full h-full object-cover", linked && "transform hover:scale-105 transition-transform")}
+    />
+  );
+  const community = hideCommunity ? null : channel.community;
+  const communityLabel = community && (
+    <>
+      <Boxes className="h-3 w-3" />
+      Part of {community.name}
+    </>
+  );
+
+  return (
+    <Card className={cn("border-0 shadow-sm overflow-hidden pt-0", className)}>
+      <div className="relative h-32 overflow-hidden">
+        {linked ? <Link to={`/channels/${channel.id}`}>{image}</Link> : image}
+        {channel.name && (
+          <Badge
+            variant="secondary"
+            className="absolute top-3 left-3 bg-black/50 text-white border-0"
+          >
+            {channel.name}
+          </Badge>
+        )}
+        <div className="absolute top-3 right-3 flex gap-1">
+          <AgeBadge minAge={channel.min_age} className="bg-black/50 text-white border-0" />
+          {isPrivate && (
+            <Badge variant="secondary" className="bg-black/50 text-white border-0">
+              <Lock className="h-3 w-3 mr-1" />
+              Private
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      <CardContent className="p-6">
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-semibold mb-2 line-clamp-1">{channel.name}</h3>
+            {community && (linked ? (
+              <Link
+                to={`/communities/${community.slug}`}
+                className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+              >
+                {communityLabel}
+              </Link>
+            ) : (
+              <p className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground">{communityLabel}</p>
+            ))}
+            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+              {channel.description}
+            </p>
+            <InterestChips interests={channel.interests ?? []} limit={3} className="mt-3" />
+          </div>
+
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-1">
+                <Users className="h-4 w-4" />
+                <span>{membersCount.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Heart className="h-4 w-4" />
+                <span>{followersCount.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          {children}
         </div>
       </CardContent>
     </Card>

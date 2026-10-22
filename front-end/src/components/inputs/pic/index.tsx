@@ -13,12 +13,16 @@ export default function PicInput({
   initValue,
   touched,
   setFieldValue,
+  values,
 }: FormFieldProps) {
   const { url, handleInputChange, isUploading } = useInputImage({
     id: field.id,
     initValue: initValue || "",
     setFieldValue,
+    dimensions: field.dimensions,
   });
+  const width = field.dimensions && values?.[field.dimensions.width];
+  const height = field.dimensions && values?.[field.dimensions.height];
   const thumbnailInputField = useRef<HTMLInputElement | null>(null);
 
   return (
@@ -50,7 +54,7 @@ export default function PicInput({
               <img
                 src={url}
                 alt="Thumbnail preview"
-                className="w-full h-auto rounded"
+                className="w-full h-auto max-h-48 object-contain rounded"
               />
             </CardContent>
           </Card>
@@ -75,6 +79,14 @@ export default function PicInput({
           <p className="text-foreground">Drag & drop an image or click to select</p>
         )}
       </div>
+
+      {field.dimensions && url && !isUploading && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          {width && height
+            ? `${width} × ${height} px`
+            : "Dimensions unknown: pick the file again to measure it"}
+        </p>
+      )}
 
       {error && touched && <p className="text-sm text-destructive mt-1">{error}</p>}
     </div>

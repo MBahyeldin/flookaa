@@ -1,4 +1,5 @@
 import zod from "zod";
+import type { OnboardingState } from "@/types/onboarding";
 
 export type Info = {
   id: string;
@@ -8,6 +9,8 @@ export type Info = {
   roles: string[];
   permissions: string[];
   thumbnail?: string;
+  is_admin?: boolean;
+  onboarding: OnboardingState;
 };
 
 export type AuthContextType = {

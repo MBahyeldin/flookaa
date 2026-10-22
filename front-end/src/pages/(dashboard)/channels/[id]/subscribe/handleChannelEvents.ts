@@ -16,6 +16,9 @@ type DeleteEventPayload = { object_id: string };
 export default function handleChannelEvents({
   setNewPosts,
   onMembershipEvent,
+  onInterestsChanged,
+  onCommunityChanged,
+  onInfoChanged,
 }: {
   setNewPosts: React.Dispatch<React.SetStateAction<PostEventPayload[]>>;
   /** member, follower and join_request events; the page owns that state. */
@@ -23,6 +26,9 @@ export default function handleChannelEvents({
     event: WsEventMessage["event"],
     payload: ChannelEventPayload
   ) => void;
+  onInterestsChanged: () => void;
+  onCommunityChanged: () => void;
+  onInfoChanged: () => void;
 }) {
   return (payload: WsEventMessage) => {
     if (!payload) return;
@@ -67,6 +73,15 @@ export default function handleChannelEvents({
           parsedPayload.event,
           parsedPayload.payload as ChannelEventPayload
         );
+        break;
+      case "interests":
+        onInterestsChanged();
+        break;
+      case "community":
+        onCommunityChanged();
+        break;
+      case "info":
+        onInfoChanged();
         break;
       default:
         console.warn(`Unhandled event type: ${payload.event.name}`);

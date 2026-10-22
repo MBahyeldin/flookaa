@@ -2,10 +2,14 @@ package v1
 
 import (
 	"app/internal/db/postgres/handlers/channels"
+	"app/internal/db/postgres/handlers/communities"
+	"app/internal/db/postgres/handlers/followers"
 	"app/internal/db/postgres/handlers/geo"
+	"app/internal/db/postgres/handlers/interests"
 	"app/internal/db/postgres/handlers/notifications"
 	"app/internal/db/postgres/handlers/users"
 	oauthproviders "app/internal/oauthproviders"
+	"context"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,9 +18,13 @@ import (
 type Handlers struct {
 	Users         *users.Handler
 	Channels      *channels.Handler
+	Communities   *communities.Handler
+	Followers     *followers.Handler
 	Geo           *geo.Handler
 	Notifications *notifications.Handler
 	Google        *oauthproviders.Google
+	Interests     *interests.Handler
+	IsAdmin       func(ctx context.Context, userID int64) (bool, error)
 }
 
 func AddV1Group(r *gin.RouterGroup, h Handlers) *gin.RouterGroup {
@@ -26,7 +34,9 @@ func AddV1Group(r *gin.RouterGroup, h Handlers) *gin.RouterGroup {
 	AddHealthRoutes(v1Group)
 	AddGeoRoutes(v1Group, h.Geo)
 	AddChannelsGroups(v1Group, h.Channels)
-	AddPersonaRoutes(v1Group, h.Users)
+	AddCommunitiesRoutes(v1Group, h.Communities)
+	AddPersonaRoutes(v1Group, h.Users, h.Followers, h.Interests, h.Communities, h.Channels)
 	AddNotificationsRoutes(v1Group, h.Notifications)
+	AddInterestsRoutes(v1Group, h.Interests, h.IsAdmin)
 	return v1Group
 }

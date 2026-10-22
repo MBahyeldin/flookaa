@@ -134,6 +134,24 @@ func (w *Worker) removeIfEmpty(ctx context.Context, kind db.NotificationKindEnum
 	return nil
 }
 
+// removeOne soft-deletes one recipient's (kind, subject) notification, e.g. an
+// invitation that was answered. A replayed removal can't undo newer activity.
+func (w *Worker) removeOne(ctx context.Context, recipientID int64, kind db.NotificationKindEnum, subjectID string, sourceActorID int64, eventAt time.Time) error {
+	gk := notifications.GroupKey(kind, subjectID)
+	removed, err := w.q.SoftDeleteNotificationForRecipient(ctx, db.SoftDeleteNotificationForRecipientParams{
+		RecipientID: recipientID,
+		GroupKey:    gk,
+		EventAt:     eventAt,
+	})
+	if err != nil {
+		return fmt.Errorf("remove %s for persona %d: %w", gk, recipientID, err)
+	}
+	for _, id := range removed {
+		w.publish(ctx, db.EventActionEnumDelete, id, recipientID, sourceActorID)
+	}
+	return nil
+}
+
 // removeSubject soft-deletes every notification about a subject that went
 // away, e.g. a deleted post or comment.
 func (w *Worker) removeSubject(ctx context.Context, subjectType db.NotificationSubjectEnum, subjectID string, sourceActorID int64, eventAt time.Time) error {

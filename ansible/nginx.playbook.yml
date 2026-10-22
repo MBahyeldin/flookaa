@@ -17,6 +17,14 @@
         owner: "www-data"
         group: "www-data"
     
+    - name: Make sure the s3 files cache directory exists
+      ansible.builtin.file:
+        path: /var/cache/nginx/s3
+        state: directory
+        mode: "0700"
+        owner: "www-data"
+        group: "www-data"
+
     - name: Check if OpenResty is already installed
       ansible.builtin.stat:
         path: /opt/build/openresty-{{ openresty_version }}

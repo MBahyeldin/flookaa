@@ -15,12 +15,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useUserProfileStore } from "@/stores/UserProfileStore";
-import { MoreHorizontal, Trash2, Plus } from "lucide-react";
+import { MoreHorizontal, Pencil, Plus, UserRound } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { personaPath } from "@/components/persona-link";
 import CreatePersona from "@/pages/select-persona/CreatePersona";
 import { DialogTrigger } from "@/components/ui/dialog";
+import { DEFAULT_PALETTE, PALETTES, isPaletteId } from "@/themes/palettes";
+
+const settingsPath = (id: string | number) => `/persona-manager/${id}`;
 
 export default function PersonaManagerPage() {
   const { personas } = useUserProfileStore();
+  const navigate = useNavigate();
 
   return (
     <div className="mx-auto max-w-5xl py-8 px-4">
@@ -43,10 +49,9 @@ export default function PersonaManagerPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Avatar</TableHead>
               <TableHead>Profile Name</TableHead>
-              <TableHead>Slug</TableHead>
               <TableHead>Visibility</TableHead>
+              <TableHead>Theme</TableHead>
               <TableHead className="w-[60px]" />
             </TableRow>
           </TableHeader>
@@ -54,41 +59,49 @@ export default function PersonaManagerPage() {
           <TableBody>
             {personas.map((persona) => (
               <TableRow
-                key={persona.slug}
-                className="group hover:bg-muted/50 transition-colors"
+                key={persona.id}
+                onClick={() => navigate(settingsPath(persona.id))}
+                className="group cursor-pointer hover:bg-muted/50 transition-colors"
               >
-                <TableCell className="font-medium">
-                  {persona.name}
-                </TableCell>
                 <TableCell>
-                  {persona.thumbnail ? (
-                    <img
-                      src={persona.thumbnail}
-                      alt={persona.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-foreground font-bold">
-                      {persona.name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {persona.thumbnail ? (
+                      <img
+                        src={persona.thumbnail}
+                        alt=""
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-foreground font-bold">
+                        {persona.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <Link
+                      to={settingsPath(persona.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-medium hover:underline"
+                    >
+                      {persona.name}
+                    </Link>
+                  </div>
                 </TableCell>
 
                 <TableCell>
-                  {persona.first_name} {persona.last_name}
-                </TableCell>
-
-                <TableCell className="text-muted-foreground">
-                  @{persona.slug}
+                  <div>{persona.first_name} {persona.last_name}</div>
+                  <div className="text-sm text-muted-foreground">@{persona.slug}</div>
                 </TableCell>
 
                 <TableCell className="capitalize">
-                  {persona.privacy}
+                  {persona.privacy.replace("_", " ")}
+                </TableCell>
+
+                <TableCell>
+                  <ThemeSwatch theme={persona.theme} />
                 </TableCell>
 
                 {/* Hover Actions */}
-                <TableCell className="text-right">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <div className="md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -100,20 +113,17 @@ export default function PersonaManagerPage() {
                       </DropdownMenuTrigger>
 
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => {
-                            if (
-                              confirm(
-                                "Delete this persona? This action cannot be undone."
-                              )
-                            ) {
-                              // deletePersona(persona.slug);
-                            }
-                          }}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                        <DropdownMenuItem asChild>
+                          <Link to={settingsPath(persona.id)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to={personaPath(persona.id)}>
+                            <UserRound className="mr-2 h-4 w-4" />
+                            View profile
+                          </Link>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -125,7 +135,7 @@ export default function PersonaManagerPage() {
             {personas.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="py-8 text-center text-muted-foreground"
                 >
                   No personas created yet
@@ -138,5 +148,16 @@ export default function PersonaManagerPage() {
 
       <CreatePersona />
     </div>
+  );
+}
+
+function ThemeSwatch({ theme }: { theme: string }) {
+  const id = isPaletteId(theme) ? theme : DEFAULT_PALETTE;
+  const label = PALETTES.find((p) => p.id === id)?.label;
+  return (
+    <span data-theme={id} className="inline-flex items-center gap-2 bg-transparent text-sm">
+      <span className="size-4 rounded-full border border-border bg-primary" />
+      <span className="text-foreground">{label}</span>
+    </span>
   );
 }

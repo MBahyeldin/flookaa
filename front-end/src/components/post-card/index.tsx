@@ -1,5 +1,5 @@
  
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Heart,
   MessageCircle,
@@ -9,7 +9,6 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import {
@@ -21,16 +20,13 @@ import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { useCreateLikeMutation, useDeletePostMutation, type Post } from "@/generated/graphql";
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import { toast } from "sonner";
-import { PortableText as PortableTextReact } from "@portabletext/react";
-import deNormalizeBlocks from "@/utils/deNormalizeBlocks";
-import { useBlockObjectsProvider } from "@/BlockObjectsProvider.context";
 import CommentSection from "../comment-section";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAppStore } from "@/stores/AppStore";
 import useAudioContext from "@/hooks/useAudioContext";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
-import formatDate, { formatRelativeDate } from "@/utils/formateDate";
-import displayBlockComponents from "../portable-text/displayBlocks";
+import PostContent from "../portable-text/PostContent";
+import { PostHeader } from "./PostHeader";
 
 
 
@@ -47,7 +43,6 @@ export function Post({
 }) {
   const [showComments, setShowComments] = useState(initialShowComments);
   const { persona } = useUserProfileStore();
-  const { blockObjectsProvider } = useBlockObjectsProvider();
   const owner = useAppStore((state) => state.owner);
   const [createLike] = useCreateLikeMutation();
   const [deletePost, { loading: isDeleting }] = useDeletePostMutation();
@@ -143,12 +138,6 @@ export function Post({
   }, [localLikes, post.meta?.likesCount]);
 
 
-  const types = useMemo(() => {
-    return blockObjectsProvider?.getBlockTypes() ?? [];
-  }, [blockObjectsProvider]);
-  const blockObjects = useMemo(() => {
-    return blockObjectsProvider?.getBlockObjects() ?? [];
-  }, [blockObjectsProvider]);
 
 
 
@@ -163,72 +152,36 @@ export function Post({
       }`}
     >
       <CardContent className="p-4 sm:p-6">
-        {/* Post Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={post.author?.profileImageUrl || ""} />
-              <AvatarFallback>
-                {post.author?.fullName.slice(0, 2)}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="flex flex-wrap items-center gap-x-2">                <h4 className="text-base font-medium">{post.author?.fullName}</h4>
-                <span className="text-sm text-muted-foreground">
-                  @{post.author?.username}
-                </span>
-              </div>
-              {post.createdAt && (
-                <p className="text-sm text-muted-foreground">
-                  <time
-                    dateTime={post.createdAt}
-                    title={formatDate(post.createdAt)}
+        <PostHeader
+          authorId={post.authorId}
+          author={post.author}
+          createdAt={post.createdAt}
+          actions={
+            canDelete && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" aria-label="Post options">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                {/* Edit was listed here but never wired up; it returns with post editing. */}
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    disabled={isDeleting}
+                    onClick={handleDelete}
                   >
-                    {formatRelativeDate(post.createdAt)}
-                  </time>
-                </p>
-              )}
-            </div>
-          </div>
-
-          {canDelete && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" aria-label="Post options">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              {/* Edit was listed here but never wired up; it returns with post editing. */}
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  disabled={isDeleting}
-                  onClick={handleDelete}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+          }
+        />
 
         {/* Post Content */}
-        <div className="space-y-4">
-          <PortableTextReact
-            value={deNormalizeBlocks(
-              JSON.parse(post.rawContent || "[]").blocks || [],
-              types
-            )}
-            components={{
-              ...displayBlockComponents,
-              types: blockObjects.reduce((acc, blockObject) => {
-                acc[blockObject.name] = blockObject.renderBlock;
-                return acc;
-              }, {} as any),
-            }}
-          />
-        </div>
+        <PostContent rawContent={post.rawContent} />
 
         {/* Post Actions */}
         <div className="flex items-center justify-between pt-4 border-t mt-4">

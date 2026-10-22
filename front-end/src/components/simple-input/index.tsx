@@ -9,6 +9,7 @@ import uploadAudio from "@/services/uploadAudio";
 import uploadFile from "@/services/uploadFile";
 import type { SimpleInput } from "@/generated/graphql";
 import { toast } from "sonner";
+import { audioRecordingFormat } from "@/lib/audioRecording";
 
 /** Voice notes are capped so a comment can't become an unbounded upload. */
 const MAX_RECORDING_SECONDS = 60;
@@ -43,63 +44,7 @@ export default function SimpleInputComponent({ onSend, avatar }: {
     // tick would both pass a state-only check.
     const isSendingRef = useRef(false);
 
-    /*
-     * Codec + capability detection.
-     *
-     * Every candidate here is one the upload endpoint accepts — sending a type
-     * outside its allowlist gets a 400 back. Android Chrome reports support for
-     * webm/opus, but not every build agrees on the exact string, so the list is
-     * ordered by preference and falls through.
-     *
-     * This used to `throw` inside useMemo, which crashes the render and takes
-     * the whole comment box down rather than just disabling the mic.
-     */
-    const { mimeType, fileExtension, unsupportedReason } = useMemo(() => {
-        // getUserMedia and MediaRecorder are gated on a secure context. Over
-        // plain http on a LAN address — a phone pointed at a dev machine —
-        // navigator.mediaDevices is undefined entirely. localhost is exempt.
-        if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-            return {
-                mimeType: "",
-                fileExtension: "webm",
-                unsupportedReason: window.isSecureContext
-                    ? "This browser can’t access the microphone."
-                    : "Voice notes need a secure (HTTPS) connection.",
-            };
-        }
-
-        if (typeof MediaRecorder === "undefined") {
-            return {
-                mimeType: "",
-                fileExtension: "webm",
-                unsupportedReason: "This browser can’t record audio.",
-            };
-        }
-
-        const candidates: { type: string; ext: string }[] = [
-            { type: "audio/webm;codecs=opus", ext: "webm" },
-            { type: "audio/ogg;codecs=opus", ext: "ogg" },
-            { type: "audio/mp4", ext: "m4a" },
-        ];
-
-        const supported = candidates.find((candidate) =>
-            MediaRecorder.isTypeSupported?.(candidate.type)
-        );
-
-        if (!supported) {
-            return {
-                mimeType: "",
-                fileExtension: "webm",
-                unsupportedReason: "This browser doesn’t support any audio format we can upload.",
-            };
-        }
-
-        return {
-            mimeType: supported.type,
-            fileExtension: supported.ext,
-            unsupportedReason: "",
-        };
-    }, []);
+    const { mimeType, fileExtension, unsupportedReason } = useMemo(audioRecordingFormat, []);
 
     const canRecord = !unsupportedReason;
 

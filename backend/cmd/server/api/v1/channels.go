@@ -12,10 +12,16 @@ func AddChannelsGroups(r *gin.RouterGroup, channels *channels.Handler) {
 	{
 		channelsGroup.GET("/", channels.GetAllChannels)
 		channelsGroup.POST("/create", channels.CreateChannel)
+		channelsGroup.GET("/moderated", channels.ModeratedChannels)
 		channelsGroup.POST("/join/:channel_id", channels.JoinChannel)
 		channelsGroup.POST("/leave/:channel_id", channels.LeaveChannel)
 		channelsGroup.POST("/follow/:channel_id", channels.FollowChannel)
 		channelsGroup.POST("/unfollow/:channel_id", channels.UnfollowChannel)
+
+		channelsGroup.GET("/:channel_id/interests", channels.ChannelInterests)
+		channelsGroup.PUT("/:channel_id/interests", channels.SetChannelInterests)
+		channelsGroup.GET("/:channel_id/community", channels.ChannelCommunity)
+		channelsGroup.PUT("/:channel_id/min-age", channels.SetChannelMinAge)
 
 		// Join requests for private channels: owner, moderators and admins.
 		channelsGroup.GET("/:channel_id/requests", channels.ListJoinRequests)

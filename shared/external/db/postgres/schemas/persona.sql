@@ -4,7 +4,15 @@ CREATE TYPE persona_privacy_enum AS ENUM (
     'private',
     'only_me'
 );
+
+CREATE TYPE persona_theme_enum AS ENUM ('tide', 'forest', 'ember', 'plum', 'rose', 'slate');
    
+
+CREATE TYPE persona_follow_status_enum AS ENUM (
+    'pending',
+    'active',
+    'rejected'
+);
 
 CREATE TYPE relationship_enum AS ENUM (
     'follower',
@@ -30,33 +38,61 @@ CREATE TABLE personas (
 
     privacy persona_privacy_enum NOT NULL DEFAULT 'public',
     is_default BOOLEAN DEFAULT false,
+    show_on_profile BOOLEAN NOT NULL DEFAULT false,
+    theme persona_theme_enum NOT NULL DEFAULT 'tide',
 
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
     deleted_at TIMESTAMP WITHOUT TIME ZONE,
+    invite_token TEXT,
 
-    UNIQUE (user_id, slug)
+    UNIQUE (user_id, slug),
+    CONSTRAINT personas_show_on_profile_public CHECK (NOT show_on_profile OR privacy = 'public'),
+    CONSTRAINT personas_invite_token_private CHECK (invite_token IS NULL OR privacy = 'private')
 );
+
+CREATE UNIQUE INDEX personas_invite_token_key ON personas (invite_token) WHERE invite_token IS NOT NULL;
 
 
 -- =========================
 -- 3. INTERESTS
 -- =========================
 
+CREATE TABLE interest_groups (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(50) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    CONSTRAINT interest_groups_slug_key UNIQUE (slug)
+);
+
+CREATE UNIQUE INDEX interest_groups_name_lower_key ON interest_groups (lower(name));
+
 CREATE TABLE interests (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100) UNIQUE NOT NULL,
-    pic_url VARCHAR(255),
-    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
-    deleted_at TIMESTAMP WITHOUT TIME ZONE
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(50) NOT NULL UNIQUE,
+    emoji VARCHAR(32) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    retired_at TIMESTAMP WITHOUT TIME ZONE,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    group_id BIGINT REFERENCES interest_groups(id)
 );
+
+CREATE UNIQUE INDEX interests_name_lower_key ON interests (lower(name));
+CREATE INDEX interests_group_id_idx ON interests (group_id);
 
 CREATE TABLE persona_interests (
     persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
     interest_id BIGINT REFERENCES interests(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
     PRIMARY KEY (persona_id, interest_id)
 );
+
+CREATE INDEX persona_interests_interest_id_idx ON persona_interests (interest_id);
 
 -- =========================
 -- 4. PERSONA RELATIONSHIPS
@@ -101,8 +137,25 @@ CREATE TABLE persona_followers (
     persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
     follower_persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
 
+    status persona_follow_status_enum NOT NULL,
+
     followed_at TIMESTAMPTZ DEFAULT now(),
     unfollowed_at TIMESTAMPTZ,
 
     PRIMARY KEY (persona_id, follower_persona_id)
 );
+
+CREATE TYPE persona_invitation_status_enum AS ENUM ('pending', 'accepted', 'rejected', 'cancelled');
+
+CREATE TABLE persona_follow_invitations (
+    persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE,
+    invitee_persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE,
+    status persona_invitation_status_enum NOT NULL,
+    invited_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    responded_at TIMESTAMPTZ,
+    PRIMARY KEY (persona_id, invitee_persona_id),
+    CHECK (persona_id <> invitee_persona_id)
+);
+
+CREATE INDEX persona_follow_invitations_invitee
+    ON persona_follow_invitations (invitee_persona_id) WHERE status = 'pending';

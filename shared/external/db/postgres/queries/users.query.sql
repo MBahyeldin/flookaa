@@ -10,7 +10,7 @@ RETURNING *;
 -- 2.0 Get User HashedPassword by email for authentication
 -- -------------------------------
 -- name: GetUserHashedPasswordByEmail :one
-SELECT id, email_address, hashed_password FROM users WHERE email_address = $1 LIMIT 1;
+SELECT id, email_address, hashed_password, is_verified FROM users WHERE email_address = $1 LIMIT 1;
 
 -- -------------------------------
 -- 2.1 Get User by email and provider
@@ -35,10 +35,10 @@ SET
     state_id = COALESCE($9, state_id),
     postal_code = COALESCE($10, postal_code),
     other_platforms_accounts = COALESCE($11, other_platforms_accounts),
-    onboarding_completed = COALESCE($12, onboarding_completed),
-    onboarding_step = COALESCE($13, onboarding_step),
+    date_of_birth = COALESCE($13, date_of_birth),
+    gender = COALESCE($14, gender),
     updated_at = now()
-WHERE id = $14
+WHERE id = $12
 RETURNING 
     id,
     first_name,
@@ -52,8 +52,8 @@ RETURNING
     country_id,
     postal_code,
     other_platforms_accounts,
-    onboarding_completed,
-    onboarding_step;
+    date_of_birth,
+    gender;
 
 -- -------------------------------
 -- 4. Verify user email
@@ -102,7 +102,8 @@ WHERE u.id = $1
 -- 7. Get User Basic Info
 -- -------------------------------
 -- name: GetUserBasicInfo :one
-SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbnail, u.created_at, u.updated_at
+SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbnail, u.created_at, u.updated_at,
+       u.onboarding_step, u.onboarding_completed
 FROM users u
 WHERE u.id = $1
   AND u.deleted_at IS NULL;
@@ -115,3 +116,25 @@ SELECT id, first_name, last_name, email_address, thumbnail
 FROM users 
 WHERE id = $1 
 AND deleted_at IS NULL LIMIT 1;
+
+-- -------------------------------
+-- Move onboarding, only from the step the caller saw
+-- -------------------------------
+-- name: AdvanceOnboarding :one
+UPDATE users
+SET onboarding_step = sqlc.arg(to_step),
+    onboarding_completed = sqlc.arg(completed),
+    updated_at = now()
+WHERE id = sqlc.arg(user_id)
+  AND onboarding_step = sqlc.arg(from_step)
+  AND NOT onboarding_completed
+  AND deleted_at IS NULL
+RETURNING onboarding_step, onboarding_completed;
+
+-- -------------------------------
+-- About you onboarding step is done
+-- -------------------------------
+-- name: UserAboutYouDone :one
+SELECT (date_of_birth IS NOT NULL AND gender IS NOT NULL)::boolean AS done
+FROM users
+WHERE id = $1;

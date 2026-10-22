@@ -6,9 +6,12 @@ import { useLoading } from "@/Loading.context";
 import AppLoader from "@/components/app-loader";
 import { ToggleTheme } from "@/components/toggle-theme";
 import VerifyEmailPage from "@/pages/verify-email";
+import OnboardingPage from "@/pages/onboarding";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import useNotificationsRealtime from "@/hooks/useNotificationsRealtime";
+import usePersonaTheme from "@/hooks/usePersonaTheme";
+import useResumeAuthNext from "@/hooks/useResumeAuthNext";
 
 export default function DashboardLayout({
   children,
@@ -21,6 +24,8 @@ export default function DashboardLayout({
   const { isFetchCurrentPersonaLoading, isFetchAllPersonasLoading } = useLoading();
   // Before the early returns: hooks must run on every render.
   useNotificationsRealtime(user?.is_verified ? persona?.id : undefined);
+  usePersonaTheme(persona?.theme);
+  useResumeAuthNext();
 
   if (isFetchCurrentPersonaLoading || isFetchAllPersonasLoading) {
     return <AppLoader />;
@@ -28,6 +33,10 @@ export default function DashboardLayout({
 
   if (!user?.is_verified) {
     return <VerifyEmailPage />;
+  }
+
+  if (user.onboarding && !user.onboarding.completed) {
+    return <OnboardingPage />;
   }
 
   if (!persona) {

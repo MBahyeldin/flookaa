@@ -1,33 +1,21 @@
- 
 import type { PortableTextTextBlock } from "@portabletext/block-tools";
+import { blockNames } from "@/components/portable-text/blocks";
 
-export default function deNormalizeBlocks(
-  blocks: any[],
-  types: string[]
-): PortableTextTextBlock[] {
-  return blocks.map((block) => {
-    const blockType = Object.keys(block)[0];
-    if (!blockType) {
-      return;      
-      throw new Error("Block type is missing");
+// Unwraps the GraphQL envelope ({ image: {...} }). Blocks this bundle doesn't know are dropped.
+export default function deNormalizeBlocks(blocks: any[]): PortableTextTextBlock[] {
+  const result: PortableTextTextBlock[] = [];
+  for (const envelope of blocks ?? []) {
+    const blockType = envelope ? Object.keys(envelope)[0] : undefined;
+    const block = blockType ? envelope[blockType] : undefined;
+    if (!blockType || !block || (blockType !== "block" && !blockNames.includes(blockType))) {
+      console.warn(`Skipping unknown block type: ${blockType}`);
+      continue;
     }
-
-    if (block[blockType].markDefs) {
-      block[blockType].markDefs = deNormalizeMarkDefs(
-        block[blockType].markDefs
-      );
-    }
-
-    if (blockType === "block") {
-      return block.block;
-    }
-
-    if (types.includes(blockType)) {
-      return block[blockType];
-    }
-
-    throw new Error(`Unsupported block type: ${blockType}`);
-  });
+    let value = block.markDefs ? { ...block, markDefs: deNormalizeMarkDefs(block.markDefs) } : block;
+    if (blockType === "spoiler") value = { ...value, content: deNormalizeBlocks(block.content ?? []) };
+    result.push(value);
+  }
+  return result;
 }
 
 function deNormalizeMarkDefs(markDefs: any[]): { _type: string }[] {

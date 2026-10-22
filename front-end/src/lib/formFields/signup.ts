@@ -36,7 +36,7 @@ const signupFormFields = [
     placeholder: "********",
     interfaceType: "text",
     isRequired: true,
-    width: "1/2",
+    width: "full",
   }),
 
   new FormField({
@@ -46,22 +46,12 @@ const signupFormFields = [
     placeholder: "********",
     interfaceType: "text",
     isRequired: true,
-    width: "1/2",
+    width: "full",
     validate: (value, values) => {
       // custom validation: confirm password matches password
       const passwordField = values?.["password"];
       return value !== passwordField ? "Passwords do not match" : null;
     },
-  }),
-
-  new FormField({
-    id: "thumbnail",
-    label: "Profile Picture",
-    type: "text",
-    placeholder: "Upload your profile picture",
-    interfaceType: "pic",
-    isRequired: false,
-    width: "full",
   }),
 ];
 

@@ -6,18 +6,38 @@ type NotificationKind =
   | "comment_like"
   | "join_request"
   | "request_approved"
-  | "removed_from_channel";
+  | "removed_from_channel"
+  | "new_follower"
+  | "follow_request"
+  | "follow_request_approved"
+  | "follow_invitation"
+  | "follow_invitation_accepted"
+  | "channel_request"
+  | "channel_request_approved"
+  | "channel_request_rejected"
+  | "community_join_request"
+  | "community_request_approved"
+  | "community_request_rejected";
 
 type NotificationActor = {
   id: number;
   first_name: string;
   last_name: string;
   thumbnail: string;
+  /** Not visible to the recipient: a per-channel generated name, no thumbnail. */
+  anonymous: boolean;
 };
 
 type NotificationChannel = {
   id: number;
   name: string;
+  thumbnail: string;
+};
+
+type NotificationCommunity = {
+  id: number;
+  name: string;
+  slug: string;
   thumbnail: string;
 };
 
@@ -28,14 +48,16 @@ type NotificationChannel = {
 type NotificationData = {
   /** The post at the top of the thread, for content kinds. */
   post_id?: string;
+  /** The channel a community kind is about. */
+  channel_id?: number;
 };
 
 type Notification = {
   id: number;
   /** A string, not NotificationKind: the backend may add kinds first. */
   kind: string;
-  subject: { type: "POST" | "COMMENT" | "CHANNEL" | "PERSONA"; id: string };
-  /** Null for personal (membership) notifications. */
+  subject: { type: "POST" | "COMMENT" | "CHANNEL" | "PERSONA" | "COMMUNITY"; id: string };
+  /** Null for personal (membership, follow) notifications. */
   scope: { type: "CHANNEL"; id: number } | null;
   /** How many personas are behind it (1 for single-actor kinds). */
   count: number;
@@ -43,6 +65,8 @@ type Notification = {
   latest_actor: NotificationActor | null;
   /** Read-time lookup; null when the channel was deleted. */
   channel: NotificationChannel | null;
+  /** The subject of community kinds, looked up at read time; null otherwise or when deleted. */
+  community: NotificationCommunity | null;
   data?: NotificationData;
   read: boolean;
   updated_at: string;
@@ -58,6 +82,7 @@ export type {
   NotificationKind,
   NotificationActor,
   NotificationChannel,
+  NotificationCommunity,
   NotificationData,
   Notification,
   NotificationPage,

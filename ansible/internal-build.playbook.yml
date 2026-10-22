@@ -5,8 +5,8 @@
   vars_files:
     - universe.yml
   roles:
-    - add_ssh_public_key
-    - netplan
+    # - add_ssh_public_key
+    # - netplan
 
   tasks:
     - name: Make sure build group exists
@@ -41,6 +41,8 @@
           - apt-transport-https
           - build-essential
           - libssl-dev
+          - libvips-dev
+          - pkg-config
         state: present
 
     - name: Install Rust programming language

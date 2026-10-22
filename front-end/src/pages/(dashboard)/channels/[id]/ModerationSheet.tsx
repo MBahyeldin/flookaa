@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, User2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -9,9 +9,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PersonRow, displayName } from "@/components/persona-link/PersonRow";
 import {
   listJoinRequests,
   listMembers,
@@ -20,11 +19,10 @@ import {
 } from "@/services/channels";
 import type { ChannelMember, JoinRequest } from "@/types/channel";
 import { formatDateOnly } from "@/utils/formateDate";
-
-type Person = Pick<JoinRequest, "first_name" | "last_name" | "name" | "thumbnail">;
-
-const displayName = (p: Person) =>
-  `${p.first_name} ${p.last_name}`.trim() || p.name;
+import type { Interest } from "@/types/interest";
+import ChannelInterestsEditor from "./ChannelInterestsEditor";
+import ChannelCommunityPanel from "./ChannelCommunityPanel";
+import ChannelSettingsPanel from "./ChannelSettingsPanel";
 
 /**
  * Join requests and members for owners, channel moderators and admins. Both
@@ -35,10 +33,18 @@ export default function ModerationSheet({
   channelId,
   open,
   onOpenChange,
+  onInterestsSaved,
+  communityKey,
+  minAge,
+  onMinAgeSaved,
 }: {
   channelId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onInterestsSaved?: (interests: Interest[]) => void;
+  communityKey: number;
+  minAge: number;
+  onMinAgeSaved?: (minAge: number) => void;
 }) {
   const [requests, setRequests] = useState<JoinRequest[]>([]);
   const [members, setMembers] = useState<ChannelMember[]>([]);
@@ -108,7 +114,7 @@ export default function ModerationSheet({
         <SheetHeader>
           <SheetTitle>Manage channel</SheetTitle>
           <SheetDescription>
-            Approve people who asked to join, and remove members.
+            Approve people who asked to join, remove members, tag the channel's interests, see its community, and set an age limit.
           </SheetDescription>
         </SheetHeader>
 
@@ -132,6 +138,9 @@ export default function ModerationSheet({
                   Requests{requests.length ? ` (${requests.length})` : ""}
                 </TabsTrigger>
                 <TabsTrigger value="members">Members ({members.length})</TabsTrigger>
+                <TabsTrigger value="interests">Interests</TabsTrigger>
+                <TabsTrigger value="community">Community</TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
               </TabsList>
 
               <TabsContent value="requests" className="mt-2">
@@ -193,41 +202,19 @@ export default function ModerationSheet({
                   ))}
                 </ul>
               </TabsContent>
+              <TabsContent value="interests" className="mt-2">
+                <ChannelInterestsEditor channelId={channelId} onSaved={onInterestsSaved} />
+              </TabsContent>
+              <TabsContent value="community" className="mt-2">
+                <ChannelCommunityPanel channelId={channelId} reloadKey={communityKey} />
+              </TabsContent>
+              <TabsContent value="settings" className="mt-2">
+                <ChannelSettingsPanel channelId={channelId} minAge={minAge} onSaved={onMinAgeSaved} />
+              </TabsContent>
             </Tabs>
           )}
         </div>
       </SheetContent>
     </Sheet>
-  );
-}
-
-function PersonRow({
-  person,
-  detail,
-  badge,
-  children,
-}: {
-  person: Person;
-  detail: string;
-  badge?: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <li className="flex items-center gap-3 py-3">
-      <Avatar className="h-9 w-9 shrink-0">
-        <AvatarImage src={person.thumbnail || ""} />
-        <AvatarFallback>
-          <User2 className="h-4 w-4" />
-        </AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-medium">{displayName(person)}</span>
-          {badge && <Badge variant="secondary">{badge}</Badge>}
-        </div>
-        <p className="truncate text-xs text-muted-foreground">{detail}</p>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">{children}</div>
-    </li>
   );
 }

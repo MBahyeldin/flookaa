@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Search, Filter, Plus } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { TrendingUp, Search, Plus } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { getChannels } from "@/services/channels";
+import InterestFilter from "@/components/interests/InterestFilter";
 import type { Channel } from "@/types/channel";
 import { Input } from "@/components/ui/input";
 import { ChannelCard } from "./ChannelCard";
@@ -15,19 +16,32 @@ export default function ChannelsPage() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const isUserLoggedIn = useIsUserLoggedIn();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const interest = searchParams.get("interest") ?? "";
 
   if (!isUserLoggedIn) {
     nagivate("/");
   }
 
+  const selectInterest = (slug: string) =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (slug) next.set("interest", slug);
+        else next.delete("interest");
+        return next;
+      },
+      { replace: true },
+    );
 
   useEffect(() => {
     const fetchChannels = async () => {
+      setLoading(true);
       try {
-        const response = await getChannels();
+        const response = await getChannels({ interest: interest || undefined });
 
         if (response) {
-          setChannels(response.channels);
+          setChannels(response.channels ?? []);
         }
       } catch (error) {
         console.error("Error fetching channels:", error);
@@ -37,15 +51,7 @@ export default function ChannelsPage() {
     };
 
     fetchChannels();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading channels...</p>
-      </div>
-    );
-  }
+  }, [interest]);
 
   return (
     <div className="min-h-screen">
@@ -74,37 +80,23 @@ export default function ChannelsPage() {
             <Input placeholder="Search channels..." className="pl-10 py-6" />
           </div>
 
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Categories:</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant={"default"} size="sm">
-                All
-              </Button>
-              {/* {categories.map((category) => (
-                <Button
-                  key={category}
-                  variant={
-                    selectedCategory === category ? "default" : "outline"
-                  }
-                  size="sm"
-                  onClick={() => setSelectedCategory(category)}
-                >
-                  {category}
-                </Button>
-              ))} */}
-            </div>
-          </div>
+          <InterestFilter value={interest} onChange={selectInterest} />
         </div>
 
         {/* Channels Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {channels?.map((channel) => (
-            <ChannelCard key={channel.id} channel={channel} />
-          ))}
-        </div>
+        {loading ? (
+          <p className="py-16 text-center text-muted-foreground">Loading channels...</p>
+        ) : channels.length === 0 ? (
+          <p className="py-16 text-center text-muted-foreground">
+            {interest ? "No channels with this interest yet." : "No channels yet."}
+          </p>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {channels.map((channel) => (
+              <ChannelCard key={channel.id} channel={channel} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

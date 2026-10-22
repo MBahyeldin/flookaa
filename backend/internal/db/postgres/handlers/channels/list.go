@@ -2,7 +2,11 @@ package channels
 
 import (
 	"app/internal/auth"
+	"context"
+	"database/sql"
+	"errors"
 	"net/http"
+	"shared/pkg/access"
 	"shared/pkg/db"
 	"strconv"
 
@@ -10,21 +14,30 @@ import (
 )
 
 type ChannelResponse struct {
-	ID             int64  `json:"id"`
-	Name           string `json:"name"`
-	Description    string `json:"description"`
-	Thumbnail      string `json:"thumbnail"`
-	Banner         string `json:"banner"`
-	OwnerID        int64  `json:"owner_id"`
-	CreatedAt      string `json:"created_at"`
-	UpdatedAt      string `json:"updated_at"`
-	IsOwner        bool   `json:"is_owner"`
-	IsMember       bool   `json:"is_member"`
-	IsPending      bool   `json:"is_pending"`
-	Visibility     string `json:"visibility"`
-	IsFollower     bool   `json:"is_follower"`
-	MembersCount   int32  `json:"members_count"`
-	FollowersCount int32  `json:"followers_count"`
+	ID             int64         `json:"id"`
+	Name           string        `json:"name"`
+	Description    string        `json:"description"`
+	Thumbnail      string        `json:"thumbnail"`
+	Banner         string        `json:"banner"`
+	OwnerID        int64         `json:"owner_id"`
+	CreatedAt      string        `json:"created_at"`
+	UpdatedAt      string        `json:"updated_at"`
+	IsOwner        bool          `json:"is_owner"`
+	IsMember       bool          `json:"is_member"`
+	IsPending      bool          `json:"is_pending"`
+	Visibility     string        `json:"visibility"`
+	IsFollower     bool          `json:"is_follower"`
+	MembersCount   int32         `json:"members_count"`
+	FollowersCount int32         `json:"followers_count"`
+	Interests      []InterestTag `json:"interests"`
+	Community      *CommunityRef `json:"community"`
+	MinAge         int16         `json:"min_age"`
+}
+
+type CommunityRef struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
 }
 
 func (h *Handler) GetAllChannels(c *gin.Context) {
@@ -53,19 +66,85 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 		}
 	}
 
+	var communityID sql.NullInt64
+	if id, err := strconv.ParseInt(c.Query("community_id"), 10, 64); err == nil && id > 0 {
+		communityID = sql.NullInt64{Int64: id, Valid: true}
+		community, err := access.LoadCommunity(ctx, q, id, personaId)
+		if errors.Is(err, access.ErrCommunityNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		// Only the community page's grid; each channel stays listed in /channels/ under its own rules.
+		if !community.CanSeeInside() {
+			c.JSON(http.StatusForbidden, gin.H{"error": "members_only"})
+			return
+		}
+	}
+
 	channels, err := q.GetAllChannels(ctx, db.GetAllChannelsParams{
-		Limit:   limit,
-		Offset:  offset,
-		OwnerID: personaId,
+		Limit:        limit,
+		Offset:       offset,
+		OwnerID:      personaId,
+		InterestSlug: sql.NullString{String: c.Query("interest"), Valid: c.Query("interest") != ""},
+		CommunityID:  communityID,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	var channelsList []ChannelResponse
-	for _, ch := range channels {
-		channelsList = append(channelsList, ChannelResponse{
+	items := make([]channelItem, len(channels))
+	for i, ch := range channels {
+		items[i] = channelItem{
+			Channel:        ch.Channel,
+			IsOwner:        ch.IsOwner,
+			IsMember:       ch.IsMember,
+			IsPending:      ch.IsPending,
+			IsFollower:     ch.IsFollower,
+			MembersCount:   ch.MembersCount,
+			FollowersCount: ch.FollowersCount,
+		}
+	}
+	channelsList, err := h.build(ctx, personaId, items)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"channels": channelsList})
+}
+
+type channelItem struct {
+	db.Channel
+	IsOwner        bool
+	IsMember       bool
+	IsPending      bool
+	IsFollower     bool
+	MembersCount   int32
+	FollowersCount int32
+}
+
+func (h *Handler) build(ctx context.Context, viewerID int64, items []channelItem) ([]ChannelResponse, error) {
+	ids := make([]int64, len(items))
+	for i, ch := range items {
+		ids[i] = ch.ID
+	}
+	tags, err := h.interestsByChannel(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	communities, err := h.communitiesByChannel(ctx, viewerID, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]ChannelResponse, len(items))
+	for i, ch := range items {
+		out[i] = ChannelResponse{
 			ID:             ch.ID,
 			Name:           ch.Name,
 			Description:    ch.Description,
@@ -81,8 +160,25 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 			IsFollower:     ch.IsFollower,
 			MembersCount:   ch.MembersCount,
 			FollowersCount: ch.FollowersCount,
-		})
+			Interests:      tags[ch.ID],
+			Community:      communities[ch.ID],
+			MinAge:         ch.MinAge,
+		}
 	}
+	return out, nil
+}
 
-	c.JSON(http.StatusOK, gin.H{"channels": channelsList})
+func (h *Handler) communitiesByChannel(ctx context.Context, viewerID int64, ids []int64) (map[int64]*CommunityRef, error) {
+	out := make(map[int64]*CommunityRef, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+	rows, err := h.q.ListChannelCommunities(ctx, db.ListChannelCommunitiesParams{ChannelIds: ids, ViewerID: viewerID})
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range rows {
+		out[r.ChannelID] = &CommunityRef{ID: r.ID, Name: r.Name, Slug: r.Slug}
+	}
+	return out, nil
 }

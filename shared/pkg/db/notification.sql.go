@@ -21,12 +21,16 @@ WHERE n.recipient_id = $1::bigint
   AND n.deleted_at IS NULL
   AND n.read_at IS NULL
   AND (
-      n.scope_type IS NULL
+      (n.scope_type IS NULL AND (n.subject_type <> 'COMMUNITY' OR NOT EXISTS (
+          SELECT 1 FROM communities co
+          WHERE co.id::text = n.subject_id AND NOT persona_meets_min_age(n.recipient_id, co.min_age)
+      )))
       OR (n.scope_type = 'CHANNEL' AND EXISTS (
           SELECT 1
           FROM channels c
           WHERE c.id = n.scope_id
             AND c.deleted_at IS NULL
+            AND persona_meets_min_age(n.recipient_id, c.min_age)
             AND (
                 c.visibility = 'public'
                 OR EXISTS (
@@ -74,6 +78,47 @@ WHERE cr.channel_id = $1::bigint
 // left out, or they would be notified about every channel.
 func (q *Queries) ListChannelModeratorIDs(ctx context.Context, channelID int64) ([]int64, error) {
 	rows, err := q.db.QueryContext(ctx, listChannelModeratorIDs, channelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var persona_id int64
+		if err := rows.Scan(&persona_id); err != nil {
+			return nil, err
+		}
+		items = append(items, persona_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCommunityManagerIDs = `-- name: ListCommunityManagerIDs :many
+SELECT c.owner_id AS persona_id
+FROM communities c
+WHERE c.id = $1::bigint
+  AND c.deleted_at IS NULL
+UNION
+SELECT cr.persona_id
+FROM community_roles cr
+JOIN roles r ON r.id = cr.role_id AND r.name = 'moderator'
+JOIN communities c ON c.id = cr.community_id AND c.deleted_at IS NULL
+JOIN community_members cm
+    ON cm.community_id = cr.community_id AND cm.persona_id = cr.persona_id
+   AND cm.status = 'active' AND cm.left_at IS NULL
+WHERE cr.community_id = $1::bigint
+  AND cr.deleted_at IS NULL
+`
+
+// The owner and the live moderators of a community.
+func (q *Queries) ListCommunityManagerIDs(ctx context.Context, communityID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listCommunityManagerIDs, communityID)
 	if err != nil {
 		return nil, err
 	}
@@ -173,12 +218,16 @@ WHERE n.recipient_id = $1::bigint
       OR (n.updated_at, n.id) < ($2::timestamptz, $3::bigint)
   )
   AND (
-      n.scope_type IS NULL
+      (n.scope_type IS NULL AND (n.subject_type <> 'COMMUNITY' OR NOT EXISTS (
+          SELECT 1 FROM communities co
+          WHERE co.id::text = n.subject_id AND NOT persona_meets_min_age(n.recipient_id, co.min_age)
+      )))
       OR (n.scope_type = 'CHANNEL' AND EXISTS (
           SELECT 1
           FROM channels c
           WHERE c.id = n.scope_id
             AND c.deleted_at IS NULL
+            AND persona_meets_min_age(n.recipient_id, c.min_age)
             AND (
                 c.visibility = 'public'
                 OR EXISTS (
@@ -207,8 +256,9 @@ type ListNotificationsParams struct {
 // -------------------------------
 // Keyset paged: pass the last row's (updated_at, id) as the cursor, or NULLs
 // for the first page. Visibility is one rule per scope type; rows without a
-// scope are personal and always visible. CHANNEL mirrors access.CanRead:
-// public, or the recipient is an active member.
+// scope are personal and visible unless about a community the recipient is
+// too young for. CHANNEL mirrors access.CanRead: old enough, and public or the
+// recipient is an active member.
 func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsParams) ([]Notification, error) {
 	rows, err := q.db.QueryContext(ctx, listNotifications,
 		arg.RecipientID,
@@ -351,6 +401,55 @@ func (q *Queries) RecountCommenters(ctx context.Context, arg RecountCommentersPa
 	return items, nil
 }
 
+const recountFollowers = `-- name: RecountFollowers :many
+SELECT
+    pf.persona_id,
+    COUNT(*)::bigint AS count,
+    (ARRAY_AGG(pf.follower_persona_id ORDER BY pf.followed_at DESC, pf.follower_persona_id DESC))[1]::bigint AS latest_actor_id
+FROM persona_followers pf
+JOIN personas f ON f.id = pf.follower_persona_id AND f.deleted_at IS NULL
+WHERE pf.persona_id = ANY($1::bigint[])
+  AND pf.follower_persona_id <> $2::bigint
+  AND pf.unfollowed_at IS NULL
+  AND pf.status = 'active'
+GROUP BY pf.persona_id
+`
+
+type RecountFollowersParams struct {
+	PersonaIds  []int64
+	RecipientID int64
+}
+
+type RecountFollowersRow struct {
+	PersonaID     int64
+	Count         int64
+	LatestActorID int64
+}
+
+// Active followers of personas (new_follower).
+func (q *Queries) RecountFollowers(ctx context.Context, arg RecountFollowersParams) ([]RecountFollowersRow, error) {
+	rows, err := q.db.QueryContext(ctx, recountFollowers, pq.Array(arg.PersonaIds), arg.RecipientID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RecountFollowersRow
+	for rows.Next() {
+		var i RecountFollowersRow
+		if err := rows.Scan(&i.PersonaID, &i.Count, &i.LatestActorID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const recountLikers = `-- name: RecountLikers :many
 SELECT
     object_id,
@@ -386,6 +485,182 @@ func (q *Queries) RecountLikers(ctx context.Context, arg RecountLikersParams) ([
 	for rows.Next() {
 		var i RecountLikersRow
 		if err := rows.Scan(&i.ObjectID, &i.Count, &i.LatestActorID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const recountPendingChannelRequests = `-- name: RecountPendingChannelRequests :many
+SELECT
+    cc.community_id,
+    COUNT(*)::bigint AS count,
+    (ARRAY_AGG(cc.requested_by ORDER BY cc.created_at DESC, cc.channel_id DESC))[1]::bigint AS latest_actor_id
+FROM community_channels cc
+JOIN communities c ON c.id = cc.community_id AND c.deleted_at IS NULL
+JOIN channels ch ON ch.id = cc.channel_id AND ch.deleted_at IS NULL
+WHERE cc.community_id = ANY($1::bigint[])
+  AND cc.status = 'pending' AND cc.removed_at IS NULL
+  AND cc.requested_by IS NOT NULL
+  AND cc.requested_by <> $2::bigint
+  AND (
+      c.owner_id = $2::bigint
+      OR EXISTS (
+          SELECT 1
+          FROM community_roles cr
+          JOIN roles r ON r.id = cr.role_id AND r.name = 'moderator'
+          JOIN community_members cm
+              ON cm.community_id = cr.community_id AND cm.persona_id = cr.persona_id
+             AND cm.status = 'active' AND cm.left_at IS NULL
+          WHERE cr.community_id = c.id
+            AND cr.persona_id = $2::bigint
+            AND cr.deleted_at IS NULL
+      )
+  )
+GROUP BY cc.community_id
+`
+
+type RecountPendingChannelRequestsParams struct {
+	CommunityIds []int64
+	RecipientID  int64
+}
+
+type RecountPendingChannelRequestsRow struct {
+	CommunityID   int64
+	Count         int64
+	LatestActorID int64
+}
+
+// Pending channel requests to communities the recipient manages (channel_request).
+func (q *Queries) RecountPendingChannelRequests(ctx context.Context, arg RecountPendingChannelRequestsParams) ([]RecountPendingChannelRequestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, recountPendingChannelRequests, pq.Array(arg.CommunityIds), arg.RecipientID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RecountPendingChannelRequestsRow
+	for rows.Next() {
+		var i RecountPendingChannelRequestsRow
+		if err := rows.Scan(&i.CommunityID, &i.Count, &i.LatestActorID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const recountPendingCommunityJoinRequests = `-- name: RecountPendingCommunityJoinRequests :many
+SELECT
+    cm.community_id,
+    COUNT(*)::bigint AS count,
+    (ARRAY_AGG(cm.persona_id ORDER BY cm.joined_at DESC, cm.persona_id DESC))[1]::bigint AS latest_actor_id
+FROM community_members cm
+JOIN communities c ON c.id = cm.community_id AND c.deleted_at IS NULL
+JOIN personas p ON p.id = cm.persona_id AND p.deleted_at IS NULL
+WHERE cm.community_id = ANY($1::bigint[])
+  AND cm.status = 'pending' AND cm.left_at IS NULL
+  AND cm.persona_id <> $2::bigint
+  AND (
+      c.owner_id = $2::bigint
+      OR EXISTS (
+          SELECT 1
+          FROM community_roles cr
+          JOIN roles r ON r.id = cr.role_id AND r.name = 'moderator'
+          JOIN community_members rm
+              ON rm.community_id = cr.community_id AND rm.persona_id = cr.persona_id
+             AND rm.status = 'active' AND rm.left_at IS NULL
+          WHERE cr.community_id = c.id
+            AND cr.persona_id = $2::bigint
+            AND cr.deleted_at IS NULL
+      )
+  )
+GROUP BY cm.community_id
+`
+
+type RecountPendingCommunityJoinRequestsParams struct {
+	CommunityIds []int64
+	RecipientID  int64
+}
+
+type RecountPendingCommunityJoinRequestsRow struct {
+	CommunityID   int64
+	Count         int64
+	LatestActorID int64
+}
+
+// Pending join requests to communities the recipient manages (community_join_request).
+func (q *Queries) RecountPendingCommunityJoinRequests(ctx context.Context, arg RecountPendingCommunityJoinRequestsParams) ([]RecountPendingCommunityJoinRequestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, recountPendingCommunityJoinRequests, pq.Array(arg.CommunityIds), arg.RecipientID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RecountPendingCommunityJoinRequestsRow
+	for rows.Next() {
+		var i RecountPendingCommunityJoinRequestsRow
+		if err := rows.Scan(&i.CommunityID, &i.Count, &i.LatestActorID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const recountPendingFollowRequests = `-- name: RecountPendingFollowRequests :many
+SELECT
+    pf.persona_id,
+    COUNT(*)::bigint AS count,
+    (ARRAY_AGG(pf.follower_persona_id ORDER BY pf.followed_at DESC, pf.follower_persona_id DESC))[1]::bigint AS latest_actor_id
+FROM persona_followers pf
+JOIN personas f ON f.id = pf.follower_persona_id AND f.deleted_at IS NULL
+WHERE pf.persona_id = ANY($1::bigint[])
+  AND pf.follower_persona_id <> $2::bigint
+  AND pf.unfollowed_at IS NULL
+  AND pf.status = 'pending'
+GROUP BY pf.persona_id
+`
+
+type RecountPendingFollowRequestsParams struct {
+	PersonaIds  []int64
+	RecipientID int64
+}
+
+type RecountPendingFollowRequestsRow struct {
+	PersonaID     int64
+	Count         int64
+	LatestActorID int64
+}
+
+// Pending follow requests to personas (follow_request).
+func (q *Queries) RecountPendingFollowRequests(ctx context.Context, arg RecountPendingFollowRequestsParams) ([]RecountPendingFollowRequestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, recountPendingFollowRequests, pq.Array(arg.PersonaIds), arg.RecipientID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RecountPendingFollowRequestsRow
+	for rows.Next() {
+		var i RecountPendingFollowRequestsRow
+		if err := rows.Scan(&i.PersonaID, &i.Count, &i.LatestActorID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -437,6 +712,49 @@ func (q *Queries) RecountPendingJoinRequests(ctx context.Context, arg RecountPen
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const softDeleteNotificationForRecipient = `-- name: SoftDeleteNotificationForRecipient :many
+UPDATE notifications
+SET deleted_at = NOW(),
+    last_event_at = $1::timestamptz
+WHERE recipient_id = $2::bigint
+  AND group_key = $3::varchar
+  AND deleted_at IS NULL
+  AND last_event_at < $1::timestamptz
+RETURNING id
+`
+
+type SoftDeleteNotificationForRecipientParams struct {
+	EventAt     time.Time
+	RecipientID int64
+	GroupKey    string
+}
+
+// -------------------------------
+// One recipient's row of a group, unless a newer event already touched it
+// -------------------------------
+func (q *Queries) SoftDeleteNotificationForRecipient(ctx context.Context, arg SoftDeleteNotificationForRecipientParams) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, softDeleteNotificationForRecipient, arg.EventAt, arg.RecipientID, arg.GroupKey)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

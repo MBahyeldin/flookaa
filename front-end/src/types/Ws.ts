@@ -17,17 +17,47 @@ type EventType =
   | "member"
   | "follower"
   | "join_request"
+  // A channel's interest tags changed (STREAM_CHANNEL_EVENTS); refetch them.
+  | "interests"
   // Per persona (STREAM_USER_EVENTS, default subscription); payload is
   // NotificationPayload. Only the id: refetch over REST.
   | "notifications"
+  // Per persona (STREAM_USER_EVENTS, /control owner PERSONA); no payload.
+  // A profile's counts changed: refetch them.
+  | "follow_counts"
+  // Your own persona only (/control owner PERSONA); "follower" above too.
+  | "follow_request"
+  | "follow_invitation"
+  // A community's info or interests (info) or its channel list (channels)
+  // changed (/control owner COMMUNITY); no payload, refetch.
+  | "info"
+  | "channels"
+  // A community's member or follower count changed; no payload, refetch.
+  | "counts"
+  // A community's moderators changed (/control owner COMMUNITY); payload is ChannelEventPayload.
+  | "moderator"
+  // A channel asked to join a community, or the request was resolved (managers only).
+  | "channel_request"
+  // A channel's community row changed (STREAM_CHANNEL_EVENTS); no payload, refetch.
+  | "community"
   | "*";
 type EventActionType = "create" | "update" | "delete" | "*";
-type EventOwnerType = "CHANNEL" | "USER" | "PERSONA";
+type EventOwnerType = "CHANNEL" | "USER" | "PERSONA" | "COMMUNITY";
 
 type SubscribeChannelPayload = {
   event: EventType;
   event_action: EventActionType;
   owner: "CHANNEL";
+  owner_id: number;
+};
+
+type SubscribePersonaPayload = {
+  owner: "PERSONA";
+  owner_id: number;
+};
+
+type SubscribeCommunityPayload = {
+  owner: "COMMUNITY";
   owner_id: number;
 };
 
@@ -95,6 +125,8 @@ export type {
   WsMessageType,
   SubscribeChannelPayload,
   SubscribeDefaultPayload,
+  SubscribePersonaPayload,
+  SubscribeCommunityPayload,
   Event,
   EventType,
   EventActionType,

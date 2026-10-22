@@ -31,9 +31,9 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 	if err := r.authorizeOwner(ctx, &models.Owner{ID: input.Owner.ID, Type: input.Owner.Type}, personaId, true); err != nil {
 		return nil, err
 	}
-	rawContent, err := json.Marshal(input.Content)
+	content, rawContent, err := portabletext.ParseContent(*input.Content)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal content: %w", err)
+		return nil, err
 	}
 
 	object := &models.PostGenericDocument{
@@ -46,8 +46,8 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 			ID:   input.Owner.ID,
 			Type: input.Owner.Type,
 		},
-		Content:           portabletext.ParseContent(*input.Content),
-		RawContent:        string(rawContent),
+		Content:           content,
+		RawContent:        rawContent,
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 		Privacy:           models.Privacy(input.Privacy.String()),
@@ -159,10 +159,11 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 		return nil, fmt.Errorf("failed to insert object: %w", insertError)
 	}
 
-	author, err := r.resolvePersonaCached(ctx, personaId)
+	authors, err := r.resolvePersonas(ctx, personaId, owner.ID, []int64{personaId})
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve author: %w", err)
 	}
+	author := authors[personaId]
 
 	comment := models.Comment{
 		ID:         object.ID,
@@ -386,7 +387,7 @@ func (r *queryResolver) GetComments(ctx context.Context, parentID string, limit 
 	if err := r.authorizeOwner(ctx, parent.Owner, personaId, false); err != nil {
 		return nil, err
 	}
-	comments, err := getComments(ctx, parentID, r, *limit, *offset)
+	comments, err := getComments(ctx, parentID, parent.Owner.ID, r, *limit, *offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get comments: %w", err)
 	}
@@ -413,6 +414,7 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 	var posts []*models.Post
 	var ownerPersona models.Persona
 	var totalPostsCount int32
+	var community *models.CommunityRef
 	wg := sync.WaitGroup{}
 
 	// --- Fetch Channel Details + Owner ---
@@ -434,12 +436,21 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		channel = channelResult
 
 		// Owner lookup + cache
-		cachedPersona, err := r.resolvePersonaCached(ctx, channel.OwnerID)
+		owners, err := r.resolvePersonas(ctx, personaId, id, []int64{channel.OwnerID})
 		if err != nil {
 			channelErr = err
 			return
 		}
-		ownerPersona = *cachedPersona
+		ownerPersona = *owners[channel.OwnerID]
+
+		refs, err := q.ListChannelCommunities(ctxTimeout, db.ListChannelCommunitiesParams{ChannelIds: []int64{id}, ViewerID: personaId})
+		if err != nil {
+			channelErr = err
+			return
+		}
+		if len(refs) > 0 {
+			community = &models.CommunityRef{ID: refs[0].ID, Name: refs[0].Name, Slug: refs[0].Slug}
+		}
 	}()
 
 	if canRead {
@@ -497,6 +508,8 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		MembersCount:   &channel.MembersCount,
 		FollowersCount: &channel.FollowersCount,
 		CanModerate:    channelAccess.CanModerate,
+		Community:      community,
+		MinAge:         int32(channel.MinAge),
 	}, nil
 }
 

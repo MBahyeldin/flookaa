@@ -2,8 +2,8 @@
 -- 1. Create a channel
 -- -------------------------------
 -- name: CreateChannel :one
-INSERT INTO channels (name, description,  owner_id, thumbnail, banner, visibility, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, NOW())
+INSERT INTO channels (name, description,  owner_id, thumbnail, banner, visibility, min_age, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, sqlc.arg(min_age)::smallint, NOW())
 RETURNING *;
 
 -- -------------------------------
@@ -16,6 +16,15 @@ SET name = COALESCE($1, name),
     updated_at = NOW()
 WHERE id = $3
 RETURNING *;
+
+-- name: SetChannelMinAge :exec
+UPDATE channels
+SET min_age = sqlc.arg(min_age)::smallint,
+    updated_at = NOW()
+WHERE id = sqlc.arg(id) AND deleted_at IS NULL;
+
+-- name: PersonaMeetsMinAge :one
+SELECT persona_meets_min_age(sqlc.arg(persona_id)::bigint, sqlc.arg(min_age)::smallint)::boolean;
 
 -- -------------------------------
 -- 3. Remove a channel (soft delete)
@@ -104,7 +113,7 @@ WHERE channel_id = $1 AND persona_id = $2 AND unfollowed_at IS NULL;
 -- -------------------------------
 -- name: GetAllChannels :many
 SELECT 
-    c.*,
+    sqlc.embed(c),
     (c.owner_id = $1) AS is_owner,
     EXISTS (
         SELECT 1 
@@ -142,7 +151,89 @@ SELECT
     )::int AS followers_count
 FROM channels c
 WHERE c.deleted_at IS NULL
+  AND persona_meets_min_age($1, c.min_age)
+  AND (sqlc.narg(interest_slug)::text IS NULL OR EXISTS (
+      SELECT 1
+      FROM channel_interests ci
+      JOIN interests i ON i.id = ci.interest_id
+      WHERE ci.channel_id = c.id AND i.slug = sqlc.narg(interest_slug)::text
+  ))
+  AND (sqlc.narg(community_id)::bigint IS NULL OR EXISTS (
+      SELECT 1 FROM community_channels cc
+      WHERE cc.channel_id = c.id AND cc.community_id = sqlc.narg(community_id)::bigint
+        AND cc.status = 'active' AND cc.removed_at IS NULL
+  ))
 LIMIT $2 OFFSET $3;
+
+-- Public only. From the persona's communities (joined or followed) first, then by shared
+-- interests, live members, and members of the persona's user's gender
+-- (everyone if unset). Leaves out channels it has any live row in or follows.
+-- name: SuggestChannels :many
+WITH viewer AS (
+    SELECT u.gender
+    FROM personas p
+    JOIN users u ON u.id = p.user_id
+    WHERE p.id = sqlc.arg(persona_id)::bigint
+), my_communities AS (
+    SELECT cm.community_id
+    FROM community_members cm
+    WHERE cm.persona_id = sqlc.arg(persona_id)::bigint AND cm.status = 'active' AND cm.left_at IS NULL
+    UNION
+    SELECT cf.community_id
+    FROM community_followers cf
+    WHERE cf.persona_id = sqlc.arg(persona_id)::bigint AND cf.unfollowed_at IS NULL
+)
+SELECT
+    sqlc.embed(c),
+    m.members::int AS members_count,
+    (
+        SELECT COUNT(DISTINCT cf.persona_id)
+        FROM channel_followers cf
+        WHERE cf.channel_id = c.id
+          AND cf.unfollowed_at IS NULL
+    )::int AS followers_count,
+    (CASE WHEN src.from_community THEN 'community' ELSE 'interest' END)::text AS source
+FROM channels c
+CROSS JOIN LATERAL (
+    SELECT EXISTS (
+        SELECT 1
+        FROM community_channels cc
+        JOIN my_communities mc ON mc.community_id = cc.community_id
+        JOIN communities co ON co.id = cc.community_id AND co.deleted_at IS NULL
+        WHERE cc.channel_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
+    ) AS from_community
+) src
+CROSS JOIN LATERAL (
+    SELECT COUNT(*) AS overlap
+    FROM channel_interests ci
+    JOIN persona_interests pi ON pi.interest_id = ci.interest_id AND pi.persona_id = sqlc.arg(persona_id)::bigint
+    WHERE ci.channel_id = c.id
+) o
+CROSS JOIN LATERAL (
+    SELECT
+        COUNT(*) AS members,
+        COUNT(*) FILTER (
+            WHERE (SELECT gender FROM viewer) IS NULL OR u.gender = (SELECT gender FROM viewer)
+        ) AS same_gender
+    FROM channel_members cm
+    JOIN personas p ON p.id = cm.persona_id AND p.deleted_at IS NULL
+    JOIN users u ON u.id = p.user_id
+    WHERE cm.channel_id = c.id AND cm.left_at IS NULL AND cm.status = 'active'
+) m
+WHERE c.deleted_at IS NULL
+  AND c.visibility = 'public'
+  AND (src.from_community OR o.overlap > 0)
+  AND persona_meets_min_age(sqlc.arg(persona_id)::bigint, c.min_age)
+  AND NOT EXISTS (
+      SELECT 1 FROM channel_members cm
+      WHERE cm.channel_id = c.id AND cm.persona_id = sqlc.arg(persona_id)::bigint AND cm.left_at IS NULL
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM channel_followers cf
+      WHERE cf.channel_id = c.id AND cf.persona_id = sqlc.arg(persona_id)::bigint AND cf.unfollowed_at IS NULL
+  )
+ORDER BY src.from_community DESC, o.overlap DESC, m.members DESC, m.same_gender DESC, c.id DESC
+LIMIT sqlc.arg(lim) OFFSET sqlc.arg(off);
 
 -- -------------------------------
 -- 10. Get Channel by ID with Membership and Follower Status
@@ -186,7 +277,8 @@ SELECT
           AND cf.unfollowed_at IS NULL
     )::int AS followers_count
 FROM channels c
-WHERE c.id = $2 AND c.deleted_at IS NULL;
+WHERE c.id = $2 AND c.deleted_at IS NULL
+  AND persona_meets_min_age($1, c.min_age);
 -- -------------------------------
 -- 11. What a persona may do in a channel
 -- -------------------------------
@@ -230,7 +322,8 @@ SELECT
             WHERE p.id = sqlc.arg(persona_id)::bigint
               AND r.name = 'Administrator'
         )
-    )::boolean AS can_moderate
+    )::boolean AS can_moderate,
+    persona_meets_min_age(sqlc.arg(persona_id)::bigint, c.min_age)::boolean AS meets_min_age
 FROM channels c
 WHERE c.id = sqlc.arg(channel_id)::bigint AND c.deleted_at IS NULL;
 
@@ -244,7 +337,8 @@ SELECT
     p.name,
     p.first_name,
     p.last_name,
-    p.thumbnail
+    p.thumbnail,
+    p.privacy
 FROM channel_members cm
 JOIN personas p ON p.id = cm.persona_id
 WHERE cm.channel_id = $1
@@ -275,6 +369,7 @@ SELECT
     p.first_name,
     p.last_name,
     p.thumbnail,
+    p.privacy,
     (c.owner_id = cm.persona_id)::boolean AS is_owner,
     EXISTS (
         SELECT 1
@@ -303,3 +398,20 @@ SELECT id, name, thumbnail
 FROM channels
 WHERE id = ANY(sqlc.arg(ids)::bigint[])
   AND deleted_at IS NULL;
+
+-- name: DefaultPersonaInChannel :one
+SELECT (EXISTS (
+    SELECT 1
+    FROM personas p
+    JOIN channel_members cm ON cm.persona_id = p.id
+    JOIN channels c ON c.id = cm.channel_id AND c.deleted_at IS NULL
+    WHERE p.user_id = $1 AND p.is_default AND p.deleted_at IS NULL
+      AND cm.status IN ('active', 'pending') AND cm.left_at IS NULL
+) OR EXISTS (
+    SELECT 1
+    FROM personas p
+    JOIN channel_followers cf ON cf.persona_id = p.id
+    JOIN channels c ON c.id = cf.channel_id AND c.deleted_at IS NULL
+    WHERE p.user_id = $1 AND p.is_default AND p.deleted_at IS NULL
+      AND cf.unfollowed_at IS NULL
+))::boolean AS done;

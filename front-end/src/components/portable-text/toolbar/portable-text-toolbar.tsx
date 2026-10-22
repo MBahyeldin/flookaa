@@ -19,12 +19,10 @@ import {
   type ExtendAnnotationSchemaType,
   type ExtendBlockObjectSchemaType,
   type ExtendDecoratorSchemaType,
-  type ExtendInlineObjectSchemaType,
   type ExtendListSchemaType,
   type ExtendStyleSchemaType,
 } from "@portabletext/toolbar";
 import {
-  ActivityIcon,
   BoldIcon,
   CodeIcon,
   Heading1Icon,
@@ -33,15 +31,12 @@ import {
   Heading4Icon,
   Heading5Icon,
   Heading6Icon,
-  ImageIcon,
   ItalicIcon,
   LinkIcon,
   ListIcon,
   ListOrderedIcon,
-  MessageSquareTextIcon,
   PilcrowIcon,
   MoreHorizontalIcon,
-  SeparatorHorizontalIcon,
   StrikethroughIcon,
   SubscriptIcon,
   SuperscriptIcon,
@@ -57,10 +52,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useIsMobile } from "@/hooks/useMobile";
+import { blockByName } from "../blocks";
 import { DecoratorButton } from "./button.decorator";
 import { AnnotationButton } from "./button.annotation";
 import { ListButton } from "./button.list";
-import { BlockObjectButton } from "./button.block-object";
+import { InsertBlockButton } from "./button.insert-block";
 import { BlockObjectPopover } from "./popover.block-object";
 
 const extendDecorator: ExtendDecoratorSchemaType = (decorator) => {
@@ -132,17 +128,6 @@ const extendAnnotation: ExtendAnnotationSchemaType = (annotation) => {
         href: "https://example.com",
       },
       shortcut: link,
-    };
-  }
-
-  if (annotation.name === "comment") {
-    return {
-      ...annotation,
-      icon: MessageSquareTextIcon,
-      defaultValues: {
-        text: "Consider rewriting this",
-      },
-      mutuallyExclusive: [],
     };
   }
 
@@ -235,62 +220,22 @@ const extendList: ExtendListSchemaType = (list) => {
 };
 
 const extendBlockObject: ExtendBlockObjectSchemaType = (blockObject) => {
-  if (blockObject.name === "break") {
-    return {
-      ...blockObject,
-      icon: SeparatorHorizontalIcon,
-    };
-  }
-
-  if (blockObject.name === "image") {
-    return {
-      ...blockObject,
-      icon: ImageIcon,
-      defaultValues: {
-        src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4OTggMjQwIj48cG9seWdvbiBwb2ludHM9IjM5Mi4xOSA3OC40NSAzOTIuMTMgMTAwLjc1IDM3Mi4xOSA4OS4yNCAzNzEuOSAxODkuMjEgMzU4LjkxIDE4MS43MSAzNTkuMTkgODEuNzQgMzM5LjM1IDcwLjI4IDMzOS40MiA0Ny45OCAzOTIuMTkgNzguNDUiLz48cG9seWdvbiBwb2ludHM9IjQ0Mi42NyAxMDcuNTkgNDQyLjYxIDEyOS45IDQxMy4yOSAxMTIuOTcgNDEzLjIyIDEzOS42NSA0MzkuODEgMTU1IDQzOS43NSAxNzYuNzIgNDEzLjE2IDE2MS4zNyA0MTMuMDcgMTkwLjQ0IDQ0Mi4zOSAyMDcuMzYgNDQyLjMyIDIyOS44NyA0MDAuMzEgMjA1LjYxIDQwMC42NiA4My4zNCA0NDIuNjcgMTA3LjU5Ii8+PHBvbHlnb24gcG9pbnRzPSI1MDMuNCA3OS4yMiA0ODMuODYgMTUwLjE0IDUwNC43MiAyMDAuOTQgNDkwLjczIDIwOS4wMSA0NzYuNjQgMTc0LjY1IDQ2Mi44OCAyMjUuMSA0NDkuMTkgMjMzIDQ2OS42OSAxNTguNzIgNDQ5LjgyIDExMC4xNSA0NjMuODkgMTAyLjAzIDQ3Ni44MSAxMzQuMjYgNDg5LjgxIDg3LjA2IDUwMy40IDc5LjIyIi8+PHBvbHlnb24gcG9pbnRzPSI1NTcuNzUgNDcuODMgNTU3LjgyIDcwLjE0IDUzOC42IDgxLjI0IDUzOC44OCAxODEuMjIgNTI2LjM2IDE4OC40NCA1MjYuMDggODguNDYgNTA2Ljk1IDk5LjUxIDUwNi44OSA3Ny4yIDU1Ny43NSA0Ny44MyIvPjxwYXRoIGQ9Ik00MTkuMzcsMjcuMTJoMHMuMTktMzEuODIsMjcuODMtMTUuODMsMjcuNjUsNDcuODYsMjcuNjUsNDcuODZsLTkuMjItNS4zM3MwLTIxLjI4LTE4LjQzLTMxLjkyLTE4LjQzLDEwLjY0LTE4LjQzLDEwLjY0WiIvPjwvc3ZnPgo=",
-        alt: "Portable Text logo",
-      },
-    };
-  }
-
-  return blockObject;
+  const block = blockByName(blockObject.name);
+  if (!block) return blockObject;
+  return {
+    ...blockObject,
+    icon: block.icon,
+    defaultValues: block.defaultValues,
+  };
 };
 
-const extendInlineObject: ExtendInlineObjectSchemaType = (inlineObject) => {
-  if (inlineObject.name === "stock-ticker") {
-    return {
-      ...inlineObject,
-      icon: ActivityIcon,
-      defaultValues: {
-        symbol: "NVDA",
-      },
-    };
-  }
-
-  if (inlineObject.name === "image") {
-    return {
-      ...inlineObject,
-      icon: ImageIcon,
-      defaultValues: {
-        src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4OTggMjQwIj48cG9seWdvbiBwb2ludHM9IjM5Mi4xOSA3OC40NSAzOTIuMTMgMTAwLjc1IDM3Mi4xOSA4OS4yNCAzNzEuOSAxODkuMjEgMzU4LjkxIDE4MS43MSAzNTkuMTkgODEuNzQgMzM5LjM1IDcwLjI4IDMzOS40MiA0Ny45OCAzOTIuMTkgNzguNDUiLz48cG9seWdvbiBwb2ludHM9IjQ0Mi42NyAxMDcuNTkgNDQyLjYxIDEyOS45IDQxMy4yOSAxMTIuOTcgNDEzLjIyIDEzOS42NSA0MzkuODEgMTU1IDQzOS43NSAxNzYuNzIgNDEzLjE2IDE2MS4zNyA0MTMuMDcgMTkwLjQ0IDQ0Mi4zOSAyMDcuMzYgNDQyLjMyIDIyOS44NyA0MDAuMzEgMjA1LjYxIDQwMC42NiA4My4zNCA0NDIuNjcgMTA3LjU5Ii8+PHBvbHlnb24gcG9pbnRzPSI1MDMuNCA3OS4yMiA0ODMuODYgMTUwLjE0IDUwNC43MiAyMDAuOTQgNDkwLjczIDIwOS4wMSA0NzYuNjQgMTc0LjY1IDQ2Mi44OCAyMjUuMSA0NDkuMTkgMjMzIDQ2OS42OSAxNTguNzIgNDQ5LjgyIDExMC4xNSA0NjMuODkgMTAyLjAzIDQ3Ni44MSAxMzQuMjYgNDg5LjgxIDg3LjA2IDUwMy40IDc5LjIyIi8+PHBvbHlnb24gcG9pbnRzPSI1NTcuNzUgNDcuODMgNTU3LjgyIDcwLjE0IDUzOC42IDgxLjI0IDUzOC44OCAxODEuMjIgNTI2LjM2IDE4OC40NCA1MjYuMDggODguNDYgNTA2Ljk1IDk5LjUxIDUwNi44OSA3Ny4yIDU1Ny43NSA0Ny44MyIvPjxwYXRoIGQ9Ik00MTkuMzcsMjcuMTJoMHMuMTktMzEuODIsMjcuODMtMTUuODMsMjcuNjUsNDcuODYsMjcuNjUsNDcuODZsLTkuMjItNS4zM3MwLTIxLjI4LTE4LjQzLTMxLjkyLTE4LjQzLDEwLjY0LTE4LjQzLDEwLjY0WiIvPjwvc3ZnPgo=",
-        alt: "Portable Text logo",
-      },
-    };
-  }
-
-  return inlineObject;
-};
-
-export function PortableTextToolbar(props: {
-  children?: React.ReactNode;
-}) {
+export function PortableTextToolbar(props: { children?: React.ReactNode }) {
   const toolbarSchema = useToolbarSchema({
     extendDecorator,
     extendAnnotation,
     extendStyle,
     extendList,
     extendBlockObject,
-    extendInlineObject,
   });
 
   const isMobile = useIsMobile();
@@ -342,38 +287,24 @@ export function PortableTextToolbar(props: {
           ))}
         </>
       ) : null}
-      {blockObjects.length ? (
-        <>
-          <Separator
-            orientation="vertical"
-            className="mx-0.5 self-center data-[orientation=vertical]:h-5"
-          />
-          {blockObjects.map((blockObject) => (
-            <BlockObjectButton
-              key={blockObject.name}
-              schemaType={blockObject}
-            />
-          ))}
-        </>
-      ) : null}
-      {blockObjects.length ? (
-        <BlockObjectPopover schemaTypes={blockObjects} />
-      ) : null}
     </>
   );
+
+  const insertButton = blockObjects.length ? (
+    <InsertBlockButton className="ml-auto shrink-0" />
+  ) : null;
 
   const hasOverflow =
     isMobile &&
     (overflowDecorators.length > 0 ||
       annotations.length > 0 ||
-      lists.length > 0 ||
-      blockObjects.length > 0);
+      lists.length > 0);
 
   return (
     // No border/rounding of its own: the parent is the bordered surface, and
     // this only needs a divider under it. overflow-x-auto stays as a safety
     // net for very narrow screens even with the overflow menu in place.
-    <div className="flex min-w-0 items-center gap-1 overflow-x-auto border-b border-border bg-background px-2 py-1">
+    <div className="flex min-w-0 items-center gap-1 overflow-x-auto border-b border-border bg-background px-2 py-1 max-md:[&_button]:min-h-11 max-md:[&_button]:min-w-11">
       {/*
         The paragraph-style picker is block-scoped: it restyles the whole line,
         while everything to its right applies to the highlighted characters
@@ -400,31 +331,47 @@ export function PortableTextToolbar(props: {
       ) : null}
 
       {isMobile ? (
-        hasOverflow ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="ml-auto shrink-0"
-                aria-label="More formatting tools"
+        <>
+          {insertButton}
+          {hasOverflow ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  aria-label="More formatting tools"
+                >
+                  <MoreHorizontalIcon className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-auto p-2 [&_button]:min-h-11 [&_button]:min-w-11"
               >
-                <MoreHorizontalIcon className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-auto p-2">
-              <div className="flex flex-wrap items-center gap-1">
-                {overflowDecorators.map((decorator) => (
-                  <DecoratorButton key={decorator.name} schemaType={decorator} />
-                ))}
-                {secondaryGroups}
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null
+                <div className="flex flex-wrap items-center gap-1">
+                  {overflowDecorators.map((decorator) => (
+                    <DecoratorButton
+                      key={decorator.name}
+                      schemaType={decorator}
+                    />
+                  ))}
+                  {secondaryGroups}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+        </>
       ) : (
-        secondaryGroups
+        <>
+          {secondaryGroups}
+          {insertButton}
+        </>
       )}
+
+      {blockObjects.length ? (
+        <BlockObjectPopover schemaTypes={blockObjects} />
+      ) : null}
 
       {props.children}
     </div>

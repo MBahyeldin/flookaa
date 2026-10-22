@@ -42,3 +42,10 @@ type ChannelEventPayload struct {
 	PersonaID int64  `json:"persona_id"`
 	Reason    string `json:"reason"`
 }
+
+// interests.update: the channel's interest tags changed. The payload is empty;
+// viewers refetch the tags.
+const EventChannelInterests db.EventEnum = "interests"
+
+// info.update: the channel's settings (min_age) changed. No payload; viewers refetch.
+const EventChannelInfo db.EventEnum = "info"

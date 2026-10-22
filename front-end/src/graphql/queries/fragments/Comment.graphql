@@ -8,6 +8,7 @@ fragment CommentFields on Comment {
     username
     fullName
     profileImageUrl
+    anonymous
   }
   rawContent
   createdAt

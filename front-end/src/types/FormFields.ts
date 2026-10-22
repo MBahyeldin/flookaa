@@ -12,13 +12,19 @@ type FormFieldInterfaceTypes =
   | "select"
   | "radio"
   | "checkbox"
+  | "switch"
   | "date"
+  | "datetime"
   | "file"
   | "pic"
+  | "voice"
   | "profile-picture"
   | "dropdown-country"
   | "dropdown-state"
-  | "dropdown-city";
+  | "dropdown-city"
+  | "list"
+  | "theme"
+  | "interests";
 
 export type { FormFieldInterfaceTypes };
 
@@ -55,6 +61,7 @@ export type FormFieldProps = {
   name?: string;
   type?: string;
   value?: unknown;
+  values?: Record<string, unknown>;
 };
 
 export type FormGroup = {

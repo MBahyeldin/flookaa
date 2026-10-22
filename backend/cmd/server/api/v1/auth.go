@@ -24,10 +24,11 @@ func AddAuthRoutes(r *gin.RouterGroup, users *users.Handler, google *oauthprovid
 		oAuthGroup.GET("/google", google.HandleGoogleOAuthCallback)
 	}
 
-	// User tier: registration sets the cookie before the email is verified.
-	sessionGroup := authGroup.Group("", auth.RequireUser())
+	// Session tier: what an unverified user may still do.
+	sessionGroup := authGroup.Group("", auth.RequireSession())
 	{
 		sessionGroup.POST("/verify", users.Verify)
+		sessionGroup.POST("/verify/resend", users.ResendVerification)
 		sessionGroup.GET("/info", users.Info)
 	}
 }

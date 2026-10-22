@@ -31,6 +31,40 @@ type ACL struct {
 	CanLike    bool `json:"canLike"`
 }
 
+type AccordionBlock struct {
+	Type             BlockType        `json:"_type"`
+	Key              string           `json:"_key"`
+	Title            *string          `json:"title,omitempty"`
+	Items            []*AccordionItem `json:"items"`
+	AllowMultiple    *bool            `json:"allowMultiple,omitempty"`
+	DefaultFirstOpen *bool            `json:"defaultFirstOpen,omitempty"`
+}
+
+func (AccordionBlock) IsBlock()                {}
+func (this AccordionBlock) GetType() BlockType { return this.Type }
+func (this AccordionBlock) GetKey() string     { return this.Key }
+
+type AccordionBlockInput struct {
+	Type             BlockType             `json:"_type"`
+	Key              string                `json:"_key"`
+	Title            *string               `json:"title,omitempty"`
+	Items            []*AccordionItemInput `json:"items"`
+	AllowMultiple    *bool                 `json:"allowMultiple,omitempty"`
+	DefaultFirstOpen *bool                 `json:"defaultFirstOpen,omitempty"`
+}
+
+type AccordionItem struct {
+	Key   string `json:"_key"`
+	Title string `json:"title"`
+	Text  string `json:"text"`
+}
+
+type AccordionItemInput struct {
+	Key   string `json:"_key"`
+	Title string `json:"title"`
+	Text  string `json:"text"`
+}
+
 type BlockBlock struct {
 	Type     BlockType     `json:"_type"`
 	Key      string        `json:"_key"`
@@ -58,21 +92,40 @@ type BlockBlockInput struct {
 
 // Oneof input for blocks
 type BlockInput struct {
-	Block *BlockBlockInput `json:"block,omitempty"`
-	Image *ImageBlockInput `json:"image,omitempty"`
-	Break *BreakBlockInput `json:"break,omitempty"`
+	Block     *BlockBlockInput     `json:"block,omitempty"`
+	Image     *ImageBlockInput     `json:"image,omitempty"`
+	Break     *BreakBlockInput     `json:"break,omitempty"`
+	Callout   *CalloutBlockInput   `json:"callout,omitempty"`
+	Quote     *QuoteBlockInput     `json:"quote,omitempty"`
+	Steps     *StepsBlockInput     `json:"steps,omitempty"`
+	Accordion *AccordionBlockInput `json:"accordion,omitempty"`
+	Spoiler   *SpoilerBlockInput   `json:"spoiler,omitempty"`
+	Countdown *CountdownBlockInput `json:"countdown,omitempty"`
+	Checklist *ChecklistBlockInput `json:"checklist,omitempty"`
+	Gallery   *GalleryBlockInput   `json:"gallery,omitempty"`
+	VoiceNote *VoiceNoteBlockInput `json:"voiceNote,omitempty"`
 }
 
 // Union of all possible blocks
 type Blocks struct {
-	Block *BlockBlock `json:"block,omitempty"`
-	Image *ImageBlock `json:"image,omitempty"`
-	Break *BreakBlock `json:"break,omitempty"`
+	Block     *BlockBlock     `json:"block,omitempty"`
+	Image     *ImageBlock     `json:"image,omitempty"`
+	Break     *BreakBlock     `json:"break,omitempty"`
+	Callout   *CalloutBlock   `json:"callout,omitempty"`
+	Quote     *QuoteBlock     `json:"quote,omitempty"`
+	Steps     *StepsBlock     `json:"steps,omitempty"`
+	Accordion *AccordionBlock `json:"accordion,omitempty"`
+	Spoiler   *SpoilerBlock   `json:"spoiler,omitempty"`
+	Countdown *CountdownBlock `json:"countdown,omitempty"`
+	Checklist *ChecklistBlock `json:"checklist,omitempty"`
+	Gallery   *GalleryBlock   `json:"gallery,omitempty"`
+	VoiceNote *VoiceNoteBlock `json:"voiceNote,omitempty"`
 }
 
 type BreakBlock struct {
-	Type BlockType `json:"_type"`
-	Key  string    `json:"_key"`
+	Type  BlockType   `json:"_type"`
+	Key   string      `json:"_key"`
+	Style *BreakStyle `json:"style,omitempty"`
 }
 
 func (BreakBlock) IsBlock()                {}
@@ -80,27 +133,82 @@ func (this BreakBlock) GetType() BlockType { return this.Type }
 func (this BreakBlock) GetKey() string     { return this.Key }
 
 type BreakBlockInput struct {
-	Type BlockType `json:"_type"`
-	Key  string    `json:"_key"`
+	Type  BlockType   `json:"_type"`
+	Key   string      `json:"_key"`
+	Style *BreakStyle `json:"style,omitempty"`
+}
+
+type CalloutBlock struct {
+	Type        BlockType    `json:"_type"`
+	Key         string       `json:"_key"`
+	Tone        *CalloutTone `json:"tone,omitempty"`
+	Icon        *CalloutIcon `json:"icon,omitempty"`
+	Title       *string      `json:"title,omitempty"`
+	Description string       `json:"description"`
+}
+
+func (CalloutBlock) IsBlock()                {}
+func (this CalloutBlock) GetType() BlockType { return this.Type }
+func (this CalloutBlock) GetKey() string     { return this.Key }
+
+type CalloutBlockInput struct {
+	Type        BlockType    `json:"_type"`
+	Key         string       `json:"_key"`
+	Tone        *CalloutTone `json:"tone,omitempty"`
+	Icon        *CalloutIcon `json:"icon,omitempty"`
+	Title       *string      `json:"title,omitempty"`
+	Description string       `json:"description"`
 }
 
 type Channel struct {
-	ID              int64     `json:"id"`
-	Name            string    `json:"name"`
-	Description     *string   `json:"description,omitempty"`
-	BannerImageURL  *string   `json:"bannerImageUrl,omitempty"`
-	ThumbnailURL    *string   `json:"thumbnailUrl,omitempty"`
-	ProfileImageURL *string   `json:"profileImageUrl,omitempty"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
-	Posts           []*Post   `json:"posts"`
-	TotalPosts      int32     `json:"totalPosts"`
-	Owner           *Persona  `json:"owner"`
-	MembersCount    *int32    `json:"membersCount,omitempty"`
-	FollowersCount  *int32    `json:"followersCount,omitempty"`
-	IsMember        bool      `json:"isMember"`
-	IsFollower      bool      `json:"isFollower"`
-	CanModerate     bool      `json:"canModerate"`
+	ID              int64         `json:"id"`
+	Name            string        `json:"name"`
+	Description     *string       `json:"description,omitempty"`
+	BannerImageURL  *string       `json:"bannerImageUrl,omitempty"`
+	ThumbnailURL    *string       `json:"thumbnailUrl,omitempty"`
+	ProfileImageURL *string       `json:"profileImageUrl,omitempty"`
+	CreatedAt       time.Time     `json:"createdAt"`
+	UpdatedAt       time.Time     `json:"updatedAt"`
+	Posts           []*Post       `json:"posts"`
+	TotalPosts      int32         `json:"totalPosts"`
+	Owner           *Persona      `json:"owner"`
+	MembersCount    *int32        `json:"membersCount,omitempty"`
+	FollowersCount  *int32        `json:"followersCount,omitempty"`
+	IsMember        bool          `json:"isMember"`
+	IsFollower      bool          `json:"isFollower"`
+	CanModerate     bool          `json:"canModerate"`
+	Community       *CommunityRef `json:"community,omitempty"`
+	MinAge          int32         `json:"minAge"`
+}
+
+type ChecklistBlock struct {
+	Type  BlockType        `json:"_type"`
+	Key   string           `json:"_key"`
+	Title *string          `json:"title,omitempty"`
+	Items []*ChecklistItem `json:"items"`
+}
+
+func (ChecklistBlock) IsBlock()                {}
+func (this ChecklistBlock) GetType() BlockType { return this.Type }
+func (this ChecklistBlock) GetKey() string     { return this.Key }
+
+type ChecklistBlockInput struct {
+	Type  BlockType             `json:"_type"`
+	Key   string                `json:"_key"`
+	Title *string               `json:"title,omitempty"`
+	Items []*ChecklistItemInput `json:"items"`
+}
+
+type ChecklistItem struct {
+	Key     string `json:"_key"`
+	Text    string `json:"text"`
+	Checked bool   `json:"checked"`
+}
+
+type ChecklistItemInput struct {
+	Key     string `json:"_key"`
+	Text    string `json:"text"`
+	Checked *bool  `json:"checked,omitempty"`
 }
 
 type Comment struct {
@@ -135,31 +243,78 @@ type CommentInput struct {
 	AllowedPersonaIds []int64      `json:"allowedPersonaIds"`
 }
 
-// MarkDef for comments
-type CommentMarkDef struct {
-	Key  string      `json:"_key"`
-	Type MarkDefType `json:"_type"`
-	Text string      `json:"text"`
+type CommunityRef struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
 }
 
-func (CommentMarkDef) IsMarkDef()                {}
-func (this CommentMarkDef) GetKey() string       { return this.Key }
-func (this CommentMarkDef) GetType() MarkDefType { return this.Type }
+type CountdownBlock struct {
+	Type      BlockType `json:"_type"`
+	Key       string    `json:"_key"`
+	EndsAt    time.Time `json:"endsAt"`
+	Label     *string   `json:"label,omitempty"`
+	EndedText *string   `json:"endedText,omitempty"`
+}
 
-type CommentMarkDefInput struct {
-	Key  string      `json:"_key"`
-	Type MarkDefType `json:"_type"`
-	Text string      `json:"text"`
+func (CountdownBlock) IsBlock()                {}
+func (this CountdownBlock) GetType() BlockType { return this.Type }
+func (this CountdownBlock) GetKey() string     { return this.Key }
+
+type CountdownBlockInput struct {
+	Type      BlockType `json:"_type"`
+	Key       string    `json:"_key"`
+	EndsAt    time.Time `json:"endsAt"`
+	Label     *string   `json:"label,omitempty"`
+	EndedText *string   `json:"endedText,omitempty"`
+}
+
+type GalleryBlock struct {
+	Type   BlockType      `json:"_type"`
+	Key    string         `json:"_key"`
+	Layout *GalleryLayout `json:"layout,omitempty"`
+	Items  []*GalleryItem `json:"items"`
+}
+
+func (GalleryBlock) IsBlock()                {}
+func (this GalleryBlock) GetType() BlockType { return this.Type }
+func (this GalleryBlock) GetKey() string     { return this.Key }
+
+type GalleryBlockInput struct {
+	Type   BlockType           `json:"_type"`
+	Key    string              `json:"_key"`
+	Layout *GalleryLayout      `json:"layout,omitempty"`
+	Items  []*GalleryItemInput `json:"items"`
+}
+
+type GalleryItem struct {
+	Key     string  `json:"_key"`
+	Src     string  `json:"src"`
+	Alt     *string `json:"alt,omitempty"`
+	Caption *string `json:"caption,omitempty"`
+	Width   *int32  `json:"width,omitempty"`
+	Height  *int32  `json:"height,omitempty"`
+}
+
+type GalleryItemInput struct {
+	Key     string  `json:"_key"`
+	Src     string  `json:"src"`
+	Alt     *string `json:"alt,omitempty"`
+	Caption *string `json:"caption,omitempty"`
+	Width   *int32  `json:"width,omitempty"`
+	Height  *int32  `json:"height,omitempty"`
 }
 
 type ImageBlock struct {
-	Type    BlockType `json:"_type"`
-	Key     string    `json:"_key"`
-	Src     string    `json:"src"`
-	Alt     *string   `json:"alt,omitempty"`
-	Caption *string   `json:"caption,omitempty"`
-	Width   *string   `json:"width,omitempty"`
-	Height  *string   `json:"height,omitempty"`
+	Type    BlockType   `json:"_type"`
+	Key     string      `json:"_key"`
+	Src     string      `json:"src"`
+	Alt     *string     `json:"alt,omitempty"`
+	Caption *string     `json:"caption,omitempty"`
+	Width   *int32      `json:"width,omitempty"`
+	Height  *int32      `json:"height,omitempty"`
+	Size    *ImageSize  `json:"size,omitempty"`
+	Align   *ImageAlign `json:"align,omitempty"`
 }
 
 func (ImageBlock) IsBlock()                {}
@@ -167,13 +322,15 @@ func (this ImageBlock) GetType() BlockType { return this.Type }
 func (this ImageBlock) GetKey() string     { return this.Key }
 
 type ImageBlockInput struct {
-	Type    BlockType `json:"_type"`
-	Key     string    `json:"_key"`
-	Src     string    `json:"src"`
-	Alt     *string   `json:"alt,omitempty"`
-	Caption *string   `json:"caption,omitempty"`
-	Width   *string   `json:"width,omitempty"`
-	Height  *string   `json:"height,omitempty"`
+	Type    BlockType   `json:"_type"`
+	Key     string      `json:"_key"`
+	Src     string      `json:"src"`
+	Alt     *string     `json:"alt,omitempty"`
+	Caption *string     `json:"caption,omitempty"`
+	Width   *int32      `json:"width,omitempty"`
+	Height  *int32      `json:"height,omitempty"`
+	Size    *ImageSize  `json:"size,omitempty"`
+	Align   *ImageAlign `json:"align,omitempty"`
 }
 
 type LikeInput struct {
@@ -204,14 +361,12 @@ type LinkMarkDefInput struct {
 
 // Oneof input for markDefs
 type MarkDefInput struct {
-	Link    *LinkMarkDefInput    `json:"link,omitempty"`
-	Comment *CommentMarkDefInput `json:"comment,omitempty"`
+	Link *LinkMarkDefInput `json:"link,omitempty"`
 }
 
 // Union of all possible markDefs
 type MarkDefs struct {
-	Link    *LinkMarkDef    `json:"link,omitempty"`
-	Comment *CommentMarkDef `json:"comment,omitempty"`
+	Link *LinkMarkDef `json:"link,omitempty"`
 }
 
 type Media struct {
@@ -249,6 +404,7 @@ type Persona struct {
 	Username        string  `json:"username"`
 	FullName        string  `json:"fullName"`
 	ProfileImageURL *string `json:"profileImageUrl,omitempty"`
+	Anonymous       bool    `json:"anonymous"`
 }
 
 type PersonalizedMeta struct {
@@ -318,6 +474,26 @@ type PostInput struct {
 type Query struct {
 }
 
+type QuoteBlock struct {
+	Type BlockType `json:"_type"`
+	Key  string    `json:"_key"`
+	Text string    `json:"text"`
+	Name *string   `json:"name,omitempty"`
+	Role *string   `json:"role,omitempty"`
+}
+
+func (QuoteBlock) IsBlock()                {}
+func (this QuoteBlock) GetType() BlockType { return this.Type }
+func (this QuoteBlock) GetKey() string     { return this.Key }
+
+type QuoteBlockInput struct {
+	Type BlockType `json:"_type"`
+	Key  string    `json:"_key"`
+	Text string    `json:"text"`
+	Name *string   `json:"name,omitempty"`
+	Role *string   `json:"role,omitempty"`
+}
+
 type SimpleInput struct {
 	Type    SimpleInputType `json:"type"`
 	Content string          `json:"content"`
@@ -337,24 +513,110 @@ type SpanInput struct {
 	Marks []string `json:"marks"`
 }
 
+type SpoilerBlock struct {
+	Type    BlockType `json:"_type"`
+	Key     string    `json:"_key"`
+	Label   *string   `json:"label,omitempty"`
+	Content []*Blocks `json:"content"`
+}
+
+func (SpoilerBlock) IsBlock()                {}
+func (this SpoilerBlock) GetType() BlockType { return this.Type }
+func (this SpoilerBlock) GetKey() string     { return this.Key }
+
+type SpoilerBlockInput struct {
+	Type    BlockType     `json:"_type"`
+	Key     string        `json:"_key"`
+	Label   *string       `json:"label,omitempty"`
+	Content []*BlockInput `json:"content"`
+}
+
+type StepItem struct {
+	Key   string  `json:"_key"`
+	Title string  `json:"title"`
+	Text  *string `json:"text,omitempty"`
+}
+
+type StepItemInput struct {
+	Key   string  `json:"_key"`
+	Title string  `json:"title"`
+	Text  *string `json:"text,omitempty"`
+}
+
+type StepsBlock struct {
+	Type  BlockType   `json:"_type"`
+	Key   string      `json:"_key"`
+	Title *string     `json:"title,omitempty"`
+	Items []*StepItem `json:"items"`
+}
+
+func (StepsBlock) IsBlock()                {}
+func (this StepsBlock) GetType() BlockType { return this.Type }
+func (this StepsBlock) GetKey() string     { return this.Key }
+
+type StepsBlockInput struct {
+	Type  BlockType        `json:"_type"`
+	Key   string           `json:"_key"`
+	Title *string          `json:"title,omitempty"`
+	Items []*StepItemInput `json:"items"`
+}
+
+type VoiceNoteBlock struct {
+	Type     BlockType `json:"_type"`
+	Key      string    `json:"_key"`
+	Src      string    `json:"src"`
+	Title    *string   `json:"title,omitempty"`
+	Duration *int32    `json:"duration,omitempty"`
+}
+
+func (VoiceNoteBlock) IsBlock()                {}
+func (this VoiceNoteBlock) GetType() BlockType { return this.Type }
+func (this VoiceNoteBlock) GetKey() string     { return this.Key }
+
+type VoiceNoteBlockInput struct {
+	Type     BlockType `json:"_type"`
+	Key      string    `json:"_key"`
+	Src      string    `json:"src"`
+	Title    *string   `json:"title,omitempty"`
+	Duration *int32    `json:"duration,omitempty"`
+}
+
 // A block of rich text
 type BlockType string
 
 const (
-	BlockTypeBlock BlockType = "block"
-	BlockTypeImage BlockType = "image"
-	BlockTypeBreak BlockType = "break"
+	BlockTypeBlock     BlockType = "block"
+	BlockTypeImage     BlockType = "image"
+	BlockTypeBreak     BlockType = "break"
+	BlockTypeCallout   BlockType = "callout"
+	BlockTypeQuote     BlockType = "quote"
+	BlockTypeSteps     BlockType = "steps"
+	BlockTypeAccordion BlockType = "accordion"
+	BlockTypeSpoiler   BlockType = "spoiler"
+	BlockTypeCountdown BlockType = "countdown"
+	BlockTypeChecklist BlockType = "checklist"
+	BlockTypeGallery   BlockType = "gallery"
+	BlockTypeVoiceNote BlockType = "voiceNote"
 )
 
 var AllBlockType = []BlockType{
 	BlockTypeBlock,
 	BlockTypeImage,
 	BlockTypeBreak,
+	BlockTypeCallout,
+	BlockTypeQuote,
+	BlockTypeSteps,
+	BlockTypeAccordion,
+	BlockTypeSpoiler,
+	BlockTypeCountdown,
+	BlockTypeChecklist,
+	BlockTypeGallery,
+	BlockTypeVoiceNote,
 }
 
 func (e BlockType) IsValid() bool {
 	switch e {
-	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak:
+	case BlockTypeBlock, BlockTypeImage, BlockTypeBreak, BlockTypeCallout, BlockTypeQuote, BlockTypeSteps, BlockTypeAccordion, BlockTypeSpoiler, BlockTypeCountdown, BlockTypeChecklist, BlockTypeGallery, BlockTypeVoiceNote:
 		return true
 	}
 	return false
@@ -390,6 +652,366 @@ func (e *BlockType) UnmarshalJSON(b []byte) error {
 }
 
 func (e BlockType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type BreakStyle string
+
+const (
+	BreakStyleLine     BreakStyle = "line"
+	BreakStyleDashed   BreakStyle = "dashed"
+	BreakStyleDots     BreakStyle = "dots"
+	BreakStyleOrnament BreakStyle = "ornament"
+)
+
+var AllBreakStyle = []BreakStyle{
+	BreakStyleLine,
+	BreakStyleDashed,
+	BreakStyleDots,
+	BreakStyleOrnament,
+}
+
+func (e BreakStyle) IsValid() bool {
+	switch e {
+	case BreakStyleLine, BreakStyleDashed, BreakStyleDots, BreakStyleOrnament:
+		return true
+	}
+	return false
+}
+
+func (e BreakStyle) String() string {
+	return string(e)
+}
+
+func (e *BreakStyle) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = BreakStyle(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid BreakStyle", str)
+	}
+	return nil
+}
+
+func (e BreakStyle) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *BreakStyle) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e BreakStyle) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type CalloutIcon string
+
+const (
+	CalloutIconInfo      CalloutIcon = "info"
+	CalloutIconCheck     CalloutIcon = "check"
+	CalloutIconAlert     CalloutIcon = "alert"
+	CalloutIconError     CalloutIcon = "error"
+	CalloutIconLightbulb CalloutIcon = "lightbulb"
+	CalloutIconStar      CalloutIcon = "star"
+	CalloutIconHeart     CalloutIcon = "heart"
+	CalloutIconMegaphone CalloutIcon = "megaphone"
+	CalloutIconNone      CalloutIcon = "none"
+)
+
+var AllCalloutIcon = []CalloutIcon{
+	CalloutIconInfo,
+	CalloutIconCheck,
+	CalloutIconAlert,
+	CalloutIconError,
+	CalloutIconLightbulb,
+	CalloutIconStar,
+	CalloutIconHeart,
+	CalloutIconMegaphone,
+	CalloutIconNone,
+}
+
+func (e CalloutIcon) IsValid() bool {
+	switch e {
+	case CalloutIconInfo, CalloutIconCheck, CalloutIconAlert, CalloutIconError, CalloutIconLightbulb, CalloutIconStar, CalloutIconHeart, CalloutIconMegaphone, CalloutIconNone:
+		return true
+	}
+	return false
+}
+
+func (e CalloutIcon) String() string {
+	return string(e)
+}
+
+func (e *CalloutIcon) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = CalloutIcon(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid CalloutIcon", str)
+	}
+	return nil
+}
+
+func (e CalloutIcon) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *CalloutIcon) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e CalloutIcon) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type CalloutTone string
+
+const (
+	CalloutToneInfo    CalloutTone = "info"
+	CalloutToneSuccess CalloutTone = "success"
+	CalloutToneWarning CalloutTone = "warning"
+	CalloutToneError   CalloutTone = "error"
+)
+
+var AllCalloutTone = []CalloutTone{
+	CalloutToneInfo,
+	CalloutToneSuccess,
+	CalloutToneWarning,
+	CalloutToneError,
+}
+
+func (e CalloutTone) IsValid() bool {
+	switch e {
+	case CalloutToneInfo, CalloutToneSuccess, CalloutToneWarning, CalloutToneError:
+		return true
+	}
+	return false
+}
+
+func (e CalloutTone) String() string {
+	return string(e)
+}
+
+func (e *CalloutTone) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = CalloutTone(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid CalloutTone", str)
+	}
+	return nil
+}
+
+func (e CalloutTone) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *CalloutTone) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e CalloutTone) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type GalleryLayout string
+
+const (
+	GalleryLayoutGrid     GalleryLayout = "grid"
+	GalleryLayoutCarousel GalleryLayout = "carousel"
+)
+
+var AllGalleryLayout = []GalleryLayout{
+	GalleryLayoutGrid,
+	GalleryLayoutCarousel,
+}
+
+func (e GalleryLayout) IsValid() bool {
+	switch e {
+	case GalleryLayoutGrid, GalleryLayoutCarousel:
+		return true
+	}
+	return false
+}
+
+func (e GalleryLayout) String() string {
+	return string(e)
+}
+
+func (e *GalleryLayout) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = GalleryLayout(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid GalleryLayout", str)
+	}
+	return nil
+}
+
+func (e GalleryLayout) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *GalleryLayout) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e GalleryLayout) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type ImageAlign string
+
+const (
+	ImageAlignLeft   ImageAlign = "left"
+	ImageAlignCenter ImageAlign = "center"
+	ImageAlignRight  ImageAlign = "right"
+)
+
+var AllImageAlign = []ImageAlign{
+	ImageAlignLeft,
+	ImageAlignCenter,
+	ImageAlignRight,
+}
+
+func (e ImageAlign) IsValid() bool {
+	switch e {
+	case ImageAlignLeft, ImageAlignCenter, ImageAlignRight:
+		return true
+	}
+	return false
+}
+
+func (e ImageAlign) String() string {
+	return string(e)
+}
+
+func (e *ImageAlign) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ImageAlign(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ImageAlign", str)
+	}
+	return nil
+}
+
+func (e ImageAlign) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ImageAlign) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ImageAlign) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type ImageSize string
+
+const (
+	ImageSizeXs ImageSize = "xs"
+	ImageSizeS  ImageSize = "s"
+	ImageSizeM  ImageSize = "m"
+	ImageSizeL  ImageSize = "l"
+	ImageSizeXl ImageSize = "xl"
+)
+
+var AllImageSize = []ImageSize{
+	ImageSizeXs,
+	ImageSizeS,
+	ImageSizeM,
+	ImageSizeL,
+	ImageSizeXl,
+}
+
+func (e ImageSize) IsValid() bool {
+	switch e {
+	case ImageSizeXs, ImageSizeS, ImageSizeM, ImageSizeL, ImageSizeXl:
+		return true
+	}
+	return false
+}
+
+func (e ImageSize) String() string {
+	return string(e)
+}
+
+func (e *ImageSize) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ImageSize(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ImageSize", str)
+	}
+	return nil
+}
+
+func (e ImageSize) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ImageSize) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ImageSize) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
@@ -453,18 +1075,16 @@ func (e ListItemType) MarshalJSON() ([]byte, error) {
 type MarkDefType string
 
 const (
-	MarkDefTypeLink    MarkDefType = "link"
-	MarkDefTypeComment MarkDefType = "comment"
+	MarkDefTypeLink MarkDefType = "link"
 )
 
 var AllMarkDefType = []MarkDefType{
 	MarkDefTypeLink,
-	MarkDefTypeComment,
 }
 
 func (e MarkDefType) IsValid() bool {
 	switch e {
-	case MarkDefTypeLink, MarkDefTypeComment:
+	case MarkDefTypeLink:
 		return true
 	}
 	return false

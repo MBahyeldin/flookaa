@@ -2,12 +2,17 @@ package users
 
 import (
 	"app/internal/auth"
+	"app/internal/slug"
 	"app/util/cookies"
 	"database/sql"
 	"fmt"
 	"hash/fnv"
+	"log"
 	"net/http"
+	"shared/external/db/postgres"
+	"shared/pkg/access"
 	"shared/pkg/db"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -37,6 +42,7 @@ func (h *Handler) ReadCurrentPersona(c *gin.Context) {
 		"last_name":       personaRow.LastName,
 		"slug":            personaRow.Slug,
 		"thumbnail":       personaRow.Thumbnail.String,
+		"theme":           personaRow.Theme,
 		"joined_channels": personaRow.JoinedChannels.RawMessage,
 	})
 }
@@ -61,17 +67,19 @@ func (h *Handler) ListPersonas(c *gin.Context) {
 	var response []gin.H
 	for _, persona := range personas {
 		response = append(response, gin.H{
-			"id":          persona.ID,
-			"name":        persona.Name,
-			"description": persona.Description,
-			"bio":         persona.Bio.String,
-			"first_name":  persona.FirstName,
-			"last_name":   persona.LastName,
-			"thumbnail":   persona.Thumbnail.String,
-			"is_default":  persona.IsDefault.Bool,
-			"created_at":  persona.CreatedAt.Time,
-			"slug":        persona.Slug,
-			"privacy":     persona.Privacy,
+			"id":              persona.ID,
+			"name":            persona.Name,
+			"description":     persona.Description,
+			"bio":             persona.Bio.String,
+			"first_name":      persona.FirstName,
+			"last_name":       persona.LastName,
+			"thumbnail":       persona.Thumbnail.String,
+			"is_default":      persona.IsDefault.Bool,
+			"created_at":      persona.CreatedAt.Time,
+			"slug":            persona.Slug,
+			"privacy":         persona.Privacy,
+			"show_on_profile": persona.ShowOnProfile,
+			"theme":           persona.Theme,
 		})
 	}
 
@@ -88,42 +96,70 @@ func (h *Handler) CreatePersona(c *gin.Context) {
 	}
 
 	var req struct {
-		Name        string `json:"name" binding:"required"`
-		Description string `json:"description" binding:"required"`
-		FirstName   string `json:"first_name" binding:"required"`
-		LastName    string `json:"last_name" binding:"required"`
-		Privacy     string `json:"privacy" binding:"required"`
-		Thumbnail   string `json:"thumbnail"`
-		Bio         string `json:"bio"`
+		Name          string `json:"name" binding:"required"`
+		Description   string `json:"description"`
+		FirstName     string `json:"first_name" binding:"required"`
+		LastName      string `json:"last_name" binding:"required"`
+		Privacy       string `json:"privacy" binding:"required"`
+		Thumbnail     string `json:"thumbnail"`
+		Bio           string `json:"bio"`
+		ShowOnProfile *bool  `json:"show_on_profile"`
+		Theme         string `json:"theme"`
+		Slug          string `json:"slug"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("%v", err.Error())})
 		return
 	}
+	if req.Slug != "" && !slug.Valid(req.Slug) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_slug"})
+		return
+	}
+
+	privacy := getPersonaFromString(req.Privacy, db.PersonaPrivacyEnumPublic)
+	showOnProfile, ok := resolveShowOnProfile(privacy, req.ShowOnProfile, false)
+	if !ok {
+		showOnProfileRequiresPublic(c)
+		return
+	}
+	theme, ok := resolveTheme(req.Theme, db.PersonaThemeEnumTide)
+	if !ok {
+		invalidTheme(c)
+		return
+	}
 
 	q := h.q
 
-	slug := generateSlug(req.FirstName, req.LastName)
+	personaSlug := req.Slug
+	if personaSlug == "" {
+		personaSlug = generateSlug(req.FirstName, req.LastName)
+	}
 
-	personaId, err := q.CreatePersona(ctx, db.CreatePersonaParams{
-		UserID:      userId,
-		Name:        req.Name,
-		Description: req.Description,
-		Bio:         sql.NullString{String: req.Bio, Valid: req.Bio != ""},
-		FirstName:   req.FirstName,
-		LastName:    req.LastName,
-		Slug:        slug,
-		Thumbnail:   sql.NullString{String: req.Thumbnail, Valid: req.Thumbnail != ""},
-		Privacy:     getPersonaFromString(req.Privacy, db.PersonaPrivacyEnumPublic),
+	persona, err := q.CreatePersona(ctx, db.CreatePersonaParams{
+		UserID:        userId,
+		Name:          req.Name,
+		Description:   req.Description,
+		Bio:           sql.NullString{String: req.Bio, Valid: req.Bio != ""},
+		FirstName:     req.FirstName,
+		LastName:      req.LastName,
+		Slug:          personaSlug,
+		Thumbnail:     sql.NullString{String: req.Thumbnail, Valid: req.Thumbnail != ""},
+		Privacy:       privacy,
+		ShowOnProfile: showOnProfile,
+		Theme:         theme,
 	})
+	if postgres.IsUniqueViolation(err, "personas_user_id_slug_key") {
+		c.JSON(http.StatusConflict, gin.H{"error": "slug_taken"})
+		return
+	}
 	if err != nil {
 		fmt.Println("Error creating persona:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create persona"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"persona_id": personaId})
+	c.JSON(http.StatusOK, gin.H{"persona_id": persona.ID})
 }
 
 func (h *Handler) SetCurrentPersona(c *gin.Context) {
@@ -156,7 +192,7 @@ func (h *Handler) SetCurrentPersona(c *gin.Context) {
 	}
 
 	// generate new JWT with updated persona_id
-	jwt, err := h.LoginToken(UserMinimal{ID: userId, EmailAddress: auth.Email(c), PersonaId: persona.ID})
+	jwt, err := h.LoginToken(UserMinimal{ID: userId, EmailAddress: auth.Email(c), PersonaId: persona.ID, EmailVerified: auth.EmailVerified(c)})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
@@ -194,13 +230,16 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 	}
 
 	var req struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-		FirstName   string `json:"first_name"`
-		LastName    string `json:"last_name"`
-		Thumbnail   string `json:"thumbnail"`
-		Bio         string `json:"bio"`
-		Privacy     string `json:"privacy"`
+		Name          string  `json:"name"`
+		Description   *string `json:"description"`
+		FirstName     string  `json:"first_name"`
+		LastName      string  `json:"last_name"`
+		Thumbnail     *string `json:"thumbnail"`
+		Bio           *string `json:"bio"`
+		Slug          string  `json:"slug"`
+		Privacy       string  `json:"privacy"`
+		ShowOnProfile *bool   `json:"show_on_profile"`
+		Theme         string  `json:"theme"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -219,36 +258,66 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 		return
 	}
 
+	privacy := getPersonaFromString(req.Privacy, persona.Privacy)
+	showOnProfile, ok := resolveShowOnProfile(privacy, req.ShowOnProfile, persona.ShowOnProfile)
+	if !ok {
+		showOnProfileRequiresPublic(c)
+		return
+	}
+	theme, ok := resolveTheme(req.Theme, persona.Theme)
+	if !ok {
+		invalidTheme(c)
+		return
+	}
+	if req.Slug != "" && !slug.Valid(req.Slug) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_slug"})
+		return
+	}
+
 	updatedPersona, err := q.UpdatePersonaByIdAndUserId(ctx, db.UpdatePersonaByIdAndUserIdParams{
-		ID:          personaId,
-		UserID:      userId,
-		Name:        getStringOrDefault(req.Name, persona.Name),
-		Description: getStringOrDefault(req.Description, persona.Description),
-		Bio:         sql.NullString{String: getStringOrDefault(req.Bio, persona.Bio.String), Valid: req.Bio != ""},
-		FirstName:   getStringOrDefault(req.FirstName, persona.FirstName),
-		LastName:    getStringOrDefault(req.LastName, persona.LastName),
-		Thumbnail:   sql.NullString{String: getStringOrDefault(req.Thumbnail, persona.Thumbnail.String), Valid: req.Thumbnail != ""},
-		Slug:        persona.Slug,
-		Privacy:     getPersonaFromString(req.Privacy, persona.Privacy),
+		ID:            personaId,
+		UserID:        userId,
+		Name:          getStringOrDefault(req.Name, persona.Name),
+		Description:   getOptionalOrDefault(req.Description, persona.Description),
+		Bio:           optionalNullString(req.Bio),
+		FirstName:     getStringOrDefault(req.FirstName, persona.FirstName),
+		LastName:      getStringOrDefault(req.LastName, persona.LastName),
+		Thumbnail:     optionalNullString(req.Thumbnail),
+		Slug:          getStringOrDefault(req.Slug, persona.Slug),
+		Privacy:       privacy,
+		ShowOnProfile: showOnProfile,
+		Theme:         theme,
 	})
 
+	if postgres.IsUniqueViolation(err, "personas_user_id_slug_key") {
+		c.JSON(http.StatusConflict, gin.H{"error": "slug_taken"})
+		return
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update persona"})
 		return
 	}
+	if err := h.personas.DeletePersonaInfo(ctx, strconv.FormatInt(personaId, 10)); err != nil {
+		log.Println("redis delete persona error:", err)
+	}
+	if updatedPersona.Privacy != db.PersonaPrivacyEnumPrivate {
+		h.invitations.CancelInvitationsFrom(ctx, personaId)
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"id":          updatedPersona.ID,
-		"name":        updatedPersona.Name,
-		"description": updatedPersona.Description,
-		"bio":         updatedPersona.Bio.String,
-		"first_name":  updatedPersona.FirstName,
-		"last_name":   updatedPersona.LastName,
-		"thumbnail":   updatedPersona.Thumbnail.String,
-		"is_default":  updatedPersona.IsDefault.Bool,
-		"created_at":  updatedPersona.CreatedAt.Time,
-		"slug":        updatedPersona.Slug,
-		"privacy":     updatedPersona.Privacy,
+		"id":              updatedPersona.ID,
+		"name":            updatedPersona.Name,
+		"description":     updatedPersona.Description,
+		"bio":             updatedPersona.Bio.String,
+		"first_name":      updatedPersona.FirstName,
+		"last_name":       updatedPersona.LastName,
+		"thumbnail":       updatedPersona.Thumbnail.String,
+		"is_default":      updatedPersona.IsDefault.Bool,
+		"created_at":      updatedPersona.CreatedAt.Time,
+		"slug":            updatedPersona.Slug,
+		"privacy":         updatedPersona.Privacy,
+		"show_on_profile": updatedPersona.ShowOnProfile,
+		"theme":           updatedPersona.Theme,
 	})
 }
 
@@ -263,4 +332,191 @@ func getPersonaFromString(input string, defaultValue db.PersonaPrivacyEnum) db.P
 	default:
 		return defaultValue
 	}
+}
+
+// A non-public persona is never linked, so the flag clears when privacy changes.
+func resolveShowOnProfile(privacy db.PersonaPrivacyEnum, requested *bool, current bool) (bool, bool) {
+	if privacy != db.PersonaPrivacyEnumPublic {
+		return false, requested == nil || !*requested
+	}
+	if requested != nil {
+		return *requested, true
+	}
+	return current, true
+}
+
+func showOnProfileRequiresPublic(c *gin.Context) {
+	c.JSON(http.StatusBadRequest, gin.H{"error": "show_on_profile_requires_public"})
+}
+
+func resolveTheme(requested string, current db.PersonaThemeEnum) (db.PersonaThemeEnum, bool) {
+	if requested == "" {
+		return current, true
+	}
+	theme := db.PersonaThemeEnum(requested)
+	return theme, theme.Valid()
+}
+
+func invalidTheme(c *gin.Context) {
+	c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_theme"})
+}
+
+// nil keeps the stored value (COALESCE in the query); "" clears it.
+func optionalNullString(s *string) sql.NullString {
+	if s == nil {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: *s, Valid: true}
+}
+
+func getOptionalOrDefault(s *string, defaultVal string) string {
+	if s == nil {
+		return defaultVal
+	}
+	return *s
+}
+
+func personaIDParam(c *gin.Context) (int64, bool) {
+	personaID, err := strconv.ParseInt(c.Param("persona_id"), 10, 64)
+	if err != nil || personaID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid persona_id parameter"})
+		return 0, false
+	}
+	return personaID, true
+}
+
+func (h *Handler) ReadPersona(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	viewerID, ok := auth.PersonaID(c)
+	if !ok {
+		auth.PersonaRequired(c)
+		return
+	}
+
+	personaID, ok := personaIDParam(c)
+	if !ok {
+		return
+	}
+
+	rows, err := h.q.ResolvePersonasForViewer(ctx, db.ResolvePersonasForViewerParams{
+		Ids:      []int64{personaID},
+		ViewerID: viewerID,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve persona"})
+		return
+	}
+	if len(rows) == 0 || (!rows[0].Visible && rows[0].Privacy != db.PersonaPrivacyEnumPrivate) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "persona not found"})
+		return
+	}
+
+	follow, err := h.q.GetPersonaFollowInfo(ctx, db.GetPersonaFollowInfoParams{
+		PersonaID: personaID,
+		ViewerID:  viewerID,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve persona"})
+		return
+	}
+
+	p := rows[0]
+	if !p.Visible {
+		c.JSON(http.StatusOK, gin.H{
+			"id":            p.ID,
+			"locked":        true,
+			"follow_status": followStatus(follow.FollowStatus),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":                p.ID,
+		"locked":            false,
+		"first_name":        p.FirstName,
+		"last_name":         p.LastName,
+		"slug":              p.Slug,
+		"thumbnail":         p.Thumbnail.String,
+		"bio":               p.Bio.String,
+		"followers_count":   follow.FollowersCount,
+		"following_count":   follow.FollowingCount,
+		"follow_status":     followStatus(follow.FollowStatus),
+		"requires_approval": follow.RequiresApproval,
+		"followable":        p.Privacy != db.PersonaPrivacyEnumOnlyMe,
+		"invite_status":     inviteStatus(follow.Invited),
+		"invited_you":       follow.InvitedYou,
+		"can_invite":        follow.CanInvite,
+	})
+}
+
+// A rejected invitation in its cooldown reads as pending too.
+func inviteStatus(invited bool) *string {
+	if !invited {
+		return nil
+	}
+	status := string(db.PersonaInvitationStatusEnumPending)
+	return &status
+}
+
+// A rejected request reads as pending, so the requester never learns of it.
+func followStatus(s db.NullPersonaFollowStatusEnum) *string {
+	if !s.Valid {
+		return nil
+	}
+	status := string(db.PersonaFollowStatusEnumPending)
+	if s.PersonaFollowStatusEnum == db.PersonaFollowStatusEnumActive {
+		status = string(db.PersonaFollowStatusEnumActive)
+	}
+	return &status
+}
+
+func (h *Handler) ConnectedPersonas(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	viewerID, ok := auth.PersonaID(c)
+	if !ok {
+		auth.PersonaRequired(c)
+		return
+	}
+
+	personaID, ok := personaIDParam(c)
+	if !ok {
+		return
+	}
+
+	visible, err := access.VisiblePersonas(ctx, h.q, viewerID, []int64{personaID})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve persona"})
+		return
+	}
+	if !visible[personaID] {
+		c.JSON(http.StatusNotFound, gin.H{"error": "persona not found"})
+		return
+	}
+
+	rows, err := h.q.ListConnectedPersonas(ctx, db.ListConnectedPersonasParams{
+		PersonaID: personaID,
+		ViewerID:  viewerID,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve connected personas"})
+		return
+	}
+
+	personas := make([]gin.H, 0, len(rows))
+	for _, p := range rows {
+		personas = append(personas, gin.H{
+			"id":            p.ID,
+			"name":          p.Name,
+			"first_name":    p.FirstName,
+			"last_name":     p.LastName,
+			"slug":          p.Slug,
+			"thumbnail":     p.Thumbnail.String,
+			"bio":           p.Bio.String,
+			"follow_status": followStatus(p.FollowStatus),
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"personas": personas})
 }

@@ -1,25 +1,32 @@
 import { Button } from "@/components/ui/button";
-import type { ToolbarBlockObjectSchemaType } from "@portabletext/toolbar";
-import type { FormField } from "@/models/Forms/FormField";
+import { FormField } from "@/models/Forms/FormField";
 import FieldRender from "@/components/form/FieldRender";
 import { useFormik } from "formik";
 
 export function ObjectForm(
-  props: Pick<ToolbarBlockObjectSchemaType, "fields" | "defaultValues"> & {
+  props: {
+    // Registry FormFields for blocks, toolbar fields for annotations.
+    fields: ReadonlyArray<unknown>;
+    defaultValues?: { [key: string]: unknown };
     submitLabel: string;
-  } & {
     onSubmit: ({ value }: { value: { [key: string]: unknown } }) => void;
   }
 ) {
-  const { setFieldValue, handleSubmit } = useFormik({
+  const { values, setFieldValue, handleSubmit } = useFormik({
     initialValues: {
       ...props.defaultValues,
     },
-    onSubmit: (values) => {
-
-      const { ...value } = values;
+    onSubmit: (value) => {
       props.onSubmit({ value });
     },
+  });
+
+  const fields = props.fields as FormField[];
+  // Annotation fields are plain objects, not FormFields, and carry no requirements.
+  const missing = fields.some((field) => {
+    if (!(field instanceof FormField) || !field.isRequired || !field.isVisible(values)) return false;
+    const value = (values as Record<string, unknown>)[field.name!];
+    return value === undefined || value === null || value === "";
   });
 
   const onSubmit = (e: React.FormEvent) => {
@@ -28,15 +35,16 @@ export function ObjectForm(
   };
   return (
     <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-      {(props.fields as any[])?.map((field: FormField) => (
+      {fields?.map((field) => (
         <FieldRender
           key={field.id}
           field={field}
           setFieldValue={setFieldValue}
-          value={props.defaultValues ? props.defaultValues[field.name!] : null}
+          value={(values as Record<string, unknown>)[field.name!]}
+          values={values}
         />
       ))}
-      <Button className="self-end" type="submit" size="sm">
+      <Button className="self-end max-md:min-h-11" type="submit" size="sm" disabled={missing}>
         {props.submitLabel}
       </Button>
     </form>

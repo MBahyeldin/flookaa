@@ -6,8 +6,8 @@
 -- 1. Insert a new user verification record
 -- -------------------------------
 -- name: InsertUserVerification :one
-INSERT INTO user_verifications (user_id, verification_code)
-VALUES ($1, $2)
+INSERT INTO user_verifications (user_id, verification_code, last_sent_at)
+VALUES ($1, $2, now())
 RETURNING *;
 
 -- -------------------------------
@@ -19,36 +19,26 @@ FROM user_verifications
 WHERE user_id = $1
   AND verified_at IS NULL
   AND is_expired = FALSE
-  AND expires_at > now();
+  AND expires_at > now()
+ORDER BY id DESC
+LIMIT 1;
 
 -- -------------------------------
--- 2a. Check if user can get a new verification code
+-- 2a. Seconds left before the user can get a new code (0 = now)
 -- -------------------------------
--- name: CanResendVerificationCode :one
-SELECT CASE
-         WHEN last_sent_at IS NULL THEN TRUE
-         WHEN now() - last_sent_at >= interval '1 minute' THEN TRUE
-         ELSE FALSE
-       END AS can_resend
+-- name: GetVerificationResendWait :one
+SELECT GREATEST(
+         COALESCE(CEIL(EXTRACT(EPOCH FROM (MAX(last_sent_at) + interval '1 minute' - now()))), 0),
+         0
+       )::int AS wait_seconds
 FROM user_verifications
-WHERE user_id = $1
-  AND verified_at IS NULL
-  AND is_expired = FALSE
-  AND expires_at > now();
+WHERE user_id = $1;
 
 -- -------------------------------
--- 3. Update verification code and reset failed attempts
+-- 2b. Serialize code issuing per user
 -- -------------------------------
--- name: UpdateUserVerificationCode :one
-UPDATE user_verifications
-SET verification_code = $2,
-    expires_at = (now() + interval '24 hours'),
-    last_sent_at = now(),
-    failed_attempts = 0,
-    is_expired = FALSE
-WHERE user_id = $1
-  AND verified_at IS NULL
-RETURNING *;
+-- name: LockUserForVerification :one
+SELECT id, is_verified FROM users WHERE id = $1 AND deleted_at IS NULL FOR UPDATE;
 
 -- -------------------------------
 -- 4. Increment failed attempts and expire if max attempts reached
@@ -60,10 +50,7 @@ SET failed_attempts = failed_attempts + 1,
                    WHEN failed_attempts + 1 >= max_attempts THEN TRUE
                    ELSE is_expired
                  END
-WHERE user_id = $1
-  AND verified_at IS NULL
-  AND is_expired = FALSE
-  AND expires_at > now()
+WHERE id = $1
 RETURNING *;
 
 -- -------------------------------
@@ -72,22 +59,16 @@ RETURNING *;
 -- name: MarkVerificationAsVerified :one
 UPDATE user_verifications
 SET verified_at = now()
-WHERE user_id = $1
-  AND verification_code = $2
+WHERE id = $1
   AND verified_at IS NULL
-  AND is_expired = FALSE
-  AND expires_at > now()
 RETURNING *;
 
 -- -------------------------------
--- 6. Expire previous user verification
+-- 6. Expire every open code of a user
 -- -------------------------------
--- name: ExpirePreviousUserVerification :one
+-- name: ExpireOpenUserVerifications :exec
 UPDATE user_verifications
 SET is_expired = TRUE
 WHERE user_id = $1
   AND verified_at IS NULL
-  AND is_expired = FALSE
-RETURNING *;
-
-
+  AND is_expired = FALSE;

@@ -41,10 +41,12 @@ type NotificationResponse struct {
 	LatestActor *ActorResponse `json:"latest_actor"`
 	// Channel is the channel it belongs to (scope or subject), looked up at
 	// read time because names change. Null for other kinds or a deleted one.
-	Channel   *ChannelResponse `json:"channel"`
-	Data      json.RawMessage  `json:"data,omitempty"`
-	Read      bool             `json:"read"`
-	UpdatedAt string           `json:"updated_at"`
+	Channel *ChannelResponse `json:"channel"`
+	// Community is the subject of community kinds, looked up like Channel.
+	Community *CommunityResponse `json:"community"`
+	Data      json.RawMessage    `json:"data,omitempty"`
+	Read      bool               `json:"read"`
+	UpdatedAt string             `json:"updated_at"`
 }
 
 // ListNotifications returns a page of the persona's notifications, newest
@@ -103,6 +105,7 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 	notifications := make([]NotificationResponse, 0, len(rows))
 	actorIDs := make(map[int64]struct{})
 	channelIDs := make(map[int64]struct{})
+	communityIDs := make(map[int64]struct{})
 	for _, row := range rows {
 		spec, err := sharednotifications.Lookup(row.Kind)
 		if err != nil {
@@ -147,10 +150,14 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 			channelIDs[id] = struct{}{}
 			n.Channel = &ChannelResponse{ID: id}
 		}
+		if id := communityID(row); id != 0 {
+			communityIDs[id] = struct{}{}
+			n.Community = &CommunityResponse{ID: id}
+		}
 		notifications = append(notifications, n)
 	}
 
-	actors, err := h.resolveActors(ctx, actorIDs)
+	actors, err := h.resolveActors(ctx, personaId, actorIDs)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -160,9 +167,25 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	communities, err := h.resolveCommunities(ctx, communityIDs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	for i := range notifications {
+		var chID, coID int64
+		if ch := notifications[i].Channel; ch != nil {
+			chID = ch.ID
+		}
+		if co := notifications[i].Community; co != nil {
+			coID = co.ID
+			notifications[i].Community = communities[co.ID]
+		}
 		if a := notifications[i].LatestActor; a != nil {
-			notifications[i].LatestActor = actors[a.ID]
+			notifications[i].LatestActor = nil
+			if resolved := actors[a.ID]; resolved != nil {
+				notifications[i].LatestActor = resolved.view(chID, coID)
+			}
 		}
 		if ch := notifications[i].Channel; ch != nil {
 			notifications[i].Channel = channels[ch.ID]

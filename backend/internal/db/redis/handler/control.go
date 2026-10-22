@@ -30,8 +30,10 @@ type WsMessage struct {
 type OwnerType string
 
 const (
-	OwnerTypeChannel OwnerType = "CHANNEL"
-	OwnerTypeDefault OwnerType = "DEFAULT"
+	OwnerTypeChannel   OwnerType = "CHANNEL"
+	OwnerTypePersona   OwnerType = "PERSONA"
+	OwnerTypeCommunity OwnerType = "COMMUNITY"
+	OwnerTypeDefault   OwnerType = "DEFAULT"
 )
 
 type Payload struct {
@@ -75,6 +77,12 @@ func (h *Handler) Control(c *gin.Context) {
 
 	case OwnerTypeChannel:
 		h.channel(c, bodyData, personaIdInt64)
+
+	case OwnerTypePersona:
+		h.persona(c, bodyData, personaIdInt64)
+
+	case OwnerTypeCommunity:
+		h.community(c, bodyData, personaIdInt64)
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid owner type %s", bodyData.Payload.Owner)})
 		return

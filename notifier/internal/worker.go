@@ -30,7 +30,7 @@ type message struct {
 // updates to a notification, so replays and redeliveries change nothing.
 type handler func(ctx context.Context, m message, eventAt time.Time) error
 
-// Worker turns content and channel events into notifications.
+// Worker turns content, channel and follow events into notifications.
 //
 // It never keeps running totals: rows are upserted per recipient and thing,
 // and whether a thing still deserves a notification is recounted from
@@ -47,18 +47,25 @@ func NewWorker(nats *shared_nats.NatsHelper, q *db.Queries) *Worker {
 // Run attaches one durable consumer per source stream (a consumer cannot
 // span streams) and starts processing. Stop the returned ConsumeContexts on
 // shutdown.
-//
-// A future source on STREAM_USER_EVENTS (friend or follow requests) must use
-// specific FilterSubjects, never "STREAM_USER_EVENTS.>": the notifier
-// publishes its own notifications.* frames there and must not consume them.
 func (w *Worker) Run(ctx context.Context) ([]jetstream.ConsumeContext, error) {
+	user := shared_nats.USER_EVENTS_STREAM
 	sources := []struct {
 		stream  string
 		durable string
+		filters []string
 		handle  handler
 	}{
-		{shared_nats.CONTENT_EVENTS_STREAM, "notifier-content", w.content},
-		{shared_nats.CHANNEL_EVENTS_STREAM, "notifier-channel", w.channel},
+		{shared_nats.CONTENT_EVENTS_STREAM, "notifier-content", []string{shared_nats.CONTENT_EVENTS_STREAM + ".>"}, w.content},
+		{shared_nats.CHANNEL_EVENTS_STREAM, "notifier-channel", []string{
+			shared_nats.CHANNEL_EVENTS_STREAM + ".CHANNEL.>",
+			shared_nats.CHANNEL_EVENTS_STREAM + ".COMMUNITY.*." + string(shared_nats.EventChannelRequest) + ".*",
+			shared_nats.CHANNEL_EVENTS_STREAM + ".COMMUNITY.*." + string(shared_nats.EventJoinRequest) + ".*",
+		}, w.channelOrCommunity},
+		{user, "notifier-user", []string{
+			user + ".PERSONA.*." + string(shared_nats.EventFollower) + ".*",
+			user + ".PERSONA.*." + string(shared_nats.EventFollowRequest) + ".*",
+			user + ".PERSONA.*." + string(shared_nats.EventFollowInvitation) + ".*",
+		}, w.persona},
 	}
 
 	var consumeCtxs []jetstream.ConsumeContext
@@ -68,7 +75,7 @@ func (w *Worker) Run(ctx context.Context) ([]jetstream.ConsumeContext, error) {
 		}
 	}
 	for _, s := range sources {
-		c, err := w.consume(ctx, s.stream, s.durable, s.handle)
+		c, err := w.consume(ctx, s.stream, s.durable, s.filters, s.handle)
 		if err != nil {
 			stopAll()
 			return nil, err
@@ -78,19 +85,32 @@ func (w *Worker) Run(ctx context.Context) ([]jetstream.ConsumeContext, error) {
 	return consumeCtxs, nil
 }
 
-func (w *Worker) consume(ctx context.Context, stream, durable string, handle handler) (jetstream.ConsumeContext, error) {
+func (w *Worker) channelOrCommunity(ctx context.Context, m message, eventAt time.Time) error {
+	if m.Event.Owner == shared_nats.OwnerCommunity {
+		return w.community(ctx, m, eventAt)
+	}
+	return w.channel(ctx, m, eventAt)
+}
+
+func (w *Worker) consume(ctx context.Context, stream, durable string, filters []string, handle handler) (jetstream.ConsumeContext, error) {
 	if err := w.nats.CheckStream(ctx, stream); err != nil {
 		return nil, err
 	}
 
-	consumer, err := w.nats.JetStream.CreateOrUpdateConsumer(ctx, stream, jetstream.ConsumerConfig{
+	cfg := jetstream.ConsumerConfig{
 		Durable:       durable,
-		FilterSubject: stream + ".>",
 		AckPolicy:     jetstream.AckExplicitPolicy,
 		DeliverPolicy: jetstream.DeliverNewPolicy,
 		AckWait:       30 * time.Second,
 		MaxDeliver:    maxDeliver,
-	})
+	}
+	// A single filter keeps the existing consumers' config unchanged.
+	if len(filters) == 1 {
+		cfg.FilterSubject = filters[0]
+	} else {
+		cfg.FilterSubjects = filters
+	}
+	consumer, err := w.nats.JetStream.CreateOrUpdateConsumer(ctx, stream, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("create consumer %s: %w", durable, err)
 	}

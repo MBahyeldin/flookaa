@@ -8,11 +8,15 @@ import (
 	"app/internal/auth"
 	"app/internal/config"
 	"app/internal/db/postgres/handlers/channels"
+	"app/internal/db/postgres/handlers/communities"
+	"app/internal/db/postgres/handlers/followers"
 	"app/internal/db/postgres/handlers/geo"
+	"app/internal/db/postgres/handlers/interests"
 	"app/internal/db/postgres/handlers/notifications"
 	"app/internal/db/postgres/handlers/users"
 	controlhandlers "app/internal/db/redis/handler"
 	"app/internal/oauthproviders"
+	"app/internal/onboarding"
 	"app/util/email"
 	"app/util/image"
 	"app/util/verification"
@@ -85,16 +89,34 @@ func StartServer(cfg config.Server) error {
 		return err
 	}
 
+	followersHandler := followers.NewHandler(q, natsHelper)
+	onboardingFlow, err := onboarding.New(
+		onboarding.Step{ID: 1, Key: "about_you", Done: q.UserAboutYouDone},
+		onboarding.Step{ID: 2, Key: "interests", Done: q.DefaultPersonaHasInterests},
+		onboarding.Step{ID: 3, Key: "communities", Skippable: true, Done: q.DefaultPersonaInCommunity},
+		onboarding.Step{ID: 4, Key: "channels", Skippable: true, Done: q.DefaultPersonaInChannel},
+		onboarding.Step{ID: 5, Key: "personas", Skippable: true, Done: onboarding.Always},
+	)
+	if err != nil {
+		return err
+	}
 	usersHandler := users.NewHandler(
 		q,
 		signer,
 		email.NewSender(email.Config(cfg.SMTP)),
-		verification.NewService(q),
+		verification.NewService(pg, q),
+		stores.Persona,
+		followersHandler,
+		onboardingFlow,
 	)
 	restHandlers := v1.Handlers{
 		Users:         usersHandler,
-		Channels:      channels.NewHandler(q, natsHelper),
+		Channels:      channels.NewHandler(pg, q, natsHelper),
+		Communities:   communities.NewHandler(pg, q, natsHelper),
+		Followers:     followersHandler,
 		Geo:           geo.NewHandler(q),
+		Interests:     interests.NewHandler(q),
+		IsAdmin:       q.IsGlobalAdministrator,
 		Notifications: notifications.NewHandler(q, stores.Persona),
 		Google: oauthproviders.NewGoogle(
 			cfg.Google.ClientID,

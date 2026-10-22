@@ -57,6 +57,16 @@ func (ns NullChannelMembershipStatusEnum) Value() (driver.Value, error) {
 	return string(ns.ChannelMembershipStatusEnum), nil
 }
 
+func (e ChannelMembershipStatusEnum) Valid() bool {
+	switch e {
+	case ChannelMembershipStatusEnumPending,
+		ChannelMembershipStatusEnumActive,
+		ChannelMembershipStatusEnumRejected:
+		return true
+	}
+	return false
+}
+
 type ChannelVisibilityEnum string
 
 const (
@@ -97,6 +107,172 @@ func (ns NullChannelVisibilityEnum) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.ChannelVisibilityEnum), nil
+}
+
+func (e ChannelVisibilityEnum) Valid() bool {
+	switch e {
+	case ChannelVisibilityEnumPublic,
+		ChannelVisibilityEnumPrivate:
+		return true
+	}
+	return false
+}
+
+type CommunityChannelStatusEnum string
+
+const (
+	CommunityChannelStatusEnumPending  CommunityChannelStatusEnum = "pending"
+	CommunityChannelStatusEnumActive   CommunityChannelStatusEnum = "active"
+	CommunityChannelStatusEnumRejected CommunityChannelStatusEnum = "rejected"
+)
+
+func (e *CommunityChannelStatusEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = CommunityChannelStatusEnum(s)
+	case string:
+		*e = CommunityChannelStatusEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for CommunityChannelStatusEnum: %T", src)
+	}
+	return nil
+}
+
+type NullCommunityChannelStatusEnum struct {
+	CommunityChannelStatusEnum CommunityChannelStatusEnum
+	Valid                      bool // Valid is true if CommunityChannelStatusEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullCommunityChannelStatusEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.CommunityChannelStatusEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.CommunityChannelStatusEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullCommunityChannelStatusEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.CommunityChannelStatusEnum), nil
+}
+
+func (e CommunityChannelStatusEnum) Valid() bool {
+	switch e {
+	case CommunityChannelStatusEnumPending,
+		CommunityChannelStatusEnumActive,
+		CommunityChannelStatusEnumRejected:
+		return true
+	}
+	return false
+}
+
+type CommunityMembershipStatusEnum string
+
+const (
+	CommunityMembershipStatusEnumPending  CommunityMembershipStatusEnum = "pending"
+	CommunityMembershipStatusEnumActive   CommunityMembershipStatusEnum = "active"
+	CommunityMembershipStatusEnumRejected CommunityMembershipStatusEnum = "rejected"
+)
+
+func (e *CommunityMembershipStatusEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = CommunityMembershipStatusEnum(s)
+	case string:
+		*e = CommunityMembershipStatusEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for CommunityMembershipStatusEnum: %T", src)
+	}
+	return nil
+}
+
+type NullCommunityMembershipStatusEnum struct {
+	CommunityMembershipStatusEnum CommunityMembershipStatusEnum
+	Valid                         bool // Valid is true if CommunityMembershipStatusEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullCommunityMembershipStatusEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.CommunityMembershipStatusEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.CommunityMembershipStatusEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullCommunityMembershipStatusEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.CommunityMembershipStatusEnum), nil
+}
+
+func (e CommunityMembershipStatusEnum) Valid() bool {
+	switch e {
+	case CommunityMembershipStatusEnumPending,
+		CommunityMembershipStatusEnumActive,
+		CommunityMembershipStatusEnumRejected:
+		return true
+	}
+	return false
+}
+
+type CommunityVisibilityEnum string
+
+const (
+	CommunityVisibilityEnumPublic  CommunityVisibilityEnum = "public"
+	CommunityVisibilityEnumPrivate CommunityVisibilityEnum = "private"
+)
+
+func (e *CommunityVisibilityEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = CommunityVisibilityEnum(s)
+	case string:
+		*e = CommunityVisibilityEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for CommunityVisibilityEnum: %T", src)
+	}
+	return nil
+}
+
+type NullCommunityVisibilityEnum struct {
+	CommunityVisibilityEnum CommunityVisibilityEnum
+	Valid                   bool // Valid is true if CommunityVisibilityEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullCommunityVisibilityEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.CommunityVisibilityEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.CommunityVisibilityEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullCommunityVisibilityEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.CommunityVisibilityEnum), nil
+}
+
+func (e CommunityVisibilityEnum) Valid() bool {
+	switch e {
+	case CommunityVisibilityEnumPublic,
+		CommunityVisibilityEnumPrivate:
+		return true
+	}
+	return false
 }
 
 type EventActionEnum string
@@ -142,6 +318,16 @@ func (ns NullEventActionEnum) Value() (driver.Value, error) {
 	return string(ns.EventActionEnum), nil
 }
 
+func (e EventActionEnum) Valid() bool {
+	switch e {
+	case EventActionEnumCreate,
+		EventActionEnumUpdate,
+		EventActionEnumDelete:
+		return true
+	}
+	return false
+}
+
 type EventEnum string
 
 const (
@@ -183,6 +369,16 @@ func (ns NullEventEnum) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.EventEnum), nil
+}
+
+func (e EventEnum) Valid() bool {
+	switch e {
+	case EventEnumPost,
+		EventEnumComment,
+		EventEnumLike:
+		return true
+	}
+	return false
 }
 
 type EventTargetTypeEnum string
@@ -229,16 +425,89 @@ func (ns NullEventTargetTypeEnum) Value() (driver.Value, error) {
 	return string(ns.EventTargetTypeEnum), nil
 }
 
+func (e EventTargetTypeEnum) Valid() bool {
+	switch e {
+	case EventTargetTypeEnumPERSONA,
+		EventTargetTypeEnumCHANNEL,
+		EventTargetTypeEnumPOST,
+		EventTargetTypeEnumCOMMENT:
+		return true
+	}
+	return false
+}
+
+type GenderEnum string
+
+const (
+	GenderEnumMale   GenderEnum = "male"
+	GenderEnumFemale GenderEnum = "female"
+)
+
+func (e *GenderEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = GenderEnum(s)
+	case string:
+		*e = GenderEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for GenderEnum: %T", src)
+	}
+	return nil
+}
+
+type NullGenderEnum struct {
+	GenderEnum GenderEnum
+	Valid      bool // Valid is true if GenderEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullGenderEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.GenderEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.GenderEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullGenderEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.GenderEnum), nil
+}
+
+func (e GenderEnum) Valid() bool {
+	switch e {
+	case GenderEnumMale,
+		GenderEnumFemale:
+		return true
+	}
+	return false
+}
+
 type NotificationKindEnum string
 
 const (
-	NotificationKindEnumPostComment        NotificationKindEnum = "post_comment"
-	NotificationKindEnumCommentReply       NotificationKindEnum = "comment_reply"
-	NotificationKindEnumPostLike           NotificationKindEnum = "post_like"
-	NotificationKindEnumCommentLike        NotificationKindEnum = "comment_like"
-	NotificationKindEnumJoinRequest        NotificationKindEnum = "join_request"
-	NotificationKindEnumRequestApproved    NotificationKindEnum = "request_approved"
-	NotificationKindEnumRemovedFromChannel NotificationKindEnum = "removed_from_channel"
+	NotificationKindEnumPostComment              NotificationKindEnum = "post_comment"
+	NotificationKindEnumCommentReply             NotificationKindEnum = "comment_reply"
+	NotificationKindEnumPostLike                 NotificationKindEnum = "post_like"
+	NotificationKindEnumCommentLike              NotificationKindEnum = "comment_like"
+	NotificationKindEnumJoinRequest              NotificationKindEnum = "join_request"
+	NotificationKindEnumRequestApproved          NotificationKindEnum = "request_approved"
+	NotificationKindEnumRemovedFromChannel       NotificationKindEnum = "removed_from_channel"
+	NotificationKindEnumNewFollower              NotificationKindEnum = "new_follower"
+	NotificationKindEnumFollowRequest            NotificationKindEnum = "follow_request"
+	NotificationKindEnumFollowRequestApproved    NotificationKindEnum = "follow_request_approved"
+	NotificationKindEnumFollowInvitation         NotificationKindEnum = "follow_invitation"
+	NotificationKindEnumFollowInvitationAccepted NotificationKindEnum = "follow_invitation_accepted"
+	NotificationKindEnumChannelRequest           NotificationKindEnum = "channel_request"
+	NotificationKindEnumChannelRequestApproved   NotificationKindEnum = "channel_request_approved"
+	NotificationKindEnumChannelRequestRejected   NotificationKindEnum = "channel_request_rejected"
+	NotificationKindEnumCommunityJoinRequest     NotificationKindEnum = "community_join_request"
+	NotificationKindEnumCommunityRequestApproved NotificationKindEnum = "community_request_approved"
+	NotificationKindEnumCommunityRequestRejected NotificationKindEnum = "community_request_rejected"
 )
 
 func (e *NotificationKindEnum) Scan(src interface{}) error {
@@ -274,6 +543,31 @@ func (ns NullNotificationKindEnum) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.NotificationKindEnum), nil
+}
+
+func (e NotificationKindEnum) Valid() bool {
+	switch e {
+	case NotificationKindEnumPostComment,
+		NotificationKindEnumCommentReply,
+		NotificationKindEnumPostLike,
+		NotificationKindEnumCommentLike,
+		NotificationKindEnumJoinRequest,
+		NotificationKindEnumRequestApproved,
+		NotificationKindEnumRemovedFromChannel,
+		NotificationKindEnumNewFollower,
+		NotificationKindEnumFollowRequest,
+		NotificationKindEnumFollowRequestApproved,
+		NotificationKindEnumFollowInvitation,
+		NotificationKindEnumFollowInvitationAccepted,
+		NotificationKindEnumChannelRequest,
+		NotificationKindEnumChannelRequestApproved,
+		NotificationKindEnumChannelRequestRejected,
+		NotificationKindEnumCommunityJoinRequest,
+		NotificationKindEnumCommunityRequestApproved,
+		NotificationKindEnumCommunityRequestRejected:
+		return true
+	}
+	return false
 }
 
 type NotificationScopeEnum string
@@ -317,13 +611,22 @@ func (ns NullNotificationScopeEnum) Value() (driver.Value, error) {
 	return string(ns.NotificationScopeEnum), nil
 }
 
+func (e NotificationScopeEnum) Valid() bool {
+	switch e {
+	case NotificationScopeEnumCHANNEL:
+		return true
+	}
+	return false
+}
+
 type NotificationSubjectEnum string
 
 const (
-	NotificationSubjectEnumPOST    NotificationSubjectEnum = "POST"
-	NotificationSubjectEnumCOMMENT NotificationSubjectEnum = "COMMENT"
-	NotificationSubjectEnumCHANNEL NotificationSubjectEnum = "CHANNEL"
-	NotificationSubjectEnumPERSONA NotificationSubjectEnum = "PERSONA"
+	NotificationSubjectEnumPOST      NotificationSubjectEnum = "POST"
+	NotificationSubjectEnumCOMMENT   NotificationSubjectEnum = "COMMENT"
+	NotificationSubjectEnumCHANNEL   NotificationSubjectEnum = "CHANNEL"
+	NotificationSubjectEnumPERSONA   NotificationSubjectEnum = "PERSONA"
+	NotificationSubjectEnumCOMMUNITY NotificationSubjectEnum = "COMMUNITY"
 )
 
 func (e *NotificationSubjectEnum) Scan(src interface{}) error {
@@ -359,6 +662,18 @@ func (ns NullNotificationSubjectEnum) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.NotificationSubjectEnum), nil
+}
+
+func (e NotificationSubjectEnum) Valid() bool {
+	switch e {
+	case NotificationSubjectEnumPOST,
+		NotificationSubjectEnumCOMMENT,
+		NotificationSubjectEnumCHANNEL,
+		NotificationSubjectEnumPERSONA,
+		NotificationSubjectEnumCOMMUNITY:
+		return true
+	}
+	return false
 }
 
 type OauthProvider string
@@ -404,6 +719,16 @@ func (ns NullOauthProvider) Value() (driver.Value, error) {
 	return string(ns.OauthProvider), nil
 }
 
+func (e OauthProvider) Valid() bool {
+	switch e {
+	case OauthProviderGoogle,
+		OauthProviderGithub,
+		OauthProviderLinkedin:
+		return true
+	}
+	return false
+}
+
 type OwnerEnum string
 
 const (
@@ -444,6 +769,123 @@ func (ns NullOwnerEnum) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.OwnerEnum), nil
+}
+
+func (e OwnerEnum) Valid() bool {
+	switch e {
+	case OwnerEnumPERSONA,
+		OwnerEnumCHANNEL:
+		return true
+	}
+	return false
+}
+
+type PersonaFollowStatusEnum string
+
+const (
+	PersonaFollowStatusEnumPending  PersonaFollowStatusEnum = "pending"
+	PersonaFollowStatusEnumActive   PersonaFollowStatusEnum = "active"
+	PersonaFollowStatusEnumRejected PersonaFollowStatusEnum = "rejected"
+)
+
+func (e *PersonaFollowStatusEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PersonaFollowStatusEnum(s)
+	case string:
+		*e = PersonaFollowStatusEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PersonaFollowStatusEnum: %T", src)
+	}
+	return nil
+}
+
+type NullPersonaFollowStatusEnum struct {
+	PersonaFollowStatusEnum PersonaFollowStatusEnum
+	Valid                   bool // Valid is true if PersonaFollowStatusEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPersonaFollowStatusEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.PersonaFollowStatusEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PersonaFollowStatusEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPersonaFollowStatusEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PersonaFollowStatusEnum), nil
+}
+
+func (e PersonaFollowStatusEnum) Valid() bool {
+	switch e {
+	case PersonaFollowStatusEnumPending,
+		PersonaFollowStatusEnumActive,
+		PersonaFollowStatusEnumRejected:
+		return true
+	}
+	return false
+}
+
+type PersonaInvitationStatusEnum string
+
+const (
+	PersonaInvitationStatusEnumPending   PersonaInvitationStatusEnum = "pending"
+	PersonaInvitationStatusEnumAccepted  PersonaInvitationStatusEnum = "accepted"
+	PersonaInvitationStatusEnumRejected  PersonaInvitationStatusEnum = "rejected"
+	PersonaInvitationStatusEnumCancelled PersonaInvitationStatusEnum = "cancelled"
+)
+
+func (e *PersonaInvitationStatusEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PersonaInvitationStatusEnum(s)
+	case string:
+		*e = PersonaInvitationStatusEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PersonaInvitationStatusEnum: %T", src)
+	}
+	return nil
+}
+
+type NullPersonaInvitationStatusEnum struct {
+	PersonaInvitationStatusEnum PersonaInvitationStatusEnum
+	Valid                       bool // Valid is true if PersonaInvitationStatusEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPersonaInvitationStatusEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.PersonaInvitationStatusEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PersonaInvitationStatusEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPersonaInvitationStatusEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PersonaInvitationStatusEnum), nil
+}
+
+func (e PersonaInvitationStatusEnum) Valid() bool {
+	switch e {
+	case PersonaInvitationStatusEnumPending,
+		PersonaInvitationStatusEnumAccepted,
+		PersonaInvitationStatusEnumRejected,
+		PersonaInvitationStatusEnumCancelled:
+		return true
+	}
+	return false
 }
 
 type PersonaPrivacyEnum string
@@ -489,6 +931,75 @@ func (ns NullPersonaPrivacyEnum) Value() (driver.Value, error) {
 	return string(ns.PersonaPrivacyEnum), nil
 }
 
+func (e PersonaPrivacyEnum) Valid() bool {
+	switch e {
+	case PersonaPrivacyEnumPublic,
+		PersonaPrivacyEnumPrivate,
+		PersonaPrivacyEnumOnlyMe:
+		return true
+	}
+	return false
+}
+
+type PersonaThemeEnum string
+
+const (
+	PersonaThemeEnumTide   PersonaThemeEnum = "tide"
+	PersonaThemeEnumForest PersonaThemeEnum = "forest"
+	PersonaThemeEnumEmber  PersonaThemeEnum = "ember"
+	PersonaThemeEnumPlum   PersonaThemeEnum = "plum"
+	PersonaThemeEnumRose   PersonaThemeEnum = "rose"
+	PersonaThemeEnumSlate  PersonaThemeEnum = "slate"
+)
+
+func (e *PersonaThemeEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PersonaThemeEnum(s)
+	case string:
+		*e = PersonaThemeEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PersonaThemeEnum: %T", src)
+	}
+	return nil
+}
+
+type NullPersonaThemeEnum struct {
+	PersonaThemeEnum PersonaThemeEnum
+	Valid            bool // Valid is true if PersonaThemeEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPersonaThemeEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.PersonaThemeEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PersonaThemeEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPersonaThemeEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PersonaThemeEnum), nil
+}
+
+func (e PersonaThemeEnum) Valid() bool {
+	switch e {
+	case PersonaThemeEnumTide,
+		PersonaThemeEnumForest,
+		PersonaThemeEnumEmber,
+		PersonaThemeEnumPlum,
+		PersonaThemeEnumRose,
+		PersonaThemeEnumSlate:
+		return true
+	}
+	return false
+}
+
 type RelationshipEnum string
 
 const (
@@ -532,6 +1043,16 @@ func (ns NullRelationshipEnum) Value() (driver.Value, error) {
 	return string(ns.RelationshipEnum), nil
 }
 
+func (e RelationshipEnum) Valid() bool {
+	switch e {
+	case RelationshipEnumFollower,
+		RelationshipEnumBlocked,
+		RelationshipEnumMuted:
+		return true
+	}
+	return false
+}
+
 type Channel struct {
 	ID          int64
 	Name        string
@@ -543,6 +1064,7 @@ type Channel struct {
 	CreatedAt   sql.NullTime
 	UpdatedAt   sql.NullTime
 	DeletedAt   sql.NullTime
+	MinAge      int16
 }
 
 type ChannelFollower struct {
@@ -551,6 +1073,12 @@ type ChannelFollower struct {
 	PersonaID    int64
 	FollowedAt   sql.NullTime
 	UnfollowedAt sql.NullTime
+}
+
+type ChannelInterest struct {
+	ChannelID  int64
+	InterestID int64
+	CreatedAt  time.Time
 }
 
 type ChannelMember struct {
@@ -584,6 +1112,63 @@ type City struct {
 	UpdatedAt   time.Time
 	Flag        int16
 	WikiDataId  sql.NullString
+}
+
+type Community struct {
+	ID          int64
+	Name        string
+	Slug        string
+	Description string
+	Thumbnail   string
+	Banner      string
+	Visibility  CommunityVisibilityEnum
+	OwnerID     int64
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeletedAt   sql.NullTime
+	Rules       string
+	MinAge      int16
+}
+
+type CommunityChannel struct {
+	CommunityID int64
+	ChannelID   int64
+	CreatedAt   time.Time
+	Status      CommunityChannelStatusEnum
+	RequestedBy sql.NullInt64
+	ResolvedAt  sql.NullTime
+	RemovedAt   sql.NullTime
+}
+
+type CommunityFollower struct {
+	CommunityID  int64
+	PersonaID    int64
+	FollowedAt   time.Time
+	UnfollowedAt sql.NullTime
+}
+
+type CommunityInterest struct {
+	CommunityID int64
+	InterestID  int64
+	CreatedAt   time.Time
+}
+
+type CommunityMember struct {
+	CommunityID int64
+	PersonaID   int64
+	Status      CommunityMembershipStatusEnum
+	JoinedAt    time.Time
+	ResolvedAt  sql.NullTime
+	LeftAt      sql.NullTime
+}
+
+type CommunityRole struct {
+	CommunityID int64
+	PersonaID   int64
+	RoleID      int32
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeletedAt   sql.NullTime
 }
 
 type Country struct {
@@ -634,10 +1219,22 @@ type Event struct {
 type Interest struct {
 	ID        int64
 	Name      string
-	PicUrl    sql.NullString
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
-	DeletedAt sql.NullTime
+	Slug      string
+	Emoji     string
+	SortOrder int32
+	RetiredAt sql.NullTime
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	GroupID   sql.NullInt64
+}
+
+type InterestGroup struct {
+	ID        int64
+	Name      string
+	Slug      string
+	SortOrder int32
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type Notification struct {
@@ -659,25 +1256,37 @@ type Notification struct {
 }
 
 type Persona struct {
-	ID          int64
-	UserID      int64
-	Name        string
-	Description string
-	Slug        string
-	FirstName   string
-	LastName    string
-	Thumbnail   sql.NullString
-	Bio         sql.NullString
-	Privacy     PersonaPrivacyEnum
-	IsDefault   sql.NullBool
-	CreatedAt   sql.NullTime
-	UpdatedAt   sql.NullTime
-	DeletedAt   sql.NullTime
+	ID            int64
+	UserID        int64
+	Name          string
+	Description   string
+	Slug          string
+	FirstName     string
+	LastName      string
+	Thumbnail     sql.NullString
+	Bio           sql.NullString
+	Privacy       PersonaPrivacyEnum
+	IsDefault     sql.NullBool
+	ShowOnProfile bool
+	Theme         PersonaThemeEnum
+	CreatedAt     sql.NullTime
+	UpdatedAt     sql.NullTime
+	DeletedAt     sql.NullTime
+	InviteToken   sql.NullString
+}
+
+type PersonaFollowInvitation struct {
+	PersonaID        int64
+	InviteePersonaID int64
+	Status           PersonaInvitationStatusEnum
+	InvitedAt        time.Time
+	RespondedAt      sql.NullTime
 }
 
 type PersonaFollower struct {
 	PersonaID         int64
 	FollowerPersonaID int64
+	Status            PersonaFollowStatusEnum
 	FollowedAt        sql.NullTime
 	UnfollowedAt      sql.NullTime
 }
@@ -699,6 +1308,7 @@ type PersonaFriendGroupMember struct {
 type PersonaInterest struct {
 	PersonaID  int64
 	InterestID int64
+	CreatedAt  time.Time
 }
 
 type PersonaRelationship struct {
@@ -787,8 +1397,10 @@ type User struct {
 	StateID                sql.NullInt64
 	CityID                 sql.NullInt64
 	OauthProvider          NullOauthProvider
-	OnboardingCompleted    sql.NullBool
-	OnboardingStep         sql.NullInt32
+	OnboardingCompleted    bool
+	OnboardingStep         int32
+	DateOfBirth            sql.NullTime
+	Gender                 NullGenderEnum
 }
 
 type UserRole struct {

@@ -32,6 +32,38 @@ export type Acl = {
   canView: Scalars['Boolean']['output'];
 };
 
+export type AccordionBlock = Block & {
+  __typename?: 'AccordionBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  allowMultiple?: Maybe<Scalars['Boolean']['output']>;
+  defaultFirstOpen?: Maybe<Scalars['Boolean']['output']>;
+  items: Array<AccordionItem>;
+  title?: Maybe<Scalars['String']['output']>;
+};
+
+export type AccordionBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  allowMultiple?: InputMaybe<Scalars['Boolean']['input']>;
+  defaultFirstOpen?: InputMaybe<Scalars['Boolean']['input']>;
+  items: Array<AccordionItemInput>;
+  title?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type AccordionItem = {
+  __typename?: 'AccordionItem';
+  _key: Scalars['ID']['output'];
+  text: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+};
+
+export type AccordionItemInput = {
+  _key: Scalars['ID']['input'];
+  text: Scalars['String']['input'];
+  title: Scalars['String']['input'];
+};
+
 export type Block = {
   _key: Scalars['ID']['output'];
   _type: BlockType;
@@ -61,40 +93,112 @@ export type BlockBlockInput = {
 
 /** Oneof input for blocks */
 export type BlockInput = {
+  accordion?: InputMaybe<AccordionBlockInput>;
   block?: InputMaybe<BlockBlockInput>;
   break?: InputMaybe<BreakBlockInput>;
+  callout?: InputMaybe<CalloutBlockInput>;
+  checklist?: InputMaybe<ChecklistBlockInput>;
+  countdown?: InputMaybe<CountdownBlockInput>;
+  gallery?: InputMaybe<GalleryBlockInput>;
   image?: InputMaybe<ImageBlockInput>;
+  quote?: InputMaybe<QuoteBlockInput>;
+  spoiler?: InputMaybe<SpoilerBlockInput>;
+  steps?: InputMaybe<StepsBlockInput>;
+  voiceNote?: InputMaybe<VoiceNoteBlockInput>;
 };
 
 /** A block of rich text */
 export type BlockType =
+  | 'accordion'
   | 'block'
   | 'break'
-  | 'image';
+  | 'callout'
+  | 'checklist'
+  | 'countdown'
+  | 'gallery'
+  | 'image'
+  | 'quote'
+  | 'spoiler'
+  | 'steps'
+  | 'voiceNote';
 
 /** Union of all possible blocks */
 export type Blocks = {
   __typename?: 'Blocks';
+  accordion?: Maybe<AccordionBlock>;
   block?: Maybe<BlockBlock>;
   break?: Maybe<BreakBlock>;
+  callout?: Maybe<CalloutBlock>;
+  checklist?: Maybe<ChecklistBlock>;
+  countdown?: Maybe<CountdownBlock>;
+  gallery?: Maybe<GalleryBlock>;
   image?: Maybe<ImageBlock>;
+  quote?: Maybe<QuoteBlock>;
+  spoiler?: Maybe<SpoilerBlock>;
+  steps?: Maybe<StepsBlock>;
+  voiceNote?: Maybe<VoiceNoteBlock>;
 };
 
 export type BreakBlock = Block & {
   __typename?: 'BreakBlock';
   _key: Scalars['ID']['output'];
   _type: BlockType;
+  style?: Maybe<BreakStyle>;
 };
 
 export type BreakBlockInput = {
   _key: Scalars['ID']['input'];
   _type: BlockType;
+  style?: InputMaybe<BreakStyle>;
 };
+
+export type BreakStyle =
+  | 'dashed'
+  | 'dots'
+  | 'line'
+  | 'ornament';
+
+export type CalloutBlock = Block & {
+  __typename?: 'CalloutBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  description: Scalars['String']['output'];
+  icon?: Maybe<CalloutIcon>;
+  title?: Maybe<Scalars['String']['output']>;
+  tone?: Maybe<CalloutTone>;
+};
+
+export type CalloutBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  description: Scalars['String']['input'];
+  icon?: InputMaybe<CalloutIcon>;
+  title?: InputMaybe<Scalars['String']['input']>;
+  tone?: InputMaybe<CalloutTone>;
+};
+
+export type CalloutIcon =
+  | 'alert'
+  | 'check'
+  | 'error'
+  | 'heart'
+  | 'info'
+  | 'lightbulb'
+  | 'megaphone'
+  | 'none'
+  | 'star';
+
+export type CalloutTone =
+  | 'error'
+  | 'info'
+  | 'success'
+  | 'warning';
 
 export type Channel = {
   __typename?: 'Channel';
   bannerImageUrl?: Maybe<Scalars['String']['output']>;
   canModerate: Scalars['Boolean']['output'];
+  community?: Maybe<CommunityRef>;
   createdAt: Scalars['DateTime']['output'];
   description?: Maybe<Scalars['String']['output']>;
   followersCount?: Maybe<Scalars['Int']['output']>;
@@ -102,6 +206,7 @@ export type Channel = {
   isFollower: Scalars['Boolean']['output'];
   isMember: Scalars['Boolean']['output'];
   membersCount?: Maybe<Scalars['Int']['output']>;
+  minAge: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   owner: Persona;
   posts: Array<Post>;
@@ -109,6 +214,34 @@ export type Channel = {
   thumbnailUrl?: Maybe<Scalars['String']['output']>;
   totalPosts: Scalars['Int']['output'];
   updatedAt: Scalars['DateTime']['output'];
+};
+
+export type ChecklistBlock = Block & {
+  __typename?: 'ChecklistBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  items: Array<ChecklistItem>;
+  title?: Maybe<Scalars['String']['output']>;
+};
+
+export type ChecklistBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  items: Array<ChecklistItemInput>;
+  title?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type ChecklistItem = {
+  __typename?: 'ChecklistItem';
+  _key: Scalars['ID']['output'];
+  checked: Scalars['Boolean']['output'];
+  text: Scalars['String']['output'];
+};
+
+export type ChecklistItemInput = {
+  _key: Scalars['ID']['input'];
+  checked?: InputMaybe<Scalars['Boolean']['input']>;
+  text: Scalars['String']['input'];
 };
 
 export type Comment = {
@@ -144,40 +277,104 @@ export type CommentInput = {
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
-/** MarkDef for comments */
-export type CommentMarkDef = MarkDef & {
-  __typename?: 'CommentMarkDef';
-  _key: Scalars['ID']['output'];
-  _type: MarkDefType;
-  text: Scalars['String']['output'];
+export type CommunityRef = {
+  __typename?: 'CommunityRef';
+  id: Scalars['Int64']['output'];
+  name: Scalars['String']['output'];
+  slug: Scalars['String']['output'];
 };
 
-export type CommentMarkDefInput = {
-  _key: Scalars['ID']['input'];
-  _type: MarkDefType;
-  text: Scalars['String']['input'];
+export type CountdownBlock = Block & {
+  __typename?: 'CountdownBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  endedText?: Maybe<Scalars['String']['output']>;
+  endsAt: Scalars['DateTime']['output'];
+  label?: Maybe<Scalars['String']['output']>;
 };
+
+export type CountdownBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  endedText?: InputMaybe<Scalars['String']['input']>;
+  endsAt: Scalars['DateTime']['input'];
+  label?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GalleryBlock = Block & {
+  __typename?: 'GalleryBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  items: Array<GalleryItem>;
+  layout?: Maybe<GalleryLayout>;
+};
+
+export type GalleryBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  items: Array<GalleryItemInput>;
+  layout?: InputMaybe<GalleryLayout>;
+};
+
+export type GalleryItem = {
+  __typename?: 'GalleryItem';
+  _key: Scalars['ID']['output'];
+  alt?: Maybe<Scalars['String']['output']>;
+  caption?: Maybe<Scalars['String']['output']>;
+  height?: Maybe<Scalars['Int']['output']>;
+  src: Scalars['String']['output'];
+  width?: Maybe<Scalars['Int']['output']>;
+};
+
+export type GalleryItemInput = {
+  _key: Scalars['ID']['input'];
+  alt?: InputMaybe<Scalars['String']['input']>;
+  caption?: InputMaybe<Scalars['String']['input']>;
+  height?: InputMaybe<Scalars['Int']['input']>;
+  src: Scalars['String']['input'];
+  width?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type GalleryLayout =
+  | 'carousel'
+  | 'grid';
+
+export type ImageAlign =
+  | 'center'
+  | 'left'
+  | 'right';
 
 export type ImageBlock = Block & {
   __typename?: 'ImageBlock';
   _key: Scalars['ID']['output'];
   _type: BlockType;
+  align?: Maybe<ImageAlign>;
   alt?: Maybe<Scalars['String']['output']>;
   caption?: Maybe<Scalars['String']['output']>;
-  height?: Maybe<Scalars['String']['output']>;
+  height?: Maybe<Scalars['Int']['output']>;
+  size?: Maybe<ImageSize>;
   src: Scalars['String']['output'];
-  width?: Maybe<Scalars['String']['output']>;
+  width?: Maybe<Scalars['Int']['output']>;
 };
 
 export type ImageBlockInput = {
   _key: Scalars['ID']['input'];
   _type: BlockType;
+  align?: InputMaybe<ImageAlign>;
   alt?: InputMaybe<Scalars['String']['input']>;
   caption?: InputMaybe<Scalars['String']['input']>;
-  height?: InputMaybe<Scalars['String']['input']>;
+  height?: InputMaybe<Scalars['Int']['input']>;
+  size?: InputMaybe<ImageSize>;
   src: Scalars['String']['input'];
-  width?: InputMaybe<Scalars['String']['input']>;
+  width?: InputMaybe<Scalars['Int']['input']>;
 };
+
+export type ImageSize =
+  | 'l'
+  | 'm'
+  | 's'
+  | 'xl'
+  | 'xs';
 
 export type LikeInput = {
   liked: Scalars['Boolean']['input'];
@@ -214,18 +411,15 @@ export type MarkDef = {
 
 /** Oneof input for markDefs */
 export type MarkDefInput = {
-  comment?: InputMaybe<CommentMarkDefInput>;
   link?: InputMaybe<LinkMarkDefInput>;
 };
 
 export type MarkDefType =
-  | 'comment'
   | 'link';
 
 /** Union of all possible markDefs */
 export type MarkDefs = {
   __typename?: 'MarkDefs';
-  comment?: Maybe<CommentMarkDef>;
   link?: Maybe<LinkMarkDef>;
 };
 
@@ -305,6 +499,7 @@ export type OwnerType =
 
 export type Persona = {
   __typename?: 'Persona';
+  anonymous: Scalars['Boolean']['output'];
   fullName: Scalars['String']['output'];
   id: Scalars['Int64']['output'];
   profileImageUrl?: Maybe<Scalars['String']['output']>;
@@ -416,6 +611,23 @@ export type QueryGetPostsArgs = {
   owner: OwnerInput;
 };
 
+export type QuoteBlock = Block & {
+  __typename?: 'QuoteBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  name?: Maybe<Scalars['String']['output']>;
+  role?: Maybe<Scalars['String']['output']>;
+  text: Scalars['String']['output'];
+};
+
+export type QuoteBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  name?: InputMaybe<Scalars['String']['input']>;
+  role?: InputMaybe<Scalars['String']['input']>;
+  text: Scalars['String']['input'];
+};
+
 export type SimpleInput = {
   content: Scalars['String']['input'];
   type: SimpleInputType;
@@ -445,6 +657,49 @@ export type SpanInput = {
 export type SpanType =
   | 'span';
 
+export type SpoilerBlock = Block & {
+  __typename?: 'SpoilerBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  content: Array<Blocks>;
+  label?: Maybe<Scalars['String']['output']>;
+};
+
+export type SpoilerBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  content: Array<BlockInput>;
+  label?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type StepItem = {
+  __typename?: 'StepItem';
+  _key: Scalars['ID']['output'];
+  text?: Maybe<Scalars['String']['output']>;
+  title: Scalars['String']['output'];
+};
+
+export type StepItemInput = {
+  _key: Scalars['ID']['input'];
+  text?: InputMaybe<Scalars['String']['input']>;
+  title: Scalars['String']['input'];
+};
+
+export type StepsBlock = Block & {
+  __typename?: 'StepsBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  items: Array<StepItem>;
+  title?: Maybe<Scalars['String']['output']>;
+};
+
+export type StepsBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  items: Array<StepItemInput>;
+  title?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type StyleType =
   | 'blockquote'
   | 'h1'
@@ -454,6 +709,23 @@ export type StyleType =
   | 'h5'
   | 'h6'
   | 'normal';
+
+export type VoiceNoteBlock = Block & {
+  __typename?: 'VoiceNoteBlock';
+  _key: Scalars['ID']['output'];
+  _type: BlockType;
+  duration?: Maybe<Scalars['Int']['output']>;
+  src: Scalars['String']['output'];
+  title?: Maybe<Scalars['String']['output']>;
+};
+
+export type VoiceNoteBlockInput = {
+  _key: Scalars['ID']['input'];
+  _type: BlockType;
+  duration?: InputMaybe<Scalars['Int']['input']>;
+  src: Scalars['String']['input'];
+  title?: InputMaybe<Scalars['String']['input']>;
+};
 
 export type CreateCommentMutationVariables = Exact<{
   parentId: Scalars['ObjectId']['input'];
@@ -512,7 +784,14 @@ export type GetChannelQueryVariables = Exact<{
 }>;
 
 
-export type GetChannelQuery = { __typename?: 'Query', getChannel?: { __typename?: 'Channel', id: any, name: string, description?: string | null, bannerImageUrl?: string | null, thumbnailUrl?: string | null, createdAt: string, totalPosts: number, isMember: boolean, isFollower: boolean, canModerate: boolean, membersCount?: number | null, followersCount?: number | null, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, owner: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null } } | null };
+export type GetChannelQuery = { __typename?: 'Query', getChannel?: { __typename?: 'Channel', id: any, name: string, description?: string | null, bannerImageUrl?: string | null, thumbnailUrl?: string | null, createdAt: string, totalPosts: number, isMember: boolean, isFollower: boolean, canModerate: boolean, membersCount?: number | null, followersCount?: number | null, minAge: number, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, owner: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null }, community?: { __typename?: 'CommunityRef', id: any, name: string, slug: string } | null } | null };
+
+export type GetChannelCommunityQueryVariables = Exact<{
+  id: Scalars['Int64']['input'];
+}>;
+
+
+export type GetChannelCommunityQuery = { __typename?: 'Query', getChannel?: { __typename?: 'Channel', id: any, community?: { __typename?: 'CommunityRef', id: any, name: string, slug: string } | null } | null };
 
 export type GetCommentsQueryVariables = Exact<{
   parentId: Scalars['ObjectId']['input'];
@@ -521,7 +800,7 @@ export type GetCommentsQueryVariables = Exact<{
 }>;
 
 
-export type GetCommentsQuery = { __typename?: 'Query', getComments: Array<{ __typename?: 'Comment', _id: any, type: PostType, parentId: any, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }> };
+export type GetCommentsQuery = { __typename?: 'Query', getComments: Array<{ __typename?: 'Comment', _id: any, type: PostType, parentId: any, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }> };
 
 export type GetPostsQueryVariables = Exact<{
   owner: OwnerInput;
@@ -531,15 +810,15 @@ export type GetPostsQueryVariables = Exact<{
 }>;
 
 
-export type GetPostsQuery = { __typename?: 'Query', getPosts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }> };
+export type GetPostsQuery = { __typename?: 'Query', getPosts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }> };
 
-export type CommentFieldsFragment = { __typename?: 'Comment', _id: any, type: PostType, parentId: any, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } };
+export type CommentFieldsFragment = { __typename?: 'Comment', _id: any, type: PostType, parentId: any, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } };
 
 export type MetaFieldsFragment = { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any };
 
 export type PersonalizedMetaFieldsFragment = { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } };
 
-export type PostFieldsFragment = { __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } };
+export type PostFieldsFragment = { __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } };
 
 export const MetaFieldsFragmentDoc = gql`
     fragment MetaFields on Meta {
@@ -574,6 +853,7 @@ export const CommentFieldsFragmentDoc = gql`
     username
     fullName
     profileImageUrl
+    anonymous
   }
   rawContent
   createdAt
@@ -602,6 +882,7 @@ export const PostFieldsFragmentDoc = gql`
     username
     fullName
     profileImageUrl
+    anonymous
   }
   owner {
     id
@@ -841,8 +1122,14 @@ export const GetChannelDocument = gql`
     isMember
     isFollower
     canModerate
+    community {
+      id
+      name
+      slug
+    }
     membersCount
     followersCount
+    minAge
   }
 }
     ${PostFieldsFragmentDoc}`;
@@ -879,6 +1166,51 @@ export type GetChannelQueryHookResult = ReturnType<typeof useGetChannelQuery>;
 export type GetChannelLazyQueryHookResult = ReturnType<typeof useGetChannelLazyQuery>;
 export type GetChannelSuspenseQueryHookResult = ReturnType<typeof useGetChannelSuspenseQuery>;
 export type GetChannelQueryResult = Apollo.QueryResult<GetChannelQuery, GetChannelQueryVariables>;
+export const GetChannelCommunityDocument = gql`
+    query GetChannelCommunity($id: Int64!) {
+  getChannel(id: $id) {
+    id
+    community {
+      id
+      name
+      slug
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetChannelCommunityQuery__
+ *
+ * To run a query within a React component, call `useGetChannelCommunityQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetChannelCommunityQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetChannelCommunityQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetChannelCommunityQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetChannelCommunityQuery, GetChannelCommunityQueryVariables> & ({ variables: GetChannelCommunityQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>(GetChannelCommunityDocument, options);
+      }
+export function useGetChannelCommunityLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>(GetChannelCommunityDocument, options);
+        }
+export function useGetChannelCommunitySuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>(GetChannelCommunityDocument, options);
+        }
+export type GetChannelCommunityQueryHookResult = ReturnType<typeof useGetChannelCommunityQuery>;
+export type GetChannelCommunityLazyQueryHookResult = ReturnType<typeof useGetChannelCommunityLazyQuery>;
+export type GetChannelCommunitySuspenseQueryHookResult = ReturnType<typeof useGetChannelCommunitySuspenseQuery>;
+export type GetChannelCommunityQueryResult = Apollo.QueryResult<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>;
 export const GetCommentsDocument = gql`
     query GetComments($parentId: ObjectId!, $limit: Int, $offset: Int) {
   getComments(parentId: $parentId, limit: $limit, offset: $offset) {

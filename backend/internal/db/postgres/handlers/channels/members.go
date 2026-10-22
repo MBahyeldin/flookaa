@@ -14,11 +14,8 @@ import (
 )
 
 type MemberResponse struct {
-	PersonaID   int64  `json:"persona_id"`
-	Name        string `json:"name"`
-	FirstName   string `json:"first_name"`
-	LastName    string `json:"last_name"`
-	Thumbnail   string `json:"thumbnail"`
+	PersonaID int64 `json:"persona_id"`
+	PersonaFields
 	JoinedAt    string `json:"joined_at"`
 	IsOwner     bool   `json:"is_owner"`
 	IsModerator bool   `json:"is_moderator"`
@@ -37,18 +34,29 @@ func (h *Handler) ListMembers(c *gin.Context) {
 		return
 	}
 
-	members := make([]MemberResponse, 0, len(rows))
-	for _, row := range rows {
-		members = append(members, MemberResponse{
-			PersonaID:   row.PersonaID,
-			Name:        row.Name,
-			FirstName:   row.FirstName,
-			LastName:    row.LastName,
-			Thumbnail:   row.Thumbnail.String,
+	members := make([]MemberResponse, len(rows))
+	var ids []int64
+	var fields []*PersonaFields
+	for i, row := range rows {
+		members[i] = MemberResponse{
+			PersonaID: row.PersonaID,
+			PersonaFields: PersonaFields{
+				Name:      row.Name,
+				FirstName: row.FirstName,
+				LastName:  row.LastName,
+				Thumbnail: row.Thumbnail.String,
+			},
 			JoinedAt:    row.JoinedAt.Time.Format(time.RFC3339),
 			IsOwner:     row.IsOwner,
 			IsModerator: row.IsModerator,
-		})
+		}
+		if row.Privacy != db.PersonaPrivacyEnumPublic {
+			ids = append(ids, row.PersonaID)
+			fields = append(fields, &members[i].PersonaFields)
+		}
+	}
+	if !h.anonymize(c, channelId, ids, fields) {
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{"members": members})
 }

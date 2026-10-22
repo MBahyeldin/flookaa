@@ -59,13 +59,9 @@ const editorMachine = setup({
       | { type: "remove" }
       | { type: "clear stored patches" }
       | { type: "copy patches" }
-      | { type: "toggle debug mode" }
       | { type: "toggle key generator" }
       | { type: "toggle patch subscription" }
       | { type: "toggle value subscription" }
-      | { type: "toggle patches preview" }
-      | { type: "toggle selection preview" }
-      | { type: "toggle value preview" }
       | { type: "toggle feature flag"; flag: keyof EditorFeatureFlags }
       | { type: "add range decoration"; rangeDecoration: RangeDecoration }
       | {
@@ -170,34 +166,6 @@ const editorMachine = setup({
   },
   type: "parallel",
   states: {
-    "debug mode": {
-      initial: "hidden",
-      states: {
-        hidden: { on: { "toggle debug mode": { target: "shown" } } },
-        shown: { on: { "toggle debug mode": { target: "hidden" } } },
-      },
-    },
-    "patches preview": {
-      initial: "hidden",
-      states: {
-        hidden: { on: { "toggle patches preview": { target: "shown" } } },
-        shown: { on: { "toggle patches preview": { target: "hidden" } } },
-      },
-    },
-    "selection preview": {
-      initial: "hidden",
-      states: {
-        hidden: { on: { "toggle selection preview": { target: "shown" } } },
-        shown: { on: { "toggle selection preview": { target: "hidden" } } },
-      },
-    },
-    "value preview": {
-      initial: "hidden",
-      states: {
-        hidden: { on: { "toggle value preview": { target: "shown" } } },
-        shown: { on: { "toggle value preview": { target: "hidden" } } },
-      },
-    },
     "patch subscription": {
       initial: "active",
       states: {

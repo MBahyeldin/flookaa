@@ -24,7 +24,6 @@ interface MarkDef {
 
 enum MarkDefType {
   link
-  comment
 }
 
 """
@@ -38,20 +37,10 @@ type LinkMarkDef implements MarkDef {
 }
 
 """
-MarkDef for comments
-"""
-type CommentMarkDef implements MarkDef {
-  _key: ID!
-  _type: MarkDefType!
-  text: String!
-}
-
-"""
 Union of all possible markDefs
 """
 type MarkDefs {
   link: LinkMarkDef
-  comment: CommentMarkDef
 }
 
 """
@@ -61,6 +50,60 @@ enum BlockType {
   block
   image
   break
+  callout
+  quote
+  steps
+  accordion
+  spoiler
+  countdown
+  checklist
+  gallery
+  voiceNote
+}
+
+enum ImageSize {
+  xs
+  s
+  m
+  l
+  xl
+}
+
+enum ImageAlign {
+  left
+  center
+  right
+}
+
+enum GalleryLayout {
+  grid
+  carousel
+}
+
+enum BreakStyle {
+  line
+  dashed
+  dots
+  ornament
+}
+
+enum CalloutTone {
+  info
+  success
+  warning
+  error
+}
+
+enum CalloutIcon {
+  info
+  check
+  alert
+  error
+  lightbulb
+  star
+  heart
+  megaphone
+  none
 }
 
 enum StyleType {
@@ -100,13 +143,113 @@ type ImageBlock implements Block {
   src: String!
   alt: String
   caption: String
-  width: String # tailwind css classes only, sanitized
-  height: String # tailwind css classes only, sanitized
+  width: Int
+  height: Int
+  size: ImageSize
+  align: ImageAlign
 }
 
 type BreakBlock implements Block {
   _type: BlockType!
   _key: ID!
+  style: BreakStyle
+}
+
+type CalloutBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  tone: CalloutTone
+  icon: CalloutIcon
+  title: String
+  description: String!
+}
+
+type QuoteBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  text: String!
+  name: String
+  role: String
+}
+
+type StepItem {
+  _key: ID!
+  title: String!
+  text: String
+}
+
+type StepsBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [StepItem!]!
+}
+
+type AccordionItem {
+  _key: ID!
+  title: String!
+  text: String!
+}
+
+type AccordionBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [AccordionItem!]!
+  allowMultiple: Boolean
+  defaultFirstOpen: Boolean
+}
+
+type SpoilerBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  label: String
+  content: [Blocks!]!
+}
+
+type CountdownBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  endsAt: DateTime!
+  label: String
+  endedText: String
+}
+
+type ChecklistItem {
+  _key: ID!
+  text: String!
+  checked: Boolean!
+}
+
+type ChecklistBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [ChecklistItem!]!
+}
+
+type GalleryItem {
+  _key: ID!
+  src: String!
+  alt: String
+  caption: String
+  width: Int
+  height: Int
+}
+
+type GalleryBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  layout: GalleryLayout
+  items: [GalleryItem!]!
+}
+
+type VoiceNoteBlock implements Block {
+  _type: BlockType!
+  _key: ID!
+  src: String!
+  title: String
+  duration: Int
 }
 
 """
@@ -116,6 +259,15 @@ type Blocks {
   block: BlockBlock
   image: ImageBlock
   break: BreakBlock
+  callout: CalloutBlock
+  quote: QuoteBlock
+  steps: StepsBlock
+  accordion: AccordionBlock
+  spoiler: SpoilerBlock
+  countdown: CountdownBlock
+  checklist: ChecklistBlock
+  gallery: GalleryBlock
+  voiceNote: VoiceNoteBlock
 }
 
 """
@@ -143,18 +295,11 @@ input LinkMarkDefInput {
   title: String
 }
 
-input CommentMarkDefInput {
-  _key: ID!
-  _type: MarkDefType!
-  text: String!
-}
-
 """
 Oneof input for markDefs
 """
 input MarkDefInput @oneof {
   link: LinkMarkDefInput
-  comment: CommentMarkDefInput
 }
 
 """
@@ -176,13 +321,113 @@ input ImageBlockInput {
   src: String!
   alt: String
   caption: String
-  width: String
-  height: String
+  width: Int
+  height: Int
+  size: ImageSize
+  align: ImageAlign
 }
 
 input BreakBlockInput {
   _type: BlockType!
   _key: ID!
+  style: BreakStyle
+}
+
+input CalloutBlockInput {
+  _type: BlockType!
+  _key: ID!
+  tone: CalloutTone
+  icon: CalloutIcon
+  title: String
+  description: String!
+}
+
+input QuoteBlockInput {
+  _type: BlockType!
+  _key: ID!
+  text: String!
+  name: String
+  role: String
+}
+
+input StepItemInput {
+  _key: ID!
+  title: String!
+  text: String
+}
+
+input StepsBlockInput {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [StepItemInput!]!
+}
+
+input AccordionItemInput {
+  _key: ID!
+  title: String!
+  text: String!
+}
+
+input AccordionBlockInput {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [AccordionItemInput!]!
+  allowMultiple: Boolean
+  defaultFirstOpen: Boolean
+}
+
+input SpoilerBlockInput {
+  _type: BlockType!
+  _key: ID!
+  label: String
+  content: [BlockInput!]!
+}
+
+input CountdownBlockInput {
+  _type: BlockType!
+  _key: ID!
+  endsAt: DateTime!
+  label: String
+  endedText: String
+}
+
+input ChecklistItemInput {
+  _key: ID!
+  text: String!
+  checked: Boolean
+}
+
+input ChecklistBlockInput {
+  _type: BlockType!
+  _key: ID!
+  title: String
+  items: [ChecklistItemInput!]!
+}
+
+input GalleryItemInput {
+  _key: ID!
+  src: String!
+  alt: String
+  caption: String
+  width: Int
+  height: Int
+}
+
+input GalleryBlockInput {
+  _type: BlockType!
+  _key: ID!
+  layout: GalleryLayout
+  items: [GalleryItemInput!]!
+}
+
+input VoiceNoteBlockInput {
+  _type: BlockType!
+  _key: ID!
+  src: String!
+  title: String
+  duration: Int
 }
 
 """
@@ -192,6 +437,15 @@ input BlockInput @oneof {
   block: BlockBlockInput
   image: ImageBlockInput
   break: BreakBlockInput
+  callout: CalloutBlockInput
+  quote: QuoteBlockInput
+  steps: StepsBlockInput
+  accordion: AccordionBlockInput
+  spoiler: SpoilerBlockInput
+  countdown: CountdownBlockInput
+  checklist: ChecklistBlockInput
+  gallery: GalleryBlockInput
+  voiceNote: VoiceNoteBlockInput
 }
 
 input PortableTextInput {
