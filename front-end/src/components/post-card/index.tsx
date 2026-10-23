@@ -1,53 +1,32 @@
- 
-import { useEffect, useState } from "react";
-import {
-  Heart,
-  MessageCircle,
-  Share2,
-  MoreHorizontal,
-  Trash2,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
-import { Card, CardContent } from "../ui/card";
+import { useState } from "react";
+import { ArrowRight, MoreHorizontal, Trash2 } from "lucide-react";
+import { CombinedGraphQLErrors } from "@apollo/client/errors";
+import { toast } from "sonner";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import { useCreateLikeMutation, useDeletePostMutation, type Post } from "@/generated/graphql";
-import { CombinedGraphQLErrors } from "@apollo/client/errors";
-import { toast } from "sonner";
-import CommentSection from "../comment-section";
-import { AnimatePresence, motion } from "framer-motion";
+import { useDeletePostMutation, type Post } from "@/generated/graphql";
+import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/AppStore";
-import useAudioContext from "@/hooks/useAudioContext";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
+import CommentSection from "../comment-section";
 import PostContent from "../portable-text/PostContent";
-import { PostHeader } from "./PostHeader";
+import { PostByline, type PostChannel } from "./PostByline";
+import { Reactions } from "./Reactions";
 
+export type { PostChannel };
 
+export type PostVersion = "spine" | "canvas" | "full";
 
-export function Post({
-  post,
-  isNew = false,
-  initialShowComments = false,
-}: {
-  post: Post;
-  /** Arrived after the feed rendered — plays the entrance animation once. */
-  isNew?: boolean;
-  /** Start with comments expanded (e.g. opened from a notification). */
-  initialShowComments?: boolean;
-}) {
-  const [showComments, setShowComments] = useState(initialShowComments);
+function PostMenu({ post }: { post: Post }) {
   const { persona } = useUserProfileStore();
-  const owner = useAppStore((state) => state.owner);
-  const [createLike] = useCreateLikeMutation();
-  const [deletePost, { loading: isDeleting }] = useDeletePostMutation();
   const canModerate = useAppStore((state) => state.canModerate);
-  const canDelete = post.authorId === persona?.id || canModerate;
+  const [deletePost, { loading: isDeleting }] = useDeletePostMutation();
+  if (post.authorId !== persona?.id && !canModerate) return null;
 
   const handleDelete = async () => {
     if (!confirm("Delete this post? This can't be undone.")) return;
@@ -67,240 +46,121 @@ export function Post({
     toast.success("Post deleted");
   };
 
-  const [liked, setLiked] = useState(post.personalizedMeta?.likedByPersona || false);
-  const [localLikes, setLocalLikes] = useState(post.meta?.likesCount || 0);
-  const [triggerHeartAnimation, setTriggerHeartAnimation] = useState(false);
-  
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon-sm" className="ms-auto shrink-0" aria-label="Post options">
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          className="text-destructive focus:text-destructive"
+          disabled={isDeleting}
+          onClick={handleDelete}
+        >
+          <Trash2 className="mr-2 size-4" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
+export function Post({
+  post,
+  version = "spine",
+  channel,
+  onOpen,
+  isNew = false,
+}: {
+  post: Post;
+  version?: PostVersion;
+  channel?: PostChannel;
+  // Opens the whole post with its comments.
+  onOpen?: () => void;
+  /** Arrived after the feed rendered — plays the entrance animation once. */
+  isNew?: boolean;
+}) {
+  const [truncated, setTruncated] = useState(false);
+  const canvas = version === "canvas";
+  const full = version === "full";
 
-  const [isLiking, setIsLiking] = useState(false);
+  const byline = (
+    <PostByline
+      authorId={post.authorId}
+      author={post.author}
+      createdAt={post.createdAt}
+      channel={channel}
+      sticker={canvas}
+    />
+  );
 
-  const toggleLike = async () => {
-    if (!persona?.id || !owner || isLiking) return;
-    const nextLiked = !liked;
+  const content = (
+    <PostContent
+      rawContent={post.rawContent}
+      preview={full ? undefined : { tone: canvas ? "accent" : "card", lead: canvas, onTruncatedChange: setTruncated }}
+    />
+  );
 
-    // Wait for the server before flipping `liked`: it drives the heart
-    // animation, and a rejected like (e.g. "join the channel first") must not
-    // animate. The in-flight guard stops double clicks from racing.
-    setIsLiking(true);
-    try {
-      await createLike({
-        variables: {
-          targetId: post._id,
-          targetType: "POST",
-          liked: nextLiked,
-          owner: {
-            id: owner.id,
-            type: owner.type,
-          },
-        },
-      });
-    } catch (err) {
-      toast.error(
-        CombinedGraphQLErrors.is(err)
-          ? err.errors[0]?.message || "Couldn’t update your like."
-          : "Couldn’t update your like. Check your connection."
-      );
-      return;
-    } finally {
-      setIsLiking(false);
-    }
+  const footer = (
+    <div className="flex items-center gap-2">
+      {truncated && onOpen ? (
+        <button
+          type="button"
+          onClick={onOpen}
+          className="flex items-center gap-1 rounded-sm text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Read the whole post
+          <ArrowRight aria-hidden className="size-3.5 rtl:-scale-x-100" />
+        </button>
+      ) : null}
+      <div className="ms-auto">
+        <Reactions post={post} onOpenComments={full ? undefined : onOpen} />
+      </div>
+    </div>
+  );
 
-    setLiked(nextLiked);
-
-    /*
-     * The sound belongs here, not in the likesCount effect below.
-     *
-     * That effect only sees the number go up, so it fired for *everyone's*
-     * likes arriving over the websocket — a busy post would chirp repeatedly
-     * at a reader who did nothing. Here we know the like is the current user's.
-     *
-     * It still runs from the click handler, well within the browser's
-     * transient-activation window after the request, which satisfies the
-     * autoplay policy; the effect had no gesture behind it and logged
-     * "AudioContext was not allowed to start".
-     */
-    if (nextLiked) {
-      playSound("HEART_REACT");
-    }
-  };
-
-  const { playSound } = useAudioContext();
-
-
-  useEffect(() => {
-    // Visual only. Any like — mine or anyone else's — is worth showing, but
-    // the sound is reserved for the current user's own like (see toggleLike).
-    if (post.meta?.likesCount > localLikes) {
-      setTriggerHeartAnimation(true);
-    }
-    setLocalLikes(post.meta?.likesCount || 0);
-  }, [localLikes, post.meta?.likesCount]);
-
-
-
-
-
+  if (canvas) {
+    return (
+      <article
+        data-theme={channel?.theme ?? undefined}
+        className={cn(
+          "flex flex-col gap-4 rounded-2xl bg-accent px-5.5 pt-4.5 pb-5.5 text-foreground",
+          isNew && "post-enter"
+        )}
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          {byline}
+          <PostMenu post={post} />
+        </div>
+        {content}
+        {footer}
+      </article>
+    );
+  }
 
   return (
-    // A real 1px border reads cleaner than border-0 + shadow alone: against a
-    // gradient page the shadow-only edge was vague. rounded-xl matches the
-    // hero card so the column shares one silhouette.
-    <Card
-      className={`rounded-lg border ${
-        isNew ? "post-enter" : ""
-      }`}
+    <article
+      data-theme={channel?.theme ?? undefined}
+      className={cn(
+        "flex overflow-hidden rounded-2xl border bg-card text-card-foreground",
+        isNew && "post-enter"
+      )}
     >
-      <CardContent className="p-4 sm:p-6">
-        <PostHeader
-          authorId={post.authorId}
-          author={post.author}
-          createdAt={post.createdAt}
-          actions={
-            canDelete && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" aria-label="Post options">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                {/* Edit was listed here but never wired up; it returns with post editing. */}
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    disabled={isDeleting}
-                    onClick={handleDelete}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )
-          }
-        />
-
-        {/* Post Content */}
-        <PostContent rawContent={post.rawContent} />
-
-        {/* Post Actions */}
-        <div className="flex items-center justify-between pt-4 border-t mt-4">
-          <div className="flex items-center space-x-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleLike}
-              aria-pressed={liked}
-              aria-label={`${liked ? "Unlike" : "Like"} — ${localLikes} ${localLikes === 1 ? "like" : "likes"}`}
-              className={`relative flex items-center space-x-2 transition-all ${liked ? "text-destructive" : "text-muted-foreground hover:text-foreground"
-                }`}
-            >
-              {/* Heart Icon */}
-              <motion.div
-                animate={liked ? "liked" : "unliked"}
-                variants={{
-                  liked: {
-                    scale: [1, 1.3, 1],
-                    rotate: [0, -10, 10, 0],
-                    transition: {
-                      duration: 0.4,
-                      ease: "easeInOut",
-                    },
-                  },
-                  unliked: {
-                    scale: 1,
-                    rotate: 0,
-                  },
-                }}
-              >
-                <Heart
-                  className={`h-4 w-4 ${liked ? "fill-destructive stroke-destructive" : "stroke-current"
-                    }`}
-                />
-              </motion.div>
-
-              {/* Like Count */}
-              <span>{localLikes}</span>
-
-              {/* Floating Heart Animation */}
-              <AnimatePresence>
-                {triggerHeartAnimation && (
-                  <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none">
-                    {[...Array(6)].map((_, index) => {
-                      const spread = (index - 2.5) * 10 // horizontal distance
-
-                      return (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0, scale: 0.6, y: 0, x: 0 }}
-                          animate={{
-                            opacity: [0, 1, 0],
-                            scale: [0.6, 1.4, 1],
-                            y: [-5, -20, -35],
-                            x: spread,
-                          }}
-                          transition={{
-                            duration: 1.0,
-                            delay: index * 0.3, // 100ms stagger
-                            ease: "easeOut",
-                          }}
-                          onAnimationComplete={() => {
-                            if (index === 5) {
-                              setTriggerHeartAnimation(false)
-                            }
-                          }}
-                          className="absolute text-destructive"
-                        >
-                          <Heart className="h-5 w-5 fill-destructive stroke-destructive" />
-                        </motion.div>
-                      )
-                    })}
-                  </div>
-                )}
-              </AnimatePresence>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowComments(true)}
-              aria-label={`Show comments — ${post.meta.commentsCount} ${post.meta.commentsCount === 1 ? "comment" : "comments"}`}
-              className="flex items-center space-x-2"
-            >
-              <MessageCircle className="h-4 w-4" />
-              <span>{post.meta.commentsCount}</span>
-            </Button>
-
-            {/* Not wired up yet — disabled so it doesn't read as clickable. */}
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled
-              aria-label="Share post"
-              title="Sharing isn’t available yet"
-              className="flex items-center space-x-2"
-            >
-              <Share2 className="h-4 w-4" />
-              {/* <span>{shares}</span> */}
-            </Button>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowComments(prev => !prev)}
-            aria-expanded={showComments}
-            aria-label={showComments ? "Collapse comments" : "Expand comments"}
-          >
-            {showComments ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
+      <div aria-hidden className="w-1.5 shrink-0 bg-primary" />
+      <div className="flex min-w-0 flex-1 flex-col gap-3.5 px-5 pt-5 pb-4.5">
+        <div className="flex min-w-0 items-center gap-2">
+          {byline}
+          <PostMenu post={post} />
         </div>
-          <CommentSection parentId={post._id} showComments={showComments} totalCount={post.meta.commentsCount} />
-      </CardContent>
-
-    </Card>
+        {content}
+        <div className="h-px bg-border" />
+        {footer}
+        {full ? (
+          <CommentSection parentId={post._id} showComments totalCount={post.meta.commentsCount} />
+        ) : null}
+      </div>
+    </article>
   );
 }

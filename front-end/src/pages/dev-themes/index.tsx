@@ -14,6 +14,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Compass, Lock, Plus } from "lucide-react";
 import PostContent from "@/components/portable-text/PostContent";
+import { blocks } from "@/components/portable-text/blocks";
+import { Post } from "@/components/post-card";
+import type { Post as PostData } from "@/generated/graphql";
 import { PALETTES, type PaletteId } from "@/themes/palettes";
 
 function Components() {
@@ -132,6 +135,47 @@ const SAMPLE_POST = JSON.stringify({
     },
   ],
 });
+
+const paragraph = (key: string, text: string) => ({
+  block: { _type: "block", _key: key, style: "normal", markDefs: [], children: [{ _type: "span", _key: `${key}s`, text, marks: [] }] },
+});
+
+const example = (name: string, key: string) => {
+  const value = blocks.find((block) => block.name === name)!.examples[0];
+  const content = name === "spoiler" ? { content: value.content.map((block: unknown) => ({ block })) } : {};
+  return { [name]: { _type: name, _key: key, ...value, ...content } };
+};
+
+const SAMPLE_PREVIEW = {
+  _id: "sample",
+  authorId: 0,
+  author: { fullName: "Lina H.", profileImageUrl: null, anonymous: false },
+  createdAt: new Date(Date.now() - 3 * 3600_000).toISOString(),
+  rawContent: {
+    blocks: [
+      paragraph("p1", "Saturday's hike is on! We meet at the trailhead café at 8, walk the ridge loop, and come back for a long lunch. Everything you need is below."),
+      example("image", "img"),
+      paragraph("p2", "Here's the view from last time. The clock is ticking:"),
+      example("countdown", "cd"),
+      example("checklist", "cl"),
+      example("voiceNote", "vn"),
+      example("steps", "st"),
+      example("spoiler", "sp"),
+      example("quote", "qt"),
+    ],
+  },
+  meta: { likesCount: 24, commentsCount: 8 },
+  personalizedMeta: { likedByPersona: false },
+} as unknown as PostData;
+
+function PreviewSamples() {
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Post post={SAMPLE_PREVIEW} version="spine" channel={{ id: 0, name: "Weekend Hikers", theme: "forest" }} onOpen={() => {}} />
+      <Post post={SAMPLE_PREVIEW} version="canvas" channel={{ id: 0, name: "Weekend Hikers", theme: "forest" }} onOpen={() => {}} />
+    </div>
+  );
+}
 
 const canvas = typeof document === "undefined" ? null : document.createElement("canvas");
 
@@ -265,6 +309,7 @@ export default function DevThemesPage() {
           Every palette in light and dark. Light swatches are only accurate while the app itself is in light mode.
         </p>
       </div>
+      <PreviewSamples />
       <div className="grid gap-4 md:grid-cols-2">
         {PALETTES.flatMap(({ id, label }) => [
           <Swatch key={`${id}-light`} id={id} label={label} dark={false} />,

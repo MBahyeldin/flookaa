@@ -26,7 +26,8 @@ export type BlockDefinition<T> = {
   defaultValues: Partial<T>;
   // Mirrors the server's checks in shared/util/portableText/block-objects.
   schema: ZodType<T>;
-  View: (props: { value: T }) => ReactNode;
+  // compact: the smaller form a post preview uses when the block alone overflows it.
+  View: (props: { value: T; compact?: boolean }) => ReactNode;
   // Chip label in a post preview, e.g. "Checklist · 2/4"; falls back to title.
   summary?: (value: T) => string;
   Editor?: (props: BlockEditorProps<T>) => ReactNode;

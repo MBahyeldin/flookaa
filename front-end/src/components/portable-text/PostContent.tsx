@@ -4,6 +4,7 @@ import deNormalizeBlocks from "@/utils/deNormalizeBlocks";
 import displayBlockComponents from "./displayBlocks";
 import { blocks, type AnyBlock } from "./blocks";
 import { blockIssues } from "./validateBlocks";
+import PreviewStream, { type PreviewOptions } from "./PreviewStream";
 
 function InvalidBlockNotice({ block, issues }: { block: AnyBlock; issues: string[] }) {
   return (
@@ -21,9 +22,19 @@ function InvalidBlockNotice({ block, issues }: { block: AnyBlock; issues: string
   );
 }
 
-function buildComponents(showInvalid: boolean): PortableTextComponents {
+function buildComponents({ showInvalid = false, preview = false, compact = false } = {}): PortableTextComponents {
   return {
     ...displayBlockComponents,
+    block: preview
+      ? {
+          ...(displayBlockComponents.block as object),
+          normal: ({ children }) => (
+            <p dir="auto" data-clamp className="line-clamp-4 leading-relaxed">
+              {children}
+            </p>
+          ),
+        }
+      : displayBlockComponents.block,
     types: Object.fromEntries(
       blocks.map((block) => [
         block.name,
@@ -34,15 +45,17 @@ function buildComponents(showInvalid: boolean): PortableTextComponents {
             console.warn(`Skipping invalid ${block.name} block`, value);
             return null;
           }
-          return <block.View value={value} />;
+          return <block.View value={value} compact={compact} />;
         },
       ])
     ),
   };
 }
 
-const feedComponents = buildComponents(false);
-const previewComponents = buildComponents(true);
+const feedComponents = buildComponents();
+const previewComponents = buildComponents({ showInvalid: true });
+const streamComponents = buildComponents({ preview: true });
+const compactStreamComponents = buildComponents({ preview: true, compact: true });
 
 export function parsePostContent(rawContent: unknown) {
   try {
@@ -59,20 +72,28 @@ export default function PostContent({
   value: parsed,
   theme,
   showInvalid = false,
+  preview,
 }: {
   rawContent?: unknown;
   value?: PortableTextBlock[];
   theme?: string;
   showInvalid?: boolean;
+  preview?: PreviewOptions;
 }) {
   const value = useMemo(() => parsed ?? parsePostContent(rawContent), [parsed, rawContent]);
 
   return (
     <div className="post-content space-y-4" data-theme={theme}>
-      <PortableText
-        value={value}
-        components={showInvalid ? previewComponents : feedComponents}
-      />
+      {preview ? (
+        <PreviewStream
+          value={value}
+          components={streamComponents}
+          compactComponents={compactStreamComponents}
+          options={preview}
+        />
+      ) : (
+        <PortableText value={value} components={showInvalid ? previewComponents : feedComponents} />
+      )}
     </div>
   );
 }

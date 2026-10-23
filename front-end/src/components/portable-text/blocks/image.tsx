@@ -113,13 +113,14 @@ const alignClass: Record<(typeof aligns)[number], string> = {
   right: "ml-auto",
 };
 
-function ImageView({ value }: { value: ImageValue }) {
+function ImageView({ value, compact = false }: { value: ImageValue; compact?: boolean }) {
   const { width, height } = value;
   const known = width !== undefined && height !== undefined;
   // Caps live on the figure so the caption always matches the drawn image:
-  // never wider than the file, never taller than 70vh.
+  // never wider than the file, never taller than 70vh (360px when compact).
+  const cap = compact ? "360px" : "70vh";
   const style: CSSProperties | undefined = known
-    ? { maxWidth: `min(${width}px, calc(70vh * ${width} / ${height}))` }
+    ? { maxWidth: `min(${width}px, calc(${cap} * ${width} / ${height}))` }
     : undefined;
 
   return (
@@ -134,7 +135,7 @@ function ImageView({ value }: { value: ImageValue }) {
       <img
         className={cn(
           "block rounded-xl",
-          known ? "w-full h-auto" : "max-w-full max-h-[70vh] w-auto h-auto"
+          known ? "w-full h-auto" : cn("max-w-full w-auto h-auto", compact ? "max-h-[360px]" : "max-h-[70vh]")
         )}
         src={value.src}
         {...responsiveImage(value.src, width, sizeFraction[value.size ?? "xl"])}

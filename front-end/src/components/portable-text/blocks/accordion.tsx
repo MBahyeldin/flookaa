@@ -92,7 +92,7 @@ const accordionFormFields: FormField[] = [
   }),
 ];
 
-function AccordionView({ value }: { value: AccordionValue }) {
+function AccordionView({ value, compact = false }: { value: AccordionValue; compact?: boolean }) {
   const listRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const allowMultiple = value.allowMultiple ?? true;
@@ -122,7 +122,7 @@ function AccordionView({ value }: { value: AccordionValue }) {
           <details
             key={item._key}
             className="group rounded-xl open:bg-accent open:text-accent-foreground"
-            open={index === 0 && value.defaultFirstOpen === true}
+            open={index === 0 && value.defaultFirstOpen === true && !compact}
             onToggle={onToggle}
           >
             <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 rounded-xl px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset [&::-webkit-details-marker]:hidden">

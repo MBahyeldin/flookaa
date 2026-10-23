@@ -388,11 +388,11 @@ function GalleryViewer({
   );
 }
 
-function GalleryView({ value }: { value: GalleryValue }) {
+function GalleryView({ value, compact = false }: { value: GalleryValue; compact?: boolean }) {
   const [viewing, setViewing] = useState<number | null>(null);
   return (
     <>
-      {value.layout === "grid" ? (
+      {value.layout === "grid" || compact ? (
         <BentoView items={value.items} onOpen={setViewing} />
       ) : (
         <CarouselView items={value.items} onOpen={setViewing} />

@@ -2,13 +2,14 @@ import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Post } from "@/components/post-card";
+import { Post, type PostChannel } from "@/components/post-card";
 import { GetPostsDocument, type GetPostsQuery } from "@/generated/graphql";
 import client from "@/graphql/client";
 import { isCurrentOwner, useAppStore } from "@/stores/AppStore";
 
 /**
- * Opens ?post=<id> (a notification link) in a dialog with its comments shown,
+ * Opens ?post=<id> (a notification link, or a preview's "Read the whole post")
+ * in a dialog with its comments shown,
  * whether or not the post is on the feed's current page. The post goes into
  * the page's store so likes and comments update it like any feed post.
  * Closing the dialog removes the query params.
@@ -17,9 +18,11 @@ import { isCurrentOwner, useAppStore } from "@/stores/AppStore";
  * comment would mean expanding every collapsed reply level above it.
  */
 export default function PostDialog({
+  channel,
   channelId,
   isStoreOnThisChannel,
 }: {
+  channel: PostChannel;
   channelId: string | undefined;
   /** False until the page has pointed the store at this channel. */
   isStoreOnThisChannel: boolean;
@@ -78,9 +81,9 @@ export default function PostDialog({
 
   return (
     <Dialog open={!!postId && !!post} onOpenChange={(open) => !open && close()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-2xl">
+      <DialogContent data-theme={channel.theme ?? undefined} className="max-h-[90vh] overflow-y-auto border-0 bg-transparent p-0 sm:max-w-2xl">
         <DialogTitle className="sr-only">Post</DialogTitle>
-        {post && <Post post={post} initialShowComments />}
+        {post && <Post post={post} version="full" channel={channel} />}
       </DialogContent>
     </Dialog>
   );

@@ -326,6 +326,13 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     setSearchParams(params);
   };
 
+  const postChannel = { id: channel.id, name: channel.name, theme: channel.theme };
+  const openPost = (id: string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("post", id);
+    setSearchParams(params);
+  };
+
   const membersOnly = (
     <EmptyState
       icon={Lock}
@@ -396,7 +403,16 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                 ) : null}
 
                 {!isStoreOnThisChannel ? null : sortedPosts.length ? (
-                  sortedPosts.map((post) => <Post key={post._id} post={post} isNew={newlyAddedIds.has(post._id)} />)
+                  sortedPosts.map((post) => (
+                    <Post
+                      key={post._id}
+                      post={post}
+                      version="canvas"
+                      channel={postChannel}
+                      onOpen={() => openPost(post._id)}
+                      isNew={newlyAddedIds.has(post._id)}
+                    />
+                  ))
                 ) : (
                   <EmptyState icon={MessageSquare} title="No posts yet" body={`Be the first to post in ${channel.name}.`} />
                 )}
@@ -432,7 +448,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
       </SectionNav>
 
       {/* ?post=<id> from a notification */}
-      <PostDialog channelId={channelId} isStoreOnThisChannel={isStoreOnThisChannel} />
+      <PostDialog channel={postChannel} channelId={channelId} isStoreOnThisChannel={isStoreOnThisChannel} />
     </div>
   );
 }
