@@ -1,31 +1,70 @@
 import { useState } from "react";
 import { ImageIcon, Mic, User2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { PostCreator } from "@/components/post-creator";
+import { useIsMobile } from "@/hooks/useMobile";
+import { personaInitials } from "@/lib/personaInitials";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 
-// Slim bar that opens the current writer in place; the v2 composer is WWW-109.
-export function ComposerBar({ channelName }: { channelName: string }) {
-  const [open, setOpen] = useState(false);
-  const persona = useUserProfileStore((s) => s.persona);
+type Opened = { block?: string };
 
-  if (open) return <PostCreator onCancel={() => setOpen(false)} onPosted={() => setOpen(false)} />;
+export function ComposerBar({ channelName }: { channelName: string }) {
+  const [opened, setOpened] = useState<Opened | null>(null);
+  const persona = useUserProfileStore((s) => s.persona);
+  const isMobile = useIsMobile();
+  const close = () => setOpened(null);
+
+  const composer = opened ? (
+    <PostCreator
+      channelName={channelName}
+      layout={isMobile ? "sheet" : "card"}
+      initialBlock={opened.block}
+      onCancel={close}
+      onPosted={close}
+    />
+  ) : null;
+
+  if (composer && !isMobile) return composer;
 
   return (
-    <button
-      type="button"
-      onClick={() => setOpen(true)}
-      className="flex w-full cursor-pointer items-center gap-3 rounded-lg border bg-card p-3 text-start outline-none hover:border-primary focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <Avatar className="size-8 shrink-0">
-        <AvatarImage src={persona?.thumbnail} />
-        <AvatarFallback className="bg-accent text-primary">
-          <User2 className="size-4" />
-        </AvatarFallback>
-      </Avatar>
-      <span className="min-w-0 flex-1 truncate text-muted-foreground">Write in {channelName}…</span>
-      <ImageIcon aria-hidden className="m-2 size-4 shrink-0" />
-      <Mic aria-hidden className="m-2 size-4 shrink-0" />
-    </button>
+    <>
+      <div className="flex w-full items-center gap-1 rounded-lg border bg-card p-2 ps-3 hover:border-primary has-[button:first-of-type:focus-visible]:ring-2 has-[button:first-of-type:focus-visible]:ring-ring">
+        <button
+          type="button"
+          onClick={() => setOpened({})}
+          className="flex min-h-9 min-w-0 flex-1 cursor-pointer items-center gap-3 text-start outline-none"
+        >
+          <Avatar className="size-8 shrink-0">
+            <AvatarImage src={persona?.thumbnail} />
+            <AvatarFallback className="bg-accent text-xs text-primary">
+              {persona ? personaInitials(persona) : <User2 className="size-4" />}
+            </AvatarFallback>
+          </Avatar>
+          <span className="min-w-0 flex-1 truncate text-muted-foreground">Write in {channelName}…</span>
+        </button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="shrink-0 max-md:size-11"
+          aria-label="Add an image"
+          title="Add an image"
+          onClick={() => setOpened({ block: "image" })}
+        >
+          <ImageIcon className="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="shrink-0 max-md:size-11"
+          aria-label="Add a voice note"
+          title="Add a voice note"
+          onClick={() => setOpened({ block: "voiceNote" })}
+        >
+          <Mic className="size-4" />
+        </Button>
+      </div>
+      {composer}
+    </>
   );
 }

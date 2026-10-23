@@ -1,19 +1,17 @@
 import { useSelector } from "@xstate/react";
 import type { PlaygroundActorRef } from "./toolbar/machine";
-import { PlaygroundFeatureFlagsContext } from "./toolbar/feature-flags";
 import Editor from "./editor";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import type { PortableTextObject, PortableTextSpan, PortableTextTextBlock } from "@portabletext/block-tools";
 
 export default function PortableText(props: {
   playgroundRef: PlaygroundActorRef;
   value: PortableTextTextBlock<PortableTextSpan | PortableTextObject>[];
   setValue: (blocks: PortableTextTextBlock<PortableTextSpan | PortableTextObject>[]) => void;
+  footer?: ReactNode;
+  fill?: boolean;
+  autoFocus?: boolean;
 }) {
-  const playgroundFeatureFlags = useSelector(
-    props.playgroundRef,
-    (s) => s.context.featureFlags
-  );
   const editors = useSelector(props.playgroundRef, (s) => s.context.editors);
   const editor = editors[0]!;
   const rangeDecorations = useSelector(
@@ -58,15 +56,16 @@ export default function PortableText(props: {
     // No padding here: every host of this component already sits inside a
     // padded card, so `p-2 md:p-4` double-padded the editor and inset it 16px
     // narrower than its siblings.
-    <div className="flex min-w-0 flex-col gap-2 md:gap-4">
-      <PlaygroundFeatureFlagsContext.Provider value={playgroundFeatureFlags}>
-        <Editor
-          key={editor.id}
-          editorRef={editor}
-          rangeDecorations={rangeDecorations}
-          setValue={handleSetValue}
-        />
-      </PlaygroundFeatureFlagsContext.Provider>
+    <div className={`flex min-w-0 flex-col ${props.fill ? "min-h-0 flex-1" : ""}`}>
+      <Editor
+        key={editor.id}
+        editorRef={editor}
+        rangeDecorations={rangeDecorations}
+        setValue={handleSetValue}
+        footer={props.footer}
+        fill={props.fill}
+        autoFocus={props.autoFocus}
+      />
     </div>
   );
 }

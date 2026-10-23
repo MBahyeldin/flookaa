@@ -27,13 +27,13 @@ export type EditorFeatureFlags = {
 export const defaultEditorFeatureFlags: EditorFeatureFlags = {
   dragHandles: false,
   imageDeserializerPlugin: false,
-  htmlDeserializerPlugin: false,
+  htmlDeserializerPlugin: true,
   textFileDeserializerPlugin: false,
-  emojiPickerPlugin: false,
+  emojiPickerPlugin: true,
   codeEditorPlugin: false,
-  linkPlugin: false,
+  linkPlugin: true,
   oneLinePlugin: false,
-  markdownPlugin: false,
+  markdownPlugin: true,
   slashMenuPlugin: true,
 };
 

@@ -30,7 +30,9 @@ import {
   type CallbackLogicFunction,
 } from "xstate";
 import { matchEmojis, type EmojiMatch } from "./emoji-search";
-import { Button } from "@/components/ui/button";
+import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { caretRect } from "./plugin.slash-menu";
 
 type EmojiPickerContext = {
   editor: Editor;
@@ -760,67 +762,53 @@ export function EmojiPickerPlugin() {
     emojiPickerActor,
     (snapshot) => snapshot.context.selectedIndex
   );
+  const caret = useRef<{ getBoundingClientRect(): DOMRect }>({
+    getBoundingClientRect: () => caretRect() ?? new DOMRect(),
+  });
+  const open = keyword.length >= 2;
 
   return (
-    <EmojiListBox
-      keyword={keyword}
-      matches={matches}
-      selectedIndex={selectedIndex}
-      onDismiss={() => {
-        emojiPickerActor.send({ type: "dismiss" });
+    <Popover
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) emojiPickerActor.send({ type: "dismiss" });
       }}
-      onNavigateTo={(index) => {
-        emojiPickerActor.send({ type: "navigate to", index });
-      }}
-      onSelect={() => {
-        emojiPickerActor.send({ type: "insert selected match" });
-        editor.send({ type: "focus" });
-      }}
-    />
-  );
-}
-
-export function EmojiListBox(props: {
-  keyword: string;
-  matches: Array<EmojiMatch>;
-  selectedIndex: number;
-  onDismiss: () => void;
-  onNavigateTo: (index: number) => void;
-  onSelect: () => void;
-}) {
-  if (props.keyword.length < 2) {
-    return null;
-  }
-
-  return (
-    <div className="border border-muted rounded bg-white shadow">
-      {props.matches.length === 0 ? (
-        <div className="p-2 flex align-middle gap-2">
-          No results found{" "}
-          <Button size="sm" variant="secondary" onPress={props.onDismiss}>
-            Dismiss
-          </Button>
-        </div>
-      ) : (
-        <ol className="p-2" style={{ maxHeight: 200, overflowY: "auto" }}>
-          {props.matches.map((match, index) => (
-            <EmojiListItem
-              key={
-                match.type === "exact"
-                  ? `${match.emoji}-${match.keyword}`
-                  : `${match.emoji}-${match.startSlice}${match.keyword}${match.endSlice}`
-              }
-              match={match}
-              selected={props.selectedIndex === index}
-              onMouseEnter={() => {
-                props.onNavigateTo(index);
-              }}
-              onSelect={props.onSelect}
-            />
-          ))}
-        </ol>
-      )}
-    </div>
+    >
+      <PopoverAnchor virtualRef={caret} />
+      <PopoverContent
+        side="bottom"
+        align="start"
+        collisionPadding={8}
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+        className="max-h-60 w-64 overflow-y-auto p-1"
+      >
+        {matches.length === 0 ? (
+          <p className="px-2 py-1.5 text-sm text-muted-foreground">No emoji match</p>
+        ) : (
+          <ul role="listbox" className="flex flex-col gap-0.5">
+            {matches.map((match, index) => (
+              <EmojiListItem
+                key={
+                  match.type === "exact"
+                    ? `${match.emoji}-${match.keyword}`
+                    : `${match.emoji}-${match.startSlice}${match.keyword}${match.endSlice}`
+                }
+                match={match}
+                selected={selectedIndex === index}
+                onMouseEnter={() => {
+                  emojiPickerActor.send({ type: "navigate to", index });
+                }}
+                onSelect={() => {
+                  emojiPickerActor.send({ type: "insert selected match" });
+                  editor.send({ type: "focus" });
+                }}
+              />
+            ))}
+          </ul>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -834,39 +822,36 @@ function EmojiListItem(props: {
 
   useEffect(() => {
     if (props.selected && ref.current) {
-      ref.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      ref.current.scrollIntoView({ block: "nearest" });
     }
   }, [props.selected]);
 
-  if (props.match.type === "exact") {
-    return (
-      <li
-        ref={ref}
-        style={{
-          background: props.selected ? "lightblue" : "unset",
-        }}
-        onMouseEnter={props.onMouseEnter}
-        onClick={props.onSelect}
-      >
-        <span>{props.match.emoji} :</span>
-        <span style={{ background: "yellow" }}>{props.match.keyword}</span>:
-      </li>
+  const name =
+    props.match.type === "exact" ? (
+      <mark className="bg-transparent font-medium text-foreground">{props.match.keyword}</mark>
+    ) : (
+      <>
+        {props.match.startSlice}
+        <mark className="bg-transparent font-medium text-foreground">{props.match.keyword}</mark>
+        {props.match.endSlice}
+      </>
     );
-  }
 
   return (
     <li
       ref={ref}
-      style={{
-        background: props.selected ? "lightblue" : "unset",
-      }}
+      role="option"
+      aria-selected={props.selected}
+      onMouseDown={(e) => e.preventDefault()}
       onMouseEnter={props.onMouseEnter}
       onClick={props.onSelect}
+      className={cn(
+        "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground max-md:min-h-11",
+        props.selected && "bg-accent text-accent-foreground",
+      )}
     >
-      <span>{props.match.emoji} :</span>
-      {props.match.startSlice}
-      <span style={{ background: "yellow" }}>{props.match.keyword}</span>
-      {props.match.endSlice}:
+      <span className="text-base">{props.match.emoji}</span>
+      <span className="truncate">:{name}:</span>
     </li>
   );
 }

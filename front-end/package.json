@@ -14,7 +14,7 @@
   "dependencies": {
     "@apollo/client": "^4.0.6",
     "@portabletext/block-tools": "^3.5.7",
-    "@portabletext/editor": "^2.13.2",
+    "@portabletext/editor": "^2.21.5",
     "@portabletext/keyboard-shortcuts": "^1.1.1",
     "@portabletext/patches": "^1.1.8",
     "@portabletext/plugin-markdown-shortcuts": "^1.1.2",

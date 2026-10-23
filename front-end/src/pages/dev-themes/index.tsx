@@ -16,6 +16,7 @@ import { Compass, Lock, Plus } from "lucide-react";
 import PostContent from "@/components/portable-text/PostContent";
 import { blocks } from "@/components/portable-text/blocks";
 import { Post } from "@/components/post-card";
+import { ComposerBar } from "@/pages/(dashboard)/channels/[id]/ComposerBar";
 import type { Post as PostData } from "@/generated/graphql";
 import { PALETTES, type PaletteId } from "@/themes/palettes";
 
@@ -308,6 +309,9 @@ export default function DevThemesPage() {
         <p className="text-sm text-muted-foreground">
           Every palette in light and dark. Light swatches are only accurate while the app itself is in light mode.
         </p>
+      </div>
+      <div className="max-w-[728px]">
+        <ComposerBar channelName="Sunday League" />
       </div>
       <PreviewSamples />
       <div className="grid gap-4 md:grid-cols-2">

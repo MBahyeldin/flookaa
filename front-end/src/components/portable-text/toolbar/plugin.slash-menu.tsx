@@ -48,7 +48,7 @@ function parseSlash(key: string | null): Slash | null {
   return { blockKey, spanKey, text, query: text.slice(1) };
 }
 
-function caretRect(): DOMRect | null {
+export function caretRect(): DOMRect | null {
   const selection = window.getSelection();
   if (!selection?.rangeCount) return null;
   const rect = selection.getRangeAt(0).getBoundingClientRect();

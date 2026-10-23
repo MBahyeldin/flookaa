@@ -20,10 +20,7 @@ import { useTheme } from "@/Theme.context";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { setCurrentPersona } from "@/services/persona";
 import type { Persona } from "@/types/persona";
-
-function initials(p: Persona) {
-  return `${p.first_name?.[0] ?? ""}${p.last_name?.[0] ?? ""}`.toUpperCase();
-}
+import { personaInitials as initials } from "@/lib/personaInitials";
 
 function PersonaAvatar({ persona }: { persona: Persona }) {
   return (

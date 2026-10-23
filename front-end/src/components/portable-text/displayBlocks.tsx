@@ -1,4 +1,5 @@
 import type { PortableTextComponents } from "@portabletext/react";
+import { safeUrl } from "./blocks/safeUrl";
 
 /**
  * Block renderers for *displaying* portable text (feeds, comments).
@@ -57,6 +58,28 @@ const displayBlockComponents: PortableTextComponents = {
     ),
   },
   listItem: ({ children }) => <li dir="auto">{children}</li>,
+  marks: {
+    code: ({ children }) => (
+      <code className="rounded-sm bg-muted px-1 py-0.5 font-mono text-[0.9em]">{children}</code>
+    ),
+    subscript: ({ children }) => <sub>{children}</sub>,
+    superscript: ({ children }) => <sup>{children}</sup>,
+    link: ({ value, children }) => {
+      const href = typeof value?.href === "string" ? value.href : "";
+      if (!safeUrl(href, ["http", "https", "mailto"])) return <>{children}</>;
+      const external = !href.startsWith("/");
+      return (
+        <a
+          href={href}
+          className="text-primary underline underline-offset-2 hover:no-underline"
+          {...(external ? { target: "_blank", rel: "noopener noreferrer nofollow" } : {})}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {children}
+        </a>
+      );
+    },
+  },
 };
 
 export default displayBlockComponents;

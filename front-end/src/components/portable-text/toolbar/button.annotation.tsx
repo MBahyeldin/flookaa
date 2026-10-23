@@ -72,7 +72,7 @@ export function AnnotationButton(props: {
           <ObjectForm
             fields={props.schemaType.fields}
             defaultValues={props.schemaType.defaultValues}
-            submitLabel="Add Annotation"
+            submitLabel={`Add ${(props.schemaType.title ?? props.schemaType.name).toLowerCase()}`}
             onSubmit={({ value }) => {
               annotationButton.send({
                 type: "add",
