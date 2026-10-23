@@ -143,6 +143,7 @@ type CalloutBlock struct {
 	Key         string       `json:"_key"`
 	Tone        *CalloutTone `json:"tone,omitempty"`
 	Icon        *CalloutIcon `json:"icon,omitempty"`
+	Tag         *string      `json:"tag,omitempty"`
 	Title       *string      `json:"title,omitempty"`
 	Description string       `json:"description"`
 }
@@ -156,6 +157,7 @@ type CalloutBlockInput struct {
 	Key         string       `json:"_key"`
 	Tone        *CalloutTone `json:"tone,omitempty"`
 	Icon        *CalloutIcon `json:"icon,omitempty"`
+	Tag         *string      `json:"tag,omitempty"`
 	Title       *string      `json:"title,omitempty"`
 	Description string       `json:"description"`
 }

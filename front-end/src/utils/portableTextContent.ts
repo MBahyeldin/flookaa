@@ -21,7 +21,7 @@ type Blocks = PortableTextTextBlock<PortableTextSpan | PortableTextObject>[];
 
 // Text fields of block objects that count toward the post's limit.
 const objectTextFields: Record<string, string[]> = {
-  callout: ["title", "description"],
+  callout: ["tag", "title", "description"],
   quote: ["text", "name", "role"],
   countdown: ["label", "endedText"],
 };

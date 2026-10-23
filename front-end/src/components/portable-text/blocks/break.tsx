@@ -1,4 +1,4 @@
-import { SeparatorHorizontalIcon, SparkleIcon } from "lucide-react";
+import { SailboatIcon, SeparatorHorizontalIcon } from "lucide-react";
 import { tv } from "tailwind-variants";
 import { z } from "zod";
 import { FormField } from "@/models/Forms/FormField";
@@ -41,21 +41,23 @@ const chipStyle = tv({
 function BreakMark({ style }: { style: NonNullable<BreakValue["style"]> }) {
   switch (style) {
     case "dashed":
-      return <span className="w-full border-t border-dashed border-border" />;
+      return <span className="w-full border-t-2 border-dashed border-border" />;
     case "dots":
       return (
-        <span className="flex gap-3 leading-none text-muted-foreground">
-          <span>•</span>
-          <span>•</span>
-          <span>•</span>
+        <span className="flex items-center gap-4">
+          <span className="size-2 rounded-full bg-primary/40" />
+          <span className="size-2 rounded-full bg-primary/60" />
+          <span className="size-2 rounded-full bg-primary" />
+          <span className="size-2 rounded-full bg-primary/60" />
+          <span className="size-2 rounded-full bg-primary/40" />
         </span>
       );
     case "ornament":
       return (
         <>
-          <span className="h-px w-16 bg-border" />
-          <SparkleIcon className="size-4 text-primary" />
-          <span className="h-px w-16 bg-border" />
+          <span className="h-px flex-1 bg-border" />
+          <SailboatIcon className="size-5 shrink-0 text-primary" />
+          <span className="h-px flex-1 bg-border" />
         </>
       );
     default:
@@ -65,7 +67,7 @@ function BreakMark({ style }: { style: NonNullable<BreakValue["style"]> }) {
 
 function BreakView({ value }: { value: BreakValue }) {
   return (
-    <div role="separator" className="flex h-4 items-center justify-center gap-3">
+    <div role="separator" className="flex h-6 items-center justify-center gap-4">
       <BreakMark style={value.style ?? "line"} />
     </div>
   );
@@ -82,7 +84,7 @@ function BreakEditor({ value, selected, focused }: BlockEditorProps<BreakValue>)
 export const breakBlock = defineBlock<BreakValue>({
   name: "break",
   title: "Divider",
-  description: "A line, dots or an ornament between two parts of a post.",
+  description: "A line, dots or a sailboat between two parts of a post.",
   icon: SeparatorHorizontalIcon,
   category: "layout",
   fields: breakFormFields,

@@ -4,6 +4,7 @@ import type { PortableTextBlock } from "@portabletext/react";
 import PostContent from "@/components/portable-text/PostContent";
 import { blocks, type AnyBlock } from "@/components/portable-text/blocks";
 import { categoryTitle, type BlockCategory } from "@/components/portable-text/blocks/defineBlock";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -36,22 +37,24 @@ function BlockSection({ block, theme }: { block: AnyBlock; theme: PaletteId }) {
   return (
     <section id={block.name} className="flex scroll-mt-32 flex-col gap-3 md:scroll-mt-20">
       <div className="flex items-start gap-3">
-        <block.icon className="mt-0.5 size-5 shrink-0 text-primary" />
-        <div className="flex min-w-0 flex-col gap-1">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-accent text-primary">
+          <block.icon className="size-4" />
+        </span>
+        <div className="flex min-w-0 flex-col gap-0.5">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-medium">{block.title}</h3>
-            <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+            <h3 className="text-h4">{block.title}</h3>
+            <Badge variant="secondary" className="font-mono">
               /{block.name}
-            </code>
+            </Badge>
           </div>
           <p className="text-sm text-muted-foreground">{block.description}</p>
         </div>
       </div>
-      {examples.map((value, index) => (
-        <div key={index} className="rounded-xl border border-border bg-card p-4 text-card-foreground">
-          <PostContent value={value} theme={theme} showInvalid />
-        </div>
-      ))}
+      <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 text-card-foreground">
+        {examples.map((value, index) => (
+          <PostContent key={index} value={value} theme={theme} showInvalid />
+        ))}
+      </div>
     </section>
   );
 }
@@ -80,16 +83,16 @@ export default function BlocksGalleryPage() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 pb-12 pt-6">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pb-12 pt-6 md:px-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold">Blocks</h1>
-          <p className="text-sm text-muted-foreground">
-            Everything you can add to a post. Insert one with "+" or by typing its slash command.
+        <div className="flex flex-col gap-2">
+          <h1>Blocks</h1>
+          <p className="text-lead text-muted-foreground">
+            Everything you can add to a post, with examples. Type / in the editor to insert one.
           </p>
         </div>
         <Select value={theme} onValueChange={setTheme}>
-          <SelectTrigger className="w-40" aria-label="Palette">
+          <SelectTrigger className="w-40" aria-label="Theme">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -104,7 +107,7 @@ export default function BlocksGalleryPage() {
 
       <nav
         aria-label="Blocks"
-        className="sticky top-14 z-30 -mx-4 overflow-x-auto border-b border-border bg-background/95 px-4 py-2 backdrop-blur md:top-0"
+        className="sticky top-14 z-30 -mx-4 overflow-x-auto border-b border-border bg-background px-4 py-2 md:top-0 md:-mx-8 md:px-8"
       >
         <ul className="flex w-max gap-2">
           {blocks.map((block) => (
@@ -123,7 +126,7 @@ export default function BlocksGalleryPage() {
 
       {groups.map(([category, list]) => (
         <div key={category} className="flex flex-col gap-8">
-          <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <h2 className="text-overline uppercase text-muted-foreground">
             {categoryTitle[category]}
           </h2>
           {list.map((block) => (

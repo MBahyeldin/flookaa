@@ -1,8 +1,9 @@
-import { useRef, useState, type KeyboardEvent } from "react";
-import { ChevronLeftIcon, ChevronRightIcon, ImagesIcon } from "lucide-react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { ChevronLeftIcon, ChevronRightIcon, ImageIcon, ImagesIcon, XIcon } from "lucide-react";
 import { z } from "zod";
 import { FormField } from "@/models/Forms/FormField";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { defineBlock } from "./defineBlock";
 import { safeUrl } from "./safeUrl";
@@ -100,54 +101,109 @@ const galleryFormFields: FormField[] = [
   }),
 ];
 
-function GridView({ items }: { items: GalleryItem[] }) {
+const BENTO = 3;
+
+function Tile({
+  item,
+  label,
+  className,
+  sizes,
+  onOpen,
+  children,
+}: {
+  item: GalleryItem;
+  label: string;
+  className?: string;
+  sizes: number;
+  onOpen: () => void;
+  children?: ReactNode;
+}) {
   return (
-    <ul className={cn("grid gap-2", items.length >= 5 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2")}>
-      {items.map((item) => (
-        <li key={item._key} className="min-w-0">
-          <figure>
-            <img
-              className="block aspect-square w-full rounded-md bg-muted object-contain"
-              src={item.src}
-              {...responsiveImage(item.src, item.width, 0.5)}
-              alt={item.alt ?? ""}
-              loading="lazy"
-              decoding="async"
-            />
-            {item.caption ? (
-              <figcaption
-                dir="auto"
-                title={item.caption}
-                className="mx-auto mt-1 w-fit max-w-full truncate text-xs text-muted-foreground"
-              >
-                {item.caption}
-              </figcaption>
-            ) : null}
-          </figure>
-        </li>
-      ))}
-    </ul>
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onOpen}
+      className={cn(
+        "relative min-h-0 min-w-0 overflow-hidden bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+        className
+      )}
+    >
+      <img
+        className="size-full object-cover"
+        src={item.src}
+        {...responsiveImage(item.src, item.width, sizes)}
+        alt={item.alt ?? ""}
+        loading="lazy"
+        decoding="async"
+      />
+      {children}
+    </button>
   );
 }
 
-function CarouselView({ items }: { items: GalleryItem[] }) {
+function BentoView({ items, onOpen }: { items: GalleryItem[]; onOpen: (index: number) => void }) {
+  const shown = items.slice(0, BENTO);
+  const more = items.length - shown.length;
+  const label = (i: number) => `Open image ${i + 1} of ${items.length}`;
+
+  if (shown.length === 2) {
+    return (
+      <div className="grid aspect-[2/1] grid-cols-2 gap-1 overflow-hidden rounded-2xl">
+        {shown.map((item, i) => (
+          <Tile key={item._key} item={item} label={label(i)} sizes={0.5} onOpen={() => onOpen(i)} />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid aspect-[3/2] grid-cols-2 grid-rows-[2fr_1fr] gap-1 overflow-hidden rounded-2xl sm:grid-cols-[2fr_1fr] sm:grid-rows-2">
+      {shown.map((item, i) => (
+        <Tile
+          key={item._key}
+          item={item}
+          label={i === BENTO - 1 && more > 0 ? `${label(i)}, ${more} more` : label(i)}
+          sizes={i === 0 ? 0.67 : 0.33}
+          className={i === 0 ? "col-span-2 sm:col-span-1 sm:row-span-2" : undefined}
+          onOpen={() => onOpen(i)}
+        >
+          {i === BENTO - 1 && more > 0 ? (
+            <span
+              aria-hidden
+              className="absolute end-2 bottom-2 rounded-full bg-scrim/80 px-2.5 py-1 text-xs font-semibold text-background dark:text-foreground"
+            >
+              +{more}
+            </span>
+          ) : null}
+        </Tile>
+      ))}
+    </div>
+  );
+}
+
+function useStrip(count: number) {
   const strip = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
 
   const isRtl = () => !!strip.current && getComputedStyle(strip.current).direction === "rtl";
 
-  const go = (next: number) => {
+  const slideWidth = () => {
+    const first = strip.current?.firstElementChild as HTMLElement | null;
+    return first ? first.offsetWidth : strip.current?.clientWidth ?? 0;
+  };
+
+  const go = (next: number, behavior: ScrollBehavior = "smooth") => {
     const el = strip.current;
     if (!el) return;
-    const clamped = Math.max(0, Math.min(items.length - 1, next));
-    el.scrollTo({ left: clamped * el.clientWidth * (isRtl() ? -1 : 1), behavior: "smooth" });
+    const clamped = Math.max(0, Math.min(count - 1, next));
+    el.scrollTo({ left: clamped * slideWidth() * (isRtl() ? -1 : 1), behavior });
   };
 
   // RTL scrollLeft runs negative, hence abs.
   const onScroll = () => {
-    const el = strip.current;
-    if (!el || el.clientWidth === 0) return;
-    setIndex(Math.round(Math.abs(el.scrollLeft) / el.clientWidth));
+    const width = slideWidth();
+    if (!strip.current || width === 0) return;
+    setIndex(Math.round(Math.abs(strip.current.scrollLeft) / width));
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -157,87 +213,192 @@ function CarouselView({ items }: { items: GalleryItem[] }) {
     go(index + (forward ? 1 : -1));
   };
 
-  const caption = items[index]?.caption;
-  const navButton =
-    "absolute top-1/2 hidden size-9 -translate-y-1/2 rounded-full bg-background/80 text-foreground shadow-sm hover:bg-background [@media(hover:hover)]:inline-flex";
+  return { strip, index, go, onScroll, onKeyDown };
+}
+
+function Dots({ count, index, onGo }: { count: number; index: number; onGo: (i: number) => void }) {
+  return (
+    <div className="mt-3 flex justify-center gap-1.5">
+      {Array.from({ length: count }, (_, i) => (
+        <button
+          key={i}
+          type="button"
+          aria-label={`Go to image ${i + 1}`}
+          aria-current={i === index ? "true" : undefined}
+          onClick={() => onGo(i)}
+          className="flex h-6 items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+        >
+          <span className={cn("h-1.5 rounded-full transition-all", i === index ? "w-5 bg-primary" : "w-1.5 bg-border")} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function CarouselView({ items, onOpen }: { items: GalleryItem[]; onOpen: (index: number) => void }) {
+  const { strip, index, go, onScroll, onKeyDown } = useStrip(items.length);
 
   return (
-    <figure>
-      <div className="relative">
-        <div
-          ref={strip}
-          tabIndex={0}
-          role="region"
-          aria-roledescription="carousel"
-          aria-label="Gallery"
-          onScroll={onScroll}
-          onKeyDown={onKeyDown}
-          className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain rounded-md [scrollbar-width:none] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {items.map((item, i) => (
-            <div
-              key={item._key}
-              role="group"
-              aria-roledescription="slide"
-              aria-label={`${i + 1} of ${items.length}`}
-              className="aspect-[4/3] w-full shrink-0 snap-start bg-muted"
+    <div>
+      <div
+        ref={strip}
+        tabIndex={0}
+        role="region"
+        aria-roledescription="carousel"
+        aria-label="Gallery"
+        onScroll={onScroll}
+        onKeyDown={onKeyDown}
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain [scrollbar-width:none] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl"
+      >
+        {items.map((item, i) => (
+          <figure
+            key={item._key}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`${i + 1} of ${items.length}`}
+            className="w-[72%] shrink-0 snap-start rounded-2xl border bg-card p-2 text-card-foreground sm:w-[60%]"
+          >
+            <button
+              type="button"
+              aria-label={`Open image ${i + 1} of ${items.length}`}
+              onClick={() => onOpen(i)}
+              className="block aspect-[4/3] w-full overflow-hidden rounded-xl bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <img
-                className="size-full object-contain"
+                className="size-full object-cover"
                 src={item.src}
-                {...responsiveImage(item.src, item.width, 1)}
+                {...responsiveImage(item.src, item.width, 0.72)}
                 alt={item.alt ?? ""}
                 loading={i === 0 ? undefined : "lazy"}
                 decoding="async"
               />
-            </div>
-          ))}
-        </div>
-        {index > 0 ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={cn(navButton, "start-2")}
-            aria-label="Previous image"
-            onClick={() => go(index - 1)}
-          >
-            <ChevronLeftIcon className="size-5 rtl:-scale-x-100" />
-          </Button>
-        ) : null}
-        {index < items.length - 1 ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={cn(navButton, "end-2")}
-            aria-label="Next image"
-            onClick={() => go(index + 1)}
-          >
-            <ChevronRightIcon className="size-5 rtl:-scale-x-100" />
-          </Button>
-        ) : null}
-        <span
-          aria-hidden
-          className="absolute top-2 end-2 rounded-full bg-background/80 px-2 py-0.5 text-xs text-foreground tabular-nums"
-        >
-          {index + 1} / {items.length}
-        </span>
+            </button>
+            {item.caption ? (
+              <figcaption dir="auto" className="flex items-start gap-2 px-1 pt-2 pb-1 text-sm font-medium break-words">
+                <ImageIcon aria-hidden className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                <span className="min-w-0 truncate" title={item.caption}>
+                  {item.caption}
+                </span>
+              </figcaption>
+            ) : null}
+          </figure>
+        ))}
       </div>
-      {caption ? (
-        <figcaption dir="auto" className="mt-1 text-center text-sm text-muted-foreground break-words">
+      <Dots count={items.length} index={index} onGo={go} />
+    </div>
+  );
+}
+
+function GalleryViewer({
+  items,
+  start,
+  onClose,
+}: {
+  items: GalleryItem[];
+  start: number | null;
+  onClose: () => void;
+}) {
+  const open = start !== null;
+  const { strip, index, go, onScroll, onKeyDown } = useStrip(items.length);
+
+  useEffect(() => {
+    if (start === null) return;
+    const frame = requestAnimationFrame(() => go(start, "instant"));
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [start]);
+
+  const caption = items[index]?.caption;
+  const navButton =
+    "absolute top-1/2 hidden size-11 -translate-y-1/2 rounded-full bg-background/20 text-foreground hover:bg-background/40 md:inline-flex";
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent
+        showCloseButton={false}
+        onKeyDown={onKeyDown}
+        className="dark top-0 left-0 flex h-dvh w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-scrim/95 p-0 text-foreground sm:max-w-none"
+      >
+        <DialogTitle className="sr-only">Gallery</DialogTitle>
+        <DialogDescription className="sr-only">Use the arrow keys to move between images.</DialogDescription>
+        <div className="flex items-center justify-between px-4 py-3">
+          <span className="text-sm tabular-nums">
+            {index + 1} / {items.length}
+          </span>
+          <DialogClose asChild>
+            <Button type="button" variant="ghost" size="icon" aria-label="Close" className="text-foreground">
+              <XIcon className="size-5" />
+            </Button>
+          </DialogClose>
+        </div>
+        <div className="relative min-h-0 flex-1">
+          <div
+            ref={strip}
+            onScroll={onScroll}
+            className="flex size-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none]"
+          >
+            {items.map((item, i) => (
+              <div
+                key={item._key}
+                role="group"
+                aria-roledescription="slide"
+                aria-label={`${i + 1} of ${items.length}`}
+                className="flex size-full shrink-0 snap-start items-center justify-center p-2 md:px-16"
+              >
+                <img
+                  className="max-h-full max-w-full object-contain"
+                  src={item.src}
+                  {...responsiveImage(item.src, item.width, 1)}
+                  alt={item.alt ?? ""}
+                  decoding="async"
+                />
+              </div>
+            ))}
+          </div>
+          {index > 0 ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn(navButton, "start-4")}
+              aria-label="Previous image"
+              onClick={() => go(index - 1)}
+            >
+              <ChevronLeftIcon className="size-6 rtl:-scale-x-100" />
+            </Button>
+          ) : null}
+          {index < items.length - 1 ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn(navButton, "end-4")}
+              aria-label="Next image"
+              onClick={() => go(index + 1)}
+            >
+              <ChevronRightIcon className="size-6 rtl:-scale-x-100" />
+            </Button>
+          ) : null}
+        </div>
+        <p dir="auto" className="min-h-14 px-4 py-4 text-center text-sm break-words">
           {caption}
-        </figcaption>
-      ) : null}
-    </figure>
+        </p>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function GalleryView({ value }: { value: GalleryValue }) {
-  return value.layout === "carousel" ? (
-    <CarouselView items={value.items} />
-  ) : (
-    <GridView items={value.items} />
+  const [viewing, setViewing] = useState<number | null>(null);
+  return (
+    <>
+      {value.layout === "grid" ? (
+        <BentoView items={value.items} onOpen={setViewing} />
+      ) : (
+        <CarouselView items={value.items} onOpen={setViewing} />
+      )}
+      <GalleryViewer items={value.items} start={viewing} onClose={() => setViewing(null)} />
+    </>
   );
 }
 
@@ -260,6 +421,7 @@ export const gallery = defineBlock<GalleryValue>({
   defaultValues: { layout: "carousel" },
   schema: gallerySchema,
   View: GalleryView,
+  summary: (value) => `Gallery · ${value.items.length}`,
   examples: [
     {
       layout: "carousel",

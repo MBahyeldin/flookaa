@@ -27,6 +27,8 @@ export type BlockDefinition<T> = {
   // Mirrors the server's checks in shared/util/portableText/block-objects.
   schema: ZodType<T>;
   View: (props: { value: T }) => ReactNode;
+  // Chip label in a post preview, e.g. "Checklist · 2/4"; falls back to title.
+  summary?: (value: T) => string;
   Editor?: (props: BlockEditorProps<T>) => ReactNode;
   // For a block whose form edits a different shape than it stores.
   toForm?: (value: Partial<T>) => Record<string, unknown>;

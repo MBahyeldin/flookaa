@@ -79,31 +79,44 @@ const checklistFormFields: FormField[] = [
 function ChecklistView({ value }: { value: ChecklistValue }) {
   const titleId = useId();
   const done = value.items.filter((item) => item.checked).length;
+  const total = value.items.length;
   return (
-    <div>
-      {value.title ? (
-        <p id={titleId} dir="auto" className="text-lg font-semibold break-words text-foreground">
-          {value.title}
-        </p>
-      ) : null}
-      <p className="mb-2 text-sm text-muted-foreground">
-        {done} of {value.items.length} done
-      </p>
-      <ul className="space-y-2 text-foreground" aria-labelledby={value.title ? titleId : undefined}>
+    <div className="rounded-2xl border bg-card p-5 text-card-foreground md:p-6">
+      <div className="flex items-center gap-3">
+        {value.title ? (
+          <p id={titleId} dir="auto" className="min-w-0 font-semibold break-words">
+            {value.title}
+          </p>
+        ) : null}
+        <span className="ms-auto shrink-0 rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-primary tabular-nums">
+          {done} of {total} done
+        </span>
+      </div>
+      <div
+        role="progressbar"
+        aria-label="Done"
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-valuenow={done}
+        className="mt-3 h-2 overflow-hidden rounded-full bg-secondary"
+      >
+        <div className="h-full rounded-full bg-primary" style={{ width: `${(done / total) * 100}%` }} />
+      </div>
+      <ul className="mt-4 space-y-3" aria-labelledby={value.title ? titleId : undefined}>
         {value.items.map((item) => (
           <li key={item._key} className="flex items-start gap-3">
             <span
               aria-hidden
               className={cn(
-                "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded",
-                item.checked ? "bg-primary text-primary-foreground" : "border border-border"
+                "flex size-6 shrink-0 items-center justify-center rounded-md",
+                item.checked ? "bg-primary text-primary-foreground" : "border border-border bg-background"
               )}
             >
-              {item.checked ? <CheckIcon className="size-3.5" strokeWidth={3} /> : null}
+              {item.checked ? <CheckIcon className="size-4" strokeWidth={3} /> : null}
             </span>
             <span
               dir="auto"
-              className={cn("min-w-0 break-words", item.checked && "text-muted-foreground line-through")}
+              className={cn("min-w-0 pt-0.5 break-words", item.checked && "text-muted-foreground line-through")}
             >
               <span className="sr-only">{item.checked ? "Done: " : "Not done: "}</span>
               {item.text}
@@ -125,6 +138,7 @@ export const checklist = defineBlock<ChecklistValue>({
   defaultValues: {},
   schema: checklistSchema,
   View: ChecklistView,
+  summary: (value) => `Checklist · ${value.items.filter((item) => item.checked).length}/${value.items.length}`,
   fromForm: (form) => ({
     ...form,
     items: (Array.isArray(form.items) ? form.items : []).map((item) => ({

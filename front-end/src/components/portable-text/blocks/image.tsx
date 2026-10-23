@@ -126,13 +126,14 @@ function ImageView({ value }: { value: ImageValue }) {
     <figure
       className={cn(
         known ? sizeClass[value.size ?? "xl"] : "w-fit max-w-full",
-        alignClass[value.align ?? "center"]
+        alignClass[value.align ?? "center"],
+        "rounded-2xl border bg-card p-2 text-card-foreground"
       )}
       style={style}
     >
       <img
         className={cn(
-          "block rounded-md",
+          "block rounded-xl",
           known ? "w-full h-auto" : "max-w-full max-h-[70vh] w-auto h-auto"
         )}
         src={value.src}
@@ -144,8 +145,9 @@ function ImageView({ value }: { value: ImageValue }) {
         decoding="async"
       />
       {value.caption ? (
-        <figcaption dir="auto" className="mt-1 text-center text-sm text-muted-foreground break-words">
-          {value.caption}
+        <figcaption dir="auto" className="flex items-start gap-2 px-1 pt-2 pb-1 text-sm font-medium break-words">
+          <ImageIcon aria-hidden className="mt-0.5 size-3.5 shrink-0 text-primary" />
+          <span className="min-w-0">{value.caption}</span>
         </figcaption>
       ) : null}
     </figure>

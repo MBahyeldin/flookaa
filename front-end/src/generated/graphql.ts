@@ -164,6 +164,7 @@ export type CalloutBlock = Block & {
   _type: BlockType;
   description: Scalars['String']['output'];
   icon?: Maybe<CalloutIcon>;
+  tag?: Maybe<Scalars['String']['output']>;
   title?: Maybe<Scalars['String']['output']>;
   tone?: Maybe<CalloutTone>;
 };
@@ -173,6 +174,7 @@ export type CalloutBlockInput = {
   _type: BlockType;
   description: Scalars['String']['input'];
   icon?: InputMaybe<CalloutIcon>;
+  tag?: InputMaybe<Scalars['String']['input']>;
   title?: InputMaybe<Scalars['String']['input']>;
   tone?: InputMaybe<CalloutTone>;
 };

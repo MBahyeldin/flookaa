@@ -100,6 +100,7 @@ type ComplexityRoot struct {
 		Description func(childComplexity int) int
 		Icon        func(childComplexity int) int
 		Key         func(childComplexity int) int
+		Tag         func(childComplexity int) int
 		Title       func(childComplexity int) int
 		Tone        func(childComplexity int) int
 		Type        func(childComplexity int) int
@@ -641,6 +642,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.CalloutBlock.Key(childComplexity), true
+
+	case "CalloutBlock.tag":
+		if e.complexity.CalloutBlock.Tag == nil {
+			break
+		}
+
+		return e.complexity.CalloutBlock.Tag(childComplexity), true
 
 	case "CalloutBlock.title":
 		if e.complexity.CalloutBlock.Title == nil {
@@ -2138,6 +2146,7 @@ type CalloutBlock implements Block {
   _key: ID!
   tone: CalloutTone
   icon: CalloutIcon
+  tag: String
   title: String
   description: String!
 }
@@ -2316,6 +2325,7 @@ input CalloutBlockInput {
   _key: ID!
   tone: CalloutTone
   icon: CalloutIcon
+  tag: String
   title: String
   description: String!
 }

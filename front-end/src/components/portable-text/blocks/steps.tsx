@@ -78,30 +78,31 @@ const stepsFormFields: FormField[] = [
 function StepsView({ value }: { value: StepsValue }) {
   const titleId = useId();
   return (
-    <div>
+    <div className="rounded-2xl border bg-card p-5 text-card-foreground md:p-6">
       {value.title ? (
-        <p id={titleId} dir="auto" className="mb-2 text-lg font-semibold break-words text-foreground">
+        <p id={titleId} dir="auto" className="mb-4 flex items-center gap-2 font-semibold break-words">
+          <ListOrderedIcon aria-hidden className="size-5 shrink-0 text-primary" />
           {value.title}
         </p>
       ) : null}
-      <ol className="text-foreground" aria-labelledby={value.title ? titleId : undefined}>
+      <ol aria-labelledby={value.title ? titleId : undefined}>
         {value.items.map((item, index) => (
-          <li key={item._key} className="relative flex gap-3 pb-4 last:pb-0">
+          <li key={item._key} className="relative flex gap-4 pb-5 last:pb-0">
             {index < value.items.length - 1 ? (
-              <span aria-hidden className="absolute top-8 bottom-1 start-3.5 border-s border-border" />
+              <span aria-hidden className="absolute top-10 bottom-0 start-5 border-s-2 border-border" />
             ) : null}
             <span
               aria-hidden
-              className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground"
             >
               {index + 1}
             </span>
-            <div className="min-w-0 pt-0.5">
+            <div className="min-w-0 pt-2">
               <p dir="auto" className="font-semibold break-words">
                 {item.title}
               </p>
               {item.text ? (
-                <p dir="auto" className="mt-1 text-muted-foreground whitespace-pre-wrap break-words">
+                <p dir="auto" className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap break-words">
                   {item.text}
                 </p>
               ) : null}
@@ -123,6 +124,7 @@ export const steps = defineBlock<StepsValue>({
   defaultValues: {},
   schema: stepsSchema,
   View: StepsView,
+  summary: (value) => `Steps · ${value.items.length}`,
   examples: [
     {
       title: "Lentil soup",

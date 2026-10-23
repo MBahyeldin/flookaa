@@ -1,4 +1,4 @@
-import { TimerIcon } from "lucide-react";
+import { ClockIcon, SparklesIcon, TimerIcon } from "lucide-react";
 import { z } from "zod";
 import { FormField } from "@/models/Forms/FormField";
 import { useNow } from "@/hooks/useNow";
@@ -60,6 +60,21 @@ function formatTarget(date: Date) {
   const text = new Intl.DateTimeFormat(undefined, { dateStyle: "full", timeStyle: "short" }).format(date);
   const zone = zoneName(date);
   return zone ? `${text} ${zone}` : text;
+}
+
+const relativeUnits: [Intl.RelativeTimeFormatUnit, number][] = [
+  ["year", 365 * 86400],
+  ["month", 30 * 86400],
+  ["week", 7 * 86400],
+  ["day", 86400],
+  ["hour", 3600],
+  ["minute", 60],
+];
+
+function formatAgo(seconds: number) {
+  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+  const found = relativeUnits.find(([, size]) => seconds >= size);
+  return found ? rtf.format(-Math.floor(seconds / found[1]), found[0]) : rtf.format(0, "minute");
 }
 
 const countdownFormFields: FormField[] = [
@@ -126,38 +141,51 @@ function CountdownView({ value }: { value: CountdownValue }) {
         .filter(Boolean)
         .join(", ")}`;
 
+  const LabelIcon = ended ? SparklesIcon : ClockIcon;
+
   return (
-    <div className="rounded-md border border-border bg-card px-4 py-3 text-card-foreground">
-      <div className="flex min-w-0 items-center gap-2">
-        <TimerIcon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-        <span dir="auto" className="min-w-0 font-semibold break-words">
+    <div className="relative overflow-hidden rounded-2xl bg-primary px-5 py-6 text-center text-primary-foreground md:px-8">
+      <span aria-hidden className="absolute -top-12 -start-12 size-40 rounded-full bg-primary-foreground/10" />
+      <span aria-hidden className="absolute -end-10 -bottom-14 size-36 rounded-full bg-primary-foreground/10" />
+      <p className="relative flex items-center justify-center gap-2 text-overline uppercase">
+        <LabelIcon aria-hidden className="size-4 shrink-0" />
+        <span dir="auto" className="min-w-0 break-words">
           {label ?? "Countdown"}
         </span>
-      </div>
+      </p>
       <span className="sr-only" aria-live="polite">
         {spoken}
       </span>
       {ended ? (
-        <p dir="auto" aria-hidden className="mt-3 text-lg font-semibold break-words">
-          {endedText}
-        </p>
+        <>
+          <p dir="auto" aria-hidden className="relative mt-3 text-h3 break-words">
+            {endedText}
+          </p>
+          <p className="relative mt-2 text-sm opacity-90">
+            Ended{" "}
+            <time dateTime={value.endsAt} title={formatTarget(target)}>
+              {formatAgo(Math.floor((now - endsAt) / 1000))}
+            </time>
+          </p>
+        </>
       ) : (
-        <div aria-hidden className="mt-3 flex flex-wrap gap-2">
-          {units.map((part) => (
-            <div
-              key={part.unit}
-              className="flex min-w-16 flex-col items-center rounded-md border border-border bg-background px-3 py-2"
-            >
-              <span className="text-2xl font-semibold tabular-nums text-foreground">{part.value}</span>
-              <span className="text-xs text-muted-foreground">{part.unit}</span>
-            </div>
-          ))}
-        </div>
+        <>
+          <div aria-hidden className="relative mt-4 flex flex-wrap justify-center gap-2 md:gap-3">
+            {units.map((part) => (
+              <div
+                key={part.unit}
+                className="flex min-w-16 flex-col items-center rounded-xl bg-card px-3 py-2 text-card-foreground md:min-w-20 md:py-3"
+              >
+                <span className="text-3xl font-semibold text-primary tabular-nums md:text-4xl">{part.value}</span>
+                <span className="text-xs text-muted-foreground">{part.unit}</span>
+              </div>
+            ))}
+          </div>
+          <p className="sr-only">
+            Ends <time dateTime={value.endsAt}>{formatTarget(target)}</time>
+          </p>
+        </>
       )}
-      <p className="mt-3 text-sm text-muted-foreground">
-        {ended ? "Ended " : "Ends "}
-        <time dateTime={value.endsAt}>{formatTarget(target)}</time>
-      </p>
     </div>
   );
 }

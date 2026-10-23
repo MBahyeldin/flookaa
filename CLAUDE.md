@@ -327,8 +327,8 @@ It breaks several repo-wide patterns on purpose — keep it that way:
 2. GraphQL (`shared/external/graph/portableText.graphqls`): a `BlockType` value, output type, input type, and a `Blocks` / `BlockInput @oneof` field.
 3. Go (`shared/util/portableText/block-objects/`): a `parse` function that validates the block, and its case in `ParseBlock`.
 4. `make generate-models` in `shared/`, then `pnpm codegen` in `front-end/`.
-5. A `defineBlock` file in `front-end/src/components/portable-text/blocks/` (meta, `fields`, a zod `schema` mirroring the Go checks, `View`, `Editor` if it differs, `examples`), added to `blocks`.
-6. Colours from semantic tokens only (`bg-card`, `text-primary`…), so a persona theme on the wrapper restyles the block, and no outer margins: the wrapper spaces blocks.
+5. A `defineBlock` file in `front-end/src/components/portable-text/blocks/` (meta, `fields`, a zod `schema` mirroring the Go checks, `View`, `Editor` if it differs, `summary` for the post preview's chip, e.g. "Checklist · 2/4", `examples`), added to `blocks`.
+6. Colours from semantic tokens only (`bg-card`, `text-primary`…), so a persona theme on the wrapper restyles the block, `rounded-2xl` on the block's card, and no outer margins: the wrapper spaces blocks.
 
 Dev-mode requests are proxied, not direct: `/api`, `/query`, `/ws` go to `VITE_API_BASE_URL` / `VITE_WEBSOCKET_BASE_URL` (default `https://lxd-development-app`) with `secure: false` and `cookieDomainRewrite: "localhost"`.
 

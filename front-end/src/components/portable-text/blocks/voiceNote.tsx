@@ -42,16 +42,7 @@ const voiceNoteFormFields: FormField[] = [
 ];
 
 function VoiceNoteView({ value }: { value: VoiceNoteValue }) {
-  return (
-    <div className="flex flex-col gap-2">
-      {value.title ? (
-        <p dir="auto" className="text-sm font-medium break-words text-foreground">
-          {value.title}
-        </p>
-      ) : null}
-      <AudioPlayer src={value.src} initialDuration={value.duration} />
-    </div>
-  );
+  return <AudioPlayer src={value.src} initialDuration={value.duration} title={value.title} variant="pill" />;
 }
 
 export const voiceNote = defineBlock<VoiceNoteValue>({
@@ -64,6 +55,10 @@ export const voiceNote = defineBlock<VoiceNoteValue>({
   defaultValues: {},
   schema: voiceNoteSchema,
   View: VoiceNoteView,
+  summary: (value) =>
+    value.duration
+      ? `Voice note · ${Math.floor(value.duration / 60)}:${String(value.duration % 60).padStart(2, "0")}`
+      : "Voice note",
   fromForm: (form) => {
     const { title, duration, ...rest } = form;
     return {
