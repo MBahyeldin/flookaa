@@ -1,0 +1,14 @@
+query GetChannelBar($id: Int64!) {
+  getChannel(id: $id) {
+    id
+    name
+    thumbnailUrl
+    theme
+    membersCount
+    isPrivate
+    isMember
+    isPending
+    isOwner
+    canModerate
+  }
+}

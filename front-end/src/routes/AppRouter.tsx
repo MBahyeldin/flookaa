@@ -4,6 +4,7 @@ import Signup from "../pages/sign-up";
 import Login from "../pages/login";
 import HomePage from "../pages/home";
 import ChannelPage from "@/pages/(dashboard)/channels/[id]";
+import PostPage from "@/pages/(dashboard)/channels/[id]/posts/[postId]";
 import DashboardSettingsProfile from "@/pages/(dashboard)/settings/profile";
 import AdminInterestsPage from "@/pages/(dashboard)/admin/interests";
 import ChannelsPage from "@/pages/(dashboard)/channels";
@@ -38,6 +39,7 @@ export default function AppRouter() {
         {<Route index element={<ChannelsPage />} />}
         <Route path="create" element={<CreateChannelPage />} />
         <Route path=":id" element={<ChannelPage />} />
+        <Route path=":id/posts/:postId" element={<PostPage />} />
       </Route>
 
       <Route path="/settings">

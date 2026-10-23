@@ -1,4 +1,5 @@
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar, AvatarImage } from "../ui/avatar";
+import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { useCreateCommentMutation, type SimpleInput } from "@/generated/graphql";
 import SimpleInputComponent from "../simple-input";
 import { useAppStore } from "@/stores/AppStore";
@@ -7,9 +8,13 @@ import { useUserProfileStore } from "@/stores/UserProfileStore";
 export default function CommentInput({
     parentId,
     level,
+    autoFocus = false,
+    onSent,
 }: {
     parentId: string;
     level: number;
+    autoFocus?: boolean;
+    onSent?: () => void;
 }) {
     const { persona } = useUserProfileStore();
     const owner = useAppStore((state) => state.owner);
@@ -32,26 +37,20 @@ export default function CommentInput({
                 deniedPersonaIds: [],
             },
         });
-
+        onSent?.();
     };
 
-
-
-
     return (
-        // The avatar is handed to SimpleInputComponent so it can render inside
-        // the composer card, matching how comment items carry their avatar
-        // inside the bubble. Persona lookup stays here; layout stays there.
-        <div className="min-w-0">
-            <SimpleInputComponent
-                onSend={handleSend}
-                avatar={
-                    <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
-                        <AvatarImage src={persona?.thumbnail || ""} />
-                        <AvatarFallback>{persona?.name?.[0] || "U"}</AvatarFallback>
-                    </Avatar>
-                }
-            />
-        </div>
+        <SimpleInputComponent
+            onSend={handleSend}
+            autoFocus={autoFocus}
+            placeholder={level > 1 ? "Write a reply…" : "Write a comment…"}
+            avatar={
+                <Avatar className="size-7 shrink-0">
+                    <AvatarImage src={persona?.thumbnail || ""} />
+                    <GeneratedAvatarFallback name={persona ? `${persona.first_name} ${persona.last_name}`.trim() : ""} />
+                </Avatar>
+            }
+        />
     );
 }

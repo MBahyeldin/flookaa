@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Lock, MessageSquare } from "lucide-react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton, SkeletonList } from "@/components/ui/skeleton";
@@ -19,7 +19,6 @@ import type { ChannelEventPayload, PostEventPayload, WsEventMessage } from "@/ty
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { isCurrentOwner, useAppStore } from "@/stores/AppStore";
 import ModerationSheet from "./ModerationSheet";
-import PostDialog from "./PostDialog";
 import { ChannelHero } from "./ChannelHero";
 import { ChannelAbout } from "./ChannelAbout";
 import { ChannelPeople } from "./ChannelPeople";
@@ -30,6 +29,14 @@ type Tab = (typeof TABS)[number];
 
 export default function ChannelPage() {
   const { id: channelId } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  // Links from before the post page opened ?post= in a dialog.
+  const legacyPost = searchParams.get("post");
+  if (legacyPost) {
+    const comment = searchParams.get("comment");
+    const query = comment ? `?${new URLSearchParams({ comment })}` : "";
+    return <Navigate replace to={`/channels/${channelId}/posts/${legacyPost}${query}`} />;
+  }
   // React Router keeps this component mounted when only :id changes, so the
   // paging offset, pending new-post notices and join state carried over to
   // the next channel. Keying on the id gives each channel a fresh view.
@@ -46,6 +53,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     variables: { id: channelId },
   });
   const { websocketService } = useWebsocketService();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isJoined, setIsJoined] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -327,11 +335,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   };
 
   const postChannel = { id: channel.id, name: channel.name, theme: channel.theme };
-  const openPost = (id: string) => {
-    const params = new URLSearchParams(searchParams);
-    params.set("post", id);
-    setSearchParams(params);
-  };
+  const openPost = (id: string) => navigate(`/channels/${channel.id}/posts/${id}`);
 
   const membersOnly = (
     <EmptyState
@@ -446,9 +450,6 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
           </SectionNavContent>
         </div>
       </SectionNav>
-
-      {/* ?post=<id> from a notification */}
-      <PostDialog channel={postChannel} channelId={channelId} isStoreOnThisChannel={isStoreOnThisChannel} />
     </div>
   );
 }

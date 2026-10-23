@@ -10,20 +10,19 @@ import { useGetCommentsLazyQuery, type Comment, type GetCommentsQuery, type GetC
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/AppStore";
 import useCustomInfiniteQuery from "@/hooks/useCustomInfinteQuery";
-import { useEffect, useState } from "react";
-
-
+import { useEffect, useState, type ReactNode } from "react";
 
 export default function CommentSection({
     className,
-    showComments,
     parentId,
     totalCount,
+    composer,
 }: {
     className?: string;
     parentId: string;
-    showComments: boolean;
     totalCount: number;
+    /** Replaces the comment box, e.g. a join prompt for a reader who can't comment. */
+    composer?: ReactNode;
 }) {
     const [showLoadMoreComments, setShowLoadMoreComments] = useState(false);
     const [loaded, setLoaded] = useState(false);
@@ -55,38 +54,40 @@ export default function CommentSection({
     });
 
     useEffect(() => {
-        if (!showComments) return;
         loadMore();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showComments]);
+    }, []);
 
     // Comments that arrived after this thread was first rendered — these get
     // the entrance animation and are scrolled into view.
     const newCommentIds = useNewlyAdded(result.map((comment) => comment._id));
 
-    if (!showComments) {
-        return null;
-    }
-
     return (
+        <section aria-labelledby="comments" className={cn("flex flex-col gap-5", className)}>
+            <h2 id="comments" className="scroll-mt-24 text-h4 font-medium">
+                {totalCount} {totalCount === 1 ? "comment" : "comments"}
+            </h2>
 
-        <div className={cn("mt-6 pt-4 border-t space-y-4", className)}>
-            {/* Add Comment */}
-            <CommentInput parentId={parentId} level={1} />
+            {composer ?? <CommentInput parentId={parentId} level={1} />}
 
-            {/* Comments List */}
-            <div className="space-y-4">
+            <div className="flex flex-col gap-5">
                 {result.map((comment) => (
                     <CommentItem
                         key={comment._id}
                         commentId={comment._id}
                         level={2}
+                        depth={1}
                         isNew={newCommentIds.has(comment._id)}
                     />
                 ))}
                 {result.length === 0 && isLoading && <SkeletonList count={3} />}
                 {result.length === 0 && error && !isLoading && (
-                    <ErrorState icon={RefreshCw} title="Comments didn't load" onRetry={loadMore} />
+                    <ErrorState
+                        icon={RefreshCw}
+                        title="Comments didn't load"
+                        body="Check your connection and try again."
+                        onRetry={loadMore}
+                    />
                 )}
                 {result.length === 0 && loaded && !error && !isLoading && (
                     <EmptyState
@@ -95,7 +96,6 @@ export default function CommentSection({
                         body="Start the conversation. Your comment shows as the persona you're using."
                     />
                 )}
-                {/* Same inline spinner idiom as the nested reply loader */}
                 {result.length > 0 && isLoading && (
                     <div
                         role="status"
@@ -114,15 +114,11 @@ export default function CommentSection({
                     </div>
                 )}
                 {showLoadMoreComments && !isLoading && !error && (
-                    <div className="flex justify-center">
-                        {/* Uses the shared outline Button so it matches
-                            "Load More Posts" on the channel page. */}
-                        <Button variant="outline" size="sm" onClick={loadMore}>
-                            Load more comments
-                        </Button>
-                    </div>
+                    <Button variant="outline" className="w-full" onClick={loadMore}>
+                        Load more comments
+                    </Button>
                 )}
             </div>
-        </div>
+        </section>
     )
 }

@@ -13,16 +13,15 @@ import { useDeletePostMutation, type Post } from "@/generated/graphql";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/AppStore";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
-import CommentSection from "../comment-section";
 import PostContent from "../portable-text/PostContent";
 import { PostByline, type PostChannel } from "./PostByline";
 import { Reactions } from "./Reactions";
 
 export type { PostChannel };
 
-export type PostVersion = "spine" | "canvas" | "full";
+export type PostVersion = "spine" | "canvas";
 
-function PostMenu({ post }: { post: Post }) {
+export function PostMenu({ post, onDeleted }: { post: Post; onDeleted?: () => void }) {
   const { persona } = useUserProfileStore();
   const canModerate = useAppStore((state) => state.canModerate);
   const [deletePost, { loading: isDeleting }] = useDeletePostMutation();
@@ -44,6 +43,7 @@ function PostMenu({ post }: { post: Post }) {
     // the second call when that event reaches this tab too.
     useAppStore.getState().removePost(post._id);
     toast.success("Post deleted");
+    onDeleted?.();
   };
 
   return (
@@ -84,7 +84,6 @@ export function Post({
 }) {
   const [truncated, setTruncated] = useState(false);
   const canvas = version === "canvas";
-  const full = version === "full";
 
   const byline = (
     <PostByline
@@ -99,7 +98,7 @@ export function Post({
   const content = (
     <PostContent
       rawContent={post.rawContent}
-      preview={full ? undefined : { tone: canvas ? "accent" : "card", lead: canvas, onTruncatedChange: setTruncated }}
+      preview={{ tone: canvas ? "accent" : "card", lead: canvas, onTruncatedChange: setTruncated }}
     />
   );
 
@@ -116,7 +115,7 @@ export function Post({
         </button>
       ) : null}
       <div className="ms-auto">
-        <Reactions post={post} onOpenComments={full ? undefined : onOpen} />
+        <Reactions post={post} onOpenComments={onOpen} />
       </div>
     </div>
   );
@@ -157,9 +156,6 @@ export function Post({
         {content}
         <div className="h-px bg-border" />
         {footer}
-        {full ? (
-          <CommentSection parentId={post._id} showComments totalCount={post.meta.commentsCount} />
-        ) : null}
       </div>
     </article>
   );

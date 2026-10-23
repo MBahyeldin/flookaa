@@ -1,6 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Button } from "../ui/button";
-import { Card, CardContent } from "../ui/card";
 import { useReactMediaRecorder } from "react-media-recorder";
 import { Mic, Square, Trash2, Send, Image, Loader2 } from "lucide-react";
 import VoiceIndicator from "./voiceIndocator";
@@ -21,8 +20,10 @@ function formatDuration(totalSeconds: number): string {
     return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-export default function SimpleInputComponent({ onSend, avatar }: {
+export default function SimpleInputComponent({ onSend, avatar, placeholder = "Write a comment…", autoFocus = false }: {
     onSend: (simpleInput: SimpleInput) => Promise<void>;
+    placeholder?: string;
+    autoFocus?: boolean;
     /** Rendered inside the card on the input row. Optional so the component
      *  stays usable where there's no author avatar to show. */
     avatar?: React.ReactNode;
@@ -263,251 +264,224 @@ export default function SimpleInputComponent({ onSend, avatar }: {
 
 
 
+    const canSend = !isProcessingAudio && status !== "recording" && Boolean(newComment.trim() || mediaBlobUrl || mediaUrl);
+
     return (
         // min-w-0 all the way down: each of these is a flex item, and a flex
         // item defaults to min-width:auto, so it refuses to shrink below its
         // content. Without it the composer row widened the whole document and
         // the page could pan sideways on mobile.
-        <div className="w-full min-w-0">
-            <Card className="min-w-0 border border-muted bg-muted/50 p-2">
-                <CardContent className="flex min-w-0 flex-col gap-2 p-0">
-                    {/*
-                      The text field gets its own row and the controls sit on a
-                      second row. Previously all four sat in one wrapping row,
-                      which split the image and mic icons across lines on a
-                      phone. Two explicit rows keep the icons together at every
-                      width instead of depending on how the wrap happens to fall.
-                    */}
-                    {/*
-                      Always rendered so the avatar stays put. The text field is
-                      swapped for a short status label once a voice note or image
-                      is staged (their previews render further down), instead of
-                      hiding the whole row and taking the avatar with it.
-                    */}
-                    <div className="flex min-w-0 items-center gap-2">
-                        {avatar}
-                        {isUploadingImage ? (
-                            <span
-                                role="status"
-                                className="flex min-w-0 flex-1 items-center gap-2 px-1 text-sm text-muted-foreground"
-                            >
-                                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
-                                <span className="truncate">Uploading image…</span>
-                            </span>
-                        ) : !commentType || commentType === "TEXT" ? (
-                            <input
-                                type="text"
-                                placeholder="Add a comment..."
-                                value={newComment}
-                                onChange={(e) => {
-                                    setNewComment(e.target.value);
-                                    if (!e.target.value.length) {
-                                        setCommentType(null);
-                                        return;
-                                    }
-                                    setCommentType("TEXT");
-                                }}
-                                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                                          disabled={isSending}
-                                /* min-w-0: an <input> has an intrinsic default size
-                                   (~20ch) that flex-1 alone won't shrink past. */
-                                className="flex-1 min-w-0 bg-transparent rounded-full px-4 py-2 text-sm border border-muted focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
-                        ) : (
-                            <span className="flex min-w-0 flex-1 items-center gap-2 px-1 text-sm text-muted-foreground">
-                                {commentType === "VOICE" ? (
-                                    status === "recording" ? (
-                                        <>
-                                            <span
-                                                aria-hidden="true"
-                                                className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-destructive"
-                                            />
-                                            <span className="truncate">Recording…</span>
-                                            <span
-                                                /* Announced periodically rather than on every
-                                                   tick, so it doesn't flood a screen reader. */
-                                                role="timer"
-                                                aria-live="off"
-                                                className={`ml-auto shrink-0 font-medium tabular-nums ${
-                                                    isNearLimit ? "text-destructive" : "text-foreground"
-                                                }`}
-                                            >
-                                                {formatDuration(elapsedSeconds)}
-                                                <span className="text-muted-foreground">
-                                                    {" / "}
-                                                    {formatDuration(MAX_RECORDING_SECONDS)}
-                                                </span>
-                                            </span>
-                                        </>
-                                    ) : isProcessingAudio ? (
-                                        <span role="status" className="flex min-w-0 items-center gap-2">
-                                            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
-                                            <span className="truncate">Processing voice note…</span>
-                                        </span>
-                                    ) : (
-                                        <>
-                                            <span className="truncate">Voice note ready</span>
-                                            {recordedSeconds > 0 ? (
-                                                <span className="ml-auto shrink-0 font-medium tabular-nums text-foreground">
-                                                    {formatDuration(recordedSeconds)}
-                                                </span>
-                                            ) : null}
-                                        </>
-                                    )
-                                ) : (
-                                    <span className="truncate">Image attached</span>
-                                )}
-                            </span>
-                        )}
-                    </div>
-
-                    <div className="flex min-w-0 items-center gap-2">
-                        {/* Attachment controls — image and mic always adjacent */}
-                        <div className="flex items-center gap-2">
-                            {!commentType ? (
-                                <Button
-                                    size="icon"
-                                    variant="outline"
-                                    aria-label={isUploadingImage ? "Uploading image…" : "Attach an image"}
-                                    aria-busy={isUploadingImage}
-                                    disabled={isUploadingImage}
-                                    onClick={handleUploadMedia}
-                                >
-                                    {isUploadingImage ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Image className="h-4 w-4" />
-                                    )}
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer hidden"
-                                        ref={uploadImageInputRef}
-                                        onChange={onImageInputChange}
-                                    />
-                                </Button>
-                            ) : null}
-
-                            {!commentType ? (
-                                <Button
-                                    size="icon"
-                                    variant="outline"
-                                    aria-label={
-                                        canRecord
-                                            ? "Record a voice note"
-                                            : `Voice notes unavailable — ${unsupportedReason}`
-                                    }
-                                    // Explains itself rather than failing on tap:
-                                    // without this the button looked live and the
-                                    // press did nothing at all.
-                                    title={canRecord ? undefined : unsupportedReason}
-                                    onClick={() => {
-                                        if (!canRecord) {
-                                            toast.error(unsupportedReason);
-                                            return;
-                                        }
-                                        startRecording();
-                                    }}
-                                    disabled={!!mediaBlobUrl || !canRecord}
-                                >
-                                    <Mic className="h-4 w-4" />
-                                </Button>
-                            ) : null}
-
-                            {status === "recording" ? (
-                                <div className="flex min-w-0 items-center gap-2">
-                                    <Button
-                                        size="icon"
-                                        variant="destructive"
-                                        className="animate-pulse shrink-0"
-                                        aria-label={`Stop recording — ${formatDuration(elapsedSeconds)} of ${formatDuration(MAX_RECORDING_SECONDS)}`}
-                                        onClick={stopRecording}
-                                    >
-                                        <Square className="h-4 w-4" />
-                                    </Button>
-                                    <VoiceIndicator previewAudioStream={previewAudioStream} />
-                                    {/* Countdown only once it matters, so the row
-                                        stays quiet for most of the recording. */}
-                                    {isNearLimit ? (
-                                        <span className="shrink-0 text-xs font-medium tabular-nums text-destructive">
-                                            {Math.ceil(remainingSeconds)}s left
-                                        </span>
-                                    ) : null}
-                                </div>
-                            ) : null}
-                        </div>
-
-                        <Button
-                            size="sm"
-                            className="ml-auto shrink-0"
-                            onClick={handleSend}
-                            disabled={
-                                isProcessingAudio ||
-                                (!newComment.trim() && !mediaBlobUrl && !mediaUrl)
+        <div className="flex w-full min-w-0 flex-col gap-2 rounded-lg border bg-card p-2 text-card-foreground">
+            <div className="flex min-w-0 items-center gap-2">
+                {avatar}
+                {isUploadingImage ? (
+                    <span
+                        role="status"
+                        className="flex min-w-0 flex-1 items-center gap-2 px-1 text-sm text-muted-foreground"
+                    >
+                        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                        <span className="truncate">Uploading image…</span>
+                    </span>
+                ) : !commentType || commentType === "TEXT" ? (
+                    <input
+                        type="text"
+                        placeholder={placeholder}
+                        aria-label={placeholder}
+                        autoFocus={autoFocus}
+                        value={newComment}
+                        onChange={(e) => {
+                            setNewComment(e.target.value);
+                            if (!e.target.value.length) {
+                                setCommentType(null);
+                                return;
                             }
-                            loading={isSending}
-                        >
-                            {isSending ? (
-                                "Sending…"
+                            setCommentType("TEXT");
+                        }}
+                        onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                        disabled={isSending}
+                        /* min-w-0: an <input> has an intrinsic default size
+                           (~20ch) that flex-1 alone won't shrink past. */
+                        className="min-w-0 flex-1 bg-transparent px-1 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none"
+                    />
+                ) : (
+                    <span className="flex min-w-0 flex-1 items-center gap-2 px-1 text-sm text-muted-foreground">
+                        {commentType === "VOICE" ? (
+                            status === "recording" ? (
+                                <>
+                                    <span
+                                        aria-hidden="true"
+                                        className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-destructive"
+                                    />
+                                    <span className="truncate">Recording…</span>
+                                    <span
+                                        /* Announced periodically rather than on every
+                                           tick, so it doesn't flood a screen reader. */
+                                        role="timer"
+                                        aria-live="off"
+                                        className={`ms-auto shrink-0 font-medium tabular-nums ${
+                                            isNearLimit ? "text-destructive" : "text-foreground"
+                                        }`}
+                                    >
+                                        {formatDuration(elapsedSeconds)}
+                                        <span className="text-muted-foreground">
+                                            {" / "}
+                                            {formatDuration(MAX_RECORDING_SECONDS)}
+                                        </span>
+                                    </span>
+                                </>
+                            ) : isProcessingAudio ? (
+                                <span role="status" className="flex min-w-0 items-center gap-2">
+                                    <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                                    <span className="truncate">Processing voice note…</span>
+                                </span>
                             ) : (
                                 <>
-                                    <Send /> Post
+                                    <span className="truncate">Voice note ready</span>
+                                    {recordedSeconds > 0 ? (
+                                        <span className="ms-auto shrink-0 font-medium tabular-nums text-foreground">
+                                            {formatDuration(recordedSeconds)}
+                                        </span>
+                                    ) : null}
                                 </>
+                            )
+                        ) : (
+                            <span className="truncate">Image attached</span>
+                        )}
+                    </span>
+                )}
+
+                {/* Attachment controls — image and mic always adjacent */}
+                {!commentType ? (
+                    <div className="flex shrink-0 items-center">
+                        <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            aria-label={isUploadingImage ? "Uploading image…" : "Attach an image"}
+                            aria-busy={isUploadingImage}
+                            disabled={isUploadingImage}
+                            onClick={handleUploadMedia}
+                        >
+                            {isUploadingImage ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Image className="h-4 w-4" />
                             )}
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                ref={uploadImageInputRef}
+                                onChange={onImageInputChange}
+                            />
+                        </Button>
+                        <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            aria-label={
+                                canRecord
+                                    ? "Record a voice note"
+                                    : `Voice notes unavailable — ${unsupportedReason}`
+                            }
+                            // Explains itself rather than failing on tap:
+                            // without this the button looked live and the
+                            // press did nothing at all.
+                            title={canRecord ? undefined : unsupportedReason}
+                            onClick={() => {
+                                if (!canRecord) {
+                                    toast.error(unsupportedReason);
+                                    return;
+                                }
+                                startRecording();
+                            }}
+                            disabled={!!mediaBlobUrl || !canRecord}
+                        >
+                            <Mic className="h-4 w-4" />
                         </Button>
                     </div>
+                ) : null}
 
-                    {mediaBlobUrl && (
-                        <div className="flex min-w-0 items-center gap-2">
-                            {isProcessingAudio ? (
-                                <div className="flex min-w-0 flex-1 items-center gap-2 px-1 text-sm text-muted-foreground">
-                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-                                    <span className="truncate">Enhancing audio…</span>
-                                </div>
-                            ) : (
-                                <AudioPlayer
-                                    key={audioUrl || mediaBlobUrl}
-                                    src={audioUrl || mediaBlobUrl}
-                                    className="min-w-0 flex-1"
-                                />
-                            )}
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleDeleteRecording}
-                                aria-label="Discard voice note"
-                                className="shrink-0 text-destructive hover:text-destructive/80"
-                            >
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
+                {status === "recording" ? (
+                    <Button
+                        size="icon-sm"
+                        variant="destructive"
+                        className="shrink-0 animate-pulse"
+                        aria-label={`Stop recording — ${formatDuration(elapsedSeconds)} of ${formatDuration(MAX_RECORDING_SECONDS)}`}
+                        onClick={stopRecording}
+                    >
+                        <Square className="h-4 w-4" />
+                    </Button>
+                ) : null}
+
+                {canSend || isSending ? (
+                    <Button
+                        size="icon-sm"
+                        className="shrink-0"
+                        aria-label="Send"
+                        onClick={handleSend}
+                        loading={isSending}
+                    >
+                        <Send className="rtl:-scale-x-100" />
+                    </Button>
+                ) : null}
+            </div>
+
+            {status === "recording" && (
+                <div className="flex min-w-0 items-center gap-2 px-1">
+                    <VoiceIndicator previewAudioStream={previewAudioStream} />
+                    {/* Countdown only once it matters, so the row
+                        stays quiet for most of the recording. */}
+                    {isNearLimit ? (
+                        <span className="shrink-0 text-xs font-medium tabular-nums text-destructive">
+                            {Math.ceil(remainingSeconds)}s left
+                        </span>
+                    ) : null}
+                </div>
+            )}
+
+            {mediaBlobUrl && (
+                <div className="flex min-w-0 items-center gap-2">
+                    {isProcessingAudio ? (
+                        <div className="flex min-w-0 flex-1 items-center gap-2 px-1 text-sm text-muted-foreground">
+                            <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                            <span className="truncate">Enhancing audio…</span>
                         </div>
+                    ) : (
+                        <AudioPlayer
+                            key={audioUrl || mediaBlobUrl}
+                            src={audioUrl || mediaBlobUrl}
+                            className="min-w-0 flex-1"
+                        />
                     )}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleDeleteRecording}
+                        aria-label="Discard voice note"
+                        className="shrink-0 text-destructive hover:text-destructive/80"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
 
-                    {mediaUrl && (
-                        <div className="relative flex items-center gap-3 rounded-md border border-border bg-background p-2 items-center justify-center">
-                            <img
-                                src={mediaUrl}
-                                alt="Uploaded Media"
-                                className="max-w-xs max-h-48 rounded-md"
-                            />
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleDeleteMedia}
-                                className="absolute top-1 right-1 text-destructive hover:text-destructive/80"
-                            >
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    )}
-
-                    {status === "recording" && (
-                        <p className="text-xs text-primary font-medium animate-pulse pl-1">
-                            🎙️ Recording in progress…
-                        </p>
-                    )}
-                </CardContent>
-            </Card>
-        </div >
+            {mediaUrl && (
+                <div className="relative flex items-center justify-center gap-3 rounded-md border bg-background p-2">
+                    <img
+                        src={mediaUrl}
+                        alt="Uploaded Media"
+                        className="max-h-48 max-w-xs rounded-md"
+                    />
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleDeleteMedia}
+                        aria-label="Remove image"
+                        className="absolute end-1 top-1 text-destructive hover:text-destructive/80"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
+        </div>
     );
 }
