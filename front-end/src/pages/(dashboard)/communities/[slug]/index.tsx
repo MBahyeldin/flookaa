@@ -1,20 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Check, Clock, Hash, Lock, Pencil, Plus, Send, Users } from "lucide-react";
+import { Hash, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { AgeBadge } from "@/components/age-badge";
 import { CommunityRulesDialog } from "@/components/community-rules-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton, SkeletonList } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { SectionHeader } from "@/components/ui/section-header";
+import { SectionNav, SectionNavList, SectionNavTab } from "@/components/ui/section-nav";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { GeneratedAvatarFallback } from "@/components/generated-avatar";
-import InterestChips from "@/components/interests/InterestChips";
 import NotFound from "@/components/not-found";
-import { PersonaLink } from "@/components/persona-link";
 import {
   followCommunity,
   getCommunity,
@@ -32,13 +28,20 @@ import { useWebsocketService } from "@/Websocket.context";
 import type { Channel } from "@/types/channel";
 import type { Community, ModeratedChannel } from "@/types/community";
 import { useNotificationStore } from "@/stores/NotificationStore";
+import { useSectionSpy } from "@/hooks/useSectionSpy";
 import { formatDateOnly } from "@/utils/formateDate";
 import { ChannelTile } from "@/components/tile/ChannelTile";
 import CommunityForm from "../CommunityForm";
 import MembersSheet, { type MembersTab } from "./MembersSheet";
 import SuggestChannelDialog from "./SuggestChannelDialog";
+import { CommunityHero } from "./CommunityHero";
+import { CommunityAbout } from "./CommunityAbout";
+import { CommunityPeople } from "./CommunityPeople";
 
 const membersTabs: MembersTab[] = ["members", "requests", "channels"];
+const SECTIONS = ["channels", "about", "people"] as const;
+const SHOWN_CHANNELS = 6;
+const sectionClass = "scroll-mt-28 md:scroll-mt-14";
 
 export default function CommunityPage() {
   const { slug = "" } = useParams();
@@ -61,7 +64,9 @@ export default function CommunityPage() {
   const [pendingChannelRequests, setPendingChannelRequests] = useState(0);
   const [moderated, setModerated] = useState<ModeratedChannel[] | null>(null);
   const [suggestOpen, setSuggestOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"join" | "follow" | null>(null);
+  const [allChannels, setAllChannels] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [rulesOpen, setRulesOpen] = useState(false);
 
   useEffect(() => {
@@ -82,7 +87,7 @@ export default function CommunityPage() {
     return () => {
       alive = false;
     };
-  }, [slug]);
+  }, [slug, attempt]);
 
   const communityId = community?.id;
   // Matches the server: a private community's members and channels are for members and managers.
@@ -185,10 +190,10 @@ export default function CommunityPage() {
   );
 
   const runAction = useCallback(
-    async (action: () => Promise<{ ok: boolean; error?: string }>, failure: string) => {
-      setBusy(true);
+    async (kind: "join" | "follow", action: () => Promise<{ ok: boolean; error?: string }>, failure: string) => {
+      setBusy(kind);
       const r = await action();
-      setBusy(false);
+      setBusy(null);
       if (!r.ok) {
         toast.error(
           r.error === "cannot_follow_private"
@@ -228,268 +233,192 @@ export default function CommunityPage() {
       setRulesOpen(true);
       return;
     }
-    runAction(() => joinCommunity(community.id), "Couldn't join. Please try again.");
+    runAction("join", () => joinCommunity(community.id), "Couldn't join. Please try again.");
   };
+
+  const leave = () => {
+    if (!community) return;
+    const pending = community.membership_status === "pending";
+    if (!confirm(pending ? "Cancel your request to join?" : `Leave ${community.name}?`)) return;
+    runAction(
+      "join",
+      () => leaveCommunity(community.id),
+      pending ? "Couldn't cancel the request. Please try again." : "Couldn't leave. Please try again.",
+    );
+  };
+
+  const follow = () => {
+    if (!community) return;
+    if (community.following) runAction("follow", () => unfollowCommunity(community.id), "Couldn't unfollow. Please try again.");
+    else runAction("follow", () => followCommunity(community.id), "Couldn't follow. Please try again.");
+  };
+
+  const suggest = () => {
+    loadModerated();
+    setSuggestOpen(true);
+  };
+
+  const [section, jump] = useSectionSpy(SECTIONS, !!community);
 
   if (state === "missing") return <NotFound />;
   if (state === "failed") {
-    return <p className="py-24 text-center text-destructive">Couldn't load this community. Please reload.</p>;
+    return <ErrorState className="mx-4 mt-24" title="Couldn't load this community" onRetry={() => setAttempt((n) => n + 1)} />;
   }
-  if (!community) {
-    return (
-      <div className="container mx-auto space-y-4 px-4 py-8">
-        <Skeleton className="h-40 w-full rounded-xl" />
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-4 w-96 max-w-full" />
-      </div>
-    );
-  }
+  if (!community) return <CommunitySkeleton />;
 
-  const owner = community.owner;
-  const isPrivate = community.visibility === "private";
   const canSuggest = !!moderated?.some((c) => c.community_status === "none" || c.community?.id === community.id);
-
   const declinedNote = community.rejected_until
     ? `Your request was declined. You can ask again on ${formatDateOnly(community.rejected_until)}.`
     : "Your request was declined.";
-  const ownerName = owner ? [owner.first_name, owner.last_name].filter(Boolean).join(" ") : "";
+  const hiddenChannels = channels && !allChannels ? Math.max(channels.length - SHOWN_CHANNELS, 0) : 0;
+  const shownChannels = channels && hiddenChannels > 0 ? channels.slice(0, SHOWN_CHANNELS) : channels;
+  const notices = community.can_manage
+    ? [
+        pendingRequests > 0 && {
+          tab: "requests" as const,
+          label: pendingRequests === 1 ? "1 request to join" : `${pendingRequests} requests to join`,
+        },
+        pendingChannelRequests > 0 && {
+          tab: "channels" as const,
+          label:
+            pendingChannelRequests === 1 ? "1 channel wants to join" : `${pendingChannelRequests} channels want to join`,
+        },
+      ].filter((n) => !!n)
+    : [];
 
   return (
-    <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-      <div className="h-40 overflow-hidden rounded-xl bg-gradient-to-br from-primary/30 to-secondary sm:h-56">
-        {community.banner && <img src={community.banner} alt="" className="h-full w-full object-cover" />}
-      </div>
+    <div data-theme={community.theme} className="min-h-full bg-background text-foreground">
+      <CommunityHero
+        community={community}
+        canSeeInside={canSeeInside}
+        canSuggest={canSuggest}
+        busy={busy}
+        onJoin={join}
+        onLeave={leave}
+        onFollow={follow}
+        onMembers={() => openMembers("members")}
+        onEdit={() => setEditing(true)}
+        onSuggest={suggest}
+      />
 
-      <div className="-mt-10 flex flex-col gap-4 px-2 sm:flex-row sm:items-end sm:px-6">
-        <Avatar className="h-20 w-20 rounded-lg border-3 border-card">
-          <AvatarImage src={community.thumbnail || ""} className="object-cover" />
-          <GeneratedAvatarFallback name={community.name} className="rounded-lg" />
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-3xl font-bold">{community.name}</h1>
-            <AgeBadge minAge={community.min_age} />
-            {community.visibility === "private" && (
-              <Badge variant="secondary">
-                <Lock className="mr-1 h-3 w-3" />
-                Private
-              </Badge>
-            )}
-          </div>
-          {owner && (
-            <p className="text-sm text-muted-foreground">
-              Created by{" "}
-              <PersonaLink
-                personaId={owner.id}
-                anonymous={owner.anonymous}
-                name={ownerName}
-                thumbnail={owner.thumbnail}
-                className="font-medium text-foreground hover:underline"
-              >
-                {ownerName}
-              </PersonaLink>
+      {(notices.length > 0 || community.membership_status === "rejected") && (
+        <div className="-mt-2 flex flex-col gap-1 px-4 pb-5 text-sm md:-mt-4 md:px-8 md:pb-6 xl:px-16">
+          {notices.length > 0 && (
+            <p className="flex flex-wrap gap-x-2">
+              {notices.map((n, i) => (
+                <span key={n.tab} className="flex gap-2">
+                  {i > 0 && <span className="text-muted-foreground">·</span>}
+                  <button
+                    type="button"
+                    className="cursor-pointer rounded-sm font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                    onClick={() => openMembers(n.tab)}
+                  >
+                    {n.label}
+                  </button>
+                </span>
+              ))}
             </p>
           )}
+          {community.membership_status === "rejected" && <p className="text-muted-foreground">{declinedNote}</p>}
         </div>
-        <div className="flex flex-wrap gap-2">
-          {community.membership_status === "none" && (
-            <Button size="sm" disabled={busy} onClick={join}>
-              {isPrivate ? "Request to join" : "Join"}
-            </Button>
-          )}
-          {community.membership_status === "pending" && (
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={busy}
-              onClick={() => {
-                if (!confirm("Cancel your request to join?")) return;
-                runAction(() => leaveCommunity(community.id), "Couldn't cancel the request. Please try again.");
-              }}
-            >
-              <Clock className="mr-2 h-4 w-4" />
-              Requested
-            </Button>
-          )}
-          {community.membership_status === "rejected" && (
-            <Button size="sm" variant="secondary" disabled>
-              Request declined
-            </Button>
-          )}
-          {community.membership_status === "active" && !community.is_owner && (
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={busy}
-              onClick={() => {
-                if (!confirm(`Leave ${community.name}?`)) return;
-                runAction(() => leaveCommunity(community.id), "Couldn't leave. Please try again.");
-              }}
-            >
-              <Check className="mr-2 h-4 w-4" />
-              Joined
-            </Button>
-          )}
-          {!isPrivate && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={busy}
-              onClick={() =>
-                community.following
-                  ? runAction(() => unfollowCommunity(community.id), "Couldn't unfollow. Please try again.")
-                  : runAction(() => followCommunity(community.id), "Couldn't follow. Please try again.")
+      )}
+
+      <SectionNav value={section} onValueChange={(v) => jump(v as (typeof SECTIONS)[number])}>
+        <SectionNavList className="top-14 px-4 md:top-0 md:px-8 xl:px-16">
+          <SectionNavTab value="channels">Channels</SectionNavTab>
+          <SectionNavTab value="about">About</SectionNavTab>
+          <SectionNavTab value="people">People</SectionNavTab>
+        </SectionNavList>
+      </SectionNav>
+
+      <div className="mx-auto flex w-full max-w-[1192px] flex-col gap-12 px-4 py-8 md:px-8 xl:px-16">
+        <section id="channels" aria-labelledby="community-channels" className={`flex flex-col gap-6 ${sectionClass}`}>
+          <SectionHeader
+            overline="Channels"
+            title={<span id="community-channels">In this community</span>}
+            onSeeAll={hiddenChannels > 0 ? () => setAllChannels(true) : undefined}
+            seeAllLabel={`See all ${channels?.length ?? ""}`}
+          />
+          {!canSeeInside ? (
+            <EmptyState
+              icon={Lock}
+              title="Members only"
+              body={
+                community.membership_status === "pending"
+                  ? "Your request is waiting for approval."
+                  : community.membership_status === "rejected"
+                    ? declinedNote
+                    : "Join to see this community's channels."
               }
-            >
-              {community.following ? "Following" : "Follow"}
-            </Button>
-          )}
-          {canSuggest && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                loadModerated();
-                setSuggestOpen(true);
-              }}
-            >
-              <Send className="mr-2 h-4 w-4" />
-              Suggest a channel
-            </Button>
-          )}
-          {community.can_manage && (
-            <>
-              <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit
-              </Button>
-              <Link to={`/channels/create?community=${community.id}`}>
-                <Button size="sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create channel
-                </Button>
-              </Link>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-6 space-y-3 px-2 sm:px-6">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          {canSeeInside ? (
-            <button type="button" className="flex items-center gap-1 hover:text-foreground hover:underline" onClick={() => openMembers("members")}>
-              <Users className="h-4 w-4" />
-              {community.members_count === 1 ? "1 member" : `${community.members_count} members`}
-            </button>
-          ) : (
-            <span className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              {community.members_count === 1 ? "1 member" : `${community.members_count} members`}
-            </span>
-          )}
-          {!isPrivate && (
-            <span>{community.followers_count === 1 ? "1 follower" : `${community.followers_count} followers`}</span>
-          )}
-          {community.can_manage && pendingRequests > 0 && (
-            <button type="button" className="font-medium text-primary hover:underline" onClick={() => openMembers("requests")}>
-              {pendingRequests === 1 ? "1 request to join" : `${pendingRequests} requests to join`}
-            </button>
-          )}
-          {community.can_manage && pendingChannelRequests > 0 && (
-            <button type="button" className="font-medium text-primary hover:underline" onClick={() => openMembers("channels")}>
-              {pendingChannelRequests === 1 ? "1 channel wants to join" : `${pendingChannelRequests} channels want to join`}
-            </button>
-          )}
-        </div>
-        {community.membership_status === "rejected" && canSeeInside && (
-          <p className="text-sm text-muted-foreground">{declinedNote}</p>
-        )}
-        {community.description && <p className="max-w-3xl text-muted-foreground">{community.description}</p>}
-        <InterestChips interests={community.interests} />
-        {community.rules && (
-          <section aria-labelledby="community-rules" className="max-w-3xl rounded-xl border bg-card p-4">
-            <h2 id="community-rules" className="mb-2 font-semibold">
-              Rules
-            </h2>
-            <p className="whitespace-pre-line text-sm text-muted-foreground">{community.rules}</p>
-          </section>
-        )}
-      </div>
-
-      <section className="mt-10" aria-labelledby="community-channels">
-        <h2 id="community-channels" className="mb-4 text-xl font-semibold">
-          Channels
-        </h2>
-        {!canSeeInside ? (
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed px-4 py-12 text-center text-muted-foreground">
-            <Lock className="h-6 w-6" />
-            <p>You need to be a member of this community to see its channels.</p>
-            {community.membership_status === "pending" ? (
-              <p className="flex items-center gap-1 text-sm">
-                <Clock className="h-4 w-4" />
-                Your request to join is waiting for approval.
-              </p>
-            ) : community.membership_status === "rejected" ? (
-              <p className="text-sm">{declinedNote}</p>
-            ) : (
-              <Button size="sm" disabled={busy} onClick={join}>
-                Request to join
-              </Button>
-            )}
-          </div>
-        ) : channels === null && channelsFailed ? (
-          <ErrorState
-            title="Couldn't load channels"
-            onRetry={() => {
-              setChannelsFailed(false);
-              return loadChannels();
-            }}
-          />
-        ) : channels === null ? (
-          <SkeletonList count={3} variant="post" className="grid gap-6 md:grid-cols-2 lg:grid-cols-3" />
-        ) : channels.length === 0 ? (
-          <EmptyState
-            icon={Hash}
-            title="No channels in this community yet"
-            action={
-              community.can_manage ? (
-                <Button asChild>
-                  <Link to={`/channels/create?community=${community.id}`}>Create channel</Link>
-                </Button>
-              ) : canSuggest ? (
-                <Button
-                  onClick={() => {
-                    loadModerated();
-                    setSuggestOpen(true);
-                  }}
-                >
-                  Suggest a channel
-                </Button>
-              ) : undefined
-            }
-          />
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {channels.map((channel) =>
-              community.can_manage ? (
-                <div key={channel.id} className="flex flex-col gap-2">
-                  <ChannelTile channel={channel} />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="self-end text-destructive hover:text-destructive"
-                    onClick={() => removeChannel(channel)}
-                  >
-                    Remove from community
+              action={
+                community.membership_status === "none" && (
+                  <Button onClick={join} loading={busy === "join"}>
+                    Request to join
                   </Button>
-                </div>
-              ) : (
-                <ChannelTile key={channel.id} channel={channel} />
-              ),
-            )}
+                )
+              }
+            />
+          ) : channels === null && channelsFailed ? (
+            <ErrorState
+              title="Couldn't load channels"
+              onRetry={() => {
+                setChannelsFailed(false);
+                return loadChannels();
+              }}
+            />
+          ) : shownChannels === null ? (
+            <SkeletonList count={3} variant="post" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" />
+          ) : shownChannels.length === 0 ? (
+            <EmptyState
+              icon={Hash}
+              title="No channels in this community yet"
+              action={
+                community.can_manage ? (
+                  <Button asChild>
+                    <Link to={`/channels/create?community=${community.id}`}>Create channel</Link>
+                  </Button>
+                ) : canSuggest ? (
+                  <Button onClick={suggest}>Suggest a channel</Button>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {shownChannels.map((channel) =>
+                community.can_manage ? (
+                  <div key={channel.id} className="flex flex-col gap-2">
+                    <ChannelTile channel={channel} />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="self-end text-destructive hover:text-destructive"
+                      onClick={() => removeChannel(channel)}
+                    >
+                      Remove from community
+                    </Button>
+                  </div>
+                ) : (
+                  <ChannelTile key={channel.id} channel={channel} />
+                ),
+              )}
+            </div>
+          )}
+        </section>
+
+        <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
+          <div id="about" className={`lg:col-span-7 ${sectionClass}`}>
+            <CommunityAbout community={community} />
           </div>
-        )}
-      </section>
+          <section id="people" className={`lg:col-span-5 ${sectionClass}`}>
+            <CommunityPeople
+              community={community}
+              canSeeInside={canSeeInside}
+              version={membersKey}
+              onShowAll={() => openMembers("members")}
+            />
+          </section>
+        </div>
+      </div>
 
       <MembersSheet
         community={community}
@@ -514,8 +443,8 @@ export default function CommunityPage() {
         community={community}
         open={rulesOpen}
         onOpenChange={setRulesOpen}
-        busy={busy}
-        onAgree={() => runAction(() => joinCommunity(community.id), "Couldn't join. Please try again.")}
+        busy={!!busy}
+        onAgree={() => runAction("join", () => joinCommunity(community.id), "Couldn't join. Please try again.")}
       />
 
       <Sheet open={editing} onOpenChange={setEditing}>
@@ -527,6 +456,19 @@ export default function CommunityPage() {
           <div className="px-4 pb-6">{editing && <CommunityForm community={community} onSaved={onSaved} />}</div>
         </SheetContent>
       </Sheet>
+    </div>
+  );
+}
+
+function CommunitySkeleton() {
+  return (
+    <div role="status" aria-label="Loading community" className="pb-8">
+      <Skeleton className="h-[150px] rounded-none md:h-[280px]" />
+      <div className="-mt-10 flex flex-col gap-3 px-4 md:-mt-14 md:px-8 xl:px-16">
+        <Skeleton className="size-20 rounded-lg border-3 border-background md:size-28" />
+        <Skeleton className="h-10 w-2/3 max-w-md" />
+        <Skeleton className="h-5 w-full max-w-xl" />
+      </div>
     </div>
   );
 }

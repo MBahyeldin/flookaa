@@ -30,6 +30,7 @@ export type Community = {
   channels_count: number;
   members_count: number;
   followers_count: number;
+  created_at: string;
   /** The viewer's own; rejected only while the 7-day cooldown runs. */
   membership_status: "none" | "pending" | "active" | "rejected";
   /** Only when rejected: when the viewer may ask again. */

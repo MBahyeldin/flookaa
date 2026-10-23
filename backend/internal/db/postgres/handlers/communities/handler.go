@@ -62,6 +62,7 @@ type Community struct {
 	ChannelsCount  int32               `json:"channels_count"`
 	MembersCount   int32               `json:"members_count"`
 	FollowersCount int32               `json:"followers_count"`
+	CreatedAt      string              `json:"created_at"`
 	// The viewer's own: none, pending, active, or rejected while the cooldown runs.
 	MembershipStatus string `json:"membership_status"`
 	RejectedUntil    string `json:"rejected_until,omitempty"`
@@ -202,6 +203,7 @@ func (h *Handler) build(ctx context.Context, viewerID int64, rows []row) ([]Comm
 			ChannelsCount:    r.ChannelsCount,
 			MembersCount:     stats[r.ID].MembersCount,
 			FollowersCount:   stats[r.ID].FollowersCount,
+			CreatedAt:        r.CreatedAt.UTC().Format(time.RFC3339),
 			MembershipStatus: access.MembershipStatus(stats[r.ID].ViewerStatus, stats[r.ID].ViewerResolvedAt),
 			Following:        stats[r.ID].ViewerFollowing,
 		}

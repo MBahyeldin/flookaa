@@ -1,10 +1,9 @@
 import { Link } from "react-router-dom";
 import { Boxes, Clock, Globe, Lock, ShieldCheck } from "lucide-react";
+import { AboutBlock, AboutFact, AboutFacts, monthYear } from "@/components/about-block";
 import InterestChips from "@/components/interests/InterestChips";
 import { PersonaLink } from "@/components/persona-link";
 import type { Interest } from "@/types/interest";
-
-const monthYear = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: "long", year: "numeric" });
 
 export function ChannelAbout({
   description,
@@ -24,18 +23,15 @@ export function ChannelAbout({
   community: { name: string; slug: string } | null | undefined;
 }) {
   return (
-    <section className="flex flex-col gap-4 rounded-lg bg-surface-sunken p-6">
-      <h2 className="text-overline font-semibold tracking-wider text-muted-foreground uppercase">About</h2>
+    <AboutBlock>
       {description && <p className="whitespace-pre-line">{description}</p>}
       {interests.length > 0 && <InterestChips interests={interests} />}
-      <ul className="flex flex-col gap-2 text-sm">
-        <li className="flex items-center gap-2">
-          {isPrivate ? <Lock className="size-4 shrink-0" /> : <Globe className="size-4 shrink-0" />}
+      <AboutFacts>
+        <AboutFact icon={isPrivate ? Lock : Globe}>
           {isPrivate ? "Private · members read and post; joining takes a request" : "Public · anyone can read and join"}
-        </li>
+        </AboutFact>
         {createdAt && (
-          <li className="flex items-center gap-2">
-            <Clock className="size-4 shrink-0" />
+          <AboutFact icon={Clock}>
             <span>
               Created {monthYear(createdAt)} by{" "}
               <PersonaLink
@@ -48,24 +44,20 @@ export function ChannelAbout({
                 {owner.username}
               </PersonaLink>
             </span>
-          </li>
+          </AboutFact>
         )}
-        <li className="flex items-center gap-2">
-          <ShieldCheck className="size-4 shrink-0" />
-          {minAge}+
-        </li>
+        <AboutFact icon={ShieldCheck}>{minAge}+</AboutFact>
         {community && (
-          <li className="flex items-center gap-2">
-            <Boxes className="size-4 shrink-0" />
+          <AboutFact icon={Boxes}>
             <span>
               Part of{" "}
               <Link to={`/communities/${community.slug}`} className="rounded-sm font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring">
                 {community.name}
               </Link>
             </span>
-          </li>
+          </AboutFact>
         )}
-      </ul>
-    </section>
+      </AboutFacts>
+    </AboutBlock>
   );
 }
