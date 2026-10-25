@@ -94,11 +94,11 @@ SELECT sqlc.embed(c),
 FROM communities c
 WHERE c.deleted_at IS NULL
   AND persona_meets_min_age(sqlc.arg(viewer_id)::bigint, c.min_age)
-  AND (sqlc.narg(interest_slug)::text IS NULL OR EXISTS (
+  AND (coalesce(cardinality(sqlc.arg(interest_slugs)::text[]), 0) = 0 OR EXISTS (
       SELECT 1
       FROM community_interests ci
       JOIN interests i ON i.id = ci.interest_id
-      WHERE ci.community_id = c.id AND i.slug = sqlc.narg(interest_slug)::text
+      WHERE ci.community_id = c.id AND i.slug = ANY(sqlc.arg(interest_slugs)::text[])
   ))
 ORDER BY c.created_at DESC, c.id DESC
 LIMIT sqlc.arg(lim) OFFSET sqlc.arg(off);

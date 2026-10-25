@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"shared/pkg/db"
 	"shared/pkg/graph/models"
 	"strconv"
 	"strings"
@@ -43,16 +44,52 @@ func parseFeedCursor(s string) (feedCursor, error) {
 }
 
 func (r *Resolver) feed(ctx context.Context, personaID int64, after *string, limit *int32) (*models.FeedPage, error) {
+	rows, err := r.Queries.ListFeedChannels(ctx, personaID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list feed channels: %w", err)
+	}
+	channels := make([]*models.FeedChannel, len(rows))
+	for i, row := range rows {
+		channels[i] = &models.FeedChannel{
+			ID:          row.ID,
+			Name:        row.Name,
+			Theme:       models.Theme(row.Theme),
+			Thumbnail:   row.Thumbnail,
+			CanModerate: row.CanModerate,
+		}
+	}
+	return r.channelPostsPage(ctx, personaID, channels, after, limit)
+}
+
+func (r *Resolver) discover(ctx context.Context, personaID int64, interests []string, all *bool, after *string, limit *int32) (*models.FeedPage, error) {
+	rows, err := r.Queries.ListDiscoverChannels(ctx, db.ListDiscoverChannelsParams{
+		PersonaID:     personaID,
+		AllChannels:   all != nil && *all,
+		InterestSlugs: interests,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list discover channels: %w", err)
+	}
+	channels := make([]*models.FeedChannel, len(rows))
+	for i, row := range rows {
+		channels[i] = &models.FeedChannel{
+			ID:          row.ID,
+			Name:        row.Name,
+			Theme:       models.Theme(row.Theme),
+			Thumbnail:   row.Thumbnail,
+			CanModerate: row.CanModerate,
+		}
+	}
+	return r.channelPostsPage(ctx, personaID, channels, after, limit)
+}
+
+// channelPostsPage pages the posts of the given channels, newest first.
+func (r *Resolver) channelPostsPage(ctx context.Context, personaID int64, rows []*models.FeedChannel, after *string, limit *int32) (*models.FeedPage, error) {
 	page := &models.FeedPage{Posts: []*models.Post{}, Channels: []*models.FeedChannel{}}
 
 	size := int64(feedDefaultLimit)
 	if limit != nil && *limit > 0 {
 		size = min(int64(*limit), feedMaxLimit)
-	}
-
-	rows, err := r.Queries.ListFeedChannels(ctx, personaID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list feed channels: %w", err)
 	}
 	if len(rows) == 0 {
 		return page, nil
@@ -61,12 +98,7 @@ func (r *Resolver) feed(ctx context.Context, personaID int64, after *string, lim
 	channelIDs := make([]int64, len(rows))
 	for i, row := range rows {
 		channelIDs[i] = row.ID
-		channels[row.ID] = &models.FeedChannel{
-			ID:          row.ID,
-			Name:        row.Name,
-			Theme:       models.Theme(row.Theme),
-			CanModerate: row.CanModerate,
-		}
+		channels[row.ID] = row
 	}
 
 	filter := bson.M{

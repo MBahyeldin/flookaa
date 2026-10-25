@@ -2,14 +2,16 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import type { Post, Comment, Owner } from "@/generated/graphql";
 
-// The feed shows posts of many channels, so it isn't a content owner.
-type FeedOwner = { id: string; type: "FEED" };
-type PageOwner = Owner | FeedOwner;
-type OwnerRef = Pick<Owner, "id" | "type"> | FeedOwner;
+// The feed and Discover show posts of many channels, so they aren't content owners.
+export type ListOwner = { id: string; type: "FEED" | "DISCOVER" };
+type PageOwner = Owner | ListOwner;
+type OwnerRef = Pick<Owner, "id" | "type"> | ListOwner;
 
-/** The page's owner as a GraphQL owner, or null on the feed. */
+const isListOwner = (owner: PageOwner): owner is ListOwner => owner.type === "FEED" || owner.type === "DISCOVER";
+
+/** The page's owner as a GraphQL owner, or null on the feed and Discover. */
 export const contentOwner = (owner: PageOwner | null): Owner | null =>
-  owner && owner.type !== "FEED" ? owner : null;
+  owner && !isListOwner(owner) ? owner : null;
 
 const sameOwner = (a: OwnerRef | null, b: OwnerRef | null) =>
   !!a && !!b && a.type === b.type && String(a.id) === String(b.id);

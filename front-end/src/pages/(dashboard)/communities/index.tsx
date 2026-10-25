@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Boxes, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InterestFilter from "@/components/interests/InterestFilter";
+import { interestNamesLabel, useInterestParams } from "@/components/interests/useInterestParams";
 import { listCommunities } from "@/services/communities";
 import type { Community } from "@/types/community";
 import { SkeletonList } from "@/components/ui/skeleton";
@@ -15,25 +16,14 @@ export default function CommunitiesPage() {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const interest = searchParams.get("interest") ?? "";
-  const [interestName, setInterestName] = useState("");
-
-  const selectInterest = (slug: string) =>
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        if (slug) next.set("interest", slug);
-        else next.delete("interest");
-        return next;
-      },
-      { replace: true },
-    );
+  const { interests, setInterests } = useInterestParams();
+  const interestsKey = interests.join(",");
+  const [interestNames, setInterestNames] = useState<string[]>([]);
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    listCommunities(interest || undefined).then((r) => {
+    listCommunities(interestsKey ? interestsKey.split(",") : []).then((r) => {
       if (!alive) return;
       setFailed(!r.ok);
       setCommunities(r.ok ? r.data.communities : []);
@@ -42,7 +32,7 @@ export default function CommunitiesPage() {
     return () => {
       alive = false;
     };
-  }, [interest, attempt]);
+  }, [interestsKey, attempt]);
 
   return (
     <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -60,7 +50,7 @@ export default function CommunitiesPage() {
       </div>
 
       <div className="mb-6">
-        <InterestFilter value={interest} onChange={selectInterest} onSelectedName={setInterestName} />
+        <InterestFilter value={interests} onChange={setInterests} onSelectedNames={setInterestNames} />
       </div>
 
       {loading ? (
@@ -68,12 +58,12 @@ export default function CommunitiesPage() {
       ) : failed ? (
         <ErrorState title="Couldn't load communities" onRetry={() => setAttempt((n) => n + 1)} />
       ) : communities.length === 0 ? (
-        interest ? (
+        interests.length > 0 ? (
           <EmptyState
             icon={Boxes}
-            title={interestName ? `No communities for ${interestName} yet` : "No communities with this interest yet"}
-            body="Try another interest, or start the first one."
-            action={<Button onClick={() => selectInterest("")}>Show all</Button>}
+            title={interestNames.length ? `No communities for ${interestNamesLabel(interestNames)} yet` : "No communities with these interests yet"}
+            body="Try other interests, or start the first one."
+            action={<Button onClick={() => setInterests([])}>Show all</Button>}
           />
         ) : (
           <EmptyState

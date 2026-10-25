@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Hash } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getChannels } from "@/services/channels";
 import InterestFilter from "@/components/interests/InterestFilter";
+import { interestNamesLabel, useInterestParams } from "@/components/interests/useInterestParams";
 import type { Channel } from "@/types/channel";
 import { ChannelTile } from "@/components/tile/ChannelTile";
 import { useIsUserLoggedIn } from "@/stores/UserProfileStore";
@@ -20,29 +21,18 @@ export default function ChannelsPage() {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const isUserLoggedIn = useIsUserLoggedIn();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const interest = searchParams.get("interest") ?? "";
-  const [interestName, setInterestName] = useState("");
+  const { interests, setInterests } = useInterestParams();
+  const interestsKey = interests.join(",");
+  const [interestNames, setInterestNames] = useState<string[]>([]);
 
   if (!isUserLoggedIn) {
     nagivate("/");
   }
 
-  const selectInterest = (slug: string) =>
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        if (slug) next.set("interest", slug);
-        else next.delete("interest");
-        return next;
-      },
-      { replace: true },
-    );
-
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    getChannels({ interest: interest || undefined }).then((response) => {
+    getChannels({ interests: interestsKey ? interestsKey.split(",") : [] }).then((response) => {
       if (!alive) return;
       setFailed(!response);
       setChannels(response?.channels ?? []);
@@ -51,7 +41,7 @@ export default function ChannelsPage() {
     return () => {
       alive = false;
     };
-  }, [interest, attempt]);
+  }, [interestsKey, attempt]);
 
   return (
     <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -69,7 +59,7 @@ export default function ChannelsPage() {
       </div>
 
       <div className="mb-6">
-        <InterestFilter value={interest} onChange={selectInterest} onSelectedName={setInterestName} />
+        <InterestFilter value={interests} onChange={setInterests} onSelectedNames={setInterestNames} />
       </div>
 
       {loading ? (
@@ -77,12 +67,12 @@ export default function ChannelsPage() {
       ) : failed ? (
         <ErrorState title="Couldn't load channels" onRetry={() => setAttempt((n) => n + 1)} />
       ) : channels.length === 0 ? (
-        interest ? (
+        interests.length > 0 ? (
           <EmptyState
             icon={Hash}
-            title={interestName ? `No channels for ${interestName} yet` : "No channels with this interest yet"}
-            body="Try another interest, or start the first one."
-            action={<Button onClick={() => selectInterest("")}>Show all</Button>}
+            title={interestNames.length ? `No channels for ${interestNamesLabel(interestNames)} yet` : "No channels with these interests yet"}
+            body="Try other interests, or start the first one."
+            action={<Button onClick={() => setInterests([])}>Show all</Button>}
           />
         ) : (
           <EmptyState

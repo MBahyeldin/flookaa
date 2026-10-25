@@ -534,6 +534,15 @@ func (r *queryResolver) GetFeed(ctx context.Context, after *string, limit *int32
 	return r.feed(ctx, personaId, after, limit)
 }
 
+// GetDiscover is the resolver for the getDiscover field.
+func (r *queryResolver) GetDiscover(ctx context.Context, interests []string, all *bool, after *string, limit *int32) (*models.FeedPage, error) {
+	personaId, err := getPersonaIdFromContext(ctx)
+	if err != nil || personaId == 0 {
+		return nil, fmt.Errorf("unauthenticated: %w", err)
+	}
+	return r.discover(ctx, personaId, interests, all, after, limit)
+}
+
 // Mutation returns graph.MutationResolver implementation.
 func (r *Resolver) Mutation() graph.MutationResolver { return &mutationResolver{r} }
 

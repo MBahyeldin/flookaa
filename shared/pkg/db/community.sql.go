@@ -631,21 +631,21 @@ SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility,
 FROM communities c
 WHERE c.deleted_at IS NULL
   AND persona_meets_min_age($1::bigint, c.min_age)
-  AND ($2::text IS NULL OR EXISTS (
+  AND (coalesce(cardinality($2::text[]), 0) = 0 OR EXISTS (
       SELECT 1
       FROM community_interests ci
       JOIN interests i ON i.id = ci.interest_id
-      WHERE ci.community_id = c.id AND i.slug = $2::text
+      WHERE ci.community_id = c.id AND i.slug = ANY($2::text[])
   ))
 ORDER BY c.created_at DESC, c.id DESC
 LIMIT $4 OFFSET $3
 `
 
 type ListCommunitiesParams struct {
-	ViewerID     int64
-	InterestSlug sql.NullString
-	Off          int64
-	Lim          int64
+	ViewerID      int64
+	InterestSlugs []string
+	Off           int64
+	Lim           int64
 }
 
 type ListCommunitiesRow struct {
@@ -656,7 +656,7 @@ type ListCommunitiesRow struct {
 func (q *Queries) ListCommunities(ctx context.Context, arg ListCommunitiesParams) ([]ListCommunitiesRow, error) {
 	rows, err := q.db.QueryContext(ctx, listCommunities,
 		arg.ViewerID,
-		arg.InterestSlug,
+		pq.Array(arg.InterestSlugs),
 		arg.Off,
 		arg.Lim,
 	)

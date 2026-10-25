@@ -14,6 +14,7 @@ import CreateCommunityPage from "@/pages/(dashboard)/communities/create";
 import CommunityPage from "@/pages/(dashboard)/communities/[slug]";
 import PersonaManagerPage from "@/pages/(dashboard)/persona-manager";
 import PersonaSettingsPage from "@/pages/(dashboard)/persona-manager/[id]";
+import DiscoverPage from "@/pages/(dashboard)/discover";
 import NotificationsPage from "@/pages/(dashboard)/notifications";
 import PersonaProfilePage from "@/pages/(dashboard)/personas/[id]";
 import FollowInvitePage from "@/pages/(dashboard)/follow/[token]";
@@ -28,6 +29,8 @@ export default function AppRouter() {
     <Routes>
       <Route path="/" element={<HomePage />} />
 
+
+      <Route path="/discover" element={<DiscoverPage />} />
 
       <Route path="/communities">
         <Route index element={<CommunitiesPage />} />

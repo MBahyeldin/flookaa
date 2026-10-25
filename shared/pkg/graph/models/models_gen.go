@@ -281,6 +281,7 @@ type FeedChannel struct {
 	ID          int64  `json:"id"`
 	Name        string `json:"name"`
 	Theme       Theme  `json:"theme"`
+	Thumbnail   string `json:"thumbnail"`
 	CanModerate bool   `json:"canModerate"`
 }
 

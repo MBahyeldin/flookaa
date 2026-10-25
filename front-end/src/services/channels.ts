@@ -8,11 +8,11 @@ if (!API_BASE_URL) {
 }
 
 export async function getChannels(
-  filter: { interest?: string; communityId?: number; limit?: number } = {},
+  filter: { interests?: string[]; communityId?: number; limit?: number } = {},
 ): Promise<{ channels: Channel[] } | null> {
   try {
     const params = new URLSearchParams();
-    if (filter.interest) params.set("interest", filter.interest);
+    for (const slug of filter.interests ?? []) params.append("interest", slug);
     if (filter.communityId) params.set("community_id", String(filter.communityId));
     if (filter.limit) params.set("limit", String(filter.limit));
     const query = params.size ? `?${params}` : "";

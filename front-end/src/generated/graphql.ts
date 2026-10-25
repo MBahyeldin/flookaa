@@ -321,6 +321,7 @@ export type FeedChannel = {
   id: Scalars['Int64']['output'];
   name: Scalars['String']['output'];
   theme: Theme;
+  thumbnail: Scalars['String']['output'];
 };
 
 export type FeedPage = {
@@ -617,6 +618,7 @@ export type Query = {
   __typename?: 'Query';
   getChannel?: Maybe<Channel>;
   getComments: Array<Comment>;
+  getDiscover: FeedPage;
   getFeed: FeedPage;
   getPosts: Array<Post>;
 };
@@ -631,6 +633,14 @@ export type QueryGetCommentsArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   parentId: Scalars['ObjectId']['input'];
+};
+
+
+export type QueryGetDiscoverArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  all?: InputMaybe<Scalars['Boolean']['input']>;
+  interests?: InputMaybe<Array<Scalars['String']['input']>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -853,13 +863,23 @@ export type GetCommentsQueryVariables = Exact<{
 
 export type GetCommentsQuery = { __typename?: 'Query', getComments: Array<{ __typename?: 'Comment', _id: any, type: PostType, parentId: any, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }> };
 
+export type GetDiscoverQueryVariables = Exact<{
+  interests?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
+  all?: InputMaybe<Scalars['Boolean']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type GetDiscoverQuery = { __typename?: 'Query', getDiscover: { __typename?: 'FeedPage', nextCursor?: string | null, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, channels: Array<{ __typename?: 'FeedChannel', id: any, name: string, theme: Theme, thumbnail: string, canModerate: boolean }> } };
+
 export type GetFeedQueryVariables = Exact<{
   after?: InputMaybe<Scalars['String']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
-export type GetFeedQuery = { __typename?: 'Query', getFeed: { __typename?: 'FeedPage', nextCursor?: string | null, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, channels: Array<{ __typename?: 'FeedChannel', id: any, name: string, theme: Theme, canModerate: boolean }> } };
+export type GetFeedQuery = { __typename?: 'Query', getFeed: { __typename?: 'FeedPage', nextCursor?: string | null, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, channels: Array<{ __typename?: 'FeedChannel', id: any, name: string, theme: Theme, thumbnail: string, canModerate: boolean }> } };
 
 export type GetPostsQueryVariables = Exact<{
   owner: OwnerInput;
@@ -1367,6 +1387,59 @@ export type GetCommentsQueryHookResult = ReturnType<typeof useGetCommentsQuery>;
 export type GetCommentsLazyQueryHookResult = ReturnType<typeof useGetCommentsLazyQuery>;
 export type GetCommentsSuspenseQueryHookResult = ReturnType<typeof useGetCommentsSuspenseQuery>;
 export type GetCommentsQueryResult = Apollo.QueryResult<GetCommentsQuery, GetCommentsQueryVariables>;
+export const GetDiscoverDocument = gql`
+    query GetDiscover($interests: [String!], $all: Boolean, $after: String, $limit: Int) {
+  getDiscover(interests: $interests, all: $all, after: $after, limit: $limit) {
+    posts {
+      ...PostFields
+    }
+    channels {
+      id
+      name
+      theme
+      thumbnail
+      canModerate
+    }
+    nextCursor
+  }
+}
+    ${PostFieldsFragmentDoc}`;
+
+/**
+ * __useGetDiscoverQuery__
+ *
+ * To run a query within a React component, call `useGetDiscoverQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetDiscoverQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetDiscoverQuery({
+ *   variables: {
+ *      interests: // value for 'interests'
+ *      all: // value for 'all'
+ *      after: // value for 'after'
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useGetDiscoverQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetDiscoverQuery, GetDiscoverQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetDiscoverQuery, GetDiscoverQueryVariables>(GetDiscoverDocument, options);
+      }
+export function useGetDiscoverLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetDiscoverQuery, GetDiscoverQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetDiscoverQuery, GetDiscoverQueryVariables>(GetDiscoverDocument, options);
+        }
+export function useGetDiscoverSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetDiscoverQuery, GetDiscoverQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetDiscoverQuery, GetDiscoverQueryVariables>(GetDiscoverDocument, options);
+        }
+export type GetDiscoverQueryHookResult = ReturnType<typeof useGetDiscoverQuery>;
+export type GetDiscoverLazyQueryHookResult = ReturnType<typeof useGetDiscoverLazyQuery>;
+export type GetDiscoverSuspenseQueryHookResult = ReturnType<typeof useGetDiscoverSuspenseQuery>;
+export type GetDiscoverQueryResult = Apollo.QueryResult<GetDiscoverQuery, GetDiscoverQueryVariables>;
 export const GetFeedDocument = gql`
     query GetFeed($after: String, $limit: Int) {
   getFeed(after: $after, limit: $limit) {
@@ -1377,6 +1450,7 @@ export const GetFeedDocument = gql`
       id
       name
       theme
+      thumbnail
       canModerate
     }
     nextCursor

@@ -22,8 +22,10 @@ async function call<T>(path: string, method = "GET", base = "/communities"): Pro
   }
 }
 
-export const listCommunities = (interest?: string) =>
-  call<{ communities: Community[] }>(`/${interest ? `?interest=${encodeURIComponent(interest)}` : ""}`);
+export const listCommunities = (interests: string[] = []) => {
+  const params = new URLSearchParams(interests.map((slug) => ["interest", slug]));
+  return call<{ communities: Community[] }>(`/${params.size ? `?${params}` : ""}`);
+};
 
 export const getCommunityBySlug = (slug: string) =>
   call<{ community: Community }>(`/by-slug/${encodeURIComponent(slug)}`);

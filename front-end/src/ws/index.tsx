@@ -1,5 +1,5 @@
  
-import type { SubscribeChannelPayload, SubscribeDefaultPayload, SubscribePersonaPayload, SubscribeCommunityPayload, SubscribeFeedPayload, WsEventMessage, WsMessage } from "@/types/Ws";
+import type { SubscribeChannelPayload, SubscribeDefaultPayload, SubscribePersonaPayload, SubscribeCommunityPayload, SubscribeFeedPayload, SubscribeDiscoverPayload, WsEventMessage, WsMessage } from "@/types/Ws";
 
 const WEBSOCKET_BASE_URL = import.meta.env.VITE_WEBSOCKET_BASE_URL;
 
@@ -7,7 +7,7 @@ if (!WEBSOCKET_BASE_URL) {
     throw new Error("WEBSOCKET_BASE_URL is not defined in environment variables");
 }
 
-type MessageListener = (payload: WsEventMessage) => void;
+export type MessageListener = (payload: WsEventMessage) => void;
 
 export default class WebSocketService {
     private static instance: WebSocketService;
@@ -198,6 +198,19 @@ export default class WebSocketService {
         const id = crypto.randomUUID();
         const payload = { owner: "FEED" as const };
         this.sendMessage<SubscribeFeedPayload>({ type: "SUBSCRIBE", payload, id });
+
+        const unsubscribe = this.subscribe(id, callback);
+        return () => {
+            unsubscribe();
+            this.sendMessage({ type: "UNSUBSCRIBE", payload, id });
+        };
+    }
+
+    // The same events for the channels of one Discover mode (neither = For you).
+    subscribeToDiscoverEvents(mode: { interests: string[]; all: boolean }, callback: MessageListener) {
+        const id = crypto.randomUUID();
+        const payload = { owner: "DISCOVER" as const, ...mode };
+        this.sendMessage<SubscribeDiscoverPayload>({ type: "SUBSCRIBE", payload, id });
 
         const unsubscribe = this.subscribe(id, callback);
         return () => {

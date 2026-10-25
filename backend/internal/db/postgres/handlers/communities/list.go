@@ -24,14 +24,13 @@ func (h *Handler) ListCommunities(c *gin.Context) {
 	if o, err := strconv.ParseInt(c.Query("offset"), 10, 64); err == nil && o >= 0 {
 		offset = o
 	}
-	interest := c.Query("interest")
 
 	ctx := c.Request.Context()
 	listed, err := h.q.ListCommunities(ctx, db.ListCommunitiesParams{
-		ViewerID:     personaID,
-		InterestSlug: sql.NullString{String: interest, Valid: interest != ""},
-		Lim:          limit,
-		Off:          offset,
+		ViewerID:      personaID,
+		InterestSlugs: c.QueryArray("interest"),
+		Lim:           limit,
+		Off:           offset,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

@@ -185,6 +185,7 @@ type ComplexityRoot struct {
 		ID          func(childComplexity int) int
 		Name        func(childComplexity int) int
 		Theme       func(childComplexity int) int
+		Thumbnail   func(childComplexity int) int
 	}
 
 	FeedPage struct {
@@ -317,6 +318,7 @@ type ComplexityRoot struct {
 	Query struct {
 		GetChannel  func(childComplexity int, id int64) int
 		GetComments func(childComplexity int, parentID string, limit *int32, offset *int32) int
+		GetDiscover func(childComplexity int, interests []string, all *bool, after *string, limit *int32) int
 		GetFeed     func(childComplexity int, after *string, limit *int32) int
 		GetPosts    func(childComplexity int, owner models.OwnerInput, ids []string, limit *int32, offset *int32) int
 	}
@@ -1105,6 +1107,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.FeedChannel.Theme(childComplexity), true
 
+	case "FeedChannel.thumbnail":
+		if e.complexity.FeedChannel.Thumbnail == nil {
+			break
+		}
+
+		return e.complexity.FeedChannel.Thumbnail(childComplexity), true
+
 	case "FeedPage.channels":
 		if e.complexity.FeedPage.Channels == nil {
 			break
@@ -1727,6 +1736,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.GetComments(childComplexity, args["parentId"].(string), args["limit"].(*int32), args["offset"].(*int32)), true
+
+	case "Query.getDiscover":
+		if e.complexity.Query.GetDiscover == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getDiscover_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetDiscover(childComplexity, args["interests"].([]string), args["all"].(*bool), args["after"].(*string), args["limit"].(*int32)), true
 
 	case "Query.getFeed":
 		if e.complexity.Query.GetFeed == nil {
@@ -2764,6 +2785,7 @@ type FeedChannel {
   id: Int64!
   name: String!
   theme: Theme!
+  thumbnail: String!
   canModerate: Boolean!
 }
 
@@ -2797,6 +2819,7 @@ type Query {
   getChannel(id: Int64!): Channel
 
   getFeed(after: String, limit: Int): FeedPage!
+  getDiscover(interests: [String!], all: Boolean, after: String, limit: Int): FeedPage!
 }
 
 `, BuiltIn: false},

@@ -156,11 +156,11 @@ SELECT
 FROM channels c
 WHERE c.deleted_at IS NULL
   AND persona_meets_min_age($1, c.min_age)
-  AND (sqlc.narg(interest_slug)::text IS NULL OR EXISTS (
+  AND (coalesce(cardinality(sqlc.arg(interest_slugs)::text[]), 0) = 0 OR EXISTS (
       SELECT 1
       FROM channel_interests ci
       JOIN interests i ON i.id = ci.interest_id
-      WHERE ci.channel_id = c.id AND i.slug = sqlc.narg(interest_slug)::text
+      WHERE ci.channel_id = c.id AND i.slug = ANY(sqlc.arg(interest_slugs)::text[])
   ))
   AND (sqlc.narg(community_id)::bigint IS NULL OR EXISTS (
       SELECT 1 FROM community_channels cc
@@ -429,6 +429,7 @@ SELECT
     c.id,
     c.name,
     channel_theme(c.theme, c.id)::theme_enum AS theme,
+    c.thumbnail,
     (
         c.owner_id = sqlc.arg(persona_id)::bigint
         OR EXISTS (
@@ -470,5 +471,69 @@ WHERE c.deleted_at IS NULL
                 AND cf.unfollowed_at IS NULL
           )
       )
+  )
+ORDER BY c.id;
+
+-- Discover: public channels the persona isn't in and doesn't follow; all of
+-- them, those tagged with any of the interests, or (neither) those sharing an
+-- interest with the persona.
+-- name: ListDiscoverChannels :many
+SELECT
+    c.id,
+    c.name,
+    channel_theme(c.theme, c.id)::theme_enum AS theme,
+    c.thumbnail,
+    (
+        c.owner_id = sqlc.arg(persona_id)::bigint
+        OR EXISTS (
+            SELECT 1
+            FROM channel_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.channel_id = c.id
+              AND cr.persona_id = sqlc.arg(persona_id)::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name IN ('moderator', 'Administrator')
+        )
+        OR EXISTS (
+            SELECT 1
+            FROM personas p
+            JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
+            JOIN roles r ON r.id = ur.role_id
+            WHERE p.id = sqlc.arg(persona_id)::bigint
+              AND r.name = 'Administrator'
+        )
+    )::boolean AS can_moderate
+FROM channels c
+WHERE c.deleted_at IS NULL
+  AND c.visibility = 'public'
+  AND persona_meets_min_age(sqlc.arg(persona_id)::bigint, c.min_age)
+  AND NOT EXISTS (
+      SELECT 1
+      FROM channel_members cm
+      WHERE cm.channel_id = c.id
+        AND cm.persona_id = sqlc.arg(persona_id)::bigint
+        AND cm.left_at IS NULL
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM channel_followers cf
+      WHERE cf.channel_id = c.id
+        AND cf.persona_id = sqlc.arg(persona_id)::bigint
+        AND cf.unfollowed_at IS NULL
+  )
+  AND (
+      sqlc.arg(all_channels)::boolean
+      OR (coalesce(cardinality(sqlc.arg(interest_slugs)::text[]), 0) > 0 AND EXISTS (
+          SELECT 1
+          FROM channel_interests ci
+          JOIN interests i ON i.id = ci.interest_id
+          WHERE ci.channel_id = c.id AND i.slug = ANY(sqlc.arg(interest_slugs)::text[])
+      ))
+      OR (coalesce(cardinality(sqlc.arg(interest_slugs)::text[]), 0) = 0 AND EXISTS (
+          SELECT 1
+          FROM channel_interests ci
+          JOIN persona_interests pi ON pi.interest_id = ci.interest_id
+          WHERE ci.channel_id = c.id AND pi.persona_id = sqlc.arg(persona_id)::bigint
+      ))
   )
 ORDER BY c.id;

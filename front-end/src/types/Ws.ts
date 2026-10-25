@@ -69,6 +69,12 @@ type SubscribeFeedPayload = {
   owner: "FEED";
 };
 
+type SubscribeDiscoverPayload = {
+  owner: "DISCOVER";
+  interests: string[];
+  all: boolean;
+};
+
 type Event = {
   name: EventType;
   action: EventActionType;
@@ -132,6 +138,7 @@ export type {
   SubscribePersonaPayload,
   SubscribeCommunityPayload,
   SubscribeFeedPayload,
+  SubscribeDiscoverPayload,
   Event,
   EventType,
   EventActionType,

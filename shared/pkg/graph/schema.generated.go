@@ -30,6 +30,7 @@ type QueryResolver interface {
 	GetComments(ctx context.Context, parentID string, limit *int32, offset *int32) ([]*models.Comment, error)
 	GetChannel(ctx context.Context, id int64) (*models.Channel, error)
 	GetFeed(ctx context.Context, after *string, limit *int32) (*models.FeedPage, error)
+	GetDiscover(ctx context.Context, interests []string, all *bool, after *string, limit *int32) (*models.FeedPage, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -131,6 +132,32 @@ func (ec *executionContext) field_Query_getComments_args(ctx context.Context, ra
 		return nil, err
 	}
 	args["offset"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getDiscover_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "interests", ec.unmarshalOString2ᚕstringᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["interests"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "all", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["all"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg3
 	return args, nil
 }
 
@@ -1784,6 +1811,35 @@ func (ec *executionContext) fieldContext_FeedChannel_theme(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _FeedChannel_thumbnail(ctx context.Context, field graphql.CollectedField, obj *models.FeedChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FeedChannel_thumbnail,
+		func(ctx context.Context) (any, error) {
+			return obj.Thumbnail, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FeedChannel_thumbnail(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FeedChannel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FeedChannel_canModerate(ctx context.Context, field graphql.CollectedField, obj *models.FeedChannel) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1908,6 +1964,8 @@ func (ec *executionContext) fieldContext_FeedPage_channels(_ context.Context, fi
 				return ec.fieldContext_FeedChannel_name(ctx, field)
 			case "theme":
 				return ec.fieldContext_FeedChannel_theme(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_FeedChannel_thumbnail(ctx, field)
 			case "canModerate":
 				return ec.fieldContext_FeedChannel_canModerate(ctx, field)
 			}
@@ -3994,6 +4052,55 @@ func (ec *executionContext) fieldContext_Query_getFeed(ctx context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_getDiscover(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_getDiscover,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().GetDiscover(ctx, fc.Args["interests"].([]string), fc.Args["all"].(*bool), fc.Args["after"].(*string), fc.Args["limit"].(*int32))
+		},
+		nil,
+		ec.marshalNFeedPage2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐFeedPage,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_getDiscover(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "posts":
+				return ec.fieldContext_FeedPage_posts(ctx, field)
+			case "channels":
+				return ec.fieldContext_FeedPage_channels(ctx, field)
+			case "nextCursor":
+				return ec.fieldContext_FeedPage_nextCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FeedPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getDiscover_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4793,6 +4900,11 @@ func (ec *executionContext) _FeedChannel(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "thumbnail":
+			out.Values[i] = ec._FeedChannel_thumbnail(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "canModerate":
 			out.Values[i] = ec._FeedChannel_canModerate(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -5489,6 +5601,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_getFeed(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getDiscover":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getDiscover(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

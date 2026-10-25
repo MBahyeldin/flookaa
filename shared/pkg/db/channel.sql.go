@@ -190,11 +190,11 @@ SELECT
 FROM channels c
 WHERE c.deleted_at IS NULL
   AND persona_meets_min_age($1, c.min_age)
-  AND ($4::text IS NULL OR EXISTS (
+  AND (coalesce(cardinality($4::text[]), 0) = 0 OR EXISTS (
       SELECT 1
       FROM channel_interests ci
       JOIN interests i ON i.id = ci.interest_id
-      WHERE ci.channel_id = c.id AND i.slug = $4::text
+      WHERE ci.channel_id = c.id AND i.slug = ANY($4::text[])
   ))
   AND ($5::bigint IS NULL OR EXISTS (
       SELECT 1 FROM community_channels cc
@@ -205,11 +205,11 @@ LIMIT $2 OFFSET $3
 `
 
 type GetAllChannelsParams struct {
-	OwnerID      int64
-	Limit        int64
-	Offset       int64
-	InterestSlug sql.NullString
-	CommunityID  sql.NullInt64
+	OwnerID       int64
+	Limit         int64
+	Offset        int64
+	InterestSlugs []string
+	CommunityID   sql.NullInt64
 }
 
 type GetAllChannelsRow struct {
@@ -231,7 +231,7 @@ func (q *Queries) GetAllChannels(ctx context.Context, arg GetAllChannelsParams) 
 		arg.OwnerID,
 		arg.Limit,
 		arg.Offset,
-		arg.InterestSlug,
+		pq.Array(arg.InterestSlugs),
 		arg.CommunityID,
 	)
 	if err != nil {
@@ -724,11 +724,120 @@ func (q *Queries) ListChannels(ctx context.Context, arg ListChannelsParams) ([]C
 	return items, nil
 }
 
+const listDiscoverChannels = `-- name: ListDiscoverChannels :many
+SELECT
+    c.id,
+    c.name,
+    channel_theme(c.theme, c.id)::theme_enum AS theme,
+    c.thumbnail,
+    (
+        c.owner_id = $1::bigint
+        OR EXISTS (
+            SELECT 1
+            FROM channel_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.channel_id = c.id
+              AND cr.persona_id = $1::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name IN ('moderator', 'Administrator')
+        )
+        OR EXISTS (
+            SELECT 1
+            FROM personas p
+            JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
+            JOIN roles r ON r.id = ur.role_id
+            WHERE p.id = $1::bigint
+              AND r.name = 'Administrator'
+        )
+    )::boolean AS can_moderate
+FROM channels c
+WHERE c.deleted_at IS NULL
+  AND c.visibility = 'public'
+  AND persona_meets_min_age($1::bigint, c.min_age)
+  AND NOT EXISTS (
+      SELECT 1
+      FROM channel_members cm
+      WHERE cm.channel_id = c.id
+        AND cm.persona_id = $1::bigint
+        AND cm.left_at IS NULL
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM channel_followers cf
+      WHERE cf.channel_id = c.id
+        AND cf.persona_id = $1::bigint
+        AND cf.unfollowed_at IS NULL
+  )
+  AND (
+      $2::boolean
+      OR (coalesce(cardinality($3::text[]), 0) > 0 AND EXISTS (
+          SELECT 1
+          FROM channel_interests ci
+          JOIN interests i ON i.id = ci.interest_id
+          WHERE ci.channel_id = c.id AND i.slug = ANY($3::text[])
+      ))
+      OR (coalesce(cardinality($3::text[]), 0) = 0 AND EXISTS (
+          SELECT 1
+          FROM channel_interests ci
+          JOIN persona_interests pi ON pi.interest_id = ci.interest_id
+          WHERE ci.channel_id = c.id AND pi.persona_id = $1::bigint
+      ))
+  )
+ORDER BY c.id
+`
+
+type ListDiscoverChannelsParams struct {
+	PersonaID     int64
+	AllChannels   bool
+	InterestSlugs []string
+}
+
+type ListDiscoverChannelsRow struct {
+	ID          int64
+	Name        string
+	Theme       ThemeEnum
+	Thumbnail   string
+	CanModerate bool
+}
+
+// Discover: public channels the persona isn't in and doesn't follow; all of
+// them, those tagged with any of the interests, or (neither) those sharing an
+// interest with the persona.
+func (q *Queries) ListDiscoverChannels(ctx context.Context, arg ListDiscoverChannelsParams) ([]ListDiscoverChannelsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listDiscoverChannels, arg.PersonaID, arg.AllChannels, pq.Array(arg.InterestSlugs))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDiscoverChannelsRow
+	for rows.Next() {
+		var i ListDiscoverChannelsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Theme,
+			&i.Thumbnail,
+			&i.CanModerate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listFeedChannels = `-- name: ListFeedChannels :many
 SELECT
     c.id,
     c.name,
     channel_theme(c.theme, c.id)::theme_enum AS theme,
+    c.thumbnail,
     (
         c.owner_id = $1::bigint
         OR EXISTS (
@@ -778,6 +887,7 @@ type ListFeedChannelsRow struct {
 	ID          int64
 	Name        string
 	Theme       ThemeEnum
+	Thumbnail   string
 	CanModerate bool
 }
 
@@ -796,6 +906,7 @@ func (q *Queries) ListFeedChannels(ctx context.Context, personaID int64) ([]List
 			&i.ID,
 			&i.Name,
 			&i.Theme,
+			&i.Thumbnail,
 			&i.CanModerate,
 		); err != nil {
 			return nil, err

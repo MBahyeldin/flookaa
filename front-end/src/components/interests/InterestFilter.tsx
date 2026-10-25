@@ -3,21 +3,30 @@ import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { ErrorState } from "@/components/ui/error-state";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { SkeletonList } from "@/components/ui/skeleton";
 import { getPersonaInterests } from "@/services/interests";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import type { Interest, InterestGroup } from "@/types/interest";
 
-/** One interest at a time, by slug; "" is All. The row shows the current persona's interests, the sheet all of them. */
+/**
+ * Any number of interests, by slug; none is All. The row shows the current
+ * persona's interests, the sheet all of them. `forYou` adds a first chip for a
+ * mode of its own (Discover).
+ */
 export default function InterestFilter({
   value,
   onChange,
-  onSelectedName,
+  onSelectedNames,
+  onMineLoaded,
+  forYou,
 }: {
-  value: string;
-  onChange: (slug: string) => void;
-  onSelectedName?: (name: string) => void;
+  value: string[];
+  onChange: (slugs: string[]) => void;
+  onSelectedNames?: (names: string[]) => void;
+  onMineLoaded?: (ids: number[]) => void;
+  forYou?: { selected: boolean; onSelect: () => void };
 }) {
   const persona = useUserProfileStore((s) => s.persona);
   const [groups, setGroups] = useState<InterestGroup[] | null>(null);
@@ -42,37 +51,47 @@ export default function InterestFilter({
     };
   }, [persona, attempt]);
 
+  useEffect(() => {
+    if (groups) onMineLoaded?.(mine);
+  }, [groups, mine, onMineLoaded]);
+
   const all = groups?.flatMap((g) => g.interests) ?? [];
-  const selected = all.find((i) => i.slug === value);
+  const picked = new Set(value);
+  const selected = all.filter((i) => picked.has(i.slug));
   const mineSet = new Set(mine);
-  const row = all.filter((i) => mineSet.has(i.id));
-  if (selected && !mineSet.has(selected.id)) row.unshift(selected);
+  const row = [...selected.filter((i) => !mineSet.has(i.id)), ...all.filter((i) => mineSet.has(i.id))];
 
-  const selectedName = selected?.name ?? "";
-  useEffect(() => onSelectedName?.(selectedName), [selectedName, onSelectedName]);
+  const selectedNames = selected.map((i) => i.name).join("\n");
+  useEffect(() => onSelectedNames?.(selectedNames ? selectedNames.split("\n") : []), [selectedNames, onSelectedNames]);
 
-  const pick = (slug: string) => onChange(value === slug ? "" : slug);
+  const toggle = (slug: string) => onChange(picked.has(slug) ? value.filter((s) => s !== slug) : [...value, slug]);
 
   return (
     <div className="flex items-center gap-3">
       <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <Chip kind="filter" selected={!value} onClick={() => onChange("")}>
+        {forYou && (
+          <Chip kind="filter" selected={forYou.selected} onClick={forYou.onSelect}>
+            For you
+          </Chip>
+        )}
+        <Chip kind="filter" selected={value.length === 0 && !forYou?.selected} onClick={() => onChange([])}>
           All
         </Chip>
         {row.map((i) => (
-          <InterestChip key={i.id} interest={i} selected={value === i.slug} onPick={pick} />
+          <InterestChip key={i.id} interest={i} selected={picked.has(i.slug)} onPick={toggle} />
         ))}
       </div>
       <Button variant="outline" size="sm" className="shrink-0" onClick={() => setOpen(true)}>
         <SlidersHorizontal />
         All interests
+        {value.length > 0 && <Badge variant="count">{value.length}</Badge>}
       </Button>
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-md">
           <SheetHeader>
             <SheetTitle>All interests</SheetTitle>
-            <SheetDescription>Show only what's tagged with one interest.</SheetDescription>
+            <SheetDescription>Show what's tagged with any of the interests you pick.</SheetDescription>
           </SheetHeader>
           <div className="flex flex-col gap-6 px-4 pb-6">
             {failed ? (
@@ -87,21 +106,21 @@ export default function InterestFilter({
                     <h3 className="text-overline text-muted-foreground">{g.name}</h3>
                     <div className="flex flex-wrap gap-2">
                       {g.interests.map((i) => (
-                        <InterestChip
-                          key={i.id}
-                          interest={i}
-                          selected={value === i.slug}
-                          onPick={(slug) => {
-                            pick(slug);
-                            setOpen(false);
-                          }}
-                        />
+                        <InterestChip key={i.id} interest={i} selected={picked.has(i.slug)} onPick={toggle} />
                       ))}
                     </div>
                   </section>
                 ))
             )}
           </div>
+          <SheetFooter className="sticky bottom-0 flex-row justify-end gap-2 border-t bg-background">
+            {value.length > 0 && (
+              <Button variant="ghost" onClick={() => onChange([])}>
+                Clear
+              </Button>
+            )}
+            <Button onClick={() => setOpen(false)}>Done</Button>
+          </SheetFooter>
         </SheetContent>
       </Sheet>
     </div>

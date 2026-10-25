@@ -247,6 +247,7 @@ type FeedChannel {
   id: Int64!
   name: String!
   theme: Theme!
+  thumbnail: String!
   canModerate: Boolean!
 }
 
@@ -280,5 +281,6 @@ type Query {
   getChannel(id: Int64!): Channel
 
   getFeed(after: String, limit: Int): FeedPage!
+  getDiscover(interests: [String!], all: Boolean, after: String, limit: Int): FeedPage!
 }
 

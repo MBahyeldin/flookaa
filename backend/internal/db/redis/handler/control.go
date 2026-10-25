@@ -34,6 +34,7 @@ const (
 	OwnerTypeCommunity OwnerType = "COMMUNITY"
 	OwnerTypeDefault   OwnerType = "DEFAULT"
 	OwnerTypeFeed      OwnerType = "FEED"
+	OwnerTypeDiscover  OwnerType = "DISCOVER"
 )
 
 type Payload struct {
@@ -41,6 +42,8 @@ type Payload struct {
 	EventAction string    `json:"event_action"`
 	Owner       OwnerType `json:"owner"`
 	OwnerID     int64     `json:"owner_id"`
+	Interests   []string  `json:"interests"`
+	All         bool      `json:"all"`
 }
 
 type Handler struct {
@@ -91,6 +94,9 @@ func (h *Handler) Control(c *gin.Context) {
 
 	case OwnerTypeFeed:
 		h.feed(c, bodyData, personaIdInt64)
+
+	case OwnerTypeDiscover:
+		h.discover(c, bodyData, personaIdInt64)
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid owner type %s", bodyData.Payload.Owner)})
 		return

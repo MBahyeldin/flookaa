@@ -89,11 +89,11 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 	}
 
 	channels, err := q.GetAllChannels(ctx, db.GetAllChannelsParams{
-		Limit:        limit,
-		Offset:       offset,
-		OwnerID:      personaId,
-		InterestSlug: sql.NullString{String: c.Query("interest"), Valid: c.Query("interest") != ""},
-		CommunityID:  communityID,
+		Limit:         limit,
+		Offset:        offset,
+		OwnerID:       personaId,
+		InterestSlugs: c.QueryArray("interest"),
+		CommunityID:   communityID,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
