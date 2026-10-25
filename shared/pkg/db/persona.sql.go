@@ -98,9 +98,9 @@ func (q *Queries) CancelInvitationsFrom(ctx context.Context, personaID int64) ([
 }
 
 const createPersona = `-- name: CreatePersona :one
-INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, privacy, show_on_profile, theme, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, $10, $11, NOW(), NOW())
-RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, theme, created_at, updated_at, deleted_at, invite_token
+INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, privacy, show_on_profile, theme, cover_pattern, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, $10, $11, $12, NOW(), NOW())
+RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, theme, cover_pattern, created_at, updated_at, deleted_at, invite_token
 `
 
 type CreatePersonaParams struct {
@@ -115,6 +115,7 @@ type CreatePersonaParams struct {
 	Privacy       PersonaPrivacyEnum
 	ShowOnProfile bool
 	Theme         ThemeEnum
+	CoverPattern  CoverPatternEnum
 }
 
 // ------------------------------
@@ -133,6 +134,7 @@ func (q *Queries) CreatePersona(ctx context.Context, arg CreatePersonaParams) (P
 		arg.Privacy,
 		arg.ShowOnProfile,
 		arg.Theme,
+		arg.CoverPattern,
 	)
 	var i Persona
 	err := row.Scan(
@@ -149,6 +151,7 @@ func (q *Queries) CreatePersona(ctx context.Context, arg CreatePersonaParams) (P
 		&i.IsDefault,
 		&i.ShowOnProfile,
 		&i.Theme,
+		&i.CoverPattern,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -206,7 +209,7 @@ func (q *Queries) FollowPersona(ctx context.Context, arg FollowPersonaParams) (i
 }
 
 const getDefaultPersonaByUserId = `-- name: GetDefaultPersonaByUserId :one
-SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, theme, created_at, updated_at, deleted_at, invite_token
+SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, theme, cover_pattern, created_at, updated_at, deleted_at, invite_token
 FROM personas
 WHERE user_id = $1 AND is_default = TRUE
 LIMIT 1
@@ -232,6 +235,7 @@ func (q *Queries) GetDefaultPersonaByUserId(ctx context.Context, userID int64) (
 		&i.IsDefault,
 		&i.ShowOnProfile,
 		&i.Theme,
+		&i.CoverPattern,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -382,7 +386,7 @@ func (q *Queries) GetPersonaBasicInfo(ctx context.Context, id int64) (GetPersona
 }
 
 const getPersonaByIdAndUserId = `-- name: GetPersonaByIdAndUserId :one
-SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, theme, created_at, updated_at, deleted_at, invite_token
+SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, theme, cover_pattern, created_at, updated_at, deleted_at, invite_token
 FROM personas
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 `
@@ -412,6 +416,7 @@ func (q *Queries) GetPersonaByIdAndUserId(ctx context.Context, arg GetPersonaByI
 		&i.IsDefault,
 		&i.ShowOnProfile,
 		&i.Theme,
+		&i.CoverPattern,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -469,7 +474,9 @@ SELECT
               AND f.status = 'active' AND f.unfollowed_at IS NULL
         ),
         false
-    )::boolean AS can_invite
+    )::boolean AS can_invite,
+    t.theme,
+    t.cover_pattern
 FROM personas t
 LEFT JOIN personas vp ON vp.id = $1::bigint AND vp.deleted_at IS NULL
 LEFT JOIN persona_followers v
@@ -492,6 +499,8 @@ type GetPersonaFollowInfoRow struct {
 	Invited          bool
 	InvitedYou       bool
 	CanInvite        bool
+	Theme            ThemeEnum
+	CoverPattern     CoverPatternEnum
 }
 
 // -------------------------------
@@ -508,6 +517,8 @@ func (q *Queries) GetPersonaFollowInfo(ctx context.Context, arg GetPersonaFollow
 		&i.Invited,
 		&i.InvitedYou,
 		&i.CanInvite,
+		&i.Theme,
+		&i.CoverPattern,
 	)
 	return i, err
 }
@@ -641,7 +652,7 @@ func (q *Queries) GetPersonaStats(ctx context.Context, id int64) (GetPersonaStat
 }
 
 const getUserPersonasByUserId = `-- name: GetUserPersonasByUserId :many
-SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, theme, created_at, updated_at, deleted_at, invite_token
+SELECT id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, theme, cover_pattern, created_at, updated_at, deleted_at, invite_token
 FROM personas
 WHERE user_id = $1 AND deleted_at IS NULL
 ORDER BY created_at DESC
@@ -673,6 +684,7 @@ func (q *Queries) GetUserPersonasByUserId(ctx context.Context, userID int64) ([]
 			&i.IsDefault,
 			&i.ShowOnProfile,
 			&i.Theme,
+			&i.CoverPattern,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -717,7 +729,12 @@ func (q *Queries) InvitePersona(ctx context.Context, arg InvitePersonaParams) (i
 
 const listConnectedPersonas = `-- name: ListConnectedPersonas :many
 SELECT p.id, p.name, p.first_name, p.last_name, p.slug, p.thumbnail, p.bio,
-    pf.status AS follow_status
+    pf.status AS follow_status,
+    (SELECT COUNT(*)
+     FROM persona_followers c
+     JOIN personas f ON f.id = c.follower_persona_id AND f.deleted_at IS NULL
+     WHERE c.persona_id = p.id AND c.status = 'active' AND c.unfollowed_at IS NULL
+    )::bigint AS followers_count
 FROM personas s
 JOIN personas p ON p.user_id = s.user_id AND p.id <> s.id
 LEFT JOIN persona_followers pf
@@ -736,14 +753,15 @@ type ListConnectedPersonasParams struct {
 }
 
 type ListConnectedPersonasRow struct {
-	ID           int64
-	Name         string
-	FirstName    string
-	LastName     string
-	Slug         string
-	Thumbnail    sql.NullString
-	Bio          sql.NullString
-	FollowStatus NullPersonaFollowStatusEnum
+	ID             int64
+	Name           string
+	FirstName      string
+	LastName       string
+	Slug           string
+	Thumbnail      sql.NullString
+	Bio            sql.NullString
+	FollowStatus   NullPersonaFollowStatusEnum
+	FollowersCount int64
 }
 
 // -------------------------------
@@ -767,6 +785,7 @@ func (q *Queries) ListConnectedPersonas(ctx context.Context, arg ListConnectedPe
 			&i.Thumbnail,
 			&i.Bio,
 			&i.FollowStatus,
+			&i.FollowersCount,
 		); err != nil {
 			return nil, err
 		}
@@ -1014,35 +1033,7 @@ SELECT
     t.bio,
     t.slug,
     t.privacy,
-    (
-        t.privacy = 'public'
-        OR t.user_id = (SELECT v.user_id FROM personas v WHERE v.id = $1::bigint)
-        OR (t.privacy = 'private' AND EXISTS (
-            SELECT 1
-            FROM persona_followers pf
-            WHERE pf.persona_id = t.id
-              AND pf.follower_persona_id = $1::bigint
-              AND pf.status = 'active'
-              AND pf.unfollowed_at IS NULL
-        ))
-        -- A pending invitation shows the inviter to the invitee.
-        OR (t.privacy = 'private' AND EXISTS (
-            SELECT 1
-            FROM persona_follow_invitations i
-            WHERE i.persona_id = t.id
-              AND i.invitee_persona_id = $1::bigint
-              AND i.status = 'pending'
-        ))
-        -- Following someone (or asking to) shows you to them.
-        OR EXISTS (
-            SELECT 1
-            FROM persona_followers pf
-            WHERE pf.persona_id = $1::bigint
-              AND pf.follower_persona_id = t.id
-              AND pf.status IN ('pending', 'active')
-              AND pf.unfollowed_at IS NULL
-        )
-    )::boolean AS visible
+    persona_visible_to(t.id, $1::bigint)::boolean AS visible
 FROM personas t
 WHERE t.id = ANY($2::bigint[])
   AND t.deleted_at IS NULL
@@ -1134,10 +1125,11 @@ SET name = COALESCE($3, name),
     privacy = COALESCE($10, privacy),
     show_on_profile = $11,
     theme = $12,
+    cover_pattern = $13,
     invite_token = CASE WHEN COALESCE($10, privacy) = 'private' THEN invite_token END,
     updated_at = NOW()
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
-RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, theme, created_at, updated_at, deleted_at, invite_token
+RETURNING id, user_id, name, description, slug, first_name, last_name, thumbnail, bio, privacy, is_default, show_on_profile, theme, cover_pattern, created_at, updated_at, deleted_at, invite_token
 `
 
 type UpdatePersonaByIdAndUserIdParams struct {
@@ -1153,6 +1145,7 @@ type UpdatePersonaByIdAndUserIdParams struct {
 	Privacy       PersonaPrivacyEnum
 	ShowOnProfile bool
 	Theme         ThemeEnum
+	CoverPattern  CoverPatternEnum
 }
 
 // -------------------------------
@@ -1172,6 +1165,7 @@ func (q *Queries) UpdatePersonaByIdAndUserId(ctx context.Context, arg UpdatePers
 		arg.Privacy,
 		arg.ShowOnProfile,
 		arg.Theme,
+		arg.CoverPattern,
 	)
 	var i Persona
 	err := row.Scan(
@@ -1188,6 +1182,7 @@ func (q *Queries) UpdatePersonaByIdAndUserId(ctx context.Context, arg UpdatePers
 		&i.IsDefault,
 		&i.ShowOnProfile,
 		&i.Theme,
+		&i.CoverPattern,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,

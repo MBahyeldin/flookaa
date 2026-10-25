@@ -629,6 +629,7 @@ type NotificationScopeEnum string
 
 const (
 	NotificationScopeEnumCHANNEL NotificationScopeEnum = "CHANNEL"
+	NotificationScopeEnumPERSONA NotificationScopeEnum = "PERSONA"
 )
 
 func (e *NotificationScopeEnum) Scan(src interface{}) error {
@@ -668,7 +669,8 @@ func (ns NullNotificationScopeEnum) Value() (driver.Value, error) {
 
 func (e NotificationScopeEnum) Valid() bool {
 	switch e {
-	case NotificationScopeEnumCHANNEL:
+	case NotificationScopeEnumCHANNEL,
+		NotificationScopeEnumPERSONA:
 		return true
 	}
 	return false
@@ -1328,6 +1330,7 @@ type Persona struct {
 	IsDefault     sql.NullBool
 	ShowOnProfile bool
 	Theme         ThemeEnum
+	CoverPattern  CoverPatternEnum
 	CreatedAt     sql.NullTime
 	UpdatedAt     sql.NullTime
 	DeletedAt     sql.NullTime

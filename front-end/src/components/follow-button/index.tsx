@@ -13,6 +13,7 @@ export function FollowButton({
   status,
   requiresApproval = false,
   followLabel = "Follow",
+  size = "sm",
   onChange,
 }: {
   personaId: number;
@@ -20,6 +21,7 @@ export function FollowButton({
   status: FollowStatus;
   requiresApproval?: boolean;
   followLabel?: string;
+  size?: "sm" | "default";
   onChange: (status: FollowStatus) => void;
 }) {
   const [busy, setBusy] = useState(false);
@@ -56,9 +58,9 @@ export function FollowButton({
 
   return (
     <Button
-      size="sm"
+      size={size}
       variant={status ? "secondary" : "default"}
-      disabled={busy}
+      loading={busy}
       onClick={handleClick}
     >
       {status ? LABELS[status] : followLabel}

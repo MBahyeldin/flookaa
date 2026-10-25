@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS persona_visible_to(BIGINT, BIGINT);

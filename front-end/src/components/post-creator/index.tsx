@@ -65,7 +65,9 @@ function invalidMessages(invalid: InvalidBlock[]): Map<string, string> {
 }
 
 export function PostCreator(props: {
+  // "New post in <channelName>", or `title` when given.
   channelName: string;
+  title?: string;
   // A full-screen sheet on phones, a card in place elsewhere.
   layout?: "card" | "sheet";
   // Opens that block's insert form as the composer opens.
@@ -277,7 +279,7 @@ export function PostCreator(props: {
               <XIcon className="size-5" />
             </Button>
             <SheetTitle className="min-w-0 flex-1 truncate text-center text-sm font-medium">
-              New post in {props.channelName}
+              {props.title ?? `New post in ${props.channelName}`}
             </SheetTitle>
             <SheetDescription className="sr-only">Write a post as {displayName}</SheetDescription>
             {postButton}

@@ -13,8 +13,13 @@ import (
 // author of what was commented on or liked; deletes take notifications away.
 func (w *Worker) content(ctx context.Context, m message, eventAt time.Time) error {
 	e := m.Event
-	// Only channel-owned content exists (and has access rules) for now.
-	if e.Owner != db.OwnerEnumCHANNEL {
+	var where *scope
+	switch e.Owner {
+	case db.OwnerEnumCHANNEL:
+		where = channelScope(e.OwnerID)
+	case db.OwnerEnumPERSONA:
+		where = wallScope(e.OwnerID)
+	default:
 		return nil
 	}
 
@@ -29,7 +34,7 @@ func (w *Worker) content(ctx context.Context, m message, eventAt time.Time) erro
 			recipientID: *e.RecipientID,
 			kind:        kind,
 			subjectID:   e.TargetId,
-			scope:       channelScope(e.OwnerID),
+			scope:       where,
 			data:        contentData(e.PostID),
 		}, e.ActorID, eventAt)
 
@@ -42,7 +47,7 @@ func (w *Worker) content(ctx context.Context, m message, eventAt time.Time) erro
 			recipientID: *e.RecipientID,
 			kind:        kind,
 			subjectID:   e.TargetId,
-			scope:       channelScope(e.OwnerID),
+			scope:       where,
 			data:        contentData(e.PostID),
 		}, e.ActorID, eventAt)
 

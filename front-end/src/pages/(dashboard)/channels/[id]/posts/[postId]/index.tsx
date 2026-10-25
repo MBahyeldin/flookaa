@@ -143,7 +143,7 @@ function PostView({ channelId, postId }: { channelId: string; postId: string }) 
         onJoin={handleJoin}
       />
       <div className="mx-auto flex w-full max-w-[712px] flex-col gap-10 px-4 py-8 md:py-12">
-        <PostArticle post={post} channel={channel} />
+        <PostArticle post={post} place={{ name: channel.name, href: `/channels/${channel.id}` }} />
         <CommentSection parentId={post._id} totalCount={post.meta.commentsCount} composer={joinPrompt} />
       </div>
     </div>

@@ -58,7 +58,7 @@ type Notification = {
   kind: string;
   subject: { type: "POST" | "COMMENT" | "CHANNEL" | "PERSONA" | "COMMUNITY"; id: string };
   /** Null for personal (membership, follow) notifications. */
-  scope: { type: "CHANNEL"; id: number } | null;
+  scope: { type: "CHANNEL" | "PERSONA"; id: number } | null;
   /** How many personas are behind it (1 for single-actor kinds). */
   count: number;
   /** Null for system kinds or a deleted persona. */

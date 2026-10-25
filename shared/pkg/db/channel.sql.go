@@ -983,6 +983,137 @@ func (q *Queries) ListPendingJoinRequests(ctx context.Context, channelID int64) 
 	return items, nil
 }
 
+const listProfileChannels = `-- name: ListProfileChannels :many
+SELECT
+    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern,
+    channel_theme(c.theme, c.id)::theme_enum AS effective_theme,
+    (c.owner_id = $1::bigint) AS is_owner,
+    EXISTS (
+        SELECT 1
+        FROM channel_members cm
+        WHERE cm.channel_id = c.id
+          AND cm.persona_id = $1::bigint
+          AND cm.left_at IS NULL AND cm.status = 'active'
+    ) AS is_member,
+    EXISTS (
+        SELECT 1
+        FROM channel_members cm
+        WHERE cm.channel_id = c.id
+          AND cm.persona_id = $1::bigint
+          AND cm.left_at IS NULL AND cm.status = 'pending'
+    ) AS is_pending,
+    EXISTS (
+        SELECT 1
+        FROM channel_followers cf
+        WHERE cf.channel_id = c.id
+          AND cf.persona_id = $1::bigint
+          AND cf.unfollowed_at IS NULL
+    ) AS is_follower,
+    (
+        SELECT COUNT(*)
+        FROM channel_members cm
+        WHERE cm.channel_id = c.id
+          AND cm.left_at IS NULL AND cm.status = 'active'
+    )::int AS members_count,
+    (
+        SELECT COUNT(DISTINCT cf.persona_id)
+        FROM channel_followers cf
+        WHERE cf.channel_id = c.id
+          AND cf.unfollowed_at IS NULL
+    )::int AS followers_count
+FROM channels c
+JOIN LATERAL (
+    SELECT MAX(pm.joined_at) AS joined_at
+    FROM channel_members pm
+    WHERE pm.channel_id = c.id
+      AND pm.persona_id = $2::bigint
+      AND pm.left_at IS NULL AND pm.status = 'active'
+) m ON m.joined_at IS NOT NULL
+WHERE c.deleted_at IS NULL
+  AND persona_meets_min_age($1::bigint, c.min_age)
+  AND (
+      c.visibility = 'public'
+      OR EXISTS (
+          SELECT 1
+          FROM channel_members vm
+          WHERE vm.channel_id = c.id
+            AND vm.persona_id = $1::bigint
+            AND vm.left_at IS NULL AND vm.status = 'active'
+      )
+  )
+ORDER BY m.joined_at DESC, c.id DESC
+LIMIT $4::bigint OFFSET $3::bigint
+`
+
+type ListProfileChannelsParams struct {
+	ViewerID  int64
+	PersonaID int64
+	RowOffset int64
+	RowLimit  int64
+}
+
+type ListProfileChannelsRow struct {
+	Channel        Channel
+	EffectiveTheme ThemeEnum
+	IsOwner        bool
+	IsMember       bool
+	IsPending      bool
+	IsFollower     bool
+	MembersCount   int32
+	FollowersCount int32
+}
+
+// Profile Channels tab: the persona's active memberships the viewer can read,
+// which each channel's member list already shows the viewer.
+func (q *Queries) ListProfileChannels(ctx context.Context, arg ListProfileChannelsParams) ([]ListProfileChannelsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listProfileChannels,
+		arg.ViewerID,
+		arg.PersonaID,
+		arg.RowOffset,
+		arg.RowLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListProfileChannelsRow
+	for rows.Next() {
+		var i ListProfileChannelsRow
+		if err := rows.Scan(
+			&i.Channel.ID,
+			&i.Channel.Name,
+			&i.Channel.Description,
+			&i.Channel.Thumbnail,
+			&i.Channel.Banner,
+			&i.Channel.OwnerID,
+			&i.Channel.Visibility,
+			&i.Channel.CreatedAt,
+			&i.Channel.UpdatedAt,
+			&i.Channel.DeletedAt,
+			&i.Channel.MinAge,
+			&i.Channel.Theme,
+			&i.Channel.CoverPattern,
+			&i.EffectiveTheme,
+			&i.IsOwner,
+			&i.IsMember,
+			&i.IsPending,
+			&i.IsFollower,
+			&i.MembersCount,
+			&i.FollowersCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const personaMeetsMinAge = `-- name: PersonaMeetsMinAge :one
 SELECT persona_meets_min_age($1::bigint, $2::smallint)::boolean
 `

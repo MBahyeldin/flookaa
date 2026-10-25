@@ -40,4 +40,4 @@ function Logo({
   )
 }
 
-export { Logo, logoVariants }
+export { Logo, logoVariants, initials }

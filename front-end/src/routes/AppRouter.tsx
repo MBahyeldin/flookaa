@@ -17,6 +17,7 @@ import PersonaSettingsPage from "@/pages/(dashboard)/persona-manager/[id]";
 import DiscoverPage from "@/pages/(dashboard)/discover";
 import NotificationsPage from "@/pages/(dashboard)/notifications";
 import PersonaProfilePage from "@/pages/(dashboard)/personas/[id]";
+import WallPostPage from "@/pages/(dashboard)/personas/[id]/posts/[postId]";
 import FollowInvitePage from "@/pages/(dashboard)/follow/[token]";
 import BlocksGalleryPage from "@/pages/(dashboard)/blocks";
 import NotFound from "@/components/not-found";
@@ -61,6 +62,7 @@ export default function AppRouter() {
       <Route path="/blocks" element={<BlocksGalleryPage />} />
 
       <Route path="/personas/:id" element={<PersonaProfilePage />} />
+      <Route path="/personas/:id/posts/:postId" element={<WallPostPage />} />
 
       <Route path="/follow/:token" element={<FollowInvitePage />} />
 

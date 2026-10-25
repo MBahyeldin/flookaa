@@ -27,6 +27,7 @@ func AddPersonaRoutes(r *gin.RouterGroup, users *users.Handler, followers *follo
 	{
 		viewGroup.GET("", users.ReadPersona)
 		viewGroup.GET("/connected", users.ConnectedPersonas)
+		viewGroup.GET("/channels", channels.ProfileChannels)
 		viewGroup.POST("/follow", followers.Follow)
 		viewGroup.POST("/unfollow", followers.Unfollow)
 		viewGroup.POST("/invite", followers.Invite)

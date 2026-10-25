@@ -80,6 +80,7 @@ func (h *Handler) ListPersonas(c *gin.Context) {
 			"privacy":         persona.Privacy,
 			"show_on_profile": persona.ShowOnProfile,
 			"theme":           persona.Theme,
+			"cover_pattern":   persona.CoverPattern,
 		})
 	}
 
@@ -105,6 +106,7 @@ func (h *Handler) CreatePersona(c *gin.Context) {
 		Bio           string `json:"bio"`
 		ShowOnProfile *bool  `json:"show_on_profile"`
 		Theme         string `json:"theme"`
+		CoverPattern  string `json:"cover_pattern"`
 		Slug          string `json:"slug"`
 	}
 
@@ -128,6 +130,11 @@ func (h *Handler) CreatePersona(c *gin.Context) {
 		invalidTheme(c)
 		return
 	}
+	coverPattern, ok := resolveCoverPattern(req.CoverPattern, db.CoverPatternEnumWaves)
+	if !ok {
+		invalidCoverPattern(c)
+		return
+	}
 
 	q := h.q
 
@@ -148,6 +155,7 @@ func (h *Handler) CreatePersona(c *gin.Context) {
 		Privacy:       privacy,
 		ShowOnProfile: showOnProfile,
 		Theme:         theme,
+		CoverPattern:  coverPattern,
 	})
 	if postgres.IsUniqueViolation(err, "personas_user_id_slug_key") {
 		c.JSON(http.StatusConflict, gin.H{"error": "slug_taken"})
@@ -240,6 +248,7 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 		Privacy       string  `json:"privacy"`
 		ShowOnProfile *bool   `json:"show_on_profile"`
 		Theme         string  `json:"theme"`
+		CoverPattern  string  `json:"cover_pattern"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -269,6 +278,11 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 		invalidTheme(c)
 		return
 	}
+	coverPattern, ok := resolveCoverPattern(req.CoverPattern, persona.CoverPattern)
+	if !ok {
+		invalidCoverPattern(c)
+		return
+	}
 	if req.Slug != "" && !slug.Valid(req.Slug) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_slug"})
 		return
@@ -287,6 +301,7 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 		Privacy:       privacy,
 		ShowOnProfile: showOnProfile,
 		Theme:         theme,
+		CoverPattern:  coverPattern,
 	})
 
 	if postgres.IsUniqueViolation(err, "personas_user_id_slug_key") {
@@ -318,6 +333,7 @@ func (h *Handler) UpdatePersona(c *gin.Context) {
 		"privacy":         updatedPersona.Privacy,
 		"show_on_profile": updatedPersona.ShowOnProfile,
 		"theme":           updatedPersona.Theme,
+		"cover_pattern":   updatedPersona.CoverPattern,
 	})
 }
 
@@ -359,6 +375,18 @@ func resolveTheme(requested string, current db.ThemeEnum) (db.ThemeEnum, bool) {
 
 func invalidTheme(c *gin.Context) {
 	c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_theme"})
+}
+
+func resolveCoverPattern(requested string, current db.CoverPatternEnum) (db.CoverPatternEnum, bool) {
+	if requested == "" {
+		return current, true
+	}
+	pattern := db.CoverPatternEnum(requested)
+	return pattern, pattern.Valid()
+}
+
+func invalidCoverPattern(c *gin.Context) {
+	c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_cover_pattern"})
 }
 
 // nil keeps the stored value (COALESCE in the query); "" clears it.
@@ -424,9 +452,10 @@ func (h *Handler) ReadPersona(c *gin.Context) {
 	p := rows[0]
 	if !p.Visible {
 		c.JSON(http.StatusOK, gin.H{
-			"id":            p.ID,
-			"locked":        true,
-			"follow_status": followStatus(follow.FollowStatus),
+			"id":             p.ID,
+			"locked":         true,
+			"anonymous_name": access.AnonymousName(p.ID, 0),
+			"follow_status":  followStatus(follow.FollowStatus),
 		})
 		return
 	}
@@ -447,6 +476,9 @@ func (h *Handler) ReadPersona(c *gin.Context) {
 		"invite_status":     inviteStatus(follow.Invited),
 		"invited_you":       follow.InvitedYou,
 		"can_invite":        follow.CanInvite,
+		"privacy":           p.Privacy,
+		"theme":             follow.Theme,
+		"cover_pattern":     follow.CoverPattern,
 	})
 }
 
@@ -507,14 +539,15 @@ func (h *Handler) ConnectedPersonas(c *gin.Context) {
 	personas := make([]gin.H, 0, len(rows))
 	for _, p := range rows {
 		personas = append(personas, gin.H{
-			"id":            p.ID,
-			"name":          p.Name,
-			"first_name":    p.FirstName,
-			"last_name":     p.LastName,
-			"slug":          p.Slug,
-			"thumbnail":     p.Thumbnail.String,
-			"bio":           p.Bio.String,
-			"follow_status": followStatus(p.FollowStatus),
+			"id":              p.ID,
+			"name":            p.Name,
+			"first_name":      p.FirstName,
+			"last_name":       p.LastName,
+			"slug":            p.Slug,
+			"thumbnail":       p.Thumbnail.String,
+			"bio":             p.Bio.String,
+			"follow_status":   followStatus(p.FollowStatus),
+			"followers_count": p.FollowersCount,
 		})
 	}
 

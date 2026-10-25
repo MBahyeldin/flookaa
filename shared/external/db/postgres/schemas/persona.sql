@@ -39,6 +39,7 @@ CREATE TABLE personas (
     is_default BOOLEAN DEFAULT false,
     show_on_profile BOOLEAN NOT NULL DEFAULT false,
     theme theme_enum NOT NULL DEFAULT 'tide',
+    cover_pattern cover_pattern_enum NOT NULL DEFAULT 'waves',
 
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
@@ -158,3 +159,40 @@ CREATE TABLE persona_follow_invitations (
 
 CREATE INDEX persona_follow_invitations_invitee
     ON persona_follow_invitations (invitee_persona_id) WHERE status = 'pending';
+
+-- Whether a viewer sees the real persona; missing or deleted personas never are.
+CREATE FUNCTION persona_visible_to(p_target BIGINT, p_viewer BIGINT) RETURNS boolean
+LANGUAGE sql STABLE AS $$
+    SELECT COALESCE((
+        SELECT
+            t.privacy = 'public'
+            OR t.user_id = (SELECT v.user_id FROM personas v WHERE v.id = p_viewer)
+            OR (t.privacy = 'private' AND EXISTS (
+                SELECT 1
+                FROM persona_followers pf
+                WHERE pf.persona_id = t.id
+                  AND pf.follower_persona_id = p_viewer
+                  AND pf.status = 'active'
+                  AND pf.unfollowed_at IS NULL
+            ))
+            -- A pending invitation shows the inviter to the invitee.
+            OR (t.privacy = 'private' AND EXISTS (
+                SELECT 1
+                FROM persona_follow_invitations i
+                WHERE i.persona_id = t.id
+                  AND i.invitee_persona_id = p_viewer
+                  AND i.status = 'pending'
+            ))
+            -- Following someone (or asking to) shows you to them.
+            OR EXISTS (
+                SELECT 1
+                FROM persona_followers pf
+                WHERE pf.persona_id = p_viewer
+                  AND pf.follower_persona_id = t.id
+                  AND pf.status IN ('pending', 'active')
+                  AND pf.unfollowed_at IS NULL
+            )
+        FROM personas t
+        WHERE t.id = p_target AND t.deleted_at IS NULL
+    ), false)
+$$;

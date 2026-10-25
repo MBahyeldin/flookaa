@@ -16,7 +16,8 @@ import formatDate, { formatRelativeDate } from "@/utils/formateDate";
 const rowButton =
   "flex items-center gap-1.5 rounded-sm text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
-export function PostArticle({ post, channel }: { post: Post; channel: { id: number | string; name: string } }) {
+// `place` is where it was posted: a channel or a persona's wall.
+export function PostArticle({ post, place }: { post: Post; place: { name: string; href: string } }) {
   const navigate = useNavigate();
   const value = useMemo(() => parsePostContent(post.rawContent), [post.rawContent]);
   const { isArticle, minutes } = useMemo(() => readingStats(value), [value]);
@@ -44,7 +45,7 @@ export function PostArticle({ post, channel }: { post: Post; channel: { id: numb
             {post.author?.fullName}
           </PersonaLink>
           <p className="truncate text-xs text-muted-foreground">
-            {channel.name}
+            {place.name}
             {post.createdAt ? (
               <>
                 {" · "}
@@ -56,7 +57,7 @@ export function PostArticle({ post, channel }: { post: Post; channel: { id: numb
             {isArticle ? ` · ${minutes} min read` : null}
           </p>
         </div>
-        <PostMenu post={post} onDeleted={() => navigate(`/channels/${channel.id}`, { replace: true })} />
+        <PostMenu post={post} onDeleted={() => navigate(place.href, { replace: true })} />
       </header>
 
       <PostContent value={value} article={isArticle} />
@@ -82,7 +83,7 @@ export function PostArticle({ post, channel }: { post: Post; channel: { id: numb
         <button
           type="button"
           className={rowButton}
-          onClick={() => shareLink(`${window.location.origin}/channels/${channel.id}/posts/${post._id}`, channel.name)}
+          onClick={() => shareLink(`${window.location.origin}${place.href}/posts/${post._id}`, place.name)}
         >
           <Share2 className="size-4" />
           Share

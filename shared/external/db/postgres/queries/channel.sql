@@ -537,3 +537,66 @@ WHERE c.deleted_at IS NULL
       ))
   )
 ORDER BY c.id;
+
+-- Profile Channels tab: the persona's active memberships the viewer can read,
+-- which each channel's member list already shows the viewer.
+-- name: ListProfileChannels :many
+SELECT
+    sqlc.embed(c),
+    channel_theme(c.theme, c.id)::theme_enum AS effective_theme,
+    (c.owner_id = sqlc.arg(viewer_id)::bigint) AS is_owner,
+    EXISTS (
+        SELECT 1
+        FROM channel_members cm
+        WHERE cm.channel_id = c.id
+          AND cm.persona_id = sqlc.arg(viewer_id)::bigint
+          AND cm.left_at IS NULL AND cm.status = 'active'
+    ) AS is_member,
+    EXISTS (
+        SELECT 1
+        FROM channel_members cm
+        WHERE cm.channel_id = c.id
+          AND cm.persona_id = sqlc.arg(viewer_id)::bigint
+          AND cm.left_at IS NULL AND cm.status = 'pending'
+    ) AS is_pending,
+    EXISTS (
+        SELECT 1
+        FROM channel_followers cf
+        WHERE cf.channel_id = c.id
+          AND cf.persona_id = sqlc.arg(viewer_id)::bigint
+          AND cf.unfollowed_at IS NULL
+    ) AS is_follower,
+    (
+        SELECT COUNT(*)
+        FROM channel_members cm
+        WHERE cm.channel_id = c.id
+          AND cm.left_at IS NULL AND cm.status = 'active'
+    )::int AS members_count,
+    (
+        SELECT COUNT(DISTINCT cf.persona_id)
+        FROM channel_followers cf
+        WHERE cf.channel_id = c.id
+          AND cf.unfollowed_at IS NULL
+    )::int AS followers_count
+FROM channels c
+JOIN LATERAL (
+    SELECT MAX(pm.joined_at) AS joined_at
+    FROM channel_members pm
+    WHERE pm.channel_id = c.id
+      AND pm.persona_id = sqlc.arg(persona_id)::bigint
+      AND pm.left_at IS NULL AND pm.status = 'active'
+) m ON m.joined_at IS NOT NULL
+WHERE c.deleted_at IS NULL
+  AND persona_meets_min_age(sqlc.arg(viewer_id)::bigint, c.min_age)
+  AND (
+      c.visibility = 'public'
+      OR EXISTS (
+          SELECT 1
+          FROM channel_members vm
+          WHERE vm.channel_id = c.id
+            AND vm.persona_id = sqlc.arg(viewer_id)::bigint
+            AND vm.left_at IS NULL AND vm.status = 'active'
+      )
+  )
+ORDER BY m.joined_at DESC, c.id DESC
+LIMIT sqlc.arg(row_limit)::bigint OFFSET sqlc.arg(row_offset)::bigint;

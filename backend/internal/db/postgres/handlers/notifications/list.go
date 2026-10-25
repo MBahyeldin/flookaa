@@ -173,9 +173,12 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 		return
 	}
 	for i := range notifications {
-		var chID, coID int64
+		var chID, coID, wallID int64
 		if ch := notifications[i].Channel; ch != nil {
 			chID = ch.ID
+		}
+		if sc := notifications[i].Scope; sc != nil && sc.Type == string(db.NotificationScopeEnumPERSONA) {
+			wallID = sc.ID
 		}
 		if co := notifications[i].Community; co != nil {
 			coID = co.ID
@@ -184,7 +187,7 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 		if a := notifications[i].LatestActor; a != nil {
 			notifications[i].LatestActor = nil
 			if resolved := actors[a.ID]; resolved != nil {
-				notifications[i].LatestActor = resolved.view(chID, coID)
+				notifications[i].LatestActor = resolved.view(chID, coID, wallID)
 			}
 		}
 		if ch := notifications[i].Channel; ch != nil {

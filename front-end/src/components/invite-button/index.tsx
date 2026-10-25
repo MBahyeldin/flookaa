@@ -8,11 +8,13 @@ export function InviteButton({
   personaId,
   name,
   status,
+  size = "sm",
   onChange,
 }: {
   personaId: number;
   name?: string;
   status: InviteStatus;
+  size?: "sm" | "default";
   /** "following" when the persona already follows you, or its request was just approved. */
   onChange: (status: InviteStatus | "following") => void;
 }) {
@@ -37,7 +39,7 @@ export function InviteButton({
   };
 
   return (
-    <Button size="sm" variant={status ? "secondary" : "outline"} disabled={busy} onClick={handleClick}>
+    <Button size={size} variant={status ? "secondary" : "outline"} loading={busy} onClick={handleClick}>
       {status ? "Invited" : "Invite to follow"}
     </Button>
   );

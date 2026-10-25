@@ -171,7 +171,7 @@ func (r *Resolver) channelPostsPage(ctx context.Context, personaID int64, rows [
 	for _, post := range page.Posts {
 		post.Author = authors[post.AuthorID]
 		if post.Author == nil {
-			post.Author = anonymousPersona(post.AuthorID, post.Owner.ID)
+			post.Author = anonymousPersona(post.AuthorID, post.Owner)
 		}
 		post.PersonalizedMeta = personalizedMeta(liked[post.ID])
 	}

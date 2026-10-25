@@ -9,7 +9,15 @@ import { useUserProfileStore } from "@/stores/UserProfileStore";
 
 type Opened = { block?: string };
 
-export function ComposerBar({ channelName }: { channelName: string }) {
+export function ComposerBar({
+  channelName,
+  placeholder = `Write in ${channelName}…`,
+  title,
+}: {
+  channelName: string;
+  placeholder?: string;
+  title?: string;
+}) {
   const [opened, setOpened] = useState<Opened | null>(null);
   const persona = useUserProfileStore((s) => s.persona);
   const isMobile = useIsMobile();
@@ -18,6 +26,7 @@ export function ComposerBar({ channelName }: { channelName: string }) {
   const composer = opened ? (
     <PostCreator
       channelName={channelName}
+      title={title}
       layout={isMobile ? "sheet" : "card"}
       initialBlock={opened.block}
       onCancel={close}
@@ -41,7 +50,7 @@ export function ComposerBar({ channelName }: { channelName: string }) {
               {persona ? personaInitials(persona) : <User2 className="size-4" />}
             </AvatarFallback>
           </Avatar>
-          <span className="min-w-0 flex-1 truncate text-muted-foreground">Write in {channelName}…</span>
+          <span className="min-w-0 flex-1 truncate text-muted-foreground">{placeholder}</span>
         </button>
         <Button
           variant="ghost"

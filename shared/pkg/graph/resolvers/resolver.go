@@ -67,25 +67,67 @@ func (r *Resolver) loadObject(ctx context.Context, id string) (*models.PostGener
 	return &doc, nil
 }
 
-// authorizeOwner checks whether personaID may read (or write, when write is
-// true) content owned by owner. Callers must pass the owner stored on the
-// object, never the client's owner input, when the object already exists.
-//
-// Only channel-owned content is supported (rules in shared/pkg/access). Other
-// owner types (PERSONA, PAGE) have no access rules yet, so they are refused
-// rather than left open to every persona.
-func (r *Resolver) authorizeOwner(ctx context.Context, owner *models.Owner, personaID int64, write bool) error {
-	if owner == nil || owner.Type != models.OwnerTypeChannel {
+type ownerAccess int
+
+const (
+	accessRead ownerAccess = iota
+	// Comments and likes.
+	accessReact
+	accessPost
+)
+
+// authorizeOwner checks whether personaID may use content owned by owner in
+// the given way. Callers must pass the owner stored on the object, never the
+// client's owner input, when the object already exists. Channels and persona
+// walls have rules (shared/pkg/access); other owner types are refused.
+func (r *Resolver) authorizeOwner(ctx context.Context, owner *models.Owner, personaID int64, mode ownerAccess) error {
+	if owner == nil {
 		return errObjectNotFound
 	}
-	channel, err := access.LoadChannel(ctx, r.Queries, owner.ID, personaID)
-	if err != nil {
-		return err
-	}
-	if write {
+	switch owner.Type {
+	case models.OwnerTypeChannel:
+		channel, err := access.LoadChannel(ctx, r.Queries, owner.ID, personaID)
+		if err != nil {
+			return err
+		}
+		if mode == accessRead {
+			return channel.Read()
+		}
 		return channel.Write()
+	case models.OwnerTypePersona:
+		wall, err := access.LoadWall(ctx, r.Queries, owner.ID, personaID)
+		if err != nil {
+			return err
+		}
+		if mode == accessPost {
+			return wall.Post()
+		}
+		return nil
 	}
-	return channel.Read()
+	return errObjectNotFound
+}
+
+// canModerate tells whether personaID may delete others' content of owner,
+// after checking it may read it.
+func (r *Resolver) canModerate(ctx context.Context, owner *models.Owner, personaID int64) (bool, error) {
+	switch owner.Type {
+	case models.OwnerTypeChannel:
+		channel, err := access.LoadChannel(ctx, r.Queries, owner.ID, personaID)
+		if err != nil {
+			return false, err
+		}
+		if err := channel.Read(); err != nil {
+			return false, err
+		}
+		return channel.CanModerate, nil
+	case models.OwnerTypePersona:
+		wall, err := access.LoadWall(ctx, r.Queries, owner.ID, personaID)
+		if err != nil {
+			return false, err
+		}
+		return wall.CanModerate(), nil
+	}
+	return false, errObjectNotFound
 }
 
 // deleteObject soft-deletes a post or comment for its author or a moderator
@@ -102,17 +144,14 @@ func (r *Resolver) deleteObject(ctx context.Context, id string, postType models.
 	if err != nil {
 		return err
 	}
-	if obj.Type != postType || obj.Owner.Type != models.OwnerTypeChannel {
+	if obj.Type != postType {
 		return errObjectNotFound
 	}
-	channel, err := access.LoadChannel(ctx, r.Queries, obj.Owner.ID, personaID)
+	moderator, err := r.canModerate(ctx, obj.Owner, personaID)
 	if err != nil {
 		return err
 	}
-	if err := channel.Read(); err != nil {
-		return err
-	}
-	if obj.AuthorID != personaID && !channel.CanModerate {
+	if obj.AuthorID != personaID && !moderator {
 		return errNotAllowedToDelete
 	}
 
@@ -243,16 +282,16 @@ func getPersonaIdFromContext(ctx context.Context) (int64, error) {
 	return personaId, nil
 }
 
-// resolvePersonas returns how viewerID sees each of ids in channelID, real or
-// anonymous.
-func (r *Resolver) resolvePersonas(ctx context.Context, viewerID, channelID int64, ids []int64) (map[int64]*models.Persona, error) {
+// resolvePersonas returns how viewerID sees each of ids in owner's content,
+// real or anonymous.
+func (r *Resolver) resolvePersonas(ctx context.Context, viewerID int64, owner *models.Owner, ids []int64) (map[int64]*models.Persona, error) {
 	personas, err := r.visiblePersonas(ctx, viewerID, ids)
 	if err != nil {
 		return nil, err
 	}
 	for _, id := range ids {
 		if personas[id] == nil {
-			personas[id] = anonymousPersona(id, channelID)
+			personas[id] = anonymousPersona(id, owner)
 		}
 	}
 	return personas, nil
@@ -306,8 +345,12 @@ func (r *Resolver) visiblePersonas(ctx context.Context, viewerID int64, ids []in
 	return personas, nil
 }
 
-func anonymousPersona(id, channelID int64) *models.Persona {
-	name := access.AnonymousName(id, channelID)
+// Anonymous names differ per channel and per wall.
+func anonymousPersona(id int64, owner *models.Owner) *models.Persona {
+	name := access.AnonymousName(id, owner.ID)
+	if owner.Type == models.OwnerTypePersona {
+		name = access.AnonymousWallName(id, owner.ID)
+	}
 	return &models.Persona{ID: id, Username: name, FullName: name, Anonymous: true}
 }
 
@@ -418,7 +461,7 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 		postIDs[i] = post.ID
 		authorIDs[i] = post.AuthorID
 	}
-	authors, err := r.resolvePersonas(ctx, personaId, owner.ID, authorIDs)
+	authors, err := r.resolvePersonas(ctx, personaId, &owner, authorIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -493,7 +536,7 @@ func (r *Resolver) resolveCommentMetaCached(ctx context.Context, commentId strin
 	return meta, nil
 }
 
-func getComments(ctx context.Context, postID string, channelID int64, r *queryResolver, limit int32, offset int32) ([]*models.Comment, error) {
+func getComments(ctx context.Context, postID string, owner *models.Owner, r *queryResolver, limit int32, offset int32) ([]*models.Comment, error) {
 	personaId, err := getPersonaIdFromContext(ctx)
 	if err != nil || personaId == 0 {
 		return nil, fmt.Errorf("failed to get personaId from context: %w", err)
@@ -557,7 +600,7 @@ func getComments(ctx context.Context, postID string, channelID int64, r *queryRe
 		ids[i] = comment.ID
 		authorIDs[i] = comment.AuthorID
 	}
-	authors, err := r.resolvePersonas(ctx, personaId, channelID, authorIDs)
+	authors, err := r.resolvePersonas(ctx, personaId, owner, authorIDs)
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,7 @@ import type {
   PersonaProfile,
   PublicPersona,
 } from "@/types/persona";
+import type { Channel } from "@/types/channel";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -59,6 +60,23 @@ export async function fetchConnectedPersonas(id: string): Promise<PublicPersona[
     return data.personas;
   } catch (err) {
     console.error("Error fetching connected personas:", err);
+    return null;
+  }
+}
+
+/** The persona's channels the viewer can read; null on failure. */
+export async function fetchPersonaChannels(
+  id: string,
+  page: { limit: number; offset: number },
+): Promise<Channel[] | null> {
+  try {
+    const params = new URLSearchParams({ limit: String(page.limit), offset: String(page.offset) });
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/persona/${id}/channels?${params}`, { credentials: "include" });
+    if (!resp.ok) return null;
+    const data = (await resp.json()) as { channels: Channel[] };
+    return data.channels;
+  } catch (err) {
+    console.error("Error fetching persona channels:", err);
     return null;
   }
 }

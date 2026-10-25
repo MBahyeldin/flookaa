@@ -38,14 +38,15 @@ function communityHref(n: Notification, query = ""): string {
 
 /**
  * Where a content notification leads: the post page when data.post_id is
- * known (rows written before it existed lack it), else its channel.
+ * known (rows written before it existed lack it), else its channel or wall.
  */
 function contentHref(n: Notification): string {
-  const channel = `/channels/${n.scope?.id ?? n.channel?.id ?? ""}`;
+  const base =
+    n.scope?.type === "PERSONA" ? `/personas/${n.scope.id}` : `/channels/${n.scope?.id ?? n.channel?.id ?? ""}`;
   const postId = n.data?.post_id;
-  if (!postId) return channel;
+  if (!postId) return base;
   const query = n.subject.type === "COMMENT" ? `?${new URLSearchParams({ comment: n.subject.id })}` : "";
-  return `${channel}/posts/${postId}${query}`;
+  return `${base}/posts/${postId}${query}`;
 }
 
 /**

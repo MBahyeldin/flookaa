@@ -1,6 +1,6 @@
 import { GetPostsDocument, type GetPostsQuery } from "@/generated/graphql";
 import client from "@/graphql/client";
-import { isCurrentOwner, useAppStore } from "@/stores/AppStore";
+import { contentOwner, isCurrentOwner, useAppStore } from "@/stores/AppStore";
 
 async function loadNewPosts({
   newPosts,
@@ -10,10 +10,11 @@ async function loadNewPosts({
   const newPostsIds = newPosts.map((post) => post.object_id);
   const owner = useAppStore.getState().owner;
   const addPosts = useAppStore.getState().addPosts;
-  const channelId = owner?.id;
-  if (newPostsIds.length === 0 || !channelId) return;
-  const channelIdNum = parseInt(channelId, 10);
-  if (isNaN(channelIdNum)) return;
+  // A channel or a persona's wall.
+  const content = contentOwner(owner);
+  if (newPostsIds.length === 0 || !content) return;
+  const ownerId = parseInt(String(content.id), 10);
+  if (isNaN(ownerId)) return;
 
   // Fetch fresh posts from server
   const { data: fetched } = await client.query<GetPostsQuery>({
@@ -22,7 +23,7 @@ async function loadNewPosts({
       ids: newPostsIds,
       limit: newPostsIds.length,
       offset: 0,
-      owner: { id: channelIdNum, type: "CHANNEL" },
+      owner: { id: ownerId, type: content.type },
     },
     fetchPolicy: "network-only",
   });

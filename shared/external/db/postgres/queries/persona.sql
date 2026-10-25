@@ -21,8 +21,8 @@ ORDER BY created_at DESC;
 -- 3. CreatePersona
 -- ------------------------------
 -- name: CreatePersona :one
-INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, privacy, show_on_profile, theme, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, $10, $11, NOW(), NOW())
+INSERT INTO personas (user_id, name, description, first_name, last_name, thumbnail, Bio, slug, is_default, privacy, show_on_profile, theme, cover_pattern, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, $9, $10, $11, $12, NOW(), NOW())
 RETURNING *;
 
 -- ------------------------------
@@ -121,6 +121,7 @@ SET name = COALESCE($3, name),
     privacy = COALESCE($10, privacy),
     show_on_profile = $11,
     theme = $12,
+    cover_pattern = $13,
     invite_token = CASE WHEN COALESCE($10, privacy) = 'private' THEN invite_token END,
     updated_at = NOW()
 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
@@ -138,35 +139,7 @@ SELECT
     t.bio,
     t.slug,
     t.privacy,
-    (
-        t.privacy = 'public'
-        OR t.user_id = (SELECT v.user_id FROM personas v WHERE v.id = sqlc.arg(viewer_id)::bigint)
-        OR (t.privacy = 'private' AND EXISTS (
-            SELECT 1
-            FROM persona_followers pf
-            WHERE pf.persona_id = t.id
-              AND pf.follower_persona_id = sqlc.arg(viewer_id)::bigint
-              AND pf.status = 'active'
-              AND pf.unfollowed_at IS NULL
-        ))
-        -- A pending invitation shows the inviter to the invitee.
-        OR (t.privacy = 'private' AND EXISTS (
-            SELECT 1
-            FROM persona_follow_invitations i
-            WHERE i.persona_id = t.id
-              AND i.invitee_persona_id = sqlc.arg(viewer_id)::bigint
-              AND i.status = 'pending'
-        ))
-        -- Following someone (or asking to) shows you to them.
-        OR EXISTS (
-            SELECT 1
-            FROM persona_followers pf
-            WHERE pf.persona_id = sqlc.arg(viewer_id)::bigint
-              AND pf.follower_persona_id = t.id
-              AND pf.status IN ('pending', 'active')
-              AND pf.unfollowed_at IS NULL
-        )
-    )::boolean AS visible
+    persona_visible_to(t.id, sqlc.arg(viewer_id)::bigint)::boolean AS visible
 FROM personas t
 WHERE t.id = ANY(sqlc.arg(ids)::bigint[])
   AND t.deleted_at IS NULL;
@@ -176,7 +149,12 @@ WHERE t.id = ANY(sqlc.arg(ids)::bigint[])
 -- -------------------------------
 -- name: ListConnectedPersonas :many
 SELECT p.id, p.name, p.first_name, p.last_name, p.slug, p.thumbnail, p.bio,
-    pf.status AS follow_status
+    pf.status AS follow_status,
+    (SELECT COUNT(*)
+     FROM persona_followers c
+     JOIN personas f ON f.id = c.follower_persona_id AND f.deleted_at IS NULL
+     WHERE c.persona_id = p.id AND c.status = 'active' AND c.unfollowed_at IS NULL
+    )::bigint AS followers_count
 FROM personas s
 JOIN personas p ON p.user_id = s.user_id AND p.id <> s.id
 LEFT JOIN persona_followers pf
@@ -267,7 +245,9 @@ SELECT
               AND f.status = 'active' AND f.unfollowed_at IS NULL
         ),
         false
-    )::boolean AS can_invite
+    )::boolean AS can_invite,
+    t.theme,
+    t.cover_pattern
 FROM personas t
 LEFT JOIN personas vp ON vp.id = sqlc.arg(viewer_id)::bigint AND vp.deleted_at IS NULL
 LEFT JOIN persona_followers v

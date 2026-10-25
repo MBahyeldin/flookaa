@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,8 +14,15 @@ import { getInviteLink } from "@/services/persona";
 
 const inviteUrl = (token: string) => `${window.location.origin}/follow/${token}`;
 
-export default function ShareInviteLink({ personaId }: { personaId: number }) {
-  const [open, setOpen] = useState(false);
+export default function ShareInviteLink({
+  personaId,
+  open,
+  onOpenChange,
+}: {
+  personaId: number;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const [token, setToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -55,30 +61,24 @@ export default function ShareInviteLink({ personaId }: { personaId: number }) {
   };
 
   return (
-    <>
-      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
-        <Link2 className="h-4 w-4" />
-        Share link
-      </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Follow-request link</DialogTitle>
-            <DialogDescription>
-              Anyone with this link can ask to follow you. You approve each request.
-            </DialogDescription>
-          </DialogHeader>
-          <Input readOnly value={token ? inviteUrl(token) : "Loading…"} onFocus={(e) => e.target.select()} />
-          <DialogFooter>
-            <Button variant="outline" disabled={!token || busy} onClick={reset}>
-              Reset link
-            </Button>
-            <Button disabled={!token} onClick={copy}>
-              Copy
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Follow-request link</DialogTitle>
+          <DialogDescription>
+            Anyone with this link can ask to follow you. You approve each request.
+          </DialogDescription>
+        </DialogHeader>
+        <Input readOnly value={token ? inviteUrl(token) : "Loading…"} onFocus={(e) => e.target.select()} />
+        <DialogFooter>
+          <Button variant="outline" disabled={!token || busy} onClick={reset}>
+            Reset link
+          </Button>
+          <Button disabled={!token} onClick={copy}>
+            Copy
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

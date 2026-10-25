@@ -35,6 +35,7 @@ const (
 	OwnerTypeDefault   OwnerType = "DEFAULT"
 	OwnerTypeFeed      OwnerType = "FEED"
 	OwnerTypeDiscover  OwnerType = "DISCOVER"
+	OwnerTypeProfile   OwnerType = "PROFILE"
 )
 
 type Payload struct {
@@ -97,6 +98,9 @@ func (h *Handler) Control(c *gin.Context) {
 
 	case OwnerTypeDiscover:
 		h.discover(c, bodyData, personaIdInt64)
+
+	case OwnerTypeProfile:
+		h.profile(c, bodyData, personaIdInt64)
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid owner type %s", bodyData.Payload.Owner)})
 		return

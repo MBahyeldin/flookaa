@@ -29,6 +29,7 @@ const showOnProfileField = new FormField({
     interfaceType: "switch",
     width: "full",
     visibleWhen: (values) => values.privacy === "public",
+    hint: () => "Your linked personas list each other, with this persona's name, for anyone who visits them.",
   });
 
 const personaFormFields = [

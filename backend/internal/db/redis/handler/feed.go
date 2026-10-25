@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"shared/external/db/nats"
+	"shared/pkg/access"
 	"shared/pkg/db"
 	"shared/pkg/graph/models"
 	"shared/pkg/subject"
@@ -42,6 +44,25 @@ func (h *Handler) discover(c *gin.Context, wsMessage WsMessage, personaId int64)
 		ids[i] = channel.ID
 	}
 	c.JSON(http.StatusOK, gin.H{"action": "subscribe", "subjects": channelContentSubjects(ids), "durable": false})
+}
+
+// profile serves a persona's wall events to a viewer who sees the real persona.
+func (h *Handler) profile(c *gin.Context, wsMessage WsMessage, personaId int64) {
+	target := wsMessage.Payload.OwnerID
+	subjects := []*types.SubjectOffsets{}
+	_, err := access.LoadWall(c.Request.Context(), h.q, target, personaId)
+	if err != nil && !errors.Is(err, access.ErrWallNotFound) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if err == nil {
+		stream := nats.CONTENT_EVENTS_STREAM
+		owner := &models.Owner{ID: target, Type: models.OwnerTypePersona}
+		for _, event := range []db.EventEnum{db.EventEnumPost, db.EventEnumLike, db.EventEnumComment} {
+			subjects = append(subjects, subject.New(&stream, owner, string(event), "*").GetSubjectWithOffsets(0))
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"action": "subscribe", "subjects": subjects, "durable": false})
 }
 
 func channelContentSubjects(channelIDs []int64) []*types.SubjectOffsets {

@@ -1,5 +1,5 @@
  
-import type { SubscribeChannelPayload, SubscribeDefaultPayload, SubscribePersonaPayload, SubscribeCommunityPayload, SubscribeFeedPayload, SubscribeDiscoverPayload, WsEventMessage, WsMessage } from "@/types/Ws";
+import type { SubscribeChannelPayload, SubscribeDefaultPayload, SubscribePersonaPayload, SubscribeCommunityPayload, SubscribeFeedPayload, SubscribeDiscoverPayload, SubscribeProfilePayload, WsEventMessage, WsMessage } from "@/types/Ws";
 
 const WEBSOCKET_BASE_URL = import.meta.env.VITE_WEBSOCKET_BASE_URL;
 
@@ -211,6 +211,19 @@ export default class WebSocketService {
         const id = crypto.randomUUID();
         const payload = { owner: "DISCOVER" as const, ...mode };
         this.sendMessage<SubscribeDiscoverPayload>({ type: "SUBSCRIBE", payload, id });
+
+        const unsubscribe = this.subscribe(id, callback);
+        return () => {
+            unsubscribe();
+            this.sendMessage({ type: "UNSUBSCRIBE", payload, id });
+        };
+    }
+
+    // The same events for the channels of a persona's Posts tab.
+    subscribeToProfileEvents(personaId: number, callback: MessageListener) {
+        const id = crypto.randomUUID();
+        const payload = { owner: "PROFILE" as const, owner_id: personaId };
+        this.sendMessage<SubscribeProfilePayload>({ type: "SUBSCRIBE", payload, id });
 
         const unsubscribe = this.subscribe(id, callback);
         return () => {

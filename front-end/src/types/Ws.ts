@@ -75,6 +75,11 @@ type SubscribeDiscoverPayload = {
   all: boolean;
 };
 
+type SubscribeProfilePayload = {
+  owner: "PROFILE";
+  owner_id: number;
+};
+
 type Event = {
   name: EventType;
   action: EventActionType;
@@ -139,6 +144,7 @@ export type {
   SubscribeCommunityPayload,
   SubscribeFeedPayload,
   SubscribeDiscoverPayload,
+  SubscribeProfilePayload,
   Event,
   EventType,
   EventActionType,
