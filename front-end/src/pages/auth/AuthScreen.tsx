@@ -8,18 +8,21 @@ import OAuthProviders from "@/components/oauth-providers";
 import safeNext from "@/lib/safeNext";
 import { AUTH_NEXT_KEY } from "@/hooks/useResumeAuthNext";
 import { VERIFY_EMAIL_FAILED_KEY } from "@/services/verifyEmail";
+import AuthSplit from "./AuthSplit";
 
 const copy = {
   login: {
     form: Form.login,
-    subtitle: "Log in to continue",
-    switchText: "New to Flookaa?",
+    title: "Welcome back",
+    lead: "Log in to pick up where your personas left off.",
+    switchText: "New here?",
     switchLabel: "Create an account",
     switchTo: "/sign-up",
   },
   signup: {
     form: Form.signup,
-    subtitle: "Create your account",
+    title: "Create your account",
+    lead: "One account, as many personas as you like.",
     switchText: "Already have an account?",
     switchLabel: "Log in",
     switchTo: "/login",
@@ -32,7 +35,13 @@ export default function AuthScreen({ mode }: { mode: "login" | "signup" }) {
   const rawNext = searchParams.get("next");
   const next = safeNext(rawNext);
   const { isAuthenticated, revalidateUser } = useAuth();
-  const { form, subtitle, switchText, switchLabel, switchTo } = copy[mode];
+  const { form, switchText, switchLabel, switchTo } = copy[mode];
+  const fromFollowLink = mode === "login" && next.startsWith("/follow/");
+  const title = fromFollowLink ? "Log in to continue" : copy[mode].title;
+  const lead = fromFollowLink
+    ? "You opened a follow link. Log in and we'll bring you back to it."
+    : copy[mode].lead;
+  const passwordChanged = mode === "login" && searchParams.get("reset") === "1";
   // After sign-up DashboardLayout shows the verify step on any route, so next survives it.
   const destination = next;
 
@@ -72,43 +81,37 @@ export default function AuthScreen({ mode }: { mode: "login" | "signup" }) {
   const switchHref = rawNext ? `${switchTo}?next=${encodeURIComponent(next)}` : switchTo;
 
   return (
-    <div className="flex flex-1 justify-center px-4 pt-8 pb-16 welcome-bg-bottom bg-no-repeat bg-bottom bg-cover">
-      <div className="w-full max-w-sm">
-        <div className="rounded-xl border bg-background/80 backdrop-blur-md shadow-sm p-6 flex flex-col gap-5">
-          <div className="text-center flex flex-col gap-1">
-            <h1 className="font-extrabold text-3xl tracking-tight text-foreground">
-              Welcome To Flookaa
-            </h1>
-            <p className="text-muted-foreground font-medium">{subtitle}</p>
-          </div>
+    <AuthSplit title={title} lead={lead}>
+      {passwordChanged && (
+        <p role="status" className="rounded-md border border-success bg-card px-3 py-2 text-sm text-foreground">
+          Password changed. Log in with your new password.
+        </p>
+      )}
 
-          <OAuthProviders state={mode} next={next} />
-
-          <div className="flex items-center gap-3 text-xs uppercase text-muted-foreground">
-            <span className="flex-1 border-t" />
-            or
-            <span className="flex-1 border-t" />
-          </div>
-
-          <FormComponent
-            form={form}
-            onStatusChange={onStatusChange}
-            changeOpacityWhenSubmitting={true}
-            className="grid grid-cols-12 gap-4"
-          >
-            <Button type="submit" size="lg" className="w-full">
+      <FormComponent form={form} onStatusChange={onStatusChange} className="grid grid-cols-12 gap-4">
+        {({ isSubmitting }) => (
+          <div className="flex flex-col gap-3">
+            <Button type="submit" size="lg" className="w-full" loading={isSubmitting}>
               {form.submitText}
             </Button>
-          </FormComponent>
+            <OAuthProviders state={mode} next={next} />
+          </div>
+        )}
+      </FormComponent>
 
-          <p className="text-center text-sm text-muted-foreground">
-            {switchText}{" "}
-            <Link to={switchHref} className="font-medium text-primary underline-offset-4 hover:underline">
-              {switchLabel}
-            </Link>
-          </p>
-        </div>
+      <div className="flex flex-col gap-2 text-sm">
+        {mode === "login" && (
+          <Link to="/forgot-password" className="font-medium text-primary underline-offset-4 hover:underline">
+            Forgot password?
+          </Link>
+        )}
+        <p className="text-muted-foreground">
+          {switchText}{" "}
+          <Link to={switchHref} className="font-medium text-primary underline-offset-4 hover:underline">
+            {switchLabel}
+          </Link>
+        </p>
       </div>
-    </div>
+    </AuthSplit>
   );
 }

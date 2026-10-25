@@ -2,7 +2,8 @@ import { useLocation } from "react-router-dom";
 import Header from "@/navbar/header";
 import Footer from "@/navbar/footer";
 
-const AUTH_ROUTES = ["/login", "/sign-up"];
+// These pages bring their own brand (AuthSplit).
+const AUTH_ROUTES = ["/login", "/sign-up", "/forgot-password", "/reset-password"];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
@@ -10,7 +11,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Header onlyLogo={isAuth} />
+      {!isAuth && <Header />}
       <main className="flex flex-1 flex-col">{children}</main>
       {!isAuth && <Footer />}
     </div>

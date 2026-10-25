@@ -2,11 +2,13 @@ package users
 
 import (
 	"app/internal/models"
+	"app/internal/password"
 	"app/util/cookies"
 	"app/util/encryption"
 	"database/sql"
 	"log"
 	"net/http"
+	"shared/external/db/postgres"
 	"shared/pkg/db"
 
 	"github.com/gin-gonic/gin"
@@ -19,6 +21,10 @@ func (h *Handler) Create(c *gin.Context) {
 	// Validate the incoming JSON
 	if err := c.ShouldBindJSON(&userRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if failed := password.Check(userRequest.Password); len(failed) > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "weak_password", "failed": failed})
 		return
 	}
 	hashedPassword, err := encryption.HashPassword(userRequest.Password)
@@ -39,7 +45,10 @@ func (h *Handler) Create(c *gin.Context) {
 	q := h.q
 
 	createUser, err := q.CreateUser(ctx, user)
-
+	if postgres.IsUniqueViolation(err, "users_email_address_key") {
+		c.JSON(http.StatusConflict, gin.H{"error": "email_taken"})
+		return
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -56,7 +65,7 @@ func (h *Handler) Create(c *gin.Context) {
 	emailSent := false
 	verificationCode, err := h.verification.Create(ctx, createUser.ID)
 	if err == nil {
-		err = h.email.SendEmail(createUser.EmailAddress, verificationCode)
+		err = h.email.SendVerification(createUser.EmailAddress, verificationCode)
 	}
 	if err != nil {
 		log.Println("verification email:", err)

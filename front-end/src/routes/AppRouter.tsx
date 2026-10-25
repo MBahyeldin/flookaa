@@ -2,6 +2,8 @@ import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import Signup from "../pages/sign-up";
 import Login from "../pages/login";
+import ForgotPasswordPage from "../pages/forgot-password";
+import ResetPasswordPage from "../pages/reset-password";
 import HomePage from "../pages/home";
 import ChannelPage from "@/pages/(dashboard)/channels/[id]";
 import PostPage from "@/pages/(dashboard)/channels/[id]/posts/[postId]";
@@ -52,6 +54,8 @@ export default function AppRouter() {
 
       <Route path="/sign-up" element={<Signup />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       <Route path="/persona-manager" element={<PersonaManagerPage />} />
       <Route path="/persona-manager/:id" element={<PersonaSettingsPage />} />

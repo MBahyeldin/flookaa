@@ -41,7 +41,7 @@ export default function OAuthProviders({
         <Button
           key={p.id}
           size="lg"
-         
+          variant="outline"
           className="w-full"
           type="button"
           onClick={() => p.start(state, next)}

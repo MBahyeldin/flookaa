@@ -18,7 +18,9 @@ import (
 	"app/internal/oauthproviders"
 	"app/internal/onboarding"
 	"app/util/email"
+	"app/util/emailchange"
 	"app/util/image"
+	"app/util/passwordreset"
 	"app/util/verification"
 	"context"
 	"fmt"
@@ -105,6 +107,9 @@ func StartServer(cfg config.Server) error {
 		signer,
 		email.NewSender(email.Config(cfg.SMTP)),
 		verification.NewService(pg, q),
+		emailchange.NewService(pg, q),
+		passwordreset.NewService(pg, q),
+		cfg.AppBaseURL,
 		stores.Persona,
 		followersHandler,
 		onboardingFlow,

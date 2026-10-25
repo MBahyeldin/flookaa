@@ -1,6 +1,7 @@
 import type { FormGroup } from "@/types/FormFields";
 import { MIN_AGE_ERROR } from "@/lib/minAge";
-import signupFormFieldsGroup from "@/lib/formFields/signup";
+import { PASSWORD_RULES_ERROR } from "@/lib/password";
+import signupFormFieldsGroup, { forgotPasswordGroups, resetPasswordGroups } from "@/lib/formFields/signup";
 import profileFieldsGroups from "@/lib/formFields/profile";
 import loginFormFieldsGroups from "@/lib/formFields/login";
 import channelFormFieldsGroups from "@/lib/formFields/channel";
@@ -8,8 +9,11 @@ import communityFormFieldsGroups from "@/lib/formFields/community";
 import personaFormFieldsGroups, { personaSettingsFormGroups } from "@/lib/formFields/persona";
 import type { Persona } from "@/types/persona";
 
-// An API error code shown on a field instead of under the form.
-type ServerFieldError = { field: string; message: string };
+// An API error code shown on a field instead of under the form; `also` fields are outlined without a message.
+type ServerFieldError = { field: string; message: string; also?: string[] };
+
+// Marks a field invalid without a message of its own.
+export const MARK_ONLY = "\u0000mark";
 
 export class Form {
   id: string;
@@ -27,10 +31,42 @@ export class Form {
     name: "Sign Up Form",
     title: "Create Your Account",
     description: "Form for user sign up",
-    submitText: "Signup",
+    submitText: "Create account",
     groups: signupFormFieldsGroup,
     relativeApiPath: "/api/v1/auth/register",
     method: "POST",
+    serverErrors: {
+      weak_password: { field: "password", message: PASSWORD_RULES_ERROR },
+      email_taken: { field: "email_address", message: "An account already uses this email. Log in instead." },
+    },
+  });
+
+  static forgotPassword = new Form({
+    id: "forgot_password_form",
+    name: "Forgot Password Form",
+    title: "Reset your password",
+    description: "Sends a reset link to the account's email",
+    submitText: "Send link",
+    groups: forgotPasswordGroups,
+    relativeApiPath: "/api/v1/auth/password/forgot",
+    method: "POST",
+    serverErrors: {
+      invalid_email: { field: "email_address", message: "Enter a valid email address." },
+    },
+  });
+
+  static resetPassword = new Form({
+    id: "reset_password_form",
+    name: "Reset Password Form",
+    title: "Choose a new password",
+    description: "Sets a new password from a reset link",
+    submitText: "Change password",
+    groups: resetPasswordGroups,
+    relativeApiPath: "/api/v1/auth/password/reset",
+    method: "POST",
+    serverErrors: {
+      weak_password: { field: "password", message: PASSWORD_RULES_ERROR },
+    },
   });
 
   static profile = new Form({
@@ -53,10 +89,17 @@ export class Form {
     name: "Log In Form",
     title: "Welcome Back",
     description: "Enter your email below to login to your account.",
-    submitText: "Log In",
+    submitText: "Log in",
     groups: loginFormFieldsGroups,
     relativeApiPath: "/api/v1/auth/login",
     method: "POST",
+    serverErrors: {
+      "Invalid email or password": { field: "password", message: "Wrong email or password.", also: ["email_address"] },
+      "you can't login with password, please use OAuth login": {
+        field: "password",
+        message: "This account logs in with Google.",
+      },
+    },
   });
 
   static channel = new Form({

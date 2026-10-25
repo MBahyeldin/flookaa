@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/apiFetch";
-import type { Form } from "@/models/Forms/Form";
+import { MARK_ONLY, type Form } from "@/models/Forms/Form";
 import { useFormik } from "formik";
 import { unknown } from "zod";
 
@@ -89,6 +89,7 @@ export default function useForm({
         const fieldError = form.serverErrors[message];
         if (fieldError) {
           setFieldError(fieldError.field, fieldError.message);
+          fieldError.also?.forEach((f) => setFieldError(f, MARK_ONLY));
           setStatus({ success: false, error: null });
           return;
         }

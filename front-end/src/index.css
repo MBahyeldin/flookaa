@@ -163,10 +163,6 @@
   }
 }
 
-.welcome-bg-bottom {
-  background-image: url('/welcon-bg.jpg');
-}
-
 /*
  * Entrance for a post that arrives after the feed has already rendered.
  *

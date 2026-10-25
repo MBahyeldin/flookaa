@@ -4,10 +4,11 @@ import type { FormGroup } from "@/types/FormFields";
 const loginFields = [
   new FormField({
     id: "email_address",
-    label: "Email Address",
-    type: "text",
-    placeholder: "john@example.com",
+    label: "Email",
+    type: "email",
+    placeholder: "you@example.com",
     interfaceType: "text",
+    autoComplete: "email",
     isRequired: true,
   }),
 
@@ -15,8 +16,8 @@ const loginFields = [
     id: "password",
     label: "Password",
     type: "password",
-    placeholder: "********",
     interfaceType: "text",
+    autoComplete: "current-password",
     isRequired: true,
   }),
 ];

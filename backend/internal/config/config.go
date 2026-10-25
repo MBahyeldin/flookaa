@@ -4,7 +4,10 @@
 // OAuth settings to run.
 package config
 
-import "shared/util/envconfig"
+import (
+	"shared/util/envconfig"
+	"strings"
+)
 
 type SMTP struct {
 	Host     string
@@ -27,6 +30,7 @@ type Server struct {
 	RedisPassword string
 	JWTSecret     string
 	S3BaseURL     string
+	AppBaseURL    string
 	SMTP          SMTP
 	Google        Google
 }
@@ -41,6 +45,7 @@ func LoadServer() (Server, error) {
 		RedisPassword: r.Optional("REDIS_PASSWORD", ""),
 		JWTSecret:     r.Required("JWT_SECRET_KEY"),
 		S3BaseURL:     r.Required("S3_BASE_URL"),
+		AppBaseURL:    strings.TrimRight(r.Required("APP_BASE_URL"), "/"),
 		SMTP: SMTP{
 			Host:     r.Required("SMTP_HOST"),
 			Port:     r.Required("SMTP_PORT"),

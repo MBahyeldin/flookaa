@@ -1262,6 +1262,19 @@ type Country struct {
 	WikiDataId     sql.NullString
 }
 
+type EmailChange struct {
+	ID             int64
+	UserID         int64
+	NewEmail       string
+	Code           string
+	FailedAttempts int32
+	MaxAttempts    int32
+	CreatedAt      time.Time
+	ExpiresAt      time.Time
+	ConfirmedAt    sql.NullTime
+	IsExpired      bool
+}
+
 type Event struct {
 	ID         int64
 	Name       EventEnum
@@ -1314,6 +1327,15 @@ type Notification struct {
 	UpdatedAt   time.Time
 	ReadAt      sql.NullTime
 	DeletedAt   sql.NullTime
+}
+
+type PasswordReset struct {
+	ID        int64
+	UserID    int64
+	TokenHash []byte
+	CreatedAt time.Time
+	ExpiresAt time.Time
+	UsedAt    sql.NullTime
 }
 
 type Persona struct {

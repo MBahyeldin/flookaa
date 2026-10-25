@@ -1,7 +1,7 @@
 import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField } from "@/models/Forms/FormField";
 import type { FormGroup } from "@/types/FormFields";
-import { CalendarDays, Mail, User } from "lucide-react";
+import { CalendarDays, User } from "lucide-react";
 import { GENDERS, dateOfBirthSchema } from "@/types/user";
 
 export const dateOfBirthField = new FormField({
@@ -82,16 +82,6 @@ const BasicInfoGroup: FormGroup = {
       interfaceType: "text",
       isRequired: true,
       width: "1/2",
-    }),
-    new FormField({
-      id: "email_address",
-      label: "Email Address",
-      type: "email",
-      placeholder: "john.doe@example.com",
-      interfaceType: "text",
-      isRequired: true,
-      icon: <Mail className="h-4 w-4" />,
-      width: "full",
     }),
     dateOfBirthField,
     new FormField({

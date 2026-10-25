@@ -23,7 +23,7 @@ export default function Form({
   onValuesChange?: (values: Record<string, unknown>) => void;
   /** Fields to set from the others, e.g. a slug that follows the name until edited. */
   derive?: (values: Record<string, unknown>) => Record<string, unknown> | null;
-  children?: React.ReactNode;
+  children?: React.ReactNode | ((state: { isSubmitting: boolean }) => React.ReactNode);
 }) {
   const {
     status,
@@ -167,7 +167,7 @@ export default function Form({
         <div
           className={clsx("col-span-12", { "opacity-50": isSubmitting })}
         >
-          {children}
+          {typeof children === "function" ? children({ isSubmitting }) : children}
         </div>
 
         {status && status.error && (

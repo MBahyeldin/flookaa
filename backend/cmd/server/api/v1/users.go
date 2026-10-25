@@ -13,5 +13,8 @@ func AddUsersRoutes(r *gin.RouterGroup, users *users.Handler) {
 		usersGroup.GET("/profile", users.GetProfile)
 		usersGroup.PATCH("/profile", users.UpdateProfile)
 		usersGroup.POST("/onboarding", users.MoveOnboarding)
+		usersGroup.POST("/email/change", users.RequestEmailChange)
+		usersGroup.POST("/email/change/cancel", users.CancelEmailChange)
+		usersGroup.POST("/email/confirm", users.ConfirmEmailChange)
 	}
 }

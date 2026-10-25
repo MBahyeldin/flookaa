@@ -72,7 +72,7 @@ func (h *Handler) ResendVerification(c *gin.Context) {
 
 	user, err := h.q.GetUserBasicInfo(c.Request.Context(), userId)
 	if err == nil {
-		err = h.email.SendEmail(user.EmailAddress, code)
+		err = h.email.SendVerification(user.EmailAddress, code)
 	}
 	if err != nil {
 		log.Println("resend verification email:", err)

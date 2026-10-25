@@ -126,7 +126,7 @@ func (s *Service) Verify(ctx context.Context, userID int64, code string) error {
 }
 
 func (s *Service) issue(ctx context.Context, q *db.Queries, userID int64) (string, error) {
-	code := generateRandomCode()
+	code := GenerateCode()
 	if code == "" {
 		return "", fmt.Errorf("failed to generate verification code")
 	}

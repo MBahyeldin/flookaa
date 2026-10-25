@@ -4,6 +4,7 @@ import type { Profile } from "@/types/user";
 import { getUserData } from "@/services/user";
 import SectionLoader from "@/components/section-loader";
 import { useNavigate } from "react-router-dom";
+import { EmailCard } from "./EmailCard";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ export default function ProfilePage() {
             Manage your account settings and personal information.
           </p>
         </div>
+        <EmailCard profile={data} />
         <ProfileForm data={data} />
       </div>
     </div>

@@ -1,58 +1,48 @@
 import { FormField } from "@/models/Forms/FormField";
 import type { FormGroup } from "@/types/FormFields";
+import { passwordError } from "@/lib/password";
+
+export const newPasswordField = new FormField({
+  id: "password",
+  label: "Password",
+  type: "password",
+  interfaceType: "text",
+  autoComplete: "new-password",
+  isRequired: true,
+  passwordRules: true,
+  validate: passwordError,
+});
 
 const signupFormFields = [
   new FormField({
     id: "first_name",
-    label: "First Name",
+    label: "First name",
     type: "text",
-    placeholder: "John",
     interfaceType: "text",
+    autoComplete: "given-name",
     isRequired: true,
     width: "1/2",
   }),
   new FormField({
     id: "last_name",
-    label: "Last Name",
+    label: "Last name",
     type: "text",
-    placeholder: "Doe",
     interfaceType: "text",
+    autoComplete: "family-name",
     isRequired: true,
     width: "1/2",
   }),
   new FormField({
     id: "email_address",
-    label: "Email Address",
-    type: "text",
-    placeholder: "john@example.com",
+    label: "Email",
+    type: "email",
+    placeholder: "you@example.com",
     interfaceType: "text",
+    autoComplete: "email",
     isRequired: true,
     width: "full",
   }),
-  new FormField({
-    id: "password",
-    label: "Password",
-    type: "password",
-    placeholder: "********",
-    interfaceType: "text",
-    isRequired: true,
-    width: "full",
-  }),
-
-  new FormField({
-    id: "confirm_password",
-    label: "Confirm Password",
-    type: "password",
-    placeholder: "********",
-    interfaceType: "text",
-    isRequired: true,
-    width: "full",
-    validate: (value, values) => {
-      // custom validation: confirm password matches password
-      const passwordField = values?.["password"];
-      return value !== passwordField ? "Passwords do not match" : null;
-    },
-  }),
+  newPasswordField,
 ];
 
 const signupFormFieldsGroups: FormGroup[] = [
@@ -61,6 +51,26 @@ const signupFormFieldsGroups: FormGroup[] = [
     label: "Sign Up Information",
     description: "Please fill in the details to create your account.",
     fields: signupFormFields,
+    sort: 1,
+  },
+];
+
+export const forgotPasswordGroups: FormGroup[] = [
+  {
+    id: "forgot_password",
+    label: "Forgot password",
+    description: "The email of your account.",
+    fields: [signupFormFields[2]],
+    sort: 1,
+  },
+];
+
+export const resetPasswordGroups: FormGroup[] = [
+  {
+    id: "reset_password",
+    label: "New password",
+    description: "Your new password.",
+    fields: [newPasswordField],
     sort: 1,
   },
 ];

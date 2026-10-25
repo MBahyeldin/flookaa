@@ -13,6 +13,8 @@ export const profileSchema = zod.object({
 });
 
 export type Profile = zod.infer<typeof profileSchema> & {
+  email_address: string;
+  has_password: boolean;
   date_of_birth?: string | null;
   gender?: Gender | null;
 };
