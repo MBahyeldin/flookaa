@@ -1150,6 +1150,67 @@ func (q *Queries) ListModeratedChannels(ctx context.Context, personaID int64) ([
 	return items, nil
 }
 
+const listShowcaseCommunities = `-- name: ListShowcaseCommunities :many
+SELECT slug, name, thumbnail, theme, cover_pattern, members_count, channels_count, id FROM (
+    SELECT c.slug, c.name, c.thumbnail, c.theme, c.cover_pattern,
+        (SELECT COUNT(*) FROM community_members cm JOIN personas p ON p.id = cm.persona_id
+         WHERE cm.community_id = c.id AND cm.status = 'active' AND cm.left_at IS NULL
+           AND p.deleted_at IS NULL)::int AS members_count,
+        (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
+         WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
+           AND ch.deleted_at IS NULL)::int AS channels_count,
+        c.id
+    FROM communities c
+    WHERE c.deleted_at IS NULL AND c.visibility = 'public' AND c.min_age = 13
+) s
+ORDER BY s.members_count DESC, s.id
+LIMIT $1
+`
+
+type ListShowcaseCommunitiesRow struct {
+	Slug          string
+	Name          string
+	Thumbnail     string
+	Theme         ThemeEnum
+	CoverPattern  CoverPatternEnum
+	MembersCount  int32
+	ChannelsCount int32
+	ID            int64
+}
+
+// For logged-out visitors, who have no age: public 13+ communities only, most live members first.
+func (q *Queries) ListShowcaseCommunities(ctx context.Context, lim int64) ([]ListShowcaseCommunitiesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listShowcaseCommunities, lim)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListShowcaseCommunitiesRow
+	for rows.Next() {
+		var i ListShowcaseCommunitiesRow
+		if err := rows.Scan(
+			&i.Slug,
+			&i.Name,
+			&i.Thumbnail,
+			&i.Theme,
+			&i.CoverPattern,
+			&i.MembersCount,
+			&i.ChannelsCount,
+			&i.ID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const removeCommunityChannel = `-- name: RemoveCommunityChannel :execrows
 UPDATE community_channels
 SET removed_at = now()

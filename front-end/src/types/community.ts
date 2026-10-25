@@ -91,3 +91,13 @@ export type ChannelCommunityState = {
 export const MAX_COMMUNITY_INTERESTS = 5;
 
 export const MAX_COMMUNITY_RULES = 5000;
+
+export interface ShowcaseCommunity {
+  slug: string;
+  name: string;
+  thumbnail: string;
+  theme: PaletteId;
+  cover_pattern: CoverPattern;
+  members_count: number;
+  channels_count: number;
+}

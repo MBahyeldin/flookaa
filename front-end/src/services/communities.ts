@@ -6,6 +6,7 @@ import type {
   CommunityJoinRequest,
   CommunityMember,
   ModeratedChannel,
+  ShowcaseCommunity,
 } from "@/types/community";
 import type { Result } from "@/services/interests";
 
@@ -21,6 +22,8 @@ async function call<T>(path: string, method = "GET", base = "/communities"): Pro
     return { ok: false, error: "request_failed" };
   }
 }
+
+export const getShowcase = () => call<{ communities: ShowcaseCommunity[] }>("/showcase", "GET", "");
 
 export const listCommunities = (interests: string[] = []) => {
   const params = new URLSearchParams(interests.map((slug) => ["interest", slug]));

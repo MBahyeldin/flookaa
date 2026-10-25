@@ -160,7 +160,7 @@ func seedOneCommunity(ctx context.Context, pg *sql.DB, q *db.Queries, ownerID in
 func seedCommunityRow(ctx context.Context, pg *sql.DB, q *db.Queries, ownerID int64, sc seedCommunity) (int64, error) {
 	existing, err := q.GetCommunityBySlug(ctx, sc.Slug)
 	if err == nil {
-		return existing.Community.ID, nil
+		return existing.Community.ID, seedCommunityLook(ctx, q, existing.Community, sc)
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return 0, err
@@ -193,6 +193,23 @@ func seedCommunityRow(ctx context.Context, pg *sql.DB, q *db.Queries, ownerID in
 		return 0, err
 	}
 	return communityID, tx.Commit()
+}
+
+// Rows from before migration 034 got the column defaults; only those are given the seed's look,
+// so a manager's own choice is never overwritten.
+func seedCommunityLook(ctx context.Context, q *db.Queries, c db.Community, sc seedCommunity) error {
+	if c.Theme != db.ThemeEnumTide || c.CoverPattern != db.CoverPatternEnumHorizon {
+		return nil
+	}
+	if sc.Theme == c.Theme && sc.Cover == c.CoverPattern {
+		return nil
+	}
+	_, err := q.UpdateCommunity(ctx, db.UpdateCommunityParams{
+		ID:           c.ID,
+		Theme:        db.NullThemeEnum{ThemeEnum: sc.Theme, Valid: true},
+		CoverPattern: db.NullCoverPatternEnum{CoverPatternEnum: sc.Cover, Valid: true},
+	})
+	return err
 }
 
 // Every seeded interest exists once SeedInterests has run, so a miss is an error.

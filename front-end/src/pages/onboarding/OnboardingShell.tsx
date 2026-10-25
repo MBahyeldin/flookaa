@@ -31,9 +31,9 @@ export default function OnboardingShell({
   const Step = def?.Component ?? UnavailableStep;
 
   return (
-    <div className="min-h-screen bg-background px-4 pt-24 pb-12">
+    <div className="min-h-screen bg-background pb-12">
       <Header onlyLogo />
-      <div className="mx-auto w-full max-w-5xl flex flex-col gap-8">
+      <div className="mx-auto w-full max-w-5xl px-4 pt-4 flex flex-col gap-8">
         <OnboardingProgress current={index + 1} total={state.steps.length} />
         {def?.title && (
           <h1 className="text-center text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">

@@ -101,9 +101,9 @@ export default function VerifyEmailPage() {
   };
 
   return (
-    <div className="min-h-screen flex justify-center px-4 pt-28 pb-16 welcome-bg-bottom bg-no-repeat bg-bottom bg-cover">
+    <div className="min-h-screen flex flex-col items-center pb-16 welcome-bg-bottom bg-no-repeat bg-bottom bg-cover">
       <Header onlyLogo={true} />
-      <div className="w-full max-w-sm">
+      <div className="mt-8 w-full max-w-sm px-4 sm:px-0">
         <div className="rounded-xl border bg-background/80 backdrop-blur-md shadow-sm p-6 flex flex-col items-center gap-5 text-center">
           <div className="bg-primary w-20 h-20 rounded-full flex items-center justify-center">
             <Mail className="text-primary-foreground w-10 h-10" />

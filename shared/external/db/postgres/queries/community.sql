@@ -493,3 +493,20 @@ JOIN channels ch ON ch.id = cc.channel_id
 WHERE cc.community_id = sqlc.arg(community_id)
   AND cc.status = 'active' AND cc.removed_at IS NULL
   AND ch.deleted_at IS NULL AND ch.theme IS NULL;
+
+-- For logged-out visitors, who have no age: public 13+ communities only, most live members first.
+-- name: ListShowcaseCommunities :many
+SELECT * FROM (
+    SELECT c.slug, c.name, c.thumbnail, c.theme, c.cover_pattern,
+        (SELECT COUNT(*) FROM community_members cm JOIN personas p ON p.id = cm.persona_id
+         WHERE cm.community_id = c.id AND cm.status = 'active' AND cm.left_at IS NULL
+           AND p.deleted_at IS NULL)::int AS members_count,
+        (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
+         WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
+           AND ch.deleted_at IS NULL)::int AS channels_count,
+        c.id
+    FROM communities c
+    WHERE c.deleted_at IS NULL AND c.visibility = 'public' AND c.min_age = 13
+) s
+ORDER BY s.members_count DESC, s.id
+LIMIT sqlc.arg(lim);

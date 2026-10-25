@@ -1,60 +1,28 @@
-"use client";
-
 import { Link } from "react-router-dom";
-
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-} from "@/components/ui/navigation-menu";
-import logoLight from "../../assets/images/logo-light.png";
-import logoDark from "../../assets/images/logo-dark.png";
+import { SunMoon } from "lucide-react";
+import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
-import { ToggleTheme } from "@/components/toggle-theme";
 import { useTheme } from "@/Theme.context";
 
-export default function Header({
-  onlyLogo = false,
-}: {
-  onlyLogo?: boolean;
-}) {
-  const { isDarkMode } = useTheme();
-
-  const items = [
-    { to: "/login", label: "Login", variant: "outline" },
-    { to: "/sign-up", label: "Join FLOOKA", variant: "default" },
-  ];
+export default function Header({ onlyLogo = false }: { onlyLogo?: boolean }) {
+  const { toggleTheme } = useTheme();
 
   return (
-    <header className="fixed w-full px-6 py-2  flex items-center justify-between top-0 left-0 z-50 bg-background/90 backdrop-blur-md">
-      <Link to="/">
-        <div className="flex items-center gap-1">
-          <img src={isDarkMode ? logoDark : logoLight} alt="Logo" className="h-16" />
-        </div>
-      </Link>
-      {/* Navigation Menu */}
-      <div className="flex items-center gap-4">
-      {onlyLogo ? null : (
-        <NavigationMenu viewport={false} className="hidden sm:block">
-            <NavigationMenuList>
-              {items.map((item) => (
-                <NavigationMenuItem>
-                  <NavigationMenuLink asChild>
-                    <Link to={item.to}>
-                      <Button variant={item.variant as "outline" | "default"}>
-                        {item.label}
-                      </Button>
-                    </Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-              ))}
-            </NavigationMenuList>
-          </NavigationMenu>
-        )}
-        <ToggleTheme />
-      </div>
+    <header className="flex w-full items-center gap-2 px-4 py-4 sm:gap-4 md:px-6 lg:px-20">
+      <Brand className="flex-1" />
+      {!onlyLogo && (
+        <nav className="flex items-center gap-2 sm:gap-4">
+          <Button asChild variant="ghost">
+            <Link to="/login">Log in</Link>
+          </Button>
+          <Button asChild>
+            <Link to="/sign-up">Sign up</Link>
+          </Button>
+        </nav>
+      )}
+      <Button variant="ghost" size="icon-sm" aria-label="Toggle dark mode" onClick={toggleTheme}>
+        <SunMoon />
+      </Button>
     </header>
   );
 }
-

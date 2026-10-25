@@ -72,7 +72,7 @@ export default function AuthScreen({ mode }: { mode: "login" | "signup" }) {
   const switchHref = rawNext ? `${switchTo}?next=${encodeURIComponent(next)}` : switchTo;
 
   return (
-    <div className="min-h-screen flex justify-center px-4 pt-28 pb-16 welcome-bg-bottom bg-no-repeat bg-bottom bg-cover">
+    <div className="flex flex-1 justify-center px-4 pt-8 pb-16 welcome-bg-bottom bg-no-repeat bg-bottom bg-cover">
       <div className="w-full max-w-sm">
         <div className="rounded-xl border bg-background/80 backdrop-blur-md shadow-sm p-6 flex flex-col gap-5">
           <div className="text-center flex flex-col gap-1">

@@ -8,6 +8,8 @@ import (
 )
 
 func AddCommunitiesRoutes(r *gin.RouterGroup, communities *communities.Handler) {
+	r.GET("/showcase", communities.Showcase)
+
 	group := r.Group("/communities", auth.RequirePersona())
 	{
 		group.GET("/", communities.ListCommunities)
