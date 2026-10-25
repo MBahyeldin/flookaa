@@ -2,7 +2,7 @@ import { Avatar, AvatarImage } from "../ui/avatar";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { useCreateCommentMutation, type SimpleInput } from "@/generated/graphql";
 import SimpleInputComponent from "../simple-input";
-import { useAppStore } from "@/stores/AppStore";
+import { contentOwner, useAppStore } from "@/stores/AppStore";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 
 export default function CommentInput({
@@ -17,7 +17,7 @@ export default function CommentInput({
     onSent?: () => void;
 }) {
     const { persona } = useUserProfileStore();
-    const owner = useAppStore((state) => state.owner);
+    const owner = useAppStore((state) => contentOwner(state.owner));
 
     const [CreateComment] = useCreateCommentMutation();
 

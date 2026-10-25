@@ -1,0 +1,14 @@
+query GetFeed($after: String, $limit: Int) {
+  getFeed(after: $after, limit: $limit) {
+    posts {
+      ...PostFields
+    }
+    channels {
+      id
+      name
+      theme
+      canModerate
+    }
+    nextCursor
+  }
+}

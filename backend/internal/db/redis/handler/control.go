@@ -16,9 +16,8 @@ import (
 type WsMessageType string
 
 const (
-	WsMessageTypePing        WsMessageType = "PING"
-	WsMessageTypeSubscribe   WsMessageType = "SUBSCRIBE"
-	WsMessageTypeUnsubscribe WsMessageType = "UNSUBSCRIBE"
+	WsMessageTypePing      WsMessageType = "PING"
+	WsMessageTypeSubscribe WsMessageType = "SUBSCRIBE"
 )
 
 type WsMessage struct {
@@ -34,6 +33,7 @@ const (
 	OwnerTypePersona   OwnerType = "PERSONA"
 	OwnerTypeCommunity OwnerType = "COMMUNITY"
 	OwnerTypeDefault   OwnerType = "DEFAULT"
+	OwnerTypeFeed      OwnerType = "FEED"
 )
 
 type Payload struct {
@@ -69,6 +69,11 @@ func (h *Handler) Control(c *gin.Context) {
 		return
 	}
 
+	if bodyData.Type != WsMessageTypeSubscribe {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid action"})
+		return
+	}
+
 	personaId := strconv.FormatInt(personaIdInt64, 10)
 
 	switch bodyData.Payload.Owner {
@@ -83,6 +88,9 @@ func (h *Handler) Control(c *gin.Context) {
 
 	case OwnerTypeCommunity:
 		h.community(c, bodyData, personaIdInt64)
+
+	case OwnerTypeFeed:
+		h.feed(c, bodyData, personaIdInt64)
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid owner type %s", bodyData.Payload.Owner)})
 		return

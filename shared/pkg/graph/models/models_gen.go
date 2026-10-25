@@ -277,6 +277,19 @@ type CountdownBlockInput struct {
 	EndedText *string   `json:"endedText,omitempty"`
 }
 
+type FeedChannel struct {
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	Theme       Theme  `json:"theme"`
+	CanModerate bool   `json:"canModerate"`
+}
+
+type FeedPage struct {
+	Posts      []*Post        `json:"posts"`
+	Channels   []*FeedChannel `json:"channels"`
+	NextCursor *string        `json:"nextCursor,omitempty"`
+}
+
 type GalleryBlock struct {
 	Type   BlockType      `json:"_type"`
 	Key    string         `json:"_key"`

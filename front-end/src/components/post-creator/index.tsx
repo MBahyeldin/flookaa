@@ -31,7 +31,7 @@ import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import { toast } from "sonner";
 import normalizeBlocks from "@/utils/normalizeBlocks";
 import { personaInitials } from "@/lib/personaInitials";
-import { useAppStore } from "@/stores/AppStore";
+import { contentOwner, useAppStore } from "@/stores/AppStore";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import {
   portableTextIsEmpty,
@@ -86,7 +86,7 @@ export function PostCreator(props: {
       editorIdGenerator: editorIdGenerator(),
     },
   });
-  const owner = useAppStore((state) => state.owner);
+  const owner = useAppStore((state) => contentOwner(state.owner));
 
   /* Counts characters across the blocks' spans, not the number of blocks —
      an emptied editor still contains one block with a zero-length span. */

@@ -21,9 +21,19 @@ export type { PostChannel };
 
 export type PostVersion = "spine" | "canvas";
 
-export function PostMenu({ post, onDeleted }: { post: Post; onDeleted?: () => void }) {
+export function PostMenu({
+  post,
+  onDeleted,
+  canModerate: canModerateProp,
+}: {
+  post: Post;
+  onDeleted?: () => void;
+  // The feed knows it per channel; elsewhere the page's store does.
+  canModerate?: boolean;
+}) {
   const { persona } = useUserProfileStore();
-  const canModerate = useAppStore((state) => state.canModerate);
+  const pageCanModerate = useAppStore((state) => state.canModerate);
+  const canModerate = canModerateProp ?? pageCanModerate;
   const [deletePost, { loading: isDeleting }] = useDeletePostMutation();
   if (post.authorId !== persona?.id && !canModerate) return null;
 
@@ -73,6 +83,7 @@ export function Post({
   channel,
   onOpen,
   isNew = false,
+  canModerate,
 }: {
   post: Post;
   version?: PostVersion;
@@ -81,6 +92,7 @@ export function Post({
   onOpen?: () => void;
   /** Arrived after the feed rendered — plays the entrance animation once. */
   isNew?: boolean;
+  canModerate?: boolean;
 }) {
   const [truncated, setTruncated] = useState(false);
   const canvas = version === "canvas";
@@ -131,7 +143,7 @@ export function Post({
       >
         <div className="flex min-w-0 items-center gap-2">
           {byline}
-          <PostMenu post={post} />
+          <PostMenu post={post} canModerate={canModerate} />
         </div>
         {content}
         {footer}
@@ -151,7 +163,7 @@ export function Post({
       <div className="flex min-w-0 flex-1 flex-col gap-3.5 px-5 pt-5 pb-4.5">
         <div className="flex min-w-0 items-center gap-2">
           {byline}
-          <PostMenu post={post} />
+          <PostMenu post={post} canModerate={canModerate} />
         </div>
         {content}
         <div className="h-px bg-border" />

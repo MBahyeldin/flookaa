@@ -4,7 +4,7 @@ use axum::extract::ws::{Message as AxumMessage, WebSocket};
 use futures::stream::SplitSink;
 use futures::{SinkExt, StreamExt};
 use std::sync::Arc;
-use std::{collections::HashMap, env};
+use std::collections::HashMap;
 use tokio::sync::Mutex;
 use tokio::sync::OnceCell;
 

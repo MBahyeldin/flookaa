@@ -65,6 +65,10 @@ type SubscribeDefaultPayload = {
   owner: "DEFAULT";
 };
 
+type SubscribeFeedPayload = {
+  owner: "FEED";
+};
+
 type Event = {
   name: EventType;
   action: EventActionType;
@@ -127,6 +131,7 @@ export type {
   SubscribeDefaultPayload,
   SubscribePersonaPayload,
   SubscribeCommunityPayload,
+  SubscribeFeedPayload,
   Event,
   EventType,
   EventActionType,

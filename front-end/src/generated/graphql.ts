@@ -315,6 +315,21 @@ export type CoverPattern =
   | 'stripes'
   | 'waves';
 
+export type FeedChannel = {
+  __typename?: 'FeedChannel';
+  canModerate: Scalars['Boolean']['output'];
+  id: Scalars['Int64']['output'];
+  name: Scalars['String']['output'];
+  theme: Theme;
+};
+
+export type FeedPage = {
+  __typename?: 'FeedPage';
+  channels: Array<FeedChannel>;
+  nextCursor?: Maybe<Scalars['String']['output']>;
+  posts: Array<Post>;
+};
+
 export type GalleryBlock = Block & {
   __typename?: 'GalleryBlock';
   _key: Scalars['ID']['output'];
@@ -602,6 +617,7 @@ export type Query = {
   __typename?: 'Query';
   getChannel?: Maybe<Channel>;
   getComments: Array<Comment>;
+  getFeed: FeedPage;
   getPosts: Array<Post>;
 };
 
@@ -615,6 +631,12 @@ export type QueryGetCommentsArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   parentId: Scalars['ObjectId']['input'];
+};
+
+
+export type QueryGetFeedArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -830,6 +852,14 @@ export type GetCommentsQueryVariables = Exact<{
 
 
 export type GetCommentsQuery = { __typename?: 'Query', getComments: Array<{ __typename?: 'Comment', _id: any, type: PostType, parentId: any, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }> };
+
+export type GetFeedQueryVariables = Exact<{
+  after?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type GetFeedQuery = { __typename?: 'Query', getFeed: { __typename?: 'FeedPage', nextCursor?: string | null, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, channels: Array<{ __typename?: 'FeedChannel', id: any, name: string, theme: Theme, canModerate: boolean }> } };
 
 export type GetPostsQueryVariables = Exact<{
   owner: OwnerInput;
@@ -1337,6 +1367,56 @@ export type GetCommentsQueryHookResult = ReturnType<typeof useGetCommentsQuery>;
 export type GetCommentsLazyQueryHookResult = ReturnType<typeof useGetCommentsLazyQuery>;
 export type GetCommentsSuspenseQueryHookResult = ReturnType<typeof useGetCommentsSuspenseQuery>;
 export type GetCommentsQueryResult = Apollo.QueryResult<GetCommentsQuery, GetCommentsQueryVariables>;
+export const GetFeedDocument = gql`
+    query GetFeed($after: String, $limit: Int) {
+  getFeed(after: $after, limit: $limit) {
+    posts {
+      ...PostFields
+    }
+    channels {
+      id
+      name
+      theme
+      canModerate
+    }
+    nextCursor
+  }
+}
+    ${PostFieldsFragmentDoc}`;
+
+/**
+ * __useGetFeedQuery__
+ *
+ * To run a query within a React component, call `useGetFeedQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetFeedQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetFeedQuery({
+ *   variables: {
+ *      after: // value for 'after'
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useGetFeedQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetFeedQuery, GetFeedQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetFeedQuery, GetFeedQueryVariables>(GetFeedDocument, options);
+      }
+export function useGetFeedLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetFeedQuery, GetFeedQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetFeedQuery, GetFeedQueryVariables>(GetFeedDocument, options);
+        }
+export function useGetFeedSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetFeedQuery, GetFeedQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetFeedQuery, GetFeedQueryVariables>(GetFeedDocument, options);
+        }
+export type GetFeedQueryHookResult = ReturnType<typeof useGetFeedQuery>;
+export type GetFeedLazyQueryHookResult = ReturnType<typeof useGetFeedLazyQuery>;
+export type GetFeedSuspenseQueryHookResult = ReturnType<typeof useGetFeedSuspenseQuery>;
+export type GetFeedQueryResult = Apollo.QueryResult<GetFeedQuery, GetFeedQueryVariables>;
 export const GetPostsDocument = gql`
     query GetPosts($owner: OwnerInput!, $ids: [ObjectId!], $limit: Int, $offset: Int) {
   getPosts(owner: $owner, ids: $ids, limit: $limit, offset: $offset) {

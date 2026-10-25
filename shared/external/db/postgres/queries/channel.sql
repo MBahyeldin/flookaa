@@ -421,3 +421,54 @@ SELECT (EXISTS (
     WHERE p.user_id = $1 AND p.is_default AND p.deleted_at IS NULL
       AND cf.unfollowed_at IS NULL
 ))::boolean AS done;
+
+-- The channels whose posts make a persona's feed: active member, or follows a
+-- channel it may read. Same read rule as access.Channel.CanRead plus age.
+-- name: ListFeedChannels :many
+SELECT
+    c.id,
+    c.name,
+    channel_theme(c.theme, c.id)::theme_enum AS theme,
+    (
+        c.owner_id = sqlc.arg(persona_id)::bigint
+        OR EXISTS (
+            SELECT 1
+            FROM channel_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.channel_id = c.id
+              AND cr.persona_id = sqlc.arg(persona_id)::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name IN ('moderator', 'Administrator')
+        )
+        OR EXISTS (
+            SELECT 1
+            FROM personas p
+            JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
+            JOIN roles r ON r.id = ur.role_id
+            WHERE p.id = sqlc.arg(persona_id)::bigint
+              AND r.name = 'Administrator'
+        )
+    )::boolean AS can_moderate
+FROM channels c
+WHERE c.deleted_at IS NULL
+  AND persona_meets_min_age(sqlc.arg(persona_id)::bigint, c.min_age)
+  AND (
+      EXISTS (
+          SELECT 1
+          FROM channel_members cm
+          WHERE cm.channel_id = c.id
+            AND cm.persona_id = sqlc.arg(persona_id)::bigint
+            AND cm.left_at IS NULL AND cm.status = 'active'
+      )
+      OR (
+          c.visibility = 'public'
+          AND EXISTS (
+              SELECT 1
+              FROM channel_followers cf
+              WHERE cf.channel_id = c.id
+                AND cf.persona_id = sqlc.arg(persona_id)::bigint
+                AND cf.unfollowed_at IS NULL
+          )
+      )
+  )
+ORDER BY c.id;

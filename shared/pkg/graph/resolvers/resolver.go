@@ -244,20 +244,36 @@ func getPersonaIdFromContext(ctx context.Context) (int64, error) {
 }
 
 // resolvePersonas returns how viewerID sees each of ids in channelID, real or
-// anonymous. A cache hit is public, so it needs no visibility check.
+// anonymous.
 func (r *Resolver) resolvePersonas(ctx context.Context, viewerID, channelID int64, ids []int64) (map[int64]*models.Persona, error) {
+	personas, err := r.visiblePersonas(ctx, viewerID, ids)
+	if err != nil {
+		return nil, err
+	}
+	for _, id := range ids {
+		if personas[id] == nil {
+			personas[id] = anonymousPersona(id, channelID)
+		}
+	}
+	return personas, nil
+}
+
+// visiblePersonas returns the real persona for each of ids viewerID sees, and
+// leaves the others out. A cache hit is public, so it needs no visibility check.
+func (r *Resolver) visiblePersonas(ctx context.Context, viewerID int64, ids []int64) (map[int64]*models.Persona, error) {
 	personas := make(map[int64]*models.Persona, len(ids))
+	seen := make(map[int64]bool, len(ids))
 	var misses []int64
 	for _, id := range ids {
-		if _, seen := personas[id]; seen {
+		if seen[id] {
 			continue
 		}
+		seen[id] = true
 		cached, err := r.Persona.GetPersonaInfo(ctx, strconv.FormatInt(id, 10))
 		if err != nil {
 			log.Println("redis get persona error:", err)
 		}
 		if cached == nil {
-			personas[id] = nil
 			misses = append(misses, id)
 			continue
 		}
@@ -287,14 +303,12 @@ func (r *Resolver) resolvePersonas(ctx context.Context, viewerID, channelID int6
 			}
 		}
 	}
-
-	for id, p := range personas {
-		if p == nil {
-			name := access.AnonymousName(id, channelID)
-			personas[id] = &models.Persona{ID: id, Username: name, FullName: name, Anonymous: true}
-		}
-	}
 	return personas, nil
+}
+
+func anonymousPersona(id, channelID int64) *models.Persona {
+	name := access.AnonymousName(id, channelID)
+	return &models.Persona{ID: id, Username: name, FullName: name, Anonymous: true}
 }
 
 func realPersona(id int64, firstName, lastName, thumbnail string) *models.Persona {

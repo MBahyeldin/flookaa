@@ -3,12 +3,10 @@ import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import { toast } from "sonner";
 import { useCreateLikeMutation, type Post } from "@/generated/graphql";
 import useAudioContext from "@/hooks/useAudioContext";
-import { useAppStore } from "@/stores/AppStore";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 
 export function useLikePost(post: Post) {
   const { persona } = useUserProfileStore();
-  const owner = useAppStore((state) => state.owner);
   const [createLike] = useCreateLikeMutation();
   const { playSound } = useAudioContext();
 
@@ -18,7 +16,7 @@ export function useLikePost(post: Post) {
   const [isLiking, setIsLiking] = useState(false);
 
   const toggleLike = async () => {
-    if (!persona?.id || !owner || isLiking) return;
+    if (!persona?.id || isLiking) return;
     const nextLiked = !liked;
 
     // Wait for the server before flipping `liked`: a rejected like (e.g. "join
@@ -30,7 +28,7 @@ export function useLikePost(post: Post) {
           targetId: post._id,
           targetType: "POST",
           liked: nextLiked,
-          owner: { id: owner.id, type: owner.type },
+          owner: { id: post.owner.id, type: post.owner.type },
         },
       });
     } catch (err) {

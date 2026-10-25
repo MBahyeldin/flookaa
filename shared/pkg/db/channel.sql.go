@@ -724,6 +724,93 @@ func (q *Queries) ListChannels(ctx context.Context, arg ListChannelsParams) ([]C
 	return items, nil
 }
 
+const listFeedChannels = `-- name: ListFeedChannels :many
+SELECT
+    c.id,
+    c.name,
+    channel_theme(c.theme, c.id)::theme_enum AS theme,
+    (
+        c.owner_id = $1::bigint
+        OR EXISTS (
+            SELECT 1
+            FROM channel_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.channel_id = c.id
+              AND cr.persona_id = $1::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name IN ('moderator', 'Administrator')
+        )
+        OR EXISTS (
+            SELECT 1
+            FROM personas p
+            JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
+            JOIN roles r ON r.id = ur.role_id
+            WHERE p.id = $1::bigint
+              AND r.name = 'Administrator'
+        )
+    )::boolean AS can_moderate
+FROM channels c
+WHERE c.deleted_at IS NULL
+  AND persona_meets_min_age($1::bigint, c.min_age)
+  AND (
+      EXISTS (
+          SELECT 1
+          FROM channel_members cm
+          WHERE cm.channel_id = c.id
+            AND cm.persona_id = $1::bigint
+            AND cm.left_at IS NULL AND cm.status = 'active'
+      )
+      OR (
+          c.visibility = 'public'
+          AND EXISTS (
+              SELECT 1
+              FROM channel_followers cf
+              WHERE cf.channel_id = c.id
+                AND cf.persona_id = $1::bigint
+                AND cf.unfollowed_at IS NULL
+          )
+      )
+  )
+ORDER BY c.id
+`
+
+type ListFeedChannelsRow struct {
+	ID          int64
+	Name        string
+	Theme       ThemeEnum
+	CanModerate bool
+}
+
+// The channels whose posts make a persona's feed: active member, or follows a
+// channel it may read. Same read rule as access.Channel.CanRead plus age.
+func (q *Queries) ListFeedChannels(ctx context.Context, personaID int64) ([]ListFeedChannelsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listFeedChannels, personaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListFeedChannelsRow
+	for rows.Next() {
+		var i ListFeedChannelsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Theme,
+			&i.CanModerate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPendingJoinRequests = `-- name: ListPendingJoinRequests :many
 SELECT
     cm.persona_id,

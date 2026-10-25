@@ -12,7 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import React from "react";
 import formatDate, { formatRelativeDate } from "@/utils/formateDate";
-import { useAppStore } from "@/stores/AppStore";
+import { contentOwner, useAppStore } from "@/stores/AppStore";
 import CommentInput from "./input";
 import { Button } from "../ui/button";
 import {
@@ -57,7 +57,7 @@ const CommentItem = React.memo(({
     const comment = useAppStore((state) => state.comments[commentId]);
     const replyIds = useAppStore((state) => state.commentsByComment[commentId] ?? NO_REPLIES);
     const canModerate = useAppStore((state) => state.canModerate);
-    const owner = useAppStore((state) => state.owner);
+    const owner = useAppStore((state) => contentOwner(state.owner));
     const { persona } = useUserProfileStore();
 
     const { rawContent } = comment ?? {};

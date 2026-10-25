@@ -1,5 +1,5 @@
  
-import type { SubscribeChannelPayload, SubscribeDefaultPayload, SubscribePersonaPayload, SubscribeCommunityPayload, WsEventMessage, WsMessage } from "@/types/Ws";
+import type { SubscribeChannelPayload, SubscribeDefaultPayload, SubscribePersonaPayload, SubscribeCommunityPayload, SubscribeFeedPayload, WsEventMessage, WsMessage } from "@/types/Ws";
 
 const WEBSOCKET_BASE_URL = import.meta.env.VITE_WEBSOCKET_BASE_URL;
 
@@ -185,6 +185,19 @@ export default class WebSocketService {
         const id = crypto.randomUUID();
         const payload = { owner: "PERSONA" as const, owner_id: personaId };
         this.sendMessage<SubscribePersonaPayload>({ type: "SUBSCRIBE", payload, id });
+
+        const unsubscribe = this.subscribe(id, callback);
+        return () => {
+            unsubscribe();
+            this.sendMessage({ type: "UNSUBSCRIBE", payload, id });
+        };
+    }
+
+    // New posts, likes and comments of every channel in the persona's feed.
+    subscribeToFeedEvents(callback: MessageListener) {
+        const id = crypto.randomUUID();
+        const payload = { owner: "FEED" as const };
+        this.sendMessage<SubscribeFeedPayload>({ type: "SUBSCRIBE", payload, id });
 
         const unsubscribe = this.subscribe(id, callback);
         return () => {

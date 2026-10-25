@@ -525,6 +525,15 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 	}, nil
 }
 
+// GetFeed is the resolver for the getFeed field.
+func (r *queryResolver) GetFeed(ctx context.Context, after *string, limit *int32) (*models.FeedPage, error) {
+	personaId, err := getPersonaIdFromContext(ctx)
+	if err != nil || personaId == 0 {
+		return nil, fmt.Errorf("unauthenticated: %w", err)
+	}
+	return r.feed(ctx, personaId, after, limit)
+}
+
 // Mutation returns graph.MutationResolver implementation.
 func (r *Resolver) Mutation() graph.MutationResolver { return &mutationResolver{r} }
 

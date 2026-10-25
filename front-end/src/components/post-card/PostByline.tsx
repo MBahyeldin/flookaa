@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { PersonaLink } from "@/components/persona-link";
@@ -45,9 +46,12 @@ export function PostByline({
         <PersonaLink {...link}>{author?.fullName}</PersonaLink>
       </span>
       {channel ? (
-        <span className="shrink-0 truncate rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground max-w-40">
+        <Link
+          to={`/channels/${channel.id}`}
+          className="shrink-0 truncate rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground max-w-40 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
           {channel.name}
-        </span>
+        </Link>
       ) : null}
       {createdAt ? (
         <time dateTime={createdAt} title={formatDate(createdAt)} className="shrink-0 text-xs text-muted-foreground">

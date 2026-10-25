@@ -180,6 +180,19 @@ type ComplexityRoot struct {
 		Type      func(childComplexity int) int
 	}
 
+	FeedChannel struct {
+		CanModerate func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Theme       func(childComplexity int) int
+	}
+
+	FeedPage struct {
+		Channels   func(childComplexity int) int
+		NextCursor func(childComplexity int) int
+		Posts      func(childComplexity int) int
+	}
+
 	GalleryBlock struct {
 		Items  func(childComplexity int) int
 		Key    func(childComplexity int) int
@@ -304,6 +317,7 @@ type ComplexityRoot struct {
 	Query struct {
 		GetChannel  func(childComplexity int, id int64) int
 		GetComments func(childComplexity int, parentID string, limit *int32, offset *int32) int
+		GetFeed     func(childComplexity int, after *string, limit *int32) int
 		GetPosts    func(childComplexity int, owner models.OwnerInput, ids []string, limit *int32, offset *int32) int
 	}
 
@@ -1063,6 +1077,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.CountdownBlock.Type(childComplexity), true
 
+	case "FeedChannel.canModerate":
+		if e.complexity.FeedChannel.CanModerate == nil {
+			break
+		}
+
+		return e.complexity.FeedChannel.CanModerate(childComplexity), true
+
+	case "FeedChannel.id":
+		if e.complexity.FeedChannel.ID == nil {
+			break
+		}
+
+		return e.complexity.FeedChannel.ID(childComplexity), true
+
+	case "FeedChannel.name":
+		if e.complexity.FeedChannel.Name == nil {
+			break
+		}
+
+		return e.complexity.FeedChannel.Name(childComplexity), true
+
+	case "FeedChannel.theme":
+		if e.complexity.FeedChannel.Theme == nil {
+			break
+		}
+
+		return e.complexity.FeedChannel.Theme(childComplexity), true
+
+	case "FeedPage.channels":
+		if e.complexity.FeedPage.Channels == nil {
+			break
+		}
+
+		return e.complexity.FeedPage.Channels(childComplexity), true
+
+	case "FeedPage.nextCursor":
+		if e.complexity.FeedPage.NextCursor == nil {
+			break
+		}
+
+		return e.complexity.FeedPage.NextCursor(childComplexity), true
+
+	case "FeedPage.posts":
+		if e.complexity.FeedPage.Posts == nil {
+			break
+		}
+
+		return e.complexity.FeedPage.Posts(childComplexity), true
+
 	case "GalleryBlock.items":
 		if e.complexity.GalleryBlock.Items == nil {
 			break
@@ -1664,6 +1727,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.GetComments(childComplexity, args["parentId"].(string), args["limit"].(*int32), args["offset"].(*int32)), true
+
+	case "Query.getFeed":
+		if e.complexity.Query.GetFeed == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getFeed_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetFeed(childComplexity, args["after"].(*string), args["limit"].(*int32)), true
 
 	case "Query.getPosts":
 		if e.complexity.Query.GetPosts == nil {
@@ -2685,6 +2760,19 @@ type Channel {
   coverPattern: CoverPattern!
 }
 
+type FeedChannel {
+  id: Int64!
+  name: String!
+  theme: Theme!
+  canModerate: Boolean!
+}
+
+type FeedPage {
+  posts: [Post!]!
+  channels: [FeedChannel!]!
+  nextCursor: String
+}
+
 type CommunityRef {
   id: Int64!
   name: String!
@@ -2707,6 +2795,8 @@ type Query {
   ): [Comment!]!
 
   getChannel(id: Int64!): Channel
+
+  getFeed(after: String, limit: Int): FeedPage!
 }
 
 `, BuiltIn: false},
