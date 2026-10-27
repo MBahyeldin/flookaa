@@ -29,6 +29,7 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 - 2026-10-22 (WWW-118 §2 comments): icons `Icon/trash-2` `69:504`, `Icon/send` `69:508`. Patterns: `Comment` is now a set `70:602` (Level 1/2 × State Default/Liked; props Name, Time, Body, Reply to, Likes, Show reply-to, Show menu; the old `16:327` is Level=1 Default, existing instances kept their text), `Reply Box` `71:427` (Empty/Typing), `Thread Toggle` `71:536` (Collapsed/Expanded/Loading). Channel & Community: Post · Comment thread `72:3753` / `72:4225` / `72:4619`, Comment states board `72:9983`. User decision: deleting a comment removes its replies too (today's behaviour); no removed-comment placeholder.
 - 2026-10-22 (WWW-118 §3 persona surfaces): Patterns: `Person Row` `76:436` (Request/Follower/Connected; props Name, Handle), `Persona Card` `76:506` (Full/Locked/Anonymous), `Banner` `76:507` (Title, Body), `Persona Switcher` `76:527`. Profile & Personas: Followers sheet · Requests `78:1476`, · Followers `78:1682`, Mobile `78:1909`; Profile · Invited you `78:2044`; Profile · Connected `78:2200`; Follow link · Request `79:2985`, · Pending `79:3116`, · Invalid `79:3252`, Mobile `79:3394`; Personas · Switcher open `79:3457`. Channel & Community: Post · Persona card `79:11537` (desktop popover) / `79:11841` (mobile sheet, Locked).
 - 2026-10-22 (WWW-118 §4–5): Components: `Dialog` `83:214` (Tone Default/Destructive; Title, Body); `Sidebar` (`11:232`) gained Collapse/Expand toggles (`panel-left`). Patterns: `Block Menu` `83:11913` (registry order). Feed & Discovery: Channels `84:2183` / `84:2540` / `84:2827`, Communities `84:3010` / `84:3363` / `84:3650`, Channels · Loading `84:3833`, · Empty filter `84:4023`, · Error `84:4176`, Feed · Sidebar collapsed `84:4335`. Channel & Community: Channel · Composer writing `86:16057`, Composer states `87:7783` (Preview `87:7844`, invalid block `87:7956`), Mobile · Insert block `86:16681`, Community · Rules dialog `86:16808` / `86:16857`, Channel · Leave confirm `86:16903`, Channel · Sidebar collapsed `86:16926`, Post · Sidebar collapsed `86:17076`. Public & Onboarding: Not found `84:14476`, · Logged out `84:14575`, Mobile `84:14616`. Blocks & Posts: Blocks gallery `86:15583` / `87:17364`.
+- 2026-10-27 (WWW-96 notifications): Components: section `Notifications` `104:189` with `Notification Row` `104:266` (State Unread/Read/Hover × Lead Actor/Entity; prop `Kind icon`) and `Notification Popover` `108:448` (State List `108:201` / All read `108:284` / Loading `108:365` / Empty `108:391` / Error `108:420`). New page `Notifications & Settings` `109:6`: Notifications `109:7` / `109:17880` / `109:18049`, popover open `109:18370` / `109:18381` / `109:18392`, Desktop · Loading `109:19747`, · Empty `109:19885`, · Error `109:20015`, · Load more failed `109:20142`, Every kind `111:2522`, Deep Tide Dark `111:20143`, Forest `111:20175`.
 
 ## Next steps
 
@@ -53,6 +54,7 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 
 - `figma.createAutoLayout()` frames get a default white fill. Clear `fills` on wrappers that shouldn't have one (or bind them).
 - `base/scrim` is opaque; put the 50% on the layer's `opacity`, not on the paint.
+- A bound paint keeps the placeholder `color` you pass to `setBoundVariableForPaint` until the file re-resolves it (screenshots and frames without an explicit mode show it). Pass the variable's Deep Tide Light value as the placeholder. To add paint opacity, JSON-copy the bound paint and set `opacity` (spreading the frozen paint loses the binding).
 - A frame's Theme mode is set with `setExplicitVariableModeForCollection(themeCollection, modeId)`; children inherit it.
 - Text styles bind `fontSize` to `Breakpoint` variables; a frame set to a Breakpoint mode resizes its type.
 
@@ -70,6 +72,7 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Profile & Personas` | `3:7` |
 | `Public & Onboarding` | `3:8` |
 | `RTL` | `3:9` |
+| `Notifications & Settings` | `109:6` |
 
 ### Collections and modes
 | Collection | ID |
@@ -212,6 +215,8 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Skeleton/Post` | `12:169` |
 | `Empty State` | `12:178` |
 | `Error State` | `12:192` |
+| `Notification Row` | `104:266` |
+| `Notification Popover` | `108:448` |
 
 ### Patterns
 | Pattern | ID |
@@ -266,6 +271,7 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Section Header` | `{"Overline": "Overline#15:0", "Title": "Title#15:1", "Show link": "Show link#15:2"}` |
 | `Tile` | `{"Name": "Name#15:3", "Meta": "Meta#15:10", "Description": "Description#15:17", "Facts": "Facts#15:24"}` |
 | `People Strip` | `{"More": "More#15:31"}` |
+| `Notification Row` | `{"Kind icon": "Kind icon#104:0"}` (Text and Meta are plain layers: set `characters`, then SemiBold on the actor range) |
 
 ### Icons
 | Icon | ID |
