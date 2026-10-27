@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SkeletonList } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -8,6 +8,7 @@ import { Bell } from "lucide-react";
 import { toast } from "sonner";
 import NotificationItem from "@/components/notifications/NotificationItem";
 import { describeNotification } from "@/components/notifications/describe";
+import { dateGroup, type DateGroup } from "@/components/notifications/time";
 import { getNotifications } from "@/services/notifications";
 import { useNotificationStore } from "@/stores/NotificationStore";
 import type { Notification } from "@/types/notification";
@@ -70,15 +71,23 @@ export default function NotificationsPage() {
   }, [load, version]);
 
   const shown = items.filter((n) => describeNotification(n) !== null);
+  const groups = new Map<DateGroup, Notification[]>();
+  for (const n of shown) {
+    const group = dateGroup(n.updated_at);
+    groups.set(group, [...(groups.get(group) ?? []), n]);
+  }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8">
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Notifications</h1>
+    <div className="mx-auto w-full max-w-[640px] px-4 py-6 md:py-12">
+      <div className="mb-6 flex items-center gap-3 md:mb-8">
+        <h1>Notifications</h1>
         {unreadCount > 0 && (
-          <Button variant="outline" size="sm" onClick={markAllRead}>
-            Mark all read
-          </Button>
+          <>
+            <Badge variant="count">{unreadCount > 99 ? "99+" : unreadCount}</Badge>
+            <Button variant="outline" size="sm" onClick={markAllRead} className="ml-auto">
+              Mark all read
+            </Button>
+          </>
         )}
       </div>
       {shown.length === 0 && loading ? (
@@ -88,27 +97,30 @@ export default function NotificationsPage() {
       ) : shown.length === 0 && !hasMore ? (
         <EmptyState icon={Bell} title="You're all caught up" body="Follows, requests and replies show up here." />
       ) : (
-        <Card>
-          <CardContent className="p-1">
-            {shown.map((n) => (
-              <NotificationItem
-                key={n.id}
-                notification={n}
-                onOpen={() =>
-                  setItems((prev) => prev.map((p) => (p.id === n.id ? { ...p, read: true } : p)))
-                }
-              />
-            ))}
-            {loading && (
-              <p role="status" className="px-3 py-4 text-center text-sm text-muted-foreground">
-                Loading…
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <div className="space-y-6 md:space-y-8">
+          {[...groups].map(([group, rows]) => (
+            <section key={group} aria-label={group} className="space-y-2">
+              <h2 className="text-overline font-semibold text-muted-foreground uppercase">{group}</h2>
+              <div className="rounded-lg border bg-card p-1">
+                {rows.map((n) => (
+                  <NotificationItem
+                    key={n.id}
+                    notification={n}
+                    onOpen={() => setItems((prev) => prev.map((p) => (p.id === n.id ? { ...p, read: true } : p)))}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+          {loading && (
+            <p role="status" className="py-2 text-center text-sm text-muted-foreground">
+              Loading…
+            </p>
+          )}
+        </div>
       )}
       {hasMore && !loading && shown.length > 0 && (
-        <div className="mt-4 flex justify-center">
+        <div className="mt-6 flex justify-center md:mt-8">
           <Button variant="outline" onClick={() => load(cursor, false)}>
             Load more
           </Button>

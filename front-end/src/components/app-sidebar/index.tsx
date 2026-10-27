@@ -9,6 +9,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/Auth.context";
+import NotificationPopover from "@/components/notifications/NotificationPopover";
 import { useNotificationStore } from "@/stores/NotificationStore";
 
 import AppSidebarFooter from "./AppSidebarFooter";
@@ -24,7 +25,17 @@ export function AppSidebar() {
     { title: "Discover", to: "/discover", icon: Compass },
     { title: "Channels", to: "/channels", icon: Hash },
     { title: "Communities", to: "/communities", icon: Users },
-    { title: "Notifications", to: "/notifications", icon: Bell, badge: unreadCount },
+    {
+      title: "Notifications",
+      to: "/notifications",
+      icon: Bell,
+      badge: unreadCount,
+      popover: (button, onOpenChange) => (
+        <NotificationPopover side="right" align="start" onOpenChange={onOpenChange}>
+          {button}
+        </NotificationPopover>
+      ),
+    },
     { title: "Personas", to: "/persona-manager", icon: UserRound },
     { title: "Settings", to: "/settings/profile", icon: Settings, match: "/settings" },
   ];

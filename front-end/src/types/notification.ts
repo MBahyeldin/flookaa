@@ -45,6 +45,13 @@ type NotificationCommunity = {
  * Facts fixed for the notification's life (shared/pkg/notifications.Data).
  * Every field is optional: rows written before a field existed lack it.
  */
+/** The persona whose wall a PERSONA-scoped notification is on. */
+type NotificationWall = {
+  id: number;
+  first_name: string;
+  last_name: string;
+};
+
 type NotificationData = {
   /** The post at the top of the thread, for content kinds. */
   post_id?: string;
@@ -67,6 +74,8 @@ type Notification = {
   channel: NotificationChannel | null;
   /** The subject of community kinds, looked up at read time; null otherwise or when deleted. */
   community: NotificationCommunity | null;
+  /** Null unless scope is PERSONA, or when the wall isn't visible. */
+  wall: NotificationWall | null;
   data?: NotificationData;
   read: boolean;
   updated_at: string;
@@ -84,6 +93,7 @@ export type {
   NotificationChannel,
   NotificationCommunity,
   NotificationData,
+  NotificationWall,
   Notification,
   NotificationPage,
 };
