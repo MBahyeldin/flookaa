@@ -32,30 +32,6 @@ const showOnProfileField = new FormField({
     hint: () => "Your linked personas list each other, with this persona's name, for anyone who visits them.",
   });
 
-const personaFormFields = [
-  nameField,
-  new FormField({
-    id: "privacy",
-    label: "Privacy Setting",
-    type: "select",
-    placeholder: "Select privacy setting",
-    interfaceType: "select",
-    options: privacyOptions,
-    isRequired: true,
-    width: "1/2",
-  }),
-  new FormField({
-    id: "description",
-    label: "Description",
-    type: "text",
-    placeholder: "Describe your persona",
-    interfaceType: "text",
-    isRequired: true,
-    width: "full",
-  }),
-  showOnProfileField,
-];
-
 const profileFormFields = [
   new FormField({
     id: "thumbnail",
@@ -189,50 +165,3 @@ export function personaSettingsFormGroups(persona: Persona): FormGroup[] {
     },
   ];
 }
-
-const groupOne: FormGroup = {
-    id: "manage_persona_group_1",
-    label: "Persona Information",
-    description: "Please fill in the details to manage your persona.",
-    fields: personaFormFields,
-    displayInCard: {
-      header: (
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Persona Information
-          </CardTitle>
-          <CardDescription>
-            Please fill in the details to manage your persona.
-          </CardDescription>
-        </CardHeader>
-      ),
-    },
-};
-
-const groupTwo: FormGroup = {
-    id: "manage_persona_group_2",
-    label: "Profile Information",
-    description: "Update your personal profile details.",
-    fields: profileFormFields,
-    displayInCard: {
-      header: (
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Profile Information
-          </CardTitle>
-          <CardDescription>
-            Please fill in the details to manage your profile.
-          </CardDescription>
-        </CardHeader>
-      ),
-    },
-};
-
-const personaFormFieldsGroups: FormGroup[] = [
-    groupOne,
-    groupTwo,
-];
-
-export default personaFormFieldsGroups;

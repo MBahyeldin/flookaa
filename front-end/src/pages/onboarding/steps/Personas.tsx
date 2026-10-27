@@ -1,41 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PersonaRow, personaDisplayName } from "@/components/persona-row";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
-import { PALETTES } from "@/themes/palettes";
 import type { Persona } from "@/types/persona";
 import { PersonaInterestsSection, PersonaSettingsForm } from "@/pages/(dashboard)/persona-manager/[id]";
 import OnboardingFooter from "../OnboardingFooter";
 import PersonaWizard, { type WizardMode } from "../persona-wizard/PersonaWizard";
-import { PRIVACY_OPTIONS } from "../persona-wizard/options";
-
-function PersonaRow({ persona, onManage }: { persona: Persona; onManage: () => void }) {
-  const name = [persona.first_name, persona.last_name].filter(Boolean).join(" ") || persona.slug;
-  const theme = PALETTES.find((p) => p.id === persona.theme)?.label;
-  const privacy = PRIVACY_OPTIONS.find((o) => o.value === persona.privacy)?.label;
-  const facts = [`@${persona.slug}`, theme && `${theme} theme`, privacy].filter(Boolean).join(" · ");
-  return (
-    <div className="flex items-center gap-4 rounded-xl border bg-card p-4 text-card-foreground">
-      <Avatar className="size-12">
-        <AvatarImage src={persona.thumbnail || undefined} className="object-cover" />
-        <GeneratedAvatarFallback name={name} />
-      </Avatar>
-      <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-        <p className="w-full truncate text-sm font-semibold">{name}</p>
-        <p className="w-full truncate text-xs text-muted-foreground">{facts}</p>
-        {persona.is_default && <Badge variant="secondary">Default</Badge>}
-      </div>
-      <Button variant="outline" size="sm" onClick={onManage} aria-label={`Manage ${name}`}>
-        Manage
-      </Button>
-    </div>
-  );
-}
 
 export default function Personas() {
   const navigate = useNavigate();
@@ -54,7 +27,16 @@ export default function Personas() {
         <PersonaRow
           key={p.id}
           persona={p}
-          onManage={() => (p.is_default ? setWizard({ kind: "edit", persona: p }) : setManaging(p))}
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => (p.is_default ? setWizard({ kind: "edit", persona: p }) : setManaging(p))}
+              aria-label={`Manage ${personaDisplayName(p)}`}
+            >
+              Manage
+            </Button>
+          }
         />
       ))}
       <button

@@ -1,86 +1,93 @@
-import { DialogTrigger } from "@/components/ui/dialog";
+import { useState } from "react";
+import { Plus, UserRound } from "lucide-react";
+import { toast } from "sonner";
+import { Brand } from "@/components/brand";
+import { PersonaRow, personaDisplayName } from "@/components/persona-row";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { useAuth } from "@/Auth.context";
+import PersonaWizard from "@/pages/onboarding/persona-wizard/PersonaWizard";
 import { setCurrentPersona } from "@/services/persona";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
-import CreatePersona from "./CreatePersona";
-import { EmptyState } from "@/components/ui/empty-state";
-import { UserRound } from "lucide-react";
 
 export default function SelectPersonaPage() {
     const { personas } = useUserProfileStore();
+    const { handleLogOut } = useAuth();
+    const [choosing, setChoosing] = useState<string | null>(null);
+    const [creating, setCreating] = useState(false);
+
+    const ordered = [...personas].sort((a, b) => Number(!!b.is_default) - Number(!!a.is_default));
+    const defaultPersona = ordered.find((p) => p.is_default) ?? ordered[0];
+
+    const choose = async (id: string) => {
+        setChoosing(id);
+        if (await setCurrentPersona(id)) {
+            // Reload like the sidebar switcher does: the websocket subscribes to the persona's default channel only on load.
+            window.location.reload();
+            return;
+        }
+        setChoosing(null);
+        toast.error("Couldn't switch persona. Please try again.");
+    };
 
     return (
-        <main className="min-h-screen flex flex-col items-center justify-center">
-            <h1 className="text-3xl md:text-4xl font-semibold mb-10">
-                Who’s using this?
-            </h1>
+        <div className="min-h-screen bg-background text-foreground">
+            <header className="flex items-center justify-between px-4 py-4 md:px-10">
+                <Brand />
+                <Button variant="ghost" onClick={handleLogOut}>
+                    Log out
+                </Button>
+            </header>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8">
-                {personas.map((persona) => (
-                    <button
-                        key={persona.id}
-                        onClick={async () => {
-                            await setCurrentPersona(persona.id);
-                            // Reload like the sidebar switcher does: the websocket
-                            // subscribes to the persona's default channel only on load.
-                            window.location.reload();
-                        }}
-                        className="group flex flex-col items-center focus:outline-none cursor-pointer"
-                    >
-                        <div className="w-28 h-28 rounded-lg bg-muted overflow-hidden 
-                                        group-hover:scale-110 transition-transform duration-200">
-                            {persona.thumbnail ? (
-                                <img
-                                    src={persona.thumbnail}
-                                    alt={persona.name}
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center text-4xl font-bold">
-                                    {persona.name.charAt(0).toUpperCase()}
-                                </div>
-                            )}
-                        </div>
-
-                        <span className="mt-3 group-hover:text-black">
-                            {persona.name}
-                        </span>
-                        <span className="text-sm text-success group-hover:text-foreground">
-                            {persona.first_name} {persona.last_name}
-                        </span>
-                    </button>
-                ))}
-
-                <DialogTrigger asChild>
-                <button
-                    className="group flex flex-col items-center focus:outline-none"
-                >
-                    <div className="w-28 h-28 rounded-lg border-2 border-foreground/30 
-                                    bg-background
-                                    flex items-center justify-center
-                                    group-hover:border-black group-hover:scale-110
-                                    transition-all duration-200">
-                        <span className="text-5xl group-hover:text-black">
-                            +
-                        </span>
+            <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8 md:py-16">
+                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                    <div className="flex flex-col gap-2">
+                        <h1>Choose a persona</h1>
+                        <p className="text-muted-foreground">
+                            You post, join and follow as the persona you pick. Switch any time from the sidebar.
+                        </p>
                     </div>
-                    <span className="mt-3 group-hover:text-black">
-                        Add Persona
-                    </span>
-                </button>
-                </DialogTrigger>
-                
-            </div>
+                    {defaultPersona && (
+                        <Button variant="outline" className="shrink-0 self-start md:self-auto" onClick={() => setCreating(true)}>
+                            <Plus aria-hidden />
+                            New persona
+                        </Button>
+                    )}
+                </div>
 
-            {personas.length === 0 && (
-                <EmptyState
-                    className="mt-8"
-                    icon={UserRound}
-                    title="No personas yet"
-                    body="Add one to continue."
+                {ordered.length === 0 ? (
+                    <EmptyState icon={UserRound} title="No personas yet" body="Log in again to get your default persona." />
+                ) : (
+                    <div className="flex flex-col gap-3">
+                        {ordered.map((p) => (
+                            <PersonaRow
+                                key={p.id}
+                                persona={p}
+                                action={
+                                    <Button
+                                        size="sm"
+                                        variant={p.id === defaultPersona?.id ? "default" : "outline"}
+                                        loading={choosing === p.id}
+                                        disabled={choosing !== null}
+                                        onClick={() => choose(p.id)}
+                                        aria-label={`Continue as ${personaDisplayName(p)}`}
+                                    >
+                                        Continue
+                                    </Button>
+                                }
+                            />
+                        ))}
+                    </div>
+                )}
+            </main>
+
+            {creating && defaultPersona && (
+                <PersonaWizard
+                    mode={{ kind: "create" }}
+                    catalogPersonaId={Number(defaultPersona.id)}
+                    onClose={() => setCreating(false)}
                 />
             )}
-
-            <CreatePersona />
-        </main>
+        </div>
     );
 }

@@ -1,4 +1,6 @@
-import { ChevronDown, SunMoon } from "lucide-react";
+import { Check, ChevronDown, LogOut, Settings, SunMoon } from "lucide-react";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 import {
   SidebarFooter,
@@ -11,6 +13,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -21,6 +24,7 @@ import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { setCurrentPersona } from "@/services/persona";
 import type { Persona } from "@/types/persona";
 import { personaInitials as initials } from "@/lib/personaInitials";
+import { cn } from "@/lib/utils";
 
 function PersonaAvatar({ persona }: { persona: Persona }) {
   return (
@@ -35,7 +39,7 @@ export default function AppSidebarFooter() {
   const { handleLogOut } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
   const { persona, personas } = useUserProfileStore();
-  const { state, isMobile } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
 
   if (!persona) return null;
@@ -72,25 +76,40 @@ export default function AppSidebarFooter() {
           align={collapsed && !isMobile ? "end" : "start"}
           className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
         >
-          {personas
-            .filter((p) => p.id !== persona.id)
-            .map((p) => (
+          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Switch persona</DropdownMenuLabel>
+          {personas.map((p) => {
+            const current = p.id === persona.id;
+            return (
               <DropdownMenuItem
                 key={p.id}
+                aria-current={current || undefined}
+                className={cn("h-auto py-1.5", current && "bg-accent")}
                 onClick={async () => {
-                  await setCurrentPersona(p.id);
-                  window.location.reload();
+                  if (current) return;
+                  if (await setCurrentPersona(p.id)) window.location.reload();
+                  else toast.error("Couldn't switch persona. Please try again.");
                 }}
               >
                 <PersonaAvatar persona={p} />
-                <span className="min-w-0 truncate">
-                  {p.first_name} {p.last_name}{" "}
-                  <span className="text-muted-foreground">({p.name})</span>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-sm font-medium">{p.first_name} {p.last_name}</span>
+                  <span className="truncate text-xs text-muted-foreground">@{p.slug}</span>
                 </span>
+                {current && <Check aria-hidden className="text-primary" />}
               </DropdownMenuItem>
-            ))}
-          {personas.length > 1 && <DropdownMenuSeparator />}
-          <DropdownMenuItem onClick={handleLogOut}>Log out</DropdownMenuItem>
+            );
+          })}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link to="/persona-manager" onClick={() => isMobile && setOpenMobile(false)}>
+              <Settings aria-hidden />
+              Manage personas
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleLogOut}>
+            <LogOut aria-hidden />
+            Log out
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </SidebarFooter>

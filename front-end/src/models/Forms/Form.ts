@@ -6,7 +6,7 @@ import profileFieldsGroups from "@/lib/formFields/profile";
 import loginFormFieldsGroups from "@/lib/formFields/login";
 import channelFormFieldsGroups from "@/lib/formFields/channel";
 import communityFormFieldsGroups from "@/lib/formFields/community";
-import personaFormFieldsGroups, { personaSettingsFormGroups } from "@/lib/formFields/persona";
+import { personaSettingsFormGroups } from "@/lib/formFields/persona";
 import type { Persona } from "@/types/persona";
 
 // An API error code shown on a field instead of under the form; `also` fields are outlined without a message.
@@ -116,17 +116,6 @@ export class Form {
       invalid_interest: { field: "interest_ids", message: "One of these interests is no longer offered." },
       invalid_min_age: { field: "min_age", message: MIN_AGE_ERROR },
     },
-  });
-
-  static persona = new Form({
-    id: "persona_form",
-    name: "Persona Form",
-    title: "Create Your Persona",
-    description: "Form for creating a new persona",
-    submitText: "Create Persona",
-    groups: personaFormFieldsGroups,
-    relativeApiPath: "/api/v1/persona/create",
-    method: "POST",
   });
 
   static community(communityId?: number, canOwn = true) {
