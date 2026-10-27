@@ -33,7 +33,7 @@ export default function Communities() {
   if (loadError) {
     return <ErrorState title="Couldn't load communities" onRetry={() => setAttempt((n) => n + 1)} />;
   }
-  if (!items) return <SkeletonList count={3} variant="post" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" />;
+  if (!items) return <SkeletonList count={3} variant="post" className="grid gap-4 sm:grid-cols-2" />;
 
   const update = (id: number, patch: (c: Community) => Partial<Community>) =>
     setItems((prev) => prev?.map((c) => (c.id === id ? { ...c, ...patch(c) } : c)) ?? null);
@@ -41,7 +41,7 @@ export default function Communities() {
   const selected = items.filter((c) => c.membership_status === "active" || c.following).length;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       {items.length === 0 ? (
         <EmptyState
           icon={Boxes}
@@ -49,7 +49,7 @@ export default function Communities() {
           body="Nothing matches your interests yet. You can skip this step."
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           {items.map((c) => (
             <CommunityTile key={c.id} community={c} linked={false} onChange={(patch) => update(c.id, () => patch)} />
           ))}

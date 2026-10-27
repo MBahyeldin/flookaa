@@ -1,6 +1,5 @@
 import { X } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
-import { cn } from "@/lib/utils";
 import { MAX_PERSONA_INTERESTS, type InterestGroup, type Interest } from "@/types/interest";
 
 export default function InterestPicker({
@@ -9,12 +8,14 @@ export default function InterestPicker({
   value,
   onChange,
   max = MAX_PERSONA_INTERESTS,
+  showCount = true,
 }: {
   groups: InterestGroup[];
   retired: Interest[];
   value: number[];
   onChange: (ids: number[]) => void;
   max?: number;
+  showCount?: boolean;
 }) {
   const selected = new Set(value);
   const full = value.length >= max;
@@ -23,14 +24,16 @@ export default function InterestPicker({
   const keptRetired = retired.filter((r) => selected.has(r.id));
 
   return (
-    <div className="@container flex flex-col gap-6">
-      <p className="text-sm text-muted-foreground text-center" aria-live="polite">
-        {value.length} / {max} selected
-      </p>
+    <div className="flex flex-col gap-5">
+      {showCount && (
+        <p className="text-sm text-muted-foreground" aria-live="polite">
+          {value.length} / {max} selected
+        </p>
+      )}
 
       {keptRetired.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <p className="text-sm text-muted-foreground">No longer offered</p>
+        <div className="flex flex-col gap-2.5">
+          <p className="text-overline font-semibold uppercase text-muted-foreground">No longer offered</p>
           <div className="flex flex-wrap gap-2">
             {keptRetired.map((r) => (
               <Chip key={r.id} emoji={r.emoji} onClick={() => toggle(r.id)} aria-label={`Remove ${r.name}`}>
@@ -43,31 +46,17 @@ export default function InterestPicker({
       )}
 
       {groups.map((g) => (
-        <section key={g.id} className="flex flex-col gap-3" aria-labelledby={`interest-group-${g.id}`}>
-          <h3 id={`interest-group-${g.id}`} className="text-sm font-semibold text-foreground">
+        <section key={g.id} className="flex flex-col gap-2.5" aria-labelledby={`interest-group-${g.id}`}>
+          <h3 id={`interest-group-${g.id}`} className="text-overline font-semibold uppercase text-muted-foreground">
             {g.name}
           </h3>
-          <div className="grid grid-cols-2 gap-3 @md:grid-cols-3 @2xl:grid-cols-4">
+          <div className="flex flex-wrap gap-2">
             {g.interests.map((i) => {
               const on = selected.has(i.id);
               return (
-                <button
-                  key={i.id}
-                  type="button"
-                  aria-pressed={on}
-                  disabled={!on && full}
-                  onClick={() => toggle(i.id)}
-                  className={cn(
-                    "flex min-h-24 flex-col items-center justify-center gap-1.5 rounded-xl px-3 py-4 text-sm font-semibold transition-colors",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
-                    on ? "bg-primary text-primary-foreground" : "bg-card text-primary hover:bg-accent",
-                  )}
-                >
-                  <span className="text-2xl leading-none" aria-hidden>
-                    {i.emoji}
-                  </span>
-                  <span className="text-center">{i.name}</span>
-                </button>
+                <Chip key={i.id} emoji={i.emoji} selected={on} disabled={!on && full} onClick={() => toggle(i.id)}>
+                  {i.name}
+                </Chip>
               );
             })}
           </div>

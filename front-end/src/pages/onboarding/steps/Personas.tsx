@@ -1,66 +1,38 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Globe, Plus, Settings } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
-import { cn } from "@/lib/utils";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
+import { PALETTES } from "@/themes/palettes";
 import type { Persona } from "@/types/persona";
 import { PersonaInterestsSection, PersonaSettingsForm } from "@/pages/(dashboard)/persona-manager/[id]";
 import OnboardingFooter from "../OnboardingFooter";
 import PersonaWizard, { type WizardMode } from "../persona-wizard/PersonaWizard";
 import { PRIVACY_OPTIONS } from "../persona-wizard/options";
 
-function PersonaCard({ persona, onManage }: { persona: Persona; onManage: () => void }) {
-  const name = [persona.first_name, persona.last_name].filter(Boolean).join(" ");
-  const privacy = PRIVACY_OPTIONS.find((o) => o.value === persona.privacy);
+function PersonaRow({ persona, onManage }: { persona: Persona; onManage: () => void }) {
+  const name = [persona.first_name, persona.last_name].filter(Boolean).join(" ") || persona.slug;
+  const theme = PALETTES.find((p) => p.id === persona.theme)?.label;
+  const privacy = PRIVACY_OPTIONS.find((o) => o.value === persona.privacy)?.label;
+  const facts = [`@${persona.slug}`, theme && `${theme} theme`, privacy].filter(Boolean).join(" · ");
   return (
-    <div
-      className={cn(
-        "flex flex-col overflow-hidden rounded-xl border-2",
-        persona.is_default ? "border-primary" : "border-border",
-      )}
-    >
-      <div
-        className={cn(
-          "relative flex min-h-48 flex-col items-center justify-center gap-3 p-6",
-          persona.is_default ? "bg-primary text-primary-foreground" : "bg-card text-card-foreground",
-        )}
-      >
-        <div className="absolute left-3 top-3 flex gap-2">
-          {persona.is_default && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-foreground/30 bg-black/15 px-3 py-1 text-xs font-medium">
-              <Globe className="h-3.5 w-3.5" />
-              Default persona
-            </span>
-          )}
-          {privacy && !persona.is_default && (
-            <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium", privacy.tone)}>
-              <privacy.icon className="h-3.5 w-3.5" />
-              {privacy.label}
-            </span>
-          )}
-        </div>
-        <Avatar className="h-16 w-16 border-4 border-background/40">
-          <AvatarImage src={persona.thumbnail || undefined} className="object-cover" />
-          <GeneratedAvatarFallback name={name || persona.slug} />
-        </Avatar>
-        <div className="text-center">
-          <p className="text-lg font-semibold">{name || persona.slug}</p>
-          <p className={cn("text-sm", persona.is_default ? "text-primary-foreground/80" : "text-muted-foreground")}>
-            @{persona.slug}
-          </p>
-        </div>
+    <div className="flex items-center gap-4 rounded-xl border bg-card p-4 text-card-foreground">
+      <Avatar className="size-12">
+        <AvatarImage src={persona.thumbnail || undefined} className="object-cover" />
+        <GeneratedAvatarFallback name={name} />
+      </Avatar>
+      <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+        <p className="w-full truncate text-sm font-semibold">{name}</p>
+        <p className="w-full truncate text-xs text-muted-foreground">{facts}</p>
+        {persona.is_default && <Badge variant="secondary">Default</Badge>}
       </div>
-      <button
-        type="button"
-        onClick={onManage}
-        className="flex items-center justify-center gap-2 bg-background py-4 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-      >
-        <Settings className="h-4 w-4" />
-        Manage persona
-      </button>
+      <Button variant="outline" size="sm" onClick={onManage} aria-label={`Manage ${name}`}>
+        Manage
+      </Button>
     </div>
   );
 }
@@ -77,58 +49,31 @@ export default function Personas() {
   const managed = managing ? (personas.find((p) => p.id === managing.id) ?? managing) : null;
 
   return (
-    <div className="flex flex-col gap-8">
-      <p className="mx-auto max-w-2xl text-center text-muted-foreground">
-        Manage different digital identities for various aspects of your life. Each persona can have its own privacy
-        settings and be shared selectively.
-      </p>
-
-      <section className="mx-auto flex w-full max-w-3xl flex-col gap-4">
-        <h2 className="text-lg font-medium">Your personas</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {ordered.map((p) => (
-            <PersonaCard
-              key={p.id}
-              persona={p}
-              onManage={() => (p.is_default ? setWizard({ kind: "edit", persona: p }) : setManaging(p))}
-            />
-          ))}
-          <div className="flex min-h-48 flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-primary/60 bg-card/50 p-6">
-            <button
-              type="button"
-              onClick={() => setWizard({ kind: "create", privacy: "public" })}
-              className="flex flex-col items-center gap-3 rounded-lg text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                <Plus className="h-6 w-6" />
-              </span>
-              <span className="font-medium">Add another persona</span>
-            </button>
-            <div className="flex flex-wrap justify-center gap-2">
-              {PRIVACY_OPTIONS.map((o) => (
-                <button
-                  key={o.value}
-                  type="button"
-                  onClick={() => setWizard({ kind: "create", privacy: o.value })}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    o.tone,
-                  )}
-                >
-                  <o.icon className="h-3.5 w-3.5" />
-                  {o.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+    <div className="flex flex-col gap-4">
+      {ordered.map((p) => (
+        <PersonaRow
+          key={p.id}
+          persona={p}
+          onManage={() => (p.is_default ? setWizard({ kind: "edit", persona: p }) : setManaging(p))}
+        />
+      ))}
+      <button
+        type="button"
+        onClick={() => setWizard({ kind: "create" })}
+        className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <Plus className="size-5 text-primary" aria-hidden />
+        <span className="text-sm font-semibold text-foreground">Add another persona</span>
+        <span className="text-xs text-muted-foreground">
+          A work self, a cooking self… each with its own name and theme.
+        </span>
+      </button>
 
       <OnboardingFooter continueLabel="Finish" hideSkip onMoved={() => navigate("/", { replace: true })} />
 
       {wizard && defaultPersona && (
         <PersonaWizard
-          key={wizard.kind === "edit" ? `edit-${wizard.persona.id}` : `create-${wizard.privacy}`}
+          key={wizard.kind === "edit" ? `edit-${wizard.persona.id}` : "create"}
           mode={wizard}
           catalogPersonaId={Number(defaultPersona.id)}
           onClose={() => setWizard(null)}

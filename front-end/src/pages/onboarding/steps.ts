@@ -7,9 +7,34 @@ import Personas from "./steps/Personas";
 
 // Keyed by the server's step key; a step ticket adds its entry here and in backend/internal/onboarding.
 export const onboardingSteps: Record<string, OnboardingStepDef> = {
-  about_you: { title: "Enter your date of birth", Component: AboutYou },
-  interests: { title: "What are your main interests?", Component: Interests },
-  communities: { title: "Join your communities", Component: Communities },
-  channels: { title: "Find your channels", Component: Channels },
-  personas: { title: "Create Multiple Personas!", Component: Personas },
+  about_you: {
+    label: "About you",
+    title: "A little about you",
+    lead: "Used only to check age limits on channels. Nobody else sees it.",
+    Component: AboutYou,
+  },
+  interests: {
+    label: "Interests",
+    title: "What are you into?",
+    lead: "Pick a few for your default persona. They shape what we suggest.",
+    Component: Interests,
+  },
+  communities: {
+    label: "Communities",
+    title: "Join your communities",
+    lead: "Suggested from your interests. Joining is instant for public ones.",
+    Component: Communities,
+  },
+  channels: {
+    label: "Channels",
+    title: "Pick some channels",
+    lead: "Channels are where the posts happen.",
+    Component: Channels,
+  },
+  personas: {
+    label: "Personas",
+    title: "Your personas",
+    lead: "You start with one. Add another for a different side of you, any time.",
+    Component: Personas,
+  },
 };

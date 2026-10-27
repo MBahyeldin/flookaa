@@ -15,7 +15,7 @@ export default function Interests() {
   const [saveFailed, setSaveFailed] = useState(false);
 
   if (loadError) {
-    return <p className="text-center text-sm text-destructive">Couldn't load interests. Please reload.</p>;
+    return <p className="text-sm text-destructive">Couldn't load interests. Please reload.</p>;
   }
   if (!data) return <SectionLoader />;
 
@@ -27,16 +27,24 @@ export default function Interests() {
   };
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="mx-auto w-full max-w-2xl">
-        <InterestPicker groups={data.groups} retired={data.retired} value={value} onChange={setValue} />
-      </div>
+    <div className="flex flex-col gap-6">
+      <InterestPicker
+        groups={data.groups}
+        retired={data.retired}
+        value={value}
+        onChange={setValue}
+        showCount={false}
+      />
       {saveFailed && (
         <p role="alert" className="text-sm text-destructive text-right">
           Couldn't save. Please try again.
         </p>
       )}
-      <OnboardingFooter onContinue={onContinue} continueDisabled={value.length === 0} />
+      <OnboardingFooter
+        left={`${value.length} selected`}
+        onContinue={onContinue}
+        continueDisabled={value.length === 0}
+      />
     </div>
   );
 }

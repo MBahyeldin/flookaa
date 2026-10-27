@@ -14,7 +14,7 @@ export default function PrivacyStep({
   return (
     <div className="flex flex-col gap-3">
       <div role="radiogroup" aria-label="Who can see this persona" className="flex flex-col gap-3">
-        {PRIVACY_OPTIONS.map(({ value: option, label, note, icon: Icon, tone }) => {
+        {PRIVACY_OPTIONS.map(({ value: option, label, note, icon: Icon }) => {
           const checked = option === value;
           return (
             <button
@@ -25,18 +25,18 @@ export default function PrivacyStep({
               onClick={() => onChange(option)}
               className={cn(
                 "flex items-center gap-4 rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                checked ? tone : "border-transparent bg-muted text-muted-foreground hover:bg-accent",
+                checked ? "border-primary bg-accent" : "bg-card hover:tint",
               )}
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-background">
-                <Icon className="h-5 w-5" />
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-primary">
+                <Icon className="size-5" />
               </span>
               <span className="flex flex-col">
-                <span className={cn("flex items-center gap-2 font-medium", checked && "text-foreground")}>
+                <span className="flex items-center gap-2 text-sm font-semibold">
                   {label}
-                  {checked && <Check className="h-4 w-4" />}
+                  {checked && <Check className="size-4 text-primary" />}
                 </span>
-                <span className={cn("text-sm", checked && "text-foreground/80")}>{note}</span>
+                <span className="text-xs text-muted-foreground">{note}</span>
               </span>
             </button>
           );
@@ -47,9 +47,7 @@ export default function PrivacyStep({
           {warning}
         </p>
       )}
-      <p className="rounded-lg border bg-muted/50 p-3 text-sm">
-        <span className="font-semibold">Tip:</span> You can change privacy settings at any time.
-      </p>
+      <p className="text-xs text-muted-foreground">You can change this any time.</p>
     </div>
   );
 }

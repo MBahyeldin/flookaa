@@ -8,7 +8,7 @@ import type { MoveResult, OnboardingAction, OnboardingState } from "@/types/onbo
 function RequiredDemo() {
   const [value, setValue] = useState("");
   return (
-    <div className="mx-auto w-full max-w-md flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <Input placeholder="Type anything to continue" value={value} onChange={(e) => setValue(e.target.value)} />
       <OnboardingFooter continueDisabled={!value.trim()} />
     </div>
@@ -18,8 +18,8 @@ function RequiredDemo() {
 function OptionalDemo() {
   const [picked, setPicked] = useState(0);
   return (
-    <div className="flex flex-col gap-8">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div className="flex flex-col gap-6">
+      <div className="grid gap-4 sm:grid-cols-2">
         {[1, 2, 3].map((n) => (
           <button
             key={n}
@@ -37,8 +37,8 @@ function OptionalDemo() {
 }
 
 const registry: Record<string, OnboardingStepDef> = {
-  demo_required: { title: "A Required Step", Component: RequiredDemo },
-  demo_optional: { title: "Join Your Communities", Component: OptionalDemo },
+  demo_required: { label: "Required", title: "A required step", lead: "Type anything to continue.", Component: RequiredDemo },
+  demo_optional: { label: "Optional", title: "An optional step", lead: "Pick a card, or skip.", Component: OptionalDemo },
 };
 
 const steps = [
@@ -76,7 +76,7 @@ export default function DevOnboardingPage() {
           </button>
         </div>
       ) : (
-        <OnboardingShell state={state} move={move} registry={registry} />
+        <OnboardingShell state={state} move={move} registry={registry} onExit={() => setIndex(0)} />
       )}
     </div>
   );

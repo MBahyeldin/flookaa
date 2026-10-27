@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import TextInput from "@/components/inputs/text";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Chip } from "@/components/ui/chip";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 import SectionLoader from "@/components/section-loader";
-import { dateOfBirthField } from "@/lib/formFields/profile";
 import { getUserData, updateProfile } from "@/services/user";
 import {
   GENDERS,
@@ -64,42 +63,50 @@ export default function AboutYou() {
   };
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="mx-auto w-full max-w-sm flex flex-col gap-6">
-        <TextInput
-          field={dateOfBirthField}
-          initValue={dateOfBirth}
-          error={dobError ?? undefined}
-          touched
-          className="w-full"
-          setFieldValue={async (_field, value) => {
-            setDateOfBirth(String(value ?? ""));
+    <div className="flex flex-col gap-6">
+      <FormField
+        label="Date of birth"
+        helper="Used only for age limits. Never shown on a persona."
+        error={dobError}
+      >
+        <Input
+          type="date"
+          value={dateOfBirth}
+          max={new Date().toISOString().slice(0, 10)}
+          onChange={(e) => {
+            setDateOfBirth(e.target.value);
             setServerError(null);
           }}
-          handleBlur={() => setDobTouched(true)}
+          onBlur={() => setDobTouched(true)}
         />
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="gender">Gender</Label>
-          <Select
-            value={gender}
-            onValueChange={(v) => {
-              setGender(v as Gender);
-              setServerError(null);
-            }}
-          >
-            <SelectTrigger id="gender" className="w-full" aria-invalid={genderError ? true : undefined}>
-              <SelectValue placeholder="Select your gender" />
-            </SelectTrigger>
-            <SelectContent>
-              {GENDERS.map((g) => (
-                <SelectItem key={g} value={g}>
-                  {GENDER_LABELS[g]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {genderError && <p className="text-sm text-destructive">{genderError}</p>}
+      </FormField>
+      <div className="flex flex-col gap-1.5">
+        <p id="gender-label" className="text-sm font-medium">
+          Gender
+        </p>
+        <div role="radiogroup" aria-labelledby="gender-label" className="flex gap-2">
+          {GENDERS.map((g) => (
+            <Chip
+              key={g}
+              kind="filter"
+              role="radio"
+              aria-checked={gender === g}
+              aria-pressed={undefined}
+              selected={gender === g}
+              onClick={() => {
+                setGender(g);
+                setServerError(null);
+              }}
+            >
+              {GENDER_LABELS[g]}
+            </Chip>
+          ))}
         </div>
+        {genderError && (
+          <p role="alert" className="text-xs text-destructive">
+            {genderError}
+          </p>
+        )}
       </div>
       {saveFailed && (
         <p role="alert" className="text-sm text-destructive text-right">

@@ -1,5 +1,4 @@
 import { useState, type ReactNode } from "react";
-import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { OnboardingAction } from "@/types/onboarding";
 import { useOnboardingStep } from "./context";
@@ -49,10 +48,10 @@ export default function OnboardingFooter({
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 border-t pt-4">
       {error && <p role="alert" className="text-sm text-destructive text-right">{error}</p>}
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <div className="w-full sm:w-auto sm:flex-1 min-w-0 text-sm font-medium text-foreground truncate">{left}</div>
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{left}</div>
         {index > 0 && (
           <Button variant="ghost" disabled={busy !== null} onClick={() => run("back")}>
             Back
@@ -64,13 +63,11 @@ export default function OnboardingFooter({
           </Button>
         )}
         <Button
-         
-          size="lg"
+          loading={busy === "next"}
           disabled={continueDisabled || busy !== null}
           onClick={() => run("next")}
         >
-          {busy === "next" ? "Saving…" : continueLabel}
-          <ArrowRight />
+          {continueLabel}
         </Button>
       </div>
     </div>

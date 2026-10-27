@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -30,14 +29,14 @@ export type Draft = {
   privacy: Privacy;
 };
 
-export type WizardMode = { kind: "edit"; persona: Persona } | { kind: "create"; privacy: Privacy };
+export type WizardMode = { kind: "edit"; persona: Persona } | { kind: "create" };
 
 const SLUG_ERROR = "Use 3–50 lowercase letters, digits or single hyphens.";
 const SLUG_TAKEN = "Another of your personas already uses this user name.";
 
 function initialDraft(mode: WizardMode): Draft {
   if (mode.kind === "create") {
-    return { thumbnail: "", first_name: "", last_name: "", slug: "", type: "", customType: "", theme: DEFAULT_PALETTE, bio: "", privacy: mode.privacy };
+    return { thumbnail: "", first_name: "", last_name: "", slug: "", type: "", customType: "", theme: DEFAULT_PALETTE, bio: "", privacy: "public" };
   }
   const p = mode.persona;
   const known = (PERSONA_TYPES as readonly string[]).includes(p.name);
@@ -195,8 +194,8 @@ export default function PersonaWizard({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>Step {step} of 3</DialogDescription>
         </DialogHeader>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden>
-          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(step / 3) * 100}%` }} />
+        <div className="h-1 w-full overflow-hidden rounded-full bg-muted" aria-hidden>
+          <div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${(step / 3) * 100}%` }} />
         </div>
 
         {step === 1 && <BasicsStep draft={draft} set={set} creating={!editing} slugError={slugError} />}
@@ -204,8 +203,8 @@ export default function PersonaWizard({
         {step === 3 && (
           <div className="flex flex-col gap-4">
             <div>
-              <h3 className="font-medium">Interests & categories</h3>
-              <p className="text-sm text-muted-foreground">Select interests that define this persona (select at least one)</p>
+              <h3 className="font-semibold">Interests</h3>
+              <p className="text-sm text-muted-foreground">Pick at least one. They shape what this persona is shown.</p>
             </div>
             {loadError ? (
               <p className="text-sm text-destructive">Couldn't load interests. Please reload.</p>
@@ -222,24 +221,19 @@ export default function PersonaWizard({
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-2 border-t pt-4">
-          {step > 1 ? (
-            <Button variant="outline" disabled={saving} onClick={() => setStep(step - 1)}>
-              <ArrowLeft />
+        <div className="flex items-center justify-end gap-2 border-t pt-4">
+          {step > 1 && (
+            <Button variant="ghost" disabled={saving} onClick={() => setStep(step - 1)}>
               Back
             </Button>
-          ) : (
-            <span />
           )}
           {step < 3 ? (
             <Button disabled={step === 1 && !basicsValid} onClick={() => setStep(step + 1)}>
               Next
-              <ArrowRight />
             </Button>
           ) : (
-            <Button disabled={saving || interests.length === 0 || !catalogue} onClick={save}>
-              {saving ? "Saving…" : "Save persona"}
-              <Sparkles />
+            <Button loading={saving} disabled={interests.length === 0 || !catalogue} onClick={save}>
+              Save persona
             </Button>
           )}
         </div>

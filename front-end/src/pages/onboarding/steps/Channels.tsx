@@ -37,7 +37,7 @@ export default function Channels() {
   if (loadError) {
     return <ErrorState title="Couldn't load channels" onRetry={() => setAttempt((n) => n + 1)} />;
   }
-  if (!items) return <SkeletonList count={3} variant="post" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" />;
+  if (!items) return <SkeletonList count={3} variant="post" className="grid gap-4 sm:grid-cols-2" />;
 
   const update = (id: string, patch: (c: SuggestedChannel) => Partial<SuggestedChannel>) =>
     setItems((prev) => prev?.map((c) => (c.id === id ? { ...c, ...patch(c) } : c)) ?? null);
@@ -48,7 +48,7 @@ export default function Channels() {
     .filter((g) => g.channels.length > 0);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       {shown.length === 0 && (
         <EmptyState
           icon={Hash}
@@ -57,9 +57,9 @@ export default function Channels() {
         />
       )}
       {shown.map((g) => (
-        <section key={g.source} className="flex flex-col gap-4">
-          {shown.length > 1 && <h2 className="text-lg font-semibold">{g.title}</h2>}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <section key={g.source} className="flex flex-col gap-3">
+          {shown.length > 1 && <h2 className="text-overline font-semibold uppercase text-muted-foreground">{g.title}</h2>}
+          <div className="grid gap-4 sm:grid-cols-2">
             {g.channels.map((c) => (
               <ChannelTile
                 key={c.id}
