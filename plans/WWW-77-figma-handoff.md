@@ -30,6 +30,7 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 - 2026-10-22 (WWW-118 §3 persona surfaces): Patterns: `Person Row` `76:436` (Request/Follower/Connected; props Name, Handle), `Persona Card` `76:506` (Full/Locked/Anonymous), `Banner` `76:507` (Title, Body), `Persona Switcher` `76:527`. Profile & Personas: Followers sheet · Requests `78:1476`, · Followers `78:1682`, Mobile `78:1909`; Profile · Invited you `78:2044`; Profile · Connected `78:2200`; Follow link · Request `79:2985`, · Pending `79:3116`, · Invalid `79:3252`, Mobile `79:3394`; Personas · Switcher open `79:3457`. Channel & Community: Post · Persona card `79:11537` (desktop popover) / `79:11841` (mobile sheet, Locked).
 - 2026-10-22 (WWW-118 §4–5): Components: `Dialog` `83:214` (Tone Default/Destructive; Title, Body); `Sidebar` (`11:232`) gained Collapse/Expand toggles (`panel-left`). Patterns: `Block Menu` `83:11913` (registry order). Feed & Discovery: Channels `84:2183` / `84:2540` / `84:2827`, Communities `84:3010` / `84:3363` / `84:3650`, Channels · Loading `84:3833`, · Empty filter `84:4023`, · Error `84:4176`, Feed · Sidebar collapsed `84:4335`. Channel & Community: Channel · Composer writing `86:16057`, Composer states `87:7783` (Preview `87:7844`, invalid block `87:7956`), Mobile · Insert block `86:16681`, Community · Rules dialog `86:16808` / `86:16857`, Channel · Leave confirm `86:16903`, Channel · Sidebar collapsed `86:16926`, Post · Sidebar collapsed `86:17076`. Public & Onboarding: Not found `84:14476`, · Logged out `84:14575`, Mobile `84:14616`. Blocks & Posts: Blocks gallery `86:15583` / `87:17364`.
 - 2026-10-27 (WWW-96 notifications): Components: section `Notifications` `104:189` with `Notification Row` `104:266` (State Unread/Read/Hover × Lead Actor/Entity; prop `Kind icon`) and `Notification Popover` `108:448` (State List `108:201` / All read `108:284` / Loading `108:365` / Empty `108:391` / Error `108:420`). New page `Notifications & Settings` `109:6`: Notifications `109:7` / `109:17880` / `109:18049`, popover open `109:18370` / `109:18381` / `109:18392`, Desktop · Loading `109:19747`, · Empty `109:19885`, · Error `109:20015`, · Load more failed `109:20142`, Every kind `111:2522`, Deep Tide Dark `111:20143`, Forest `111:20175`.
+- 2026-10-27 (WWW-97 settings): Components: section `Settings` `119:330` with `Switch` `119:335` (On/Off), `Segmented Control` `119:346` (Selected First/Second; Option 1, Option 2), `Radio Card` `119:368` (Default/Selected; Title, Body, Icon), `Theme Swatch` `119:381` (Default/Selected; Name; set the instance's Theme mode), `Cover Option` `119:398` (Default/Selected; Name; nested Cover Pattern), `Checklist Rule` `119:413` (Unmet/Met/Failed; Label). Page `Notifications & Settings`: Account `122:3144` / `122:3405` / `122:3617`; Persona (content in Forest) `123:3492` / `123:4053` / `123:4483`, · Deep Tide Dark `126:5538`, · Ember `126:5842`; Account settings · States `124:4305`; Persona settings · States `125:4418`; Change email dialog · Steps `126:4705`, open over the page `126:4822` (desktop) / `126:4915` (mobile); Settings · Loading `126:5232`, · Error `126:5384`. The followers sheet stays the WWW-118 frames (`78:1476`, `78:1682`, `78:1909`).
 
 ## Next steps
 
@@ -217,6 +218,12 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Error State` | `12:192` |
 | `Notification Row` | `104:266` |
 | `Notification Popover` | `108:448` |
+| `Switch` | `119:335` |
+| `Segmented Control` | `119:346` |
+| `Radio Card` | `119:368` |
+| `Theme Swatch` | `119:381` |
+| `Cover Option` | `119:398` |
+| `Checklist Rule` | `119:413` |
 
 ### Patterns
 | Pattern | ID |
@@ -258,6 +265,11 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Tag` | `{"Label": "Label#9:127", "Show icon": "Show icon#9:128", "Icon": "Icon#9:129"}` |
 | `Count Badge` | `{"Count": "Count#11:0"}` |
 | `Sidebar/Item` | `{"Label": "Label#11:1", "Icon": "Icon#11:6", "Show badge": "Show badge#11:11"}` |
+| `Segmented Control` | `{"Option 1": "Option 1#119:0", "Option 2": "Option 2#119:3"}` |
+| `Radio Card` | `{"Title": "Title#119:6", "Body": "Body#119:9", "Icon": "Icon#119:12"}` |
+| `Theme Swatch` | `{"Name": "Name#119:15"}` |
+| `Cover Option` | `{"Name": "Name#119:18"}` |
+| `Checklist Rule` | `{"Label": "Label#119:21"}` |
 | `Tooltip` | `{"Text": "Text#11:16"}` |
 | `Menu/Item` | `{"Label": "Label#11:17", "Icon": "Icon#11:18"}` |
 | `Toast` | `{"Message": "Message#11:19"}` |
