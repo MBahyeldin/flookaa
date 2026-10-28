@@ -1,115 +1,94 @@
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { toast } from "sonner";
-import { ArrowLeft, Save, UserRound, UserRoundX } from "lucide-react";
-import FormComponent from "@/components/form";
-import InterestPicker from "@/components/interests/InterestPicker";
-import { usePersonaInterests } from "@/components/interests/usePersonaInterests";
-import SectionLoader from "@/components/section-loader";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft, Lock, UserRound, UserRoundX } from "lucide-react";
+import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { personaPath } from "@/components/persona-link";
-import { Form } from "@/models/Forms/Form";
+import { SettingsPage } from "@/components/settings/SettingsPage";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
-import { applySavedPersona } from "@/lib/applySavedPersona";
-import { DEFAULT_PALETTE, isPaletteId } from "@/themes/palettes";
+import { DEFAULT_PALETTE, isPaletteId, type PaletteId } from "@/themes/palettes";
 import type { Persona } from "@/types/persona";
+import { BasicsSection } from "./BasicsSection";
+import { FollowersSection } from "./FollowersSection";
+import { InterestsSection } from "./InterestsSection";
+import { LookSection } from "./LookSection";
+import { PrivacySection } from "./PrivacySection";
 
-const SETTINGS_FIELDS = [
-  "name",
-  "privacy",
-  "description",
-  "show_on_profile",
-  "theme",
-  "thumbnail",
-  "first_name",
-  "last_name",
-  "slug",
-  "bio",
-] as const;
-
-export function PersonaInterestsSection({ personaId }: { personaId: number }) {
-  const { data, value, setValue, save, dirty, loadError } = usePersonaInterests(personaId);
-  const [saving, setSaving] = useState(false);
-
-  const onSave = async () => {
-    setSaving(true);
-    const r = await save();
-    setSaving(false);
-    if (r.ok) toast.success("Interests saved");
-    else toast.error("Couldn't save the interests. Please try again.");
-  };
-
+/** The editable sections, also used by the onboarding Personas step's sheet. */
+export function PersonaSettingsSections({
+  persona,
+  onThemeDraft,
+}: {
+  persona: Persona;
+  onThemeDraft: (theme: PaletteId) => void;
+}) {
   return (
-    <section className="mt-6 rounded-xl bg-background p-4 text-foreground md:p-6" aria-labelledby="persona-interests">
-      <div className="mb-4 flex flex-col gap-1">
-        <h2 id="persona-interests" className="text-lg font-semibold">
-          Interests
-        </h2>
-        <p className="text-sm text-muted-foreground">Only you can see this persona's interests.</p>
-      </div>
-      {loadError ? (
-        <p className="text-sm text-destructive">Couldn't load interests. Please reload.</p>
-      ) : !data ? (
-        <SectionLoader />
-      ) : (
-        <div className="flex flex-col gap-6">
-          <InterestPicker groups={data.groups} retired={data.retired} value={value} onChange={setValue} />
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            {value.length === 0 && <p className="text-sm text-muted-foreground">Pick at least one.</p>}
-            <Button onClick={onSave} disabled={!dirty || value.length === 0 || saving}>
-              <Save className="mr-2 h-4 w-4" />
-              {saving ? "Saving…" : "Save interests"}
-            </Button>
-          </div>
-        </div>
-      )}
-    </section>
+    <>
+      <BasicsSection persona={persona} />
+      <LookSection persona={persona} onThemeDraft={onThemeDraft} />
+      <PrivacySection persona={persona} />
+      <InterestsSection personaId={Number(persona.id)} />
+    </>
   );
 }
 
-export function PersonaSettingsForm({ persona }: { persona: Persona }) {
-  const form = useMemo(() => Form.personaSettings(persona), [persona]);
-  // Formik keeps its own values, so the initial values only depend on which persona this is.
-  const initialValues = useMemo(
-    () => Object.fromEntries(SETTINGS_FIELDS.map((key) => [key, persona[key] ?? ""])),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [persona.id],
+function Header({ persona }: { persona: Persona }) {
+  const name = `${persona.first_name} ${persona.last_name}`.trim();
+  return (
+    <div className="flex items-center gap-3">
+      <Button asChild variant="ghost" size="icon-sm" aria-label="Back to personas">
+        <Link to="/persona-manager">
+          <ArrowLeft />
+        </Link>
+      </Button>
+      <Avatar className="size-12 text-base">
+        {persona.thumbnail && <AvatarImage src={persona.thumbnail} className="object-cover" />}
+        <GeneratedAvatarFallback name={name || persona.slug} />
+      </Avatar>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <h1 className="truncate text-h2 font-semibold tracking-tight">{name || persona.name}</h1>
+        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <span>@{persona.slug}</span>
+          <Badge variant="secondary" title="Only you see this label">
+            <Lock />
+            {persona.name}
+          </Badge>
+        </div>
+      </div>
+      <Button asChild variant="outline" className="max-md:hidden">
+        <Link to={personaPath(persona.id)}>
+          <UserRound />
+          View profile
+        </Link>
+      </Button>
+      <Button asChild variant="outline" size="icon" className="md:hidden" aria-label="View profile">
+        <Link to={personaPath(persona.id)}>
+          <UserRound />
+        </Link>
+      </Button>
+    </div>
   );
-  const [draftTheme, setDraftTheme] = useState(persona.theme);
+}
 
-  const onValuesChange = useCallback((values: Record<string, unknown>) => {
-    if (isPaletteId(values.theme)) setDraftTheme(values.theme);
-  }, []);
-
-  const onStatusChange = useCallback(
-    (status: { success: boolean; error: string | null; result: unknown }) => {
-      if (status.success && status.result) {
-        applySavedPersona(status.result as Partial<Persona>);
-        toast.success("Persona saved");
-      }
-      if (status.error) {
-        toast.error(`Couldn't save the persona: ${status.error}`);
-      }
-    },
-    [],
-  );
+function PersonaSettings({ persona }: { persona: Persona }) {
+  const [theme, setTheme] = useState<PaletteId>(isPaletteId(persona.theme) ? persona.theme : DEFAULT_PALETTE);
+  const sections = [
+    { id: "basics", label: "Basics" },
+    { id: "look", label: "Look" },
+    { id: "privacy", label: "Privacy" },
+    { id: "interests", label: "Interests" },
+    ...(persona.privacy === "only_me" ? [] : [{ id: "followers", label: "Followers" }]),
+  ];
 
   return (
-    <div data-theme={draftTheme ?? DEFAULT_PALETTE} className="rounded-xl bg-background p-4 text-foreground md:p-6">
-      <FormComponent
-        form={form}
-        initialValues={initialValues}
-        onStatusChange={onStatusChange}
-        onValuesChange={onValuesChange}
-        changeOpacityWhenSubmitting
-      >
-        <div className="flex justify-end">
-          <Button type="submit">
-            <Save className="mr-2 h-4 w-4" />
-            {form.submitText}
-          </Button>
-        </div>
-      </FormComponent>
+    <div data-theme={theme} className="min-h-full bg-background text-foreground">
+      <SettingsPage header={<Header persona={persona} />} sections={sections}>
+        <PersonaSettingsSections persona={persona} onThemeDraft={setTheme} />
+        {persona.privacy !== "only_me" && <FollowersSection personaId={Number(persona.id)} />}
+      </SettingsPage>
     </div>
   );
 }
@@ -118,41 +97,22 @@ export default function PersonaSettingsPage() {
   const { id } = useParams();
   const persona = useUserProfileStore((s) => s.personas.find((p) => String(p.id) === id));
 
-  return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Button asChild variant="ghost" size="icon" aria-label="Back to personas">
-            <Link to="/persona-manager">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {persona ? persona.name : "Persona settings"}
-          </h1>
-        </div>
-        {persona && (
-          <Button asChild variant="outline">
-            <Link to={personaPath(persona.id)}>
-              <UserRound className="mr-2 h-4 w-4" />
-              View profile
-            </Link>
-          </Button>
-        )}
+  if (!persona) {
+    return (
+      <div className="mx-auto w-full max-w-[672px] px-4 py-12">
+        <EmptyState
+          icon={UserRoundX}
+          title="Persona not found"
+          body="It doesn't exist, or it isn't one of yours."
+          action={
+            <Button asChild variant="outline">
+              <Link to="/persona-manager">Back to personas</Link>
+            </Button>
+          }
+        />
       </div>
+    );
+  }
 
-      {persona ? (
-        <>
-          <PersonaSettingsForm key={persona.id} persona={persona} />
-          <PersonaInterestsSection key={`interests-${persona.id}`} personaId={Number(persona.id)} />
-        </>
-      ) : (
-        <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
-          <UserRoundX className="h-10 w-10" />
-          <p className="text-lg font-medium text-foreground">Persona not found</p>
-          <p className="text-sm">It doesn't exist, or it isn't one of yours.</p>
-        </div>
-      )}
-    </div>
-  );
+  return <PersonaSettings key={persona.id} persona={persona} />;
 }

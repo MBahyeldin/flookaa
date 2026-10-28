@@ -24,7 +24,7 @@ func (h *Handler) ResetInviteLink(c *gin.Context) {
 
 func (h *Handler) inviteLink(c *gin.Context, reset bool) {
 	ctx := c.Request.Context()
-	personaID, ok := requireSelf(c)
+	personaID, ok := h.requireSelf(c)
 	if !ok {
 		return
 	}

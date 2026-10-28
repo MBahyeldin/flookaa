@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import SectionLoader from "@/components/section-loader";
 import InterestPicker from "@/components/interests/InterestPicker";
 import { applySavedPersona } from "@/lib/applySavedPersona";
-import { privacyChangeHint } from "@/lib/formFields/persona";
+import { privacyChangeHint } from "@/lib/privacyChangeHint";
 import { SLUG_PATTERN } from "@/lib/slug";
 import { getPersonaInterests, setPersonaInterests } from "@/services/interests";
 import { createPersona, fetchUserPersonas, updatePersona } from "@/services/persona";

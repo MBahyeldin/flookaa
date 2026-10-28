@@ -35,7 +35,7 @@ type FollowerResponse struct {
 
 // ListRequests lists the persona's own pending follow requests.
 func (h *Handler) ListRequests(c *gin.Context) {
-	personaID, ok := requireSelf(c)
+	personaID, ok := h.requireSelf(c)
 	if !ok {
 		return
 	}
@@ -71,7 +71,7 @@ func (h *Handler) ListRequests(c *gin.Context) {
 
 // ListFollowers lists the persona's own active followers.
 func (h *Handler) ListFollowers(c *gin.Context) {
-	personaID, ok := requireSelf(c)
+	personaID, ok := h.requireSelf(c)
 	if !ok {
 		return
 	}
@@ -116,7 +116,7 @@ func (h *Handler) RejectRequest(c *gin.Context) {
 
 func (h *Handler) resolveRequest(c *gin.Context, status db.PersonaFollowStatusEnum) {
 	ctx := c.Request.Context()
-	personaID, followerID, ok := followerParams(c)
+	personaID, followerID, ok := h.followerParams(c)
 	if !ok {
 		return
 	}
@@ -165,7 +165,7 @@ func (h *Handler) approve(ctx context.Context, personaID, followerID int64) erro
 // RemoveFollower ends someone's follow without telling them; they may follow again.
 func (h *Handler) RemoveFollower(c *gin.Context) {
 	ctx := c.Request.Context()
-	personaID, followerID, ok := followerParams(c)
+	personaID, followerID, ok := h.followerParams(c)
 	if !ok {
 		return
 	}
@@ -202,27 +202,14 @@ func (h *Handler) anonymize(c *gin.Context, viewerID int64, ids []int64, fields 
 	return true
 }
 
-// requireSelf only lets a persona manage its own followers.
-func requireSelf(c *gin.Context) (int64, bool) {
-	viewerID, ok := auth.PersonaID(c)
-	if !ok {
-		auth.PersonaRequired(c)
-		return 0, false
-	}
-	personaID, err := strconv.ParseInt(c.Param("persona_id"), 10, 64)
-	if err != nil || personaID <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid persona ID"})
-		return 0, false
-	}
-	if personaID != viewerID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not_your_persona"})
-		return 0, false
-	}
-	return personaID, true
+// requireSelf lets the user manage the followers of any of their own personas, current or not.
+func (h *Handler) requireSelf(c *gin.Context) (int64, bool) {
+	_, personaID, ok := auth.OwnPersona(c, h.q)
+	return personaID, ok
 }
 
-func followerParams(c *gin.Context) (personaID, followerID int64, ok bool) {
-	personaID, ok = requireSelf(c)
+func (h *Handler) followerParams(c *gin.Context) (personaID, followerID int64, ok bool) {
+	personaID, ok = h.requireSelf(c)
 	if !ok {
 		return 0, 0, false
 	}

@@ -14,13 +14,19 @@ export const profileSchema = zod.object({
 
 export type Profile = zod.infer<typeof profileSchema> & {
   email_address: string;
+  is_verified?: boolean;
   has_password: boolean;
   date_of_birth?: string | null;
   gender?: Gender | null;
+  /** 0 when not set. */
+  country_id?: number;
+  state_id?: number;
+  city_id?: number;
 };
 
 export const GENDERS = ["male", "female"] as const;
 export type Gender = (typeof GENDERS)[number];
+export const GENDER_LABELS: Record<Gender, string> = { male: "Male", female: "Female" };
 export const MIN_DATE_OF_BIRTH = "1900-01-01";
 // The backend compares with today's UTC date.
 export const maxDateOfBirth = () => new Date().toISOString().slice(0, 10);

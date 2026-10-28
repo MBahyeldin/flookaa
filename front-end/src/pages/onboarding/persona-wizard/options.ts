@@ -1,4 +1,4 @@
-import { Eye, Globe, Lock, type LucideIcon } from "lucide-react";
+import { EyeOff, Globe, Lock, type LucideIcon } from "lucide-react";
 import type { Persona } from "@/types/persona";
 
 export type Privacy = Persona["privacy"];
@@ -10,19 +10,19 @@ export const PRIVACY_OPTIONS: { value: Privacy; label: string; note: string; ico
   {
     value: "public",
     label: "Public",
-    note: "Anyone can view this persona",
+    note: "Everyone sees this persona and can follow it at once.",
     icon: Globe,
   },
   {
     value: "private",
     label: "Private",
-    note: "Only people you share with can view",
+    note: "Others see an anonymous name until you approve them as followers.",
     icon: Lock,
   },
   {
     value: "only_me",
     label: "Only me",
-    note: "Just for yourself, completely private",
-    icon: Eye,
+    note: "Only you see it. Nobody can follow it.",
+    icon: EyeOff,
   },
 ];

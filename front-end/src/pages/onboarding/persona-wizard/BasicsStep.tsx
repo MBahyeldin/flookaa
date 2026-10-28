@@ -8,13 +8,10 @@ import { FormField as Field } from "@/components/ui/form-field";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
-import ThemeInput from "@/components/inputs/theme";
+import { ThemeSwatchGroup } from "@/components/ui/theme-swatch";
 import useInputImage from "@/hooks/useInpuImage";
-import { FormField } from "@/models/Forms/FormField";
 import { OTHER_TYPE, PERSONA_TYPES } from "./options";
 import type { Draft } from "./PersonaWizard";
-
-const themeField = new FormField({ id: "theme", label: "Theme", type: "theme", interfaceType: "theme", width: "full" });
 
 export default function BasicsStep({
   draft,
@@ -109,7 +106,10 @@ export default function BasicsStep({
         <p className="text-xs text-muted-foreground">Only you see the type.</p>
       </div>
 
-      <ThemeInput field={themeField} value={draft.theme} error={undefined} setFieldValue={async (_f, v) => set({ theme: v as Draft["theme"] })} />
+      <div className="flex flex-col gap-1.5">
+        <Label id="wizard-theme-label">Theme</Label>
+        <ThemeSwatchGroup aria-labelledby="wizard-theme-label" value={draft.theme} onChange={(theme) => set({ theme })} />
+      </div>
 
       <Field label="Bio (optional)">
         <Textarea rows={3} placeholder="Tell others about this persona…" value={draft.bio} onChange={(e) => set({ bio: e.target.value })} />

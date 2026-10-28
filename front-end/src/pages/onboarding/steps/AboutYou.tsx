@@ -6,13 +6,12 @@ import SectionLoader from "@/components/section-loader";
 import { getUserData, updateProfile } from "@/services/user";
 import {
   GENDERS,
+  GENDER_LABELS,
   dateOfBirthSchema,
   genderSchema,
   type Gender,
 } from "@/types/user";
 import OnboardingFooter from "../OnboardingFooter";
-
-const GENDER_LABELS: Record<Gender, string> = { male: "Male", female: "Female" };
 
 export default function AboutYou() {
   const [loading, setLoading] = useState(true);

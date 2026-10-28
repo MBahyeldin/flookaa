@@ -2,12 +2,9 @@ import type { FormGroup } from "@/types/FormFields";
 import { MIN_AGE_ERROR } from "@/lib/minAge";
 import { PASSWORD_RULES_ERROR } from "@/lib/password";
 import signupFormFieldsGroup, { forgotPasswordGroups, resetPasswordGroups } from "@/lib/formFields/signup";
-import profileFieldsGroups from "@/lib/formFields/profile";
 import loginFormFieldsGroups from "@/lib/formFields/login";
 import channelFormFieldsGroups from "@/lib/formFields/channel";
 import communityFormFieldsGroups from "@/lib/formFields/community";
-import { personaSettingsFormGroups } from "@/lib/formFields/persona";
-import type { Persona } from "@/types/persona";
 
 // An API error code shown on a field instead of under the form; `also` fields are outlined without a message.
 type ServerFieldError = { field: string; message: string; also?: string[] };
@@ -69,21 +66,6 @@ export class Form {
     },
   });
 
-  static profile = new Form({
-    id: "profile_form",
-    name: "Profile Form",
-    title: "Update Your Profile",
-    description: "Form to update user profile information",
-    submitText: "Save Changes",
-    groups: profileFieldsGroups,
-    relativeApiPath: "/api/v1/users/profile",
-    method: "PATCH",
-    serverErrors: {
-      invalid_date_of_birth: { field: "date_of_birth", message: "Enter a date between 1900 and today" },
-      invalid_gender: { field: "gender", message: "Choose one" },
-    },
-  });
-
   static login = new Form({
     id: "login_form",
     name: "Log In Form",
@@ -136,24 +118,6 @@ export class Form {
         invalid_interests: { field: "interest_ids", message: "Pick 1 to 5 interests." },
         invalid_interest: { field: "interest_ids", message: "One of these interests is no longer offered." },
         invalid_min_age: { field: "min_age", message: MIN_AGE_ERROR },
-      },
-    });
-  }
-
-  static personaSettings(persona: Persona) {
-    return new Form({
-      id: "persona_settings_form",
-      name: "Persona Settings Form",
-      title: "Persona settings",
-      description: "Form for editing one of your personas",
-      submitText: "Save changes",
-      groups: personaSettingsFormGroups(persona),
-      relativeApiPath: `/api/v1/persona/update/${persona.id}`,
-      method: "POST",
-      serverErrors: {
-        invalid_slug: { field: "slug", message: "Use 3–50 lowercase letters, digits or single hyphens." },
-        slug_taken: { field: "slug", message: "Another of your personas already uses this slug." },
-        invalid_theme: { field: "theme", message: "Pick one of the palettes." },
       },
     });
   }

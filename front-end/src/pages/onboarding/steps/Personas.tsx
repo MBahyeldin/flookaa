@@ -6,9 +6,19 @@ import { PersonaRow, personaDisplayName } from "@/components/persona-row";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import type { Persona } from "@/types/persona";
-import { PersonaInterestsSection, PersonaSettingsForm } from "@/pages/(dashboard)/persona-manager/[id]";
+import { PersonaSettingsSections } from "@/pages/(dashboard)/persona-manager/[id]";
+import { DEFAULT_PALETTE, isPaletteId, type PaletteId } from "@/themes/palettes";
 import OnboardingFooter from "../OnboardingFooter";
 import PersonaWizard, { type WizardMode } from "../persona-wizard/PersonaWizard";
+
+function ManagedPersona({ persona }: { persona: Persona }) {
+  const [theme, setTheme] = useState<PaletteId>(isPaletteId(persona.theme) ? persona.theme : DEFAULT_PALETTE);
+  return (
+    <div data-theme={theme} className="flex flex-col gap-4 bg-background px-4 pb-6 text-foreground">
+      <PersonaSettingsSections persona={persona} onThemeDraft={setTheme} />
+    </div>
+  );
+}
 
 export default function Personas() {
   const navigate = useNavigate();
@@ -68,12 +78,7 @@ export default function Personas() {
             <SheetTitle>Manage persona</SheetTitle>
             <SheetDescription>Changes save to this persona only.</SheetDescription>
           </SheetHeader>
-          {managed && (
-            <div className="px-4 pb-6">
-              <PersonaSettingsForm persona={managed} />
-              <PersonaInterestsSection personaId={Number(managed.id)} />
-            </div>
-          )}
+          {managed && <ManagedPersona key={managed.id} persona={managed} />}
         </SheetContent>
       </Sheet>
     </div>

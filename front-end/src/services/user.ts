@@ -21,7 +21,16 @@ export async function getUserData(): Promise<Profile | null> {
 }
 
 
-export type ProfilePatch = Partial<{ date_of_birth: string; gender: Gender }>;
+export type ProfilePatch = Partial<{
+  first_name: string;
+  last_name: string;
+  date_of_birth: string;
+  gender: Gender;
+  // Ids go as strings; an empty one keeps the stored value.
+  country_id: string;
+  state_id: string;
+  city_id: string;
+}>;
 
 export async function updateProfile(patch: ProfilePatch): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
