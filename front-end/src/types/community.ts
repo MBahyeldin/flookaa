@@ -45,6 +45,18 @@ export type Community = {
   is_moderator?: boolean;
 };
 
+/** A community the persona owns, is an active member of, or follows (the create-channel picker). */
+export type MyCommunity = {
+  id: number;
+  name: string;
+  slug: string;
+  thumbnail: string;
+  theme: PaletteId;
+  members_count: number;
+  /** A channel created into it goes straight in; otherwise it's a request. */
+  can_manage: boolean;
+};
+
 /** Another persona as the viewer sees it; anonymous ones have only first_name. */
 export type CommunityPersona = {
   persona_id: number;

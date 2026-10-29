@@ -510,3 +510,32 @@ SELECT * FROM (
 ) s
 ORDER BY s.members_count DESC, s.id
 LIMIT sqlc.arg(lim);
+
+-- The create-channel picker: communities the persona owns, is an active member of, or follows.
+-- name: ListPersonaCommunities :many
+SELECT * FROM (
+    SELECT c.id, c.name, c.slug, c.thumbnail, c.theme,
+        (SELECT COUNT(*) FROM community_members cm JOIN personas p ON p.id = cm.persona_id
+         WHERE cm.community_id = c.id AND cm.status = 'active' AND cm.left_at IS NULL
+           AND p.deleted_at IS NULL)::int AS members_count,
+        (c.owner_id = sqlc.arg(persona_id)::bigint OR (m.persona_id IS NOT NULL AND EXISTS (
+            SELECT 1
+            FROM community_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.community_id = c.id
+              AND cr.persona_id = sqlc.arg(persona_id)::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name = 'moderator'
+        )))::boolean AS can_manage
+    FROM communities c
+    LEFT JOIN community_members m
+        ON m.community_id = c.id AND m.persona_id = sqlc.arg(persona_id)::bigint
+       AND m.status = 'active' AND m.left_at IS NULL
+    WHERE c.deleted_at IS NULL
+      AND persona_meets_min_age(sqlc.arg(persona_id)::bigint, c.min_age)
+      AND (c.owner_id = sqlc.arg(persona_id)::bigint OR m.persona_id IS NOT NULL OR EXISTS (
+          SELECT 1 FROM community_followers f
+          WHERE f.community_id = c.id AND f.persona_id = sqlc.arg(persona_id)::bigint AND f.unfollowed_at IS NULL
+      ))
+) s
+ORDER BY s.can_manage DESC, lower(s.name), s.id;

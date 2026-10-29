@@ -3,7 +3,6 @@ import { MIN_AGE_ERROR } from "@/lib/minAge";
 import { PASSWORD_RULES_ERROR } from "@/lib/password";
 import signupFormFieldsGroup, { forgotPasswordGroups, resetPasswordGroups } from "@/lib/formFields/signup";
 import loginFormFieldsGroups from "@/lib/formFields/login";
-import channelFormFieldsGroups from "@/lib/formFields/channel";
 import communityFormFieldsGroups from "@/lib/formFields/community";
 
 // An API error code shown on a field instead of under the form; `also` fields are outlined without a message.
@@ -81,22 +80,6 @@ export class Form {
         field: "password",
         message: "This account logs in with Google.",
       },
-    },
-  });
-
-  static channel = new Form({
-    id: "channel_form",
-    name: "Channel Form",
-    title: "Create Your Channel",
-    description: "Form for creating a new channel",
-    submitText: "Create Channel",
-    groups: channelFormFieldsGroups,
-    relativeApiPath: "/api/v1/channels/create",
-    method: "POST",
-    serverErrors: {
-      invalid_interests: { field: "interest_ids", message: "Pick 1 to 5 interests." },
-      invalid_interest: { field: "interest_ids", message: "One of these interests is no longer offered." },
-      invalid_min_age: { field: "min_age", message: MIN_AGE_ERROR },
     },
   });
 

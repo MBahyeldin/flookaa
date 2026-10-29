@@ -14,6 +14,7 @@ func AddCommunitiesRoutes(r *gin.RouterGroup, communities *communities.Handler) 
 	{
 		group.GET("/", communities.ListCommunities)
 		group.POST("/create", communities.CreateCommunity)
+		group.GET("/mine", communities.MyCommunities)
 		group.GET("/by-slug/:slug", communities.GetCommunityBySlug)
 		group.GET("/:community_id", communities.GetCommunity)
 		group.PATCH("/:community_id", communities.UpdateCommunity)
