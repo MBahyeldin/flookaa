@@ -9,7 +9,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { SectionNav, SectionNavContent, SectionNavList, SectionNavTab } from "@/components/ui/section-nav";
 import NotFound from "@/components/not-found";
 import { Post } from "@/components/post-card";
-import { useGetChannelCommunityLazyQuery, useGetChannelQuery, useGetPostsLazyQuery } from "@/generated/graphql";
+import { useLazyQuery, useQuery } from "@apollo/client/react";
+import { GetChannelCommunityDocument, GetChannelDocument, GetPostsDocument } from "@/generated/graphql";
 import { getChannelInterests, joinChannel, leaveChannel, setFollowing } from "@/services/channels";
 import type { Interest } from "@/types/interest";
 import { useWebsocketService } from "@/Websocket.context";
@@ -50,7 +51,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     loading: channelLoading,
     error: channelError,
     refetch: refetchChannel,
-  } = useGetChannelQuery({
+  } = useQuery(GetChannelDocument, {
     variables: { id: channelId },
   });
   const { websocketService } = useWebsocketService();
@@ -72,7 +73,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   // Set once the community changes live; not cached, so the posts query isn't touched.
   const [communityOverride, setCommunityOverride] = useState<{ id: number; name: string; slug: string } | null | undefined>(undefined);
   const [communityKey, setCommunityKey] = useState(0);
-  const [fetchCommunity] = useGetChannelCommunityLazyQuery({ fetchPolicy: "no-cache" });
+  const [fetchCommunity] = useLazyQuery(GetChannelCommunityDocument, { fetchPolicy: "no-cache" });
   const [membersCount, setMembersCount] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
   const canModerate = channelData?.getChannel?.canModerate || false;
@@ -86,7 +87,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   const [showLoadMore, setShowLoadMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [offset, setOffset] = useState(0);
-  const [loadMorePosts] = useGetPostsLazyQuery();
+  const [loadMorePosts] = useLazyQuery(GetPostsDocument);
 
   const pageOwner = useMemo(
     () => ({ id: channelId ?? "", type: "CHANNEL" as const }),

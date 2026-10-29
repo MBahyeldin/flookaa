@@ -3,7 +3,9 @@
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { PersonaLink } from "@/components/persona-link";
-import { useCreateLikeMutation, useDeleteCommentMutation, useGetCommentsLazyQuery, type SimpleInput } from "@/generated/graphql";
+import { useMutation } from "@apollo/client/react";
+import client from "@/graphql/client";
+import { CreateLikeDocument, DeleteCommentDocument, GetCommentsDocument, type SimpleInput } from "@/generated/graphql";
 import { ChevronDown, Ellipsis, Heart, Loader2, Trash2, X } from "lucide-react";
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import { toast } from "sonner";
@@ -73,7 +75,7 @@ const CommentItem = React.memo(({
     const isOwnComment = persona?.id != null && comment?.authorId === persona.id;
     const [showReplyInput, setShowReplyInput] = useState(false);
 
-    const [createLike] = useCreateLikeMutation();
+    const [createLike] = useMutation(CreateLikeDocument);
     const [liked, setLiked] = useState(comment?.personalizedMeta?.likedByPersona ?? false);
     const [isLiking, setIsLiking] = useState(false);
     const likesCount = comment?.meta.likesCount ?? 0;
@@ -106,7 +108,7 @@ const CommentItem = React.memo(({
         setLiked(nextLiked);
     };
 
-    const [deleteComment, { loading: isDeleting }] = useDeleteCommentMutation();
+    const [deleteComment, { loading: isDeleting }] = useMutation(DeleteCommentDocument);
     const canDelete = isOwnComment || canModerate;
 
     const handleDelete = async () => {
@@ -127,7 +129,6 @@ const CommentItem = React.memo(({
 
     // Our own offset, not the list length: live replies land in the same list
     // and would make the next page skip older ones.
-    const [fetchReplies] = useGetCommentsLazyQuery();
     const [fetched, setFetched] = useState(0);
     const [repliesLoading, setRepliesLoading] = useState(false);
     const [repliesError, setRepliesError] = useState(false);
@@ -137,8 +138,7 @@ const CommentItem = React.memo(({
         setRepliesLoading(true);
         setRepliesError(false);
         try {
-            const { data, error } = await fetchReplies({ variables: { parentId: commentId, limit, offset: fetched } });
-            if (error) throw error;
+            const { data } = await client.query({ query: GetCommentsDocument, variables: { parentId: commentId, limit, offset: fetched } });
             setFetched((n) => n + limit);
             useAppStore.getState().addCommentsToComment(commentId, data?.getComments ?? []);
         } catch {
@@ -146,7 +146,7 @@ const CommentItem = React.memo(({
         } finally {
             setRepliesLoading(false);
         }
-    }, [fetchReplies, commentId, fetched]);
+    }, [commentId, fetched]);
 
     const repliesCount = comment?.meta.commentsCount ?? 0;
     const requestedFirst = useRef(false);

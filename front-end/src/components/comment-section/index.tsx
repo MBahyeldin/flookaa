@@ -6,7 +6,8 @@ import { SkeletonList } from "../ui/skeleton";
 import { EmptyState } from "../ui/empty-state";
 import { ErrorState } from "../ui/error-state";
 import useNewlyAdded from "@/hooks/useNewlyAdded";
-import { useGetCommentsLazyQuery, type Comment, type GetCommentsQuery, type GetCommentsQueryVariables } from "@/generated/graphql";
+import { useLazyQuery } from "@apollo/client/react";
+import { GetCommentsDocument, type Comment, type GetCommentsQuery, type GetCommentsQueryVariables } from "@/generated/graphql";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/AppStore";
 import useCustomInfiniteQuery from "@/hooks/useCustomInfinteQuery";
@@ -27,7 +28,7 @@ export default function CommentSection({
     const [showLoadMoreComments, setShowLoadMoreComments] = useState(false);
     const [loaded, setLoaded] = useState(false);
     const { loadMore, isLoading, error, result } = useCustomInfiniteQuery<GetCommentsQuery, GetCommentsQueryVariables, Comment[]>({
-        queryFn: useGetCommentsLazyQuery()[0],
+        queryFn: useLazyQuery(GetCommentsDocument)[0],
         storeSelector: (state) => state.commentsByPost[parentId] || [],
         updateStoreWithData: (data) => {
             setLoaded(true);

@@ -7,7 +7,8 @@ import { SkeletonList } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Post } from "@/components/post-card";
-import { useGetPostsLazyQuery } from "@/generated/graphql";
+import { useLazyQuery } from "@apollo/client/react";
+import { GetPostsDocument } from "@/generated/graphql";
 import { useWebsocketService } from "@/Websocket.context";
 import { isCurrentOwner, useAppStore } from "@/stores/AppStore";
 import type { PostEventPayload } from "@/types/Ws";
@@ -27,7 +28,7 @@ export function ProfilePosts({ personaId, name, isOwn }: { personaId: number; na
   const setCanModerate = useAppStore((s) => s.setCanModerate);
   const posts = useAppStore((s) => s.posts);
   const storeOwner = useAppStore((s) => s.owner);
-  const [fetchPosts] = useGetPostsLazyQuery({ fetchPolicy: "network-only" });
+  const [fetchPosts] = useLazyQuery(GetPostsDocument, { fetchPolicy: "network-only" });
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);

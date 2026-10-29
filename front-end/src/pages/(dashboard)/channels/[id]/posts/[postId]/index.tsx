@@ -5,7 +5,8 @@ import NotFound from "@/components/not-found";
 import CommentSection from "@/components/comment-section";
 import { Skeleton, SkeletonList } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/error-state";
-import { useGetChannelBarQuery, useGetPostsQuery } from "@/generated/graphql";
+import { useQuery } from "@apollo/client/react";
+import { GetChannelBarDocument, GetPostsDocument } from "@/generated/graphql";
 import { joinChannel, leaveChannel } from "@/services/channels";
 import { useAppStore } from "@/stores/AppStore";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
@@ -29,12 +30,12 @@ function PostView({ channelId, postId }: { channelId: string; postId: string }) 
     data: barData,
     error: barError,
     refetch: refetchBar,
-  } = useGetChannelBarQuery({ variables: { id: channelId }, fetchPolicy: "network-only" });
+  } = useQuery(GetChannelBarDocument, { variables: { id: channelId }, fetchPolicy: "network-only" });
   const {
     data: postData,
     error: postError,
     refetch: refetchPost,
-  } = useGetPostsQuery({
+  } = useQuery(GetPostsDocument, {
     variables: { ids: [postId], limit: 1, offset: 0, owner: { id: channelId, type: "CHANNEL" } },
     fetchPolicy: "network-only",
   });

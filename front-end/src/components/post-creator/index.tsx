@@ -17,7 +17,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { SectionNav, SectionNavList, SectionNavTab } from "@/components/ui/section-nav";
-import { useCreatePostMutation } from "@/generated/graphql";
+import { useMutation } from "@apollo/client/react";
+import { CreatePostDocument } from "@/generated/graphql";
 import { type PortableTextObject, type PortableTextSpan, type PortableTextTextBlock } from "@portabletext/editor";
 import { useActorRef } from "@xstate/react";
 import { playgroundMachine } from "../portable-text/toolbar/machine";
@@ -78,7 +79,7 @@ export function PostCreator(props: {
   const layout = props.layout ?? "card";
   const [blocks, setBlocks] = useState<Blocks>([]);
   const { persona } = useUserProfileStore();
-  const [createPost] = useCreatePostMutation();
+  const [createPost] = useMutation(CreatePostDocument);
   const [isPosting, setIsPosting] = useState(false);
   const [mode, setMode] = useState<Mode>("write");
   const [confirmDiscard, setConfirmDiscard] = useState(false);

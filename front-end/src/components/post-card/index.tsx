@@ -9,7 +9,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { useDeletePostMutation, type Post } from "@/generated/graphql";
+import { useMutation } from "@apollo/client/react";
+import { DeletePostDocument, type Post } from "@/generated/graphql";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/AppStore";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
@@ -34,7 +35,7 @@ export function PostMenu({
   const { persona } = useUserProfileStore();
   const pageCanModerate = useAppStore((state) => state.canModerate);
   const canModerate = canModerateProp ?? pageCanModerate;
-  const [deletePost, { loading: isDeleting }] = useDeletePostMutation();
+  const [deletePost, { loading: isDeleting }] = useMutation(DeletePostDocument);
   if (post.authorId !== persona?.id && !canModerate) return null;
 
   const handleDelete = async () => {

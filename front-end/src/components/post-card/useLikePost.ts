@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import { toast } from "sonner";
-import { useCreateLikeMutation, type Post } from "@/generated/graphql";
+import { useMutation } from "@apollo/client/react";
+import { CreateLikeDocument, type Post } from "@/generated/graphql";
 import useAudioContext from "@/hooks/useAudioContext";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 
 export function useLikePost(post: Post) {
   const { persona } = useUserProfileStore();
-  const [createLike] = useCreateLikeMutation();
+  const [createLike] = useMutation(CreateLikeDocument);
   const { playSound } = useAudioContext();
 
   const [liked, setLiked] = useState(post.personalizedMeta?.likedByPersona || false);
