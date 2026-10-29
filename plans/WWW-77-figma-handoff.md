@@ -34,6 +34,8 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 - 2026-10-28 (WWW-98 create forms): Patterns: `Community Option` `130:17001` (State Default `130:16985` / Selected `130:16993`; props `Name#130:0`, `Meta#130:3`). Channel & Community: Create channel `129:13714` / `130:14421` / `130:14656`; Create community `130:8378` / `130:14894` / `130:15116`; Create forms · States `130:16282`; Create channel · Community picker `131:9470` (desktop dialog) / `131:9641` (mobile sheet); Community picker · States `131:9804` (Loading, Empty, No results); Create channel · Standalone, Ember picked `131:10334`; · Deep Tide Dark `131:10741`.
 - 2026-10-29 (WWW-99 manage + members sheets): Patterns: `Person Row` gains `Type=Member` `136:19501` (role `Tag` + `⋯`; prop `Show role#136:2`); `Channel Request Row` `136:19531` (props `Name#136:12`, `Meta#136:13`). Channel & Community: Channel · Manage `136:19539` (desktop) / `138:15694` (mobile) / · Deep Tide Dark `138:15986`; Community · Manage `136:20382` / `138:16849`; Channel · Members `137:11655`, · Requests `137:14152`; Community · Members · Row menu `137:11863` / `138:15861` (mobile); Community · Members · Channel requests `137:14747`; Manage & members · States `138:13726` (empty/loading/error, Community card None/Pending/Rejected, field errors, visibility warnings, saving, toast, six confirm dialogs, Ember look).
 
+- 2026-10-29 (WWW-100 admin interests): Components: icons `arrow-up` `145:10114`, `arrow-down` `145:10118`, `archive` `145:10123`, `rotate-ccw` `145:10127`; `Sidebar` (`11:232`) gains an Admin entry (`shield-check`, `145:5966` expanded / `145:5975` collapsed) behind `Show admin#145:0` (default off, so earlier frames are unchanged). Patterns: `Interest Row` `147:560` (State Active `147:502` / Ungrouped `147:525` / Retired `147:538`; the `Chip` is exposed; move buttons sit in fixed slots so hidden ends keep their place). New page `Admin` `148:6`: Interests `148:7` (desktop) / `150:522` (mobile); Interest dialog · States `151:805`, Group dialog · States `151:1214`; Desktop · Edit interest `151:1416`, · Menus `151:1533`, · Busy `151:2102`, · Action failed `151:2632`, · Deep Tide Dark `151:2822`, · Not an admin `151:5635`, · Empty `151:5727`, · Loading `151:5938`, · Error `151:6144`, · Sidebar collapsed `151:6359`; Mobile · Add interest (sheet) `152:4105`, · Row menu (Move up/down, Edit, Retire) `152:4242`, · Sidebar sheet `152:4456`, · Empty `153:5053`, · Loading `153:5200`, · Error `153:5341`, · Action failed `153:5477`, · Busy `153:5602`.
+
 ## Next steps
 
 1. User review. The theme demo (`28:4368`/`28:4455`/`28:4542`) and RTL frames still show the old Post Preview (RTL also the aside); refresh them if the chosen versions stick.
@@ -76,6 +78,7 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Public & Onboarding` | `3:8` |
 | `RTL` | `3:9` |
 | `Notifications & Settings` | `109:6` |
+| `Admin` | `148:6` |
 
 ### Collections and modes
 | Collection | ID |
@@ -245,6 +248,7 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Interest Filter` | `16:497` |
 | `Community Option` | `130:17001` |
 | `Channel Request Row` | `136:19531` |
+| `Interest Row` | `147:560` |
 
 ### Variants
 | Variant | ID |
@@ -269,6 +273,8 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Tag` | `{"Label": "Label#9:127", "Show icon": "Show icon#9:128", "Icon": "Icon#9:129"}` |
 | `Count Badge` | `{"Count": "Count#11:0"}` |
 | `Sidebar/Item` | `{"Label": "Label#11:1", "Icon": "Icon#11:6", "Show badge": "Show badge#11:11"}` |
+| `Sidebar` | `{"Show admin": "Show admin#145:0"}` |
+| `Interest Row` | `{"Slug": "Slug#147:0", "Group": "Group#147:4", "Show move up": "Show move up#147:8", "Show move down": "Show move down#147:12"}` (label and emoji on the nested `Chip`) |
 | `Segmented Control` | `{"Option 1": "Option 1#119:0", "Option 2": "Option 2#119:3"}` |
 | `Radio Card` | `{"Title": "Title#119:6", "Body": "Body#119:9", "Icon": "Icon#119:12"}` |
 | `Theme Swatch` | `{"Name": "Name#119:15"}` |
@@ -344,6 +350,10 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `list` | `8:245` |
 | `bookmark` | `8:248` |
 | `user-round-check` | `8:253` |
+| `arrow-up` | `145:10114` |
+| `arrow-down` | `145:10118` |
+| `archive` | `145:10123` |
+| `rotate-ccw` | `145:10127` |
 
 ## Resume prompt
 
