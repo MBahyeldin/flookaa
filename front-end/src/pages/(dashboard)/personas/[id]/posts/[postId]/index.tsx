@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { initials } from "@/components/ui/logo";
 import { Skeleton, SkeletonList } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/error-state";
-import { useGetPostsQuery } from "@/generated/graphql";
+import { useQuery } from "@apollo/client/react";
+import { GetPostsDocument } from "@/generated/graphql";
 import { fetchPersonaProfile } from "@/services/persona";
 import { useAppStore } from "@/stores/AppStore";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
@@ -34,7 +35,7 @@ function WallPostView({ personaId, postId }: { personaId: string; postId: string
     data: postData,
     error: postError,
     refetch: refetchPost,
-  } = useGetPostsQuery({
+  } = useQuery(GetPostsDocument, {
     variables: { ids: [postId], limit: 1, offset: 0, owner: { id: personaId, type: "PERSONA" } },
     fetchPolicy: "network-only",
   });

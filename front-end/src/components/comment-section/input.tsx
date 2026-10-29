@@ -1,6 +1,7 @@
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
-import { useCreateCommentMutation, type SimpleInput } from "@/generated/graphql";
+import { useMutation } from "@apollo/client/react";
+import { CreateCommentDocument, type SimpleInput } from "@/generated/graphql";
 import SimpleInputComponent from "../simple-input";
 import { contentOwner, useAppStore } from "@/stores/AppStore";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
@@ -19,7 +20,7 @@ export default function CommentInput({
     const { persona } = useUserProfileStore();
     const owner = useAppStore((state) => contentOwner(state.owner));
 
-    const [CreateComment] = useCreateCommentMutation();
+    const [CreateComment] = useMutation(CreateCommentDocument);
 
     const handleSend = async (content: SimpleInput) => {
         if (!persona?.id || !parentId || !owner) return;

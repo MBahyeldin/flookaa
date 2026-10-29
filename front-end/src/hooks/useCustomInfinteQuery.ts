@@ -49,10 +49,12 @@ export default function useCustomInfiniteQuery<
       if (error) throw error;
       setOffset((prev) => prev + limit);
       updateStoreWithData(data);
-    } catch {
+      setIsLoading(false);
+    } catch (e) {
+      // A newer call aborted this one and reports its own result.
+      if ((e as Error)?.name === "AbortError") return;
       // The offset stays, so the next try asks for the same page.
       setError(true);
-    } finally {
       setIsLoading(false);
     }
   }, [queryFn, optionVariables, limit, offset, updateStoreWithData]);

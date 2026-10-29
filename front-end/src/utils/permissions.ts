@@ -1,9 +1,9 @@
-import type { User } from "@/types/auth";
+import type { Info } from "@/types/auth";
 
-export function hasRole(user: User | null, role: string): boolean {
+export function hasRole(user: Info | null, role: string): boolean {
   return !!user?.roles.includes(role);
 }
 
-export function hasPermission(user: User | null, permission: string): boolean {
+export function hasPermission(user: Info | null, permission: string): boolean {
   return !!user?.permissions.includes(permission);
 }
