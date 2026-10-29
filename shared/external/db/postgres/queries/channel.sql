@@ -16,6 +16,8 @@ SET theme = CASE WHEN sqlc.arg(clear_theme)::bool THEN NULL
                  ELSE COALESCE(sqlc.narg(theme)::theme_enum, theme) END,
     cover_pattern = COALESCE(sqlc.narg(cover_pattern)::cover_pattern_enum, cover_pattern),
     thumbnail = COALESCE(sqlc.narg(thumbnail), thumbnail),
+    name = COALESCE(sqlc.narg(name), name),
+    description = COALESCE(sqlc.narg(description), description),
     updated_at = NOW()
 WHERE id = sqlc.arg(id) AND deleted_at IS NULL
 RETURNING *, channel_theme(theme, id)::theme_enum AS effective_theme;

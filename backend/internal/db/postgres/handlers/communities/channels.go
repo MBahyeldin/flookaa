@@ -20,12 +20,14 @@ import (
 )
 
 type ChannelRequest struct {
-	ChannelID   int64  `json:"channel_id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Thumbnail   string `json:"thumbnail"`
-	Visibility  string `json:"visibility"`
-	RequestedAt string `json:"requested_at"`
+	ChannelID   int64        `json:"channel_id"`
+	Name        string       `json:"name"`
+	Description string       `json:"description"`
+	Thumbnail   string       `json:"thumbnail"`
+	Visibility  string       `json:"visibility"`
+	Theme       string       `json:"theme"`
+	RequestedBy *PersonaView `json:"requested_by"`
+	RequestedAt string       `json:"requested_at"`
 }
 
 // RequestChannel asks for channelID to join communityID. It answers an error
@@ -223,6 +225,23 @@ func (h *Handler) ListChannelRequests(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	var requesterIDs []int64
+	for _, r := range rows {
+		if r.RequestedBy.Valid {
+			requesterIDs = append(requesterIDs, r.RequestedBy.Int64)
+		}
+	}
+	viewerID, _ := auth.PersonaID(c)
+	personas, err := h.q.ResolvePersonasForViewer(c.Request.Context(), db.ResolvePersonasForViewerParams{ViewerID: viewerID, Ids: requesterIDs})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	resolved := make(map[int64]db.ResolvePersonasForViewerRow, len(personas))
+	for _, p := range personas {
+		resolved[p.ID] = p
+	}
+
 	requests := make([]ChannelRequest, len(rows))
 	for i, r := range rows {
 		requests[i] = ChannelRequest{
@@ -231,7 +250,16 @@ func (h *Handler) ListChannelRequests(c *gin.Context) {
 			Description: r.Description,
 			Thumbnail:   r.Thumbnail,
 			Visibility:  string(r.Visibility),
+			Theme:       string(r.Theme),
 			RequestedAt: r.RequestedAt.Format(time.RFC3339),
+		}
+		if p, ok := resolved[r.RequestedBy.Int64]; ok && r.RequestedBy.Valid {
+			view := PersonaView{PersonaID: p.ID, FirstName: p.FirstName, LastName: p.LastName, Thumbnail: p.Thumbnail.String}
+			if !p.Visible {
+				// The name the requester already has in its channel's People tab.
+				view = PersonaView{PersonaID: p.ID, FirstName: access.AnonymousName(p.ID, r.ChannelID), Anonymous: true}
+			}
+			requests[i].RequestedBy = &view
 		}
 	}
 	c.JSON(http.StatusOK, gin.H{"requests": requests})

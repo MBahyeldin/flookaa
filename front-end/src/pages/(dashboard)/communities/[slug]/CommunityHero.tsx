@@ -1,4 +1,4 @@
-import { Check, Clock, Ellipsis, Globe, Link2, Lock, Pencil, Plus, Send, Users } from "lucide-react";
+import { Check, Clock, Ellipsis, Globe, Link2, Lock, Plus, Send, Settings, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Hero } from "@/components/hero";
@@ -29,7 +29,7 @@ export function CommunityHero({
   onLeave,
   onFollow,
   onMembers,
-  onEdit,
+  onManage,
   onSuggest,
 }: {
   community: Community;
@@ -40,7 +40,7 @@ export function CommunityHero({
   onLeave: () => void;
   onFollow: () => void;
   onMembers: () => void;
-  onEdit: () => void;
+  onManage: () => void;
   onSuggest: () => void;
 }) {
   const isPrivate = community.visibility === "private";
@@ -144,19 +144,19 @@ export function CommunityHero({
               {community.can_manage && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={onEdit}>
-                    <Pencil />
-                    Edit community
+                  <DropdownMenuItem onSelect={onManage}>
+                    <Settings />
+                    Manage
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={onMembers}>
+                    <Users />
+                    Members & requests
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to={`/channels/create?community=${community.id}`}>
                       <Plus />
                       Create channel
                     </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={onMembers}>
-                    <Users />
-                    Members & requests
                   </DropdownMenuItem>
                 </>
               )}

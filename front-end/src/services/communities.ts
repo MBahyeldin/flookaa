@@ -58,6 +58,11 @@ export const getCommunityBySlug = (slug: string) =>
 
 export const getCommunity = (id: number) => call<{ community: Community }>(`/${id}`);
 
+export type CommunityChanges = Partial<Omit<CreateCommunityInput, "interest_ids"> & { interest_ids: number[] }>;
+
+export const updateCommunity = (id: number, changes: CommunityChanges) =>
+  call<{ community: Community }>(`/${id}`, "PATCH", "/communities", changes);
+
 export const joinCommunity = (id: number) => call<{ status: "active" | "pending" }>(`/${id}/join`, "POST");
 
 export const leaveCommunity = (id: number) => call<{ status: "none" }>(`/${id}/leave`, "POST");

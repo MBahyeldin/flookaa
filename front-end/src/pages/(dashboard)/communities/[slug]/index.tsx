@@ -9,7 +9,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { SectionHeader } from "@/components/ui/section-header";
 import { SectionNav, SectionNavList, SectionNavTab } from "@/components/ui/section-nav";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import NotFound from "@/components/not-found";
 import {
   followCommunity,
@@ -31,7 +30,7 @@ import { useNotificationStore } from "@/stores/NotificationStore";
 import { useSectionSpy } from "@/hooks/useSectionSpy";
 import { formatDateOnly } from "@/utils/formateDate";
 import { ChannelTile } from "@/components/tile/ChannelTile";
-import CommunityForm from "../CommunityForm";
+import { CommunityManageSheet } from "./manage/CommunityManageSheet";
 import MembersSheet, { type MembersTab } from "./MembersSheet";
 import SuggestChannelDialog from "./SuggestChannelDialog";
 import { CommunityHero } from "./CommunityHero";
@@ -180,9 +179,7 @@ export default function CommunityPage() {
   }, [notificationsVersion, isPending, reloadCommunity]);
 
   const onSaved = useCallback(
-    (saved: Community | null) => {
-      setEditing(false);
-      if (!saved) return;
+    (saved: Community) => {
       setCommunity(saved);
       if (saved.slug !== slug) navigate(`/communities/${saved.slug}`, { replace: true });
     },
@@ -297,7 +294,7 @@ export default function CommunityPage() {
         onLeave={leave}
         onFollow={follow}
         onMembers={() => openMembers("members")}
-        onEdit={() => setEditing(true)}
+        onManage={() => setEditing(true)}
         onSuggest={suggest}
       />
 
@@ -447,15 +444,15 @@ export default function CommunityPage() {
         onAgree={() => runAction("join", () => joinCommunity(community.id), "Couldn't join. Please try again.")}
       />
 
-      <Sheet open={editing} onOpenChange={setEditing}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
-          <SheetHeader>
-            <SheetTitle>Edit community</SheetTitle>
-            <SheetDescription>Changes show to everyone right away.</SheetDescription>
-          </SheetHeader>
-          <div className="px-4 pb-6">{editing && <CommunityForm community={community} onSaved={onSaved} />}</div>
-        </SheetContent>
-      </Sheet>
+      {community.can_manage && (
+        <CommunityManageSheet
+          community={community}
+          pendingRequests={pendingRequests}
+          open={editing}
+          onOpenChange={setEditing}
+          onSaved={onSaved}
+        />
+      )}
     </div>
   );
 }

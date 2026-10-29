@@ -256,7 +256,7 @@ func (q *Queries) FollowCommunity(ctx context.Context, arg FollowCommunityParams
 }
 
 const getChannelCommunityState = `-- name: GetChannelCommunityState :one
-SELECT cc.community_id, c.name, c.slug, cc.status, cc.resolved_at
+SELECT cc.community_id, c.name, c.slug, c.theme, c.thumbnail, cc.status, cc.resolved_at
 FROM community_channels cc
 JOIN communities c ON c.id = cc.community_id AND c.deleted_at IS NULL
 WHERE cc.channel_id = $1
@@ -272,6 +272,8 @@ type GetChannelCommunityStateRow struct {
 	CommunityID int64
 	Name        string
 	Slug        string
+	Theme       ThemeEnum
+	Thumbnail   string
 	Status      CommunityChannelStatusEnum
 	ResolvedAt  sql.NullTime
 }
@@ -284,6 +286,8 @@ func (q *Queries) GetChannelCommunityState(ctx context.Context, channelID int64)
 		&i.CommunityID,
 		&i.Name,
 		&i.Slug,
+		&i.Theme,
+		&i.Thumbnail,
 		&i.Status,
 		&i.ResolvedAt,
 	)
@@ -705,6 +709,8 @@ SELECT
     ch.description,
     ch.thumbnail,
     ch.visibility,
+    channel_theme(ch.theme, ch.id)::theme_enum AS theme,
+    cc.requested_by,
     cc.created_at AS requested_at
 FROM community_channels cc
 JOIN channels ch ON ch.id = cc.channel_id AND ch.deleted_at IS NULL
@@ -719,6 +725,8 @@ type ListCommunityChannelRequestsRow struct {
 	Description string
 	Thumbnail   string
 	Visibility  ChannelVisibilityEnum
+	Theme       ThemeEnum
+	RequestedBy sql.NullInt64
 	RequestedAt time.Time
 }
 
@@ -737,6 +745,8 @@ func (q *Queries) ListCommunityChannelRequests(ctx context.Context, communityID 
 			&i.Description,
 			&i.Thumbnail,
 			&i.Visibility,
+			&i.Theme,
+			&i.RequestedBy,
 			&i.RequestedAt,
 		); err != nil {
 			return nil, err

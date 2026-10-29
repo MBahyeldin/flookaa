@@ -188,3 +188,28 @@ export async function createChannel(
     return { ok: false, error: "request_failed" };
   }
 }
+
+export type ChannelChanges = Partial<{
+  name: string;
+  description: string;
+  /** "" = the community's. */
+  theme: string;
+  cover_pattern: string;
+  thumbnail: string;
+}>;
+
+export async function updateChannel(channelId: string, changes: ChannelChanges): Promise<Result<ChannelChanges & { own_theme: string | null }>> {
+  try {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/channels/${channelId}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(changes),
+    });
+    const body = await resp.json().catch(() => ({}));
+    if (!resp.ok) return { ok: false, error: body.error ?? "request_failed" };
+    return { ok: true, data: body };
+  } catch {
+    return { ok: false, error: "request_failed" };
+  }
+}

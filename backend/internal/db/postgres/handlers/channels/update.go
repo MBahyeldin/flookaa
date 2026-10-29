@@ -8,6 +8,8 @@ import (
 	"shared/external/db/nats"
 	"shared/pkg/access"
 	"shared/pkg/db"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,6 +19,16 @@ type UpdateChannelRequest struct {
 	Theme        *string `json:"theme"`
 	CoverPattern *string `json:"cover_pattern"`
 	Thumbnail    *string `json:"thumbnail"`
+	Name         *string `json:"name"`
+	Description  *string `json:"description"`
+}
+
+func validChannelName(name string) bool {
+	return name != "" && utf8.RuneCountInString(name) <= 100
+}
+
+func validChannelDescription(description string) bool {
+	return utf8.RuneCountInString(description) <= 500
 }
 
 func (h *Handler) UpdateChannel(c *gin.Context) {
@@ -46,6 +58,22 @@ func (h *Handler) UpdateChannel(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if req.Name != nil {
+		trimmed := strings.TrimSpace(*req.Name)
+		req.Name = &trimmed
+		if !validChannelName(trimmed) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_name"})
+			return
+		}
+	}
+	if req.Description != nil {
+		trimmed := strings.TrimSpace(*req.Description)
+		req.Description = &trimmed
+		if !validChannelDescription(trimmed) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_description"})
+			return
+		}
+	}
 	if req.CoverPattern != nil && *req.CoverPattern == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_cover_pattern"})
 		return
@@ -66,6 +94,12 @@ func (h *Handler) UpdateChannel(c *gin.Context) {
 	if req.Thumbnail != nil {
 		params.Thumbnail = sql.NullString{String: *req.Thumbnail, Valid: true}
 	}
+	if req.Name != nil {
+		params.Name = sql.NullString{String: *req.Name, Valid: true}
+	}
+	if req.Description != nil {
+		params.Description = sql.NullString{String: *req.Description, Valid: true}
+	}
 	ctx := c.Request.Context()
 	updated, err := h.q.UpdateChannel(ctx, params)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -82,6 +116,8 @@ func (h *Handler) UpdateChannel(c *gin.Context) {
 		"own_theme":     ownTheme(updated.Theme),
 		"cover_pattern": updated.CoverPattern,
 		"thumbnail":     updated.Thumbnail,
+		"name":          updated.Name,
+		"description":   updated.Description,
 	})
 }
 

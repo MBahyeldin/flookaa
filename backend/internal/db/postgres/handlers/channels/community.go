@@ -46,7 +46,7 @@ func (h *Handler) ChannelCommunity(c *gin.Context) {
 	}
 	out := gin.H{
 		"status":    string(state.Status),
-		"community": CommunityRef{ID: state.CommunityID, Name: state.Name, Slug: state.Slug},
+		"community": gin.H{"id": state.CommunityID, "name": state.Name, "slug": state.Slug, "theme": state.Theme, "thumbnail": state.Thumbnail},
 	}
 	if state.Status == db.CommunityChannelStatusEnumRejected && state.ResolvedAt.Valid {
 		out["rejected_until"] = state.ResolvedAt.Time.Add(30 * 24 * time.Hour).UTC().Format(time.RFC3339)

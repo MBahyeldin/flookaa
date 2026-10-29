@@ -7,7 +7,15 @@ import { listMembers } from "@/services/channels";
 import type { ChannelMember } from "@/types/channel";
 
 // `version` changes on membership events, so the list follows joins and leaves.
-export function ChannelPeople({ channelId, version }: { channelId: string; version: number }) {
+export function ChannelPeople({
+  channelId,
+  version,
+  onShowAll,
+}: {
+  channelId: string;
+  version: number;
+  onShowAll?: () => void;
+}) {
   const [members, setMembers] = useState<ChannelMember[] | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -29,7 +37,9 @@ export function ChannelPeople({ channelId, version }: { channelId: string; versi
 
   return (
     <section className="flex flex-col gap-6">
-      <PeopleStrip people={members} total={members.length} moderators={members.filter((m) => m.is_owner || m.is_moderator)} />
+      <PeopleStrip people={members} total={members.length} moderators={members.filter((m) => m.is_owner || m.is_moderator)}
+        onShowAll={onShowAll}
+      />
       <ul className="divide-y">
         {members.map((m) => (
           <PersonRow

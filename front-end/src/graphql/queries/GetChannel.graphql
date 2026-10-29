@@ -32,6 +32,7 @@ query GetChannel($id: Int64!) {
     followersCount
     minAge
     theme
+    ownTheme
     coverPattern
   }
 }

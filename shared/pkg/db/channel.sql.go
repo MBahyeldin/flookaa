@@ -1397,8 +1397,10 @@ SET theme = CASE WHEN $1::bool THEN NULL
                  ELSE COALESCE($2::theme_enum, theme) END,
     cover_pattern = COALESCE($3::cover_pattern_enum, cover_pattern),
     thumbnail = COALESCE($4, thumbnail),
+    name = COALESCE($5, name),
+    description = COALESCE($6, description),
     updated_at = NOW()
-WHERE id = $5 AND deleted_at IS NULL
+WHERE id = $7 AND deleted_at IS NULL
 RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at, min_age, theme, cover_pattern, channel_theme(theme, id)::theme_enum AS effective_theme
 `
 
@@ -1407,6 +1409,8 @@ type UpdateChannelParams struct {
 	Theme        NullThemeEnum
 	CoverPattern NullCoverPatternEnum
 	Thumbnail    sql.NullString
+	Name         sql.NullString
+	Description  sql.NullString
 	ID           int64
 }
 
@@ -1437,6 +1441,8 @@ func (q *Queries) UpdateChannel(ctx context.Context, arg UpdateChannelParams) (U
 		arg.Theme,
 		arg.CoverPattern,
 		arg.Thumbnail,
+		arg.Name,
+		arg.Description,
 		arg.ID,
 	)
 	var i UpdateChannelRow

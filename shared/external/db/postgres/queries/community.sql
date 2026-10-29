@@ -370,7 +370,7 @@ WHERE cc.channel_id = sqlc.arg(channel_id)
 
 -- For the channel's manage sheet: its live row, else its latest rejection inside the cooldown.
 -- name: GetChannelCommunityState :one
-SELECT cc.community_id, c.name, c.slug, cc.status, cc.resolved_at
+SELECT cc.community_id, c.name, c.slug, c.theme, c.thumbnail, cc.status, cc.resolved_at
 FROM community_channels cc
 JOIN communities c ON c.id = cc.community_id AND c.deleted_at IS NULL
 WHERE cc.channel_id = sqlc.arg(channel_id)
@@ -419,6 +419,8 @@ SELECT
     ch.description,
     ch.thumbnail,
     ch.visibility,
+    channel_theme(ch.theme, ch.id)::theme_enum AS theme,
+    cc.requested_by,
     cc.created_at AS requested_at
 FROM community_channels cc
 JOIN channels ch ON ch.id = cc.channel_id AND ch.deleted_at IS NULL

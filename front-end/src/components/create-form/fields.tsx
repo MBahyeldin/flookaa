@@ -70,7 +70,17 @@ export function VisibilityField({
   );
 }
 
-export function AgeField({ value, onChange, error }: { value: number; onChange: (age: number) => void; error?: string }) {
+export function AgeField({
+  value,
+  onChange,
+  error,
+  helper = "Only people this age or older find it. You can raise it later.",
+}: {
+  value: number;
+  onChange: (age: number) => void;
+  error?: string;
+  helper?: string;
+}) {
   const id = useId();
   return (
     <div className="flex flex-col gap-2">
@@ -90,7 +100,7 @@ export function AgeField({ value, onChange, error }: { value: number; onChange: 
         ))}
       </div>
       <p role={error ? "alert" : undefined} className={error ? "text-xs text-destructive" : "text-xs text-muted-foreground"}>
-        {error ?? "Only people this age or older find it. You can raise it later."}
+        {error ?? helper}
       </p>
     </div>
   );

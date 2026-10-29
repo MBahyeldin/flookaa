@@ -1,9 +1,7 @@
 import type { FormGroup } from "@/types/FormFields";
-import { MIN_AGE_ERROR } from "@/lib/minAge";
 import { PASSWORD_RULES_ERROR } from "@/lib/password";
 import signupFormFieldsGroup, { forgotPasswordGroups, resetPasswordGroups } from "@/lib/formFields/signup";
 import loginFormFieldsGroups from "@/lib/formFields/login";
-import communityFormFieldsGroups from "@/lib/formFields/community";
 
 // An API error code shown on a field instead of under the form; `also` fields are outlined without a message.
 type ServerFieldError = { field: string; message: string; also?: string[] };
@@ -82,28 +80,6 @@ export class Form {
       },
     },
   });
-
-  static community(communityId?: number, canOwn = true) {
-    return new Form({
-      id: "community_form",
-      name: "Community Form",
-      title: communityId ? "Edit community" : "Create a community",
-      description: "A community groups channels about the same topics.",
-      submitText: communityId ? "Save changes" : "Create community",
-      groups: communityFormFieldsGroups(canOwn),
-      relativeApiPath: communityId ? `/api/v1/communities/${communityId}` : "/api/v1/communities/create",
-      method: communityId ? "PATCH" : "POST",
-      serverErrors: {
-        invalid_name: { field: "name", message: "Enter a name of at most 100 characters." },
-        invalid_rules: { field: "rules", message: "Use at most 5000 characters." },
-        invalid_slug: { field: "slug", message: "Use 3–50 lowercase letters, digits or single hyphens." },
-        slug_taken: { field: "slug", message: "Another community already uses this link." },
-        invalid_interests: { field: "interest_ids", message: "Pick 1 to 5 interests." },
-        invalid_interest: { field: "interest_ids", message: "One of these interests is no longer offered." },
-        invalid_min_age: { field: "min_age", message: MIN_AGE_ERROR },
-      },
-    });
-  }
 
   constructor({
     id,

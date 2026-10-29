@@ -1,18 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { Hash, MoreHorizontal, UserPlus } from "lucide-react";
+import { Hash, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { SkeletonList } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { useConfirm } from "@/components/confirm-dialog";
+import { MemberRow, type MemberAction } from "@/components/manage/MemberRow";
+import { MembersSheetFrame, type MembersSheetTab } from "@/components/manage/MembersSheetFrame";
 import { PersonRow, displayName } from "@/components/persona-link/PersonRow";
 import ChannelRequestRow from "./ChannelRequestRow";
 import {
@@ -63,6 +58,7 @@ export default function MembersSheet({
   const [channelRequestsFailed, setChannelRequestsFailed] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [busyChannelId, setBusyChannelId] = useState<number | null>(null);
+  const [confirm, confirmDialog] = useConfirm();
 
   const loadMembers = useCallback(async () => {
     setError(null);
@@ -112,7 +108,7 @@ export default function MembersSheet({
       return;
     }
     toast.success(
-      decision === "approve" ? `${displayName(request)} joined the community` : `Request from ${displayName(request)} declined`,
+      decision === "approve" ? `${displayName(request)} joined the community` : `Request from ${displayName(request)} rejected`,
     );
     setRequests((prev) => prev?.filter((p) => p.persona_id !== request.persona_id) ?? null);
     if (decision === "approve") loadMembers();
@@ -126,18 +122,24 @@ export default function MembersSheet({
       toast.error("Couldn't update the request. Please try again.");
       return;
     }
-    toast.success(decision === "approve" ? `${request.name} was added` : `${request.name} was declined`);
+    toast.success(decision === "approve" ? `${request.name} was added` : `${request.name} was rejected`);
     setChannelRequests((prev) => prev?.filter((p) => p.channel_id !== request.channel_id) ?? null);
     if (decision === "approve") onChannelAdded();
   };
 
   const handleRemove = async (member: CommunityMember) => {
-    if (!confirm(`Remove ${displayName(member)} from this community?`)) return;
+    const ok = await confirm({
+      title: `Remove ${displayName(member)}?`,
+      body: "They leave the community and lose any moderator role. They can ask to join again.",
+      confirmLabel: "Remove",
+      destructive: true,
+    });
+    if (!ok) return;
     setBusyId(member.persona_id);
     const r = await removeCommunityMember(community.id, member.persona_id);
     setBusyId(null);
     if (!r.ok) {
-      toast.error("Couldn't remove this member. Please try again.");
+      toast.error("Couldn't remove this member. Try again.");
       return;
     }
     toast.success(`${displayName(member)} was removed`);
@@ -146,14 +148,25 @@ export default function MembersSheet({
 
   const handleModerator = async (member: CommunityMember, appoint: boolean) => {
     const self = member.persona_id === me;
-    if (!appoint && self && !confirm("Step down as a moderator of this community?")) return;
+    if (!appoint) {
+      const ok = await confirm(
+        self
+          ? { title: "Step down as a moderator?", body: "You stay a member. Only the owner can appoint you again.", confirmLabel: "Step down" }
+          : {
+              title: `Remove ${displayName(member)} as a moderator?`,
+              body: "They stay a member.",
+              confirmLabel: "Remove moderator",
+            },
+      );
+      if (!ok) return;
+    }
     setBusyId(member.persona_id);
     const r = appoint
       ? await appointCommunityModerator(community.id, member.persona_id)
       : await removeCommunityModerator(community.id, member.persona_id);
     setBusyId(null);
     if (!r.ok) {
-      toast.error("Couldn't change the moderator role. Please try again.");
+      toast.error("Couldn't change the moderator role. Try again.");
       return;
     }
     toast.success(
@@ -166,10 +179,10 @@ export default function MembersSheet({
     setMembers((prev) => prev?.map((m) => (m.persona_id === member.persona_id ? { ...m, is_moderator: appoint } : m)) ?? null);
   };
 
-  const memberActions = (member: CommunityMember) => {
+  const memberActions = (member: CommunityMember): MemberAction[] => {
     if (member.is_owner) return [];
     const self = member.persona_id === me;
-    const actions: { label: string; destructive?: boolean; run: () => void }[] = [];
+    const actions: MemberAction[] = [];
     if (owner && !member.is_moderator) actions.push({ label: "Make moderator", run: () => handleModerator(member, true) });
     if (member.is_moderator && (owner || self)) {
       actions.push({ label: self ? "Step down as moderator" : "Remove moderator", run: () => handleModerator(member, false) });
@@ -180,132 +193,95 @@ export default function MembersSheet({
     return actions;
   };
 
-  const membersList =
-    error ? (
-      <ErrorState compact title="Couldn't load members" body={error} onRetry={loadMembers} />
-    ) : members === null ? (
+  const membersList = error ? (
+    <ErrorState compact title="Couldn't load members" body={error} onRetry={loadMembers} />
+  ) : members === null ? (
+    <SkeletonList count={3} />
+  ) : members.length <= 1 && manager ? (
+    <EmptyState compact icon={Users} title="Only you so far" body="Members show here once people join." />
+  ) : (
+    <ul className="divide-y divide-border">
+      {members.map((member) => (
+        <MemberRow
+          key={member.persona_id}
+          person={member}
+          detail={`Joined ${formatDateOnly(member.joined_at)}`}
+          role={member.is_owner ? "Owner" : member.is_moderator ? "Moderator" : undefined}
+          busy={busyId === member.persona_id}
+          actions={memberActions(member)}
+        />
+      ))}
+    </ul>
+  );
+
+  const requestsList =
+    requests === null && requestsFailed ? (
+      <ErrorState compact title="Couldn't load requests" onRetry={loadRequests} />
+    ) : requests === null ? (
       <SkeletonList count={3} />
+    ) : requests.length === 0 ? (
+      <EmptyState compact icon={UserPlus} title="No pending requests" />
     ) : (
       <ul className="divide-y divide-border">
-        {members.map((member) => {
-          const actions = memberActions(member);
-          return (
-            <PersonRow
-              key={member.persona_id}
-              person={member}
-              detail={`Joined ${formatDateOnly(member.joined_at)}`}
-              badge={member.is_owner ? "Owner" : member.is_moderator ? "Moderator" : undefined}
+        {requests.map((request) => (
+          <PersonRow key={request.persona_id} person={request} detail={`Asked on ${formatDateOnly(request.requested_at)}`}>
+            <Button size="sm" disabled={busyId === request.persona_id} onClick={() => handleResolve(request, "approve")}>
+              Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busyId === request.persona_id}
+              onClick={() => handleResolve(request, "reject")}
             >
-              {actions.length > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      aria-label={`Actions for ${displayName(member)}`}
-                      disabled={busyId === member.persona_id}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {actions.map((a) => (
-                      <DropdownMenuItem key={a.label} variant={a.destructive ? "destructive" : "default"} onSelect={a.run}>
-                        {a.label}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </PersonRow>
-          );
-        })}
+              Reject
+            </Button>
+          </PersonRow>
+        ))}
       </ul>
     );
 
+  const channelRequestsList =
+    channelRequests === null && channelRequestsFailed ? (
+      <ErrorState compact title="Couldn't load channel requests" onRetry={loadChannelRequests} />
+    ) : channelRequests === null ? (
+      <SkeletonList count={3} />
+    ) : channelRequests.length === 0 ? (
+      <EmptyState compact icon={Hash} title="No channels waiting to join" />
+    ) : (
+      <ul className="divide-y divide-border">
+        {channelRequests.map((request) => (
+          <ChannelRequestRow
+            key={request.channel_id}
+            request={request}
+            busy={busyChannelId === request.channel_id}
+            onResolve={(decision) => handleChannelResolve(request, decision)}
+          />
+        ))}
+      </ul>
+    );
+
+  const tabs: MembersSheetTab<MembersTab>[] = [{ id: "members", label: "Members", content: membersList }];
+  if (manager) {
+    tabs.push(
+      { id: "requests", label: "Requests", count: requests?.length, content: requestsList },
+      { id: "channels", label: "Channel requests", short: "Channels", count: channelRequests?.length, content: channelRequestsList },
+    );
+  }
+
   return (
-    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>Members</SheetTitle>
-          <SheetDescription>
-            {community.members_count === 1 ? "1 member" : `${community.members_count} members`}
-          </SheetDescription>
-        </SheetHeader>
-        <div className="px-4 pb-6">
-          {manager ? (
-            <Tabs value={tab ?? "members"} onValueChange={(v) => onTabChange(v as MembersTab)}>
-              <TabsList className="w-full">
-                <TabsTrigger value="members">Members</TabsTrigger>
-                <TabsTrigger value="requests">Requests{requests?.length ? ` (${requests.length})` : ""}</TabsTrigger>
-                <TabsTrigger value="channels">
-                  Channels{channelRequests?.length ? ` (${channelRequests.length})` : ""}
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="members" className="mt-2">
-                {membersList}
-              </TabsContent>
-              <TabsContent value="requests" className="mt-2">
-                {requests === null && requestsFailed ? (
-                  <ErrorState compact title="Couldn't load requests" onRetry={loadRequests} />
-                ) : requests === null ? (
-                  <SkeletonList count={3} />
-                ) : requests.length === 0 ? (
-                  <EmptyState compact icon={UserPlus} title="No pending requests" />
-                ) : (
-                  <ul className="divide-y divide-border">
-                    {requests.map((request) => (
-                      <PersonRow
-                        key={request.persona_id}
-                        person={request}
-                        detail={`Asked on ${formatDateOnly(request.requested_at)}`}
-                      >
-                        <Button
-                          size="sm"
-                          disabled={busyId === request.persona_id}
-                          onClick={() => handleResolve(request, "approve")}
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={busyId === request.persona_id}
-                          onClick={() => handleResolve(request, "reject")}
-                        >
-                          Decline
-                        </Button>
-                      </PersonRow>
-                    ))}
-                  </ul>
-                )}
-              </TabsContent>
-              <TabsContent value="channels" className="mt-2">
-                {channelRequests === null && channelRequestsFailed ? (
-                  <ErrorState compact title="Couldn't load channel requests" onRetry={loadChannelRequests} />
-                ) : channelRequests === null ? (
-                  <SkeletonList count={3} />
-                ) : channelRequests.length === 0 ? (
-                  <EmptyState compact icon={Hash} title="No channels waiting to join" />
-                ) : (
-                  <ul className="divide-y divide-border">
-                    {channelRequests.map((request) => (
-                      <ChannelRequestRow
-                        key={request.channel_id}
-                        request={request}
-                        busy={busyChannelId === request.channel_id}
-                        onResolve={(decision) => handleChannelResolve(request, decision)}
-                      />
-                    ))}
-                  </ul>
-                )}
-              </TabsContent>
-            </Tabs>
-          ) : (
-            membersList
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
+    <>
+      <MembersSheetFrame
+        open={open}
+        onClose={onClose}
+        theme={community.theme}
+        title="Members"
+        description={community.members_count === 1 ? "1 member" : `${community.members_count} members`}
+        tab={tab ?? "members"}
+        onTabChange={onTabChange}
+        tabs={tabs}
+      />
+      {confirmDialog}
+    </>
   );
 }

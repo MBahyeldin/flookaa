@@ -18,7 +18,8 @@ import handleChannelEvents from "./subscribe/handleChannelEvents";
 import type { ChannelEventPayload, PostEventPayload, WsEventMessage } from "@/types/Ws";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { isCurrentOwner, useAppStore } from "@/stores/AppStore";
-import ModerationSheet from "./ModerationSheet";
+import { ChannelManageSheet } from "./manage/ChannelManageSheet";
+import { ChannelMembersSheet, type ChannelMembersTab } from "./manage/ChannelMembersSheet";
 import { ChannelHero } from "./ChannelHero";
 import { ChannelAbout } from "./ChannelAbout";
 import { ChannelPeople } from "./ChannelPeople";
@@ -63,6 +64,9 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
 
   const [newPosts, setNewPosts] = useState<PostEventPayload[]>([]);
   const [isManaging, setIsManaging] = useState(false);
+  const membersParam = searchParams.get("members");
+  const membersTab: ChannelMembersTab | null =
+    membersParam === "members" || membersParam === "requests" ? membersParam : null;
   const [interests, setInterests] = useState<Interest[]>([]);
   const [interestsVersion, setInterestsVersion] = useState(0);
   // Set once the community changes live; not cached, so the posts query isn't touched.
@@ -334,6 +338,17 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     setSearchParams(params);
   };
 
+  const openMembers = (next: ChannelMembersTab) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("members", next);
+    setSearchParams(params, { replace: membersTab !== null });
+  };
+  const closeMembers = () => {
+    const params = new URLSearchParams(searchParams);
+    params.delete("members");
+    setSearchParams(params, { replace: true });
+  };
+
   const postChannel = { id: channel.id, name: channel.name, theme: channel.theme };
   const openPost = (id: string) => navigate(`/channels/${channel.id}/posts/${id}`);
 
@@ -367,18 +382,30 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
         onJoin={handleJoin}
         onFollow={handleFollow}
         onManage={() => setIsManaging(true)}
+        onMembers={() => openMembers("members")}
       />
 
       {canModerate && channelId && (
-        <ModerationSheet
-          channelId={channelId}
-          open={isManaging}
-          onOpenChange={setIsManaging}
-          onInterestsSaved={setInterests}
-          communityKey={communityKey}
-          minAge={channel.minAge}
-          onMinAgeSaved={() => refetchChannel()}
-        />
+        <>
+          <ChannelManageSheet
+            channel={channel}
+            interests={interests}
+            open={isManaging}
+            onOpenChange={setIsManaging}
+            communityKey={communityKey}
+            onChanged={() => refetchChannel()}
+            onInterestsSaved={setInterests}
+          />
+          <ChannelMembersSheet
+            channelId={channelId}
+            theme={channel.theme}
+            isPrivate={channel.isPrivate}
+            tab={membersTab}
+            onTabChange={openMembers}
+            onClose={closeMembers}
+            version={peopleVersion}
+          />
+        </>
       )}
 
       <SectionNav value={tab} onValueChange={setTab}>
@@ -446,7 +473,11 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
           </SectionNavContent>
 
           <SectionNavContent value="people">
-            {canRead && channelId ? <ChannelPeople channelId={channelId} version={peopleVersion} /> : membersOnly}
+            {canRead && channelId ? <ChannelPeople
+                channelId={channelId}
+                version={peopleVersion}
+                onShowAll={canModerate ? () => openMembers("members") : undefined}
+              /> : membersOnly}
           </SectionNavContent>
         </div>
       </SectionNav>

@@ -17,8 +17,19 @@ import type { MyCommunity } from "@/types/community";
 
 const TITLE = "Choose a community";
 const LEAD = "It goes straight into one you manage. Any other one gets a request its managers review.";
+const REQUEST_LEAD = "Its managers review the request before the channel shows in the community.";
 
-function Row({ community, selected, onSelect }: { community: MyCommunity; selected: boolean; onSelect: () => void }) {
+function Row({
+  community,
+  selected,
+  onSelect,
+  request,
+}: {
+  community: MyCommunity;
+  selected: boolean;
+  onSelect: () => void;
+  request: boolean;
+}) {
   return (
     <button
       type="button"
@@ -37,7 +48,7 @@ function Row({ community, selected, onSelect }: { community: MyCommunity; select
         <span className="truncate text-sm font-semibold">{community.name}</span>
         <span className="text-xs text-muted-foreground">
           {community.members_count.toLocaleString()} {community.members_count === 1 ? "member" : "members"} ·{" "}
-          {community.can_manage ? "goes straight in" : "request"}
+          {community.can_manage && !request ? "goes straight in" : "request"}
         </span>
       </span>
       {selected && <Check className="size-4 shrink-0 text-primary" aria-hidden="true" />}
@@ -58,10 +69,12 @@ function Body({
   value,
   onPick,
   onCancel,
+  request,
 }: {
   value: number | null;
   onPick: (community: MyCommunity) => void;
   onCancel: () => void;
+  request: boolean;
 }) {
   const [state, setState] = useState<"loading" | "error" | MyCommunity[]>("loading");
   const [attempt, setAttempt] = useState(0);
@@ -114,14 +127,14 @@ function Body({
         {managed.length > 0 && (
           <Group label="You manage">
             {managed.map((c) => (
-              <Row key={c.id} community={c} selected={c.id === selected} onSelect={() => setSelected(c.id)} />
+              <Row key={c.id} community={c} selected={c.id === selected} onSelect={() => setSelected(c.id)} request={request} />
             ))}
           </Group>
         )}
         {others.length > 0 && (
           <Group label="Your communities">
             {others.map((c) => (
-              <Row key={c.id} community={c} selected={c.id === selected} onSelect={() => setSelected(c.id)} />
+              <Row key={c.id} community={c} selected={c.id === selected} onSelect={() => setSelected(c.id)} request={request} />
             ))}
           </Group>
         )}
@@ -160,18 +173,21 @@ export function CommunityPicker({
   onOpenChange,
   value,
   onPick,
+  request = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   value: number | null;
   onPick: (community: MyCommunity) => void;
+  /** Picking files a request even in a community you manage (an existing channel). */
+  request?: boolean;
 }) {
   const mobile = useIsMobile();
   const pick = (community: MyCommunity) => {
     onPick(community);
     onOpenChange(false);
   };
-  const body = open && <Body value={value} onPick={pick} onCancel={() => onOpenChange(false)} />;
+  const body = open && <Body value={value} onPick={pick} onCancel={() => onOpenChange(false)} request={request} />;
 
   if (mobile) {
     return (
@@ -179,7 +195,7 @@ export function CommunityPicker({
         <SheetContent side="bottom" className="flex max-h-[90dvh] flex-col gap-4 rounded-t-xl px-4 pb-4">
           <SheetHeader className="px-0">
             <SheetTitle>{TITLE}</SheetTitle>
-            <SheetDescription>{LEAD}</SheetDescription>
+            <SheetDescription>{request ? REQUEST_LEAD : LEAD}</SheetDescription>
           </SheetHeader>
           {body}
         </SheetContent>
@@ -191,7 +207,7 @@ export function CommunityPicker({
       <DialogContent className="flex max-h-[85dvh] flex-col gap-4 sm:max-w-[440px]">
         <DialogHeader>
           <DialogTitle>{TITLE}</DialogTitle>
-          <DialogDescription>{LEAD}</DialogDescription>
+          <DialogDescription>{request ? REQUEST_LEAD : LEAD}</DialogDescription>
         </DialogHeader>
         {body}
       </DialogContent>

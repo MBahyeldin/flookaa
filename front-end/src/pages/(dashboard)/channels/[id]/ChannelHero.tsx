@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Check, Clock, Ellipsis, Globe, Link2, Lock, Settings } from "lucide-react";
+import { Check, Clock, Ellipsis, Globe, Link2, Lock, Settings, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Hero } from "@/components/hero";
 import { Cover } from "@/components/cover";
@@ -11,6 +11,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatCount } from "@/lib/format";
@@ -39,6 +40,7 @@ export function ChannelHero({
   onJoin,
   onFollow,
   onManage,
+  onMembers,
 }: {
   channel: HeroChannel;
   community: { name: string; slug: string } | null | undefined;
@@ -52,6 +54,7 @@ export function ChannelHero({
   onJoin: () => void;
   onFollow: () => void;
   onManage: () => void;
+  onMembers: () => void;
 }) {
   const copyLink = async () => {
     try {
@@ -129,10 +132,17 @@ export function ChannelHero({
                 Copy link
               </DropdownMenuItem>
               {canModerate && (
-                <DropdownMenuItem onSelect={onManage}>
-                  <Settings />
-                  Manage channel
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={onManage}>
+                    <Settings />
+                    Manage
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={onMembers}>
+                    <Users />
+                    Members & requests
+                  </DropdownMenuItem>
+                </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>

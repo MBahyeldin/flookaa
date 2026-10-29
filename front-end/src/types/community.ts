@@ -79,6 +79,9 @@ export type CommunityChannelRequest = {
   description: string;
   thumbnail: string;
   visibility: "public" | "private";
+  theme: PaletteId;
+  /** As the viewer sees the persona; null when it's gone. */
+  requested_by: CommunityPersona | null;
   requested_at: string;
 };
 
@@ -95,7 +98,7 @@ export type ModeratedChannel = {
 /** A channel's community row, for its moderators. */
 export type ChannelCommunityState = {
   status: "none" | "pending" | "active" | "rejected";
-  community: CommunityRef | null;
+  community: (CommunityRef & { theme: PaletteId; thumbnail: string }) | null;
   /** Only when rejected: when the same community may be asked again. */
   rejected_until?: string;
 };

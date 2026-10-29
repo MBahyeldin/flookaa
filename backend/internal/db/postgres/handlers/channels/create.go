@@ -11,6 +11,7 @@ import (
 	"shared/external/db/nats"
 	"shared/pkg/access"
 	"shared/pkg/db"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -140,6 +141,16 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 		return
 	}
 
+	req.Name = strings.TrimSpace(req.Name)
+	req.Description = strings.TrimSpace(req.Description)
+	if !validChannelName(req.Name) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_name"})
+		return
+	}
+	if !validChannelDescription(req.Description) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_description"})
+		return
+	}
 	if code := checkLook(req.Theme, req.CoverPattern, req.Thumbnail); code != "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": code})
 		return
