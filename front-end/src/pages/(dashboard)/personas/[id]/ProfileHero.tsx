@@ -16,7 +16,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { formatCount } from "@/lib/format";
+import { formatCompact } from "@/lib/format";
+import { t } from "@/i18n";
 import { cn } from "@/lib/utils";
 import type { LockedPersona, PersonaProfile } from "@/types/persona";
 
@@ -25,9 +26,9 @@ export const fullName = (p: { first_name: string; last_name: string }) => `${p.f
 const copyLink = async () => {
   try {
     await navigator.clipboard.writeText(window.location.origin + window.location.pathname);
-    toast.success("Link copied");
+    toast.success(t("common:share.copied"));
   } catch {
-    toast.error("Couldn't copy the link");
+    toast.error(t("common:share.copyFailed"));
   }
 };
 
@@ -56,14 +57,14 @@ function MoreMenu({ children }: { children?: ReactNode }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" aria-label="More actions" title="More actions">
+        <Button variant="outline" size="icon" aria-label={t("common:actions.moreActions")} title={t("common:actions.moreActions")}>
           <Ellipsis />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onSelect={copyLink}>
           <Link2 />
-          Copy link
+          {t("common:share.copyLink")}
         </DropdownMenuItem>
         {children}
       </DropdownMenuContent>
@@ -87,8 +88,8 @@ export function ProfileHero({
   const name = fullName(persona);
   const isPrivate = persona.privacy !== "public";
 
-  const followers = formatCount(persona.followers_count, "follower", "followers");
-  const following = `${persona.following_count} following`;
+  const followers = t("common:counts.followers", { count: persona.followers_count, n: formatCompact(persona.followers_count) });
+  const following = t("personas:profile.following", { n: formatCompact(persona.following_count) });
 
   return (
     <Hero
@@ -100,7 +101,7 @@ export function ProfileHero({
           {isPrivate && (
             <Badge variant="secondary">
               <Lock />
-              Private
+              {t("common:visibility.private")}
             </Badge>
           )}
         </>
@@ -151,14 +152,14 @@ export function ProfileHero({
             {isOwn && persona.privacy === "private" && (
               <DropdownMenuItem onSelect={onShareFollowLink}>
                 <Share2 />
-                Share follow link
+                {t("personas:profile.shareFollowLink")}
               </DropdownMenuItem>
             )}
             {isOwn && (
               <DropdownMenuItem asChild>
                 <Link to={`/persona-manager/${persona.id}`}>
                   <Pencil />
-                  Edit persona
+                  {t("personas:wizard.editTitle")}
                 </Link>
               </DropdownMenuItem>
             )}
@@ -178,19 +179,19 @@ export function LockedProfileHero({ persona, onChange }: { persona: LockedPerson
       tags={
         <Badge variant="secondary">
           <Lock />
-          Private
+          {t("common:visibility.private")}
         </Badge>
       }
       name={persona.anonymous_name}
-      tagline="This persona is private."
-      facts="Request to follow to see their profile and posts."
+      tagline={t("personas:profile.lockedTagline")}
+      facts={t("personas:profile.lockedFacts")}
       actions={
         <>
           <FollowButton
             personaId={persona.id}
             status={persona.follow_status ?? null}
             requiresApproval
-            followLabel="Request to follow"
+            followLabel={t("personas:follow.request")}
             size="default"
             onChange={onChange}
           />

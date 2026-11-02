@@ -5,10 +5,12 @@ import FormComponent from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/models/Forms/Form";
 import AuthSplit from "@/pages/auth/AuthSplit";
+import { Trans, useTranslation } from "react-i18next";
 
 const RESEND_SECONDS = 60;
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation(["auth", "common"]);
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -42,16 +44,17 @@ export default function ForgotPasswordPage() {
   if (sentTo !== null) {
     return (
       <AuthSplit
-        title="Check your email"
+        title={t("checkEmail")}
         lead={
-          <>
-            If an account with a password uses{" "}
-            <span className="font-medium text-foreground break-all">{sentTo}</span>, a link to reset it is on its way.
-            It works for 1 hour.
-          </>
+          <Trans
+            t={t}
+            i18nKey="forgot.sentLead"
+            values={{ email: sentTo }}
+            components={{ email: <span className="font-medium text-foreground break-all" /> }}
+          />
         }
       >
-        <p className="text-sm text-muted-foreground">Accounts made with Google log in with Google instead.</p>
+        <p className="text-sm text-muted-foreground">{t("forgot.googleNote")}</p>
         <div className="flex flex-col items-start gap-2 text-sm">
           <Button
             variant="link"
@@ -62,10 +65,10 @@ export default function ForgotPasswordPage() {
               setFormKey((k) => k + 1);
             }}
           >
-            {cooldown > 0 ? `Didn't get it? Send again in ${cooldown}s` : "Didn't get it? Send again"}
+            {cooldown > 0 ? t("forgot.sendAgainIn", { seconds: cooldown }) : t("forgot.sendAgain")}
           </Button>
           <Link to="/login" className="font-medium text-primary underline-offset-4 hover:underline">
-            Back to log in
+            {t("backToLogin")}
           </Link>
         </div>
       </AuthSplit>
@@ -73,7 +76,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <AuthSplit title="Reset your password" lead="Enter your account's email and we'll send you a link.">
+    <AuthSplit title={t("forgot.title")} lead={t("forgot.lead")}>
       <FormComponent
         key={formKey}
         form={Form.forgotPassword}
@@ -89,7 +92,7 @@ export default function ForgotPasswordPage() {
         )}
       </FormComponent>
       <Link to="/login" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
-        Back to log in
+        {t("backToLogin")}
       </Link>
     </AuthSplit>
   );

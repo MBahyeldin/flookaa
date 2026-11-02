@@ -2,6 +2,7 @@ import { apiFetch } from "@/lib/apiFetch";
 import { MARK_ONLY, type Form } from "@/models/Forms/Form";
 import { useFormik } from "formik";
 import { unknown } from "zod";
+import { errorMessage } from "@/lib/errors";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -93,7 +94,7 @@ export default function useForm({
           setStatus({ success: false, error: null });
           return;
         }
-        setStatus({ error: message });
+        setStatus({ error: errorMessage(message) });
       }
     },
   });

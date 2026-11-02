@@ -54,6 +54,12 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
+	if lang, ok := parseLanguage(userRequest.Language); ok {
+		if err := q.SetUserLanguageIfUnset(ctx, db.SetUserLanguageIfUnsetParams{ID: createUser.ID, Language: lang}); err != nil {
+			log.Printf("register: language for user %d: %v", createUser.ID, err)
+		}
+	}
+
 	jwt, err := h.LoginToken(UserMinimal{ID: createUser.ID, EmailAddress: createUser.EmailAddress})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

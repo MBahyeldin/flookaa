@@ -1,11 +1,14 @@
+import { t } from "@/i18n";
+import { formatNumber } from "@/lib/format";
+
 const S3_BUCKET_BASE_URL = import.meta.env.VITE_S3_BUCKET_BASE_URL || "";
 
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB — must stay under nginx client_max_body_size
 
 function formatBytes(bytes: number): string {
-  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${bytes} B`;
+  if (bytes >= 1024 * 1024) return t("common:bytes.mb", { n: formatNumber(Math.round((bytes / (1024 * 1024)) * 10) / 10) });
+  if (bytes >= 1024) return t("common:bytes.kb", { n: formatNumber(Math.round(bytes / 1024)) });
+  return t("common:bytes.b", { n: formatNumber(bytes) });
 }
 
 /**
@@ -17,14 +20,13 @@ function formatBytes(bytes: number): string {
  */
 async function describeFailure(response: Response, file?: File): Promise<string> {
   if (response.status === 413) {
-    const size = file ? ` (${formatBytes(file.size)})` : "";
-    return `That image is too large to upload${size}. Try a smaller file.`;
+    return file ? t("common:upload.tooLargeSize", { size: formatBytes(file.size) }) : t("common:upload.tooLarge");
   }
   if (response.status === 401 || response.status === 403) {
-    return "You’re not signed in, or don’t have permission to upload.";
+    return t("common:upload.forbidden");
   }
   if (response.status === 415) {
-    return `That file type isn’t supported${file?.type ? ` (${file.type})` : ""}.`;
+    return t("common:upload.unsupportedType");
   }
 
   let detail = "";
@@ -34,10 +36,11 @@ async function describeFailure(response: Response, file?: File): Promise<string>
   } catch {
     /* nginx errors are HTML, not JSON */
   }
+  console.error(`Upload failed: HTTP ${response.status}${detail}`);
   if (response.status >= 500) {
-    return `The upload service failed (${response.status})${detail}.`;
+    return t("common:upload.serviceFailed", { status: response.status });
   }
-  return `Upload failed (${response.status})${detail}.`;
+  return t("common:upload.failedStatus", { status: response.status });
 }
 
 export default async function uploadFile(file: File): Promise<string> {
@@ -49,7 +52,7 @@ export default async function uploadFile(file: File): Promise<string> {
     fileName: file.name,
   });
   if (!result?.url) {
-    throw new Error("Upload finished but no file URL was returned.");
+    throw new Error(t("common:upload.noUrl"));
   }
   return S3_BUCKET_BASE_URL + result.url;
 }
@@ -78,7 +81,7 @@ async function uploadFileStepOne(file: File): Promise<{ ticket_id: string }> {
     });
   } catch (err) {
     console.error("Failed to reach the upload service:", err);
-    throw new Error("Couldn’t reach the upload service. Check your connection.");
+    throw new Error(t("common:upload.unreachable"));
   }
 
   // This step had no status check at all: a rejection returned undefined and
@@ -89,7 +92,7 @@ async function uploadFileStepOne(file: File): Promise<{ ticket_id: string }> {
 
   const data = await res.json().catch(() => null);
   if (!data?.ticket_id) {
-    throw new Error("The upload service didn’t return an upload ticket.");
+    throw new Error(t("common:upload.noTicket"));
   }
   return data;
 }
@@ -125,9 +128,7 @@ async function uploadFileStepTwo({
       });
     } catch (err) {
       console.error(`Chunk ${i + 1}/${numChunks} request failed:`, err);
-      throw new Error(
-        `Upload interrupted at part ${i + 1} of ${numChunks}. Check your connection.`
-      );
+      throw new Error(t("common:upload.interrupted", { part: i + 1, total: numChunks }));
     }
 
     /*
@@ -140,9 +141,7 @@ async function uploadFileStepTwo({
       console.error(
         `Chunk ${i + 1}/${numChunks} rejected: HTTP ${res.status} — ${reason}`
       );
-      throw new Error(
-        numChunks > 1 ? `${reason} (failed at part ${i + 1} of ${numChunks})` : reason
-      );
+      throw new Error(numChunks > 1 ? t("common:upload.failedAtPart", { reason, part: i + 1, total: numChunks }) : reason);
     }
   }
 
@@ -174,7 +173,7 @@ async function uploadFileStepThree({
     });
   } catch (err) {
     console.error("Failed to finalize upload:", err);
-    throw new Error("Couldn’t finish the upload. Check your connection.");
+    throw new Error(t("common:upload.couldNotFinish"));
   }
 
   if (!res.ok) {

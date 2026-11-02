@@ -7,7 +7,7 @@ import { InterestsSection } from "@/components/create-form/InterestsSection";
 import { LogoUpload } from "@/components/create-form/LogoUpload";
 import {
   AgeField,
-  BASE_ERRORS,
+  BASE_ERROR_FIELDS,
   CoverField,
   FieldError,
   ThemeField,
@@ -25,20 +25,23 @@ import { SLUG_PATTERN, slugify } from "@/lib/slug";
 import { createCommunity } from "@/services/communities";
 import { DEFAULT_PALETTE, type PaletteId } from "@/themes/palettes";
 import type { CoverPattern } from "@/types/cover";
+import { useTranslation } from "react-i18next";
+import { errorMessage } from "@/lib/errors";
 
 const MAX_NAME = 100;
 const MAX_DESCRIPTION = 500;
 const MAX_RULES = 5000;
 const LINK_PREFIX = "flookaa.com/communities/";
 
-const ERRORS: Record<string, { field: string; message: string }> = {
-  ...BASE_ERRORS,
-  invalid_slug: { field: "slug", message: "Use 3–50 lowercase letters, digits or single hyphens." },
-  slug_taken: { field: "slug", message: "Another community already uses this link." },
-  invalid_rules: { field: "rules", message: `Use at most ${MAX_RULES} characters.` },
+const ERROR_FIELDS: Record<string, string> = {
+  ...BASE_ERROR_FIELDS,
+  invalid_slug: "slug",
+  slug_taken: "slug",
+  invalid_rules: "rules",
 };
 
 export default function CreateCommunityPage() {
+  const { t } = useTranslation(["communities", "common"]);
   const navigate = useNavigate();
   const interests = useInterestGroups();
 
@@ -58,11 +61,20 @@ export default function CreateCommunityPage() {
 
   const link = slug ?? slugify(name);
 
+  const fieldError = (code: string) =>
+    code === "invalid_slug"
+      ? t("create.invalidSlug")
+      : code === "slug_taken"
+        ? t("create.slugTaken")
+        : code === "invalid_rules"
+          ? t("rules.tooLong", { max: MAX_RULES })
+          : errorMessage(code);
+
   const submit = async () => {
     const found: Record<string, string> = {};
-    if (!name.trim()) found.name = "Give the community a name.";
-    if (!SLUG_PATTERN.test(link)) found.slug = ERRORS.invalid_slug.message;
-    if (interestIds.length === 0) found.interest_ids = "Pick at least one interest.";
+    if (!name.trim()) found.name = t("create.nameMissing");
+    if (!SLUG_PATTERN.test(link)) found.slug = t("create.invalidSlug");
+    if (interestIds.length === 0) found.interest_ids = t("common:interests.pickOneInterest");
     setErrors(found);
     if (Object.keys(found).length) return;
 
@@ -81,9 +93,9 @@ export default function CreateCommunityPage() {
     });
     setSubmitting(false);
     if (!r.ok) {
-      const known = ERRORS[r.error];
-      if (known) setErrors({ [known.field]: known.message });
-      else toast.error("Couldn't create the community. Try again.");
+      const field = ERROR_FIELDS[r.error];
+      if (field) setErrors({ [field]: fieldError(r.error) });
+      else toast.error(t("create.failed"));
       return;
     }
     navigate(`/communities/${r.data.community.slug}`);
@@ -91,10 +103,10 @@ export default function CreateCommunityPage() {
 
   return (
     <CreatePage
-      title="Create a community"
-      lead="A community groups channels about the same topics. You can add channels once it exists."
+      title={t("create.title")}
+      lead={t("create.lead")}
       backTo="/communities"
-      submitLabel="Create community"
+      submitLabel={t("create.submit")}
       submitting={submitting}
       onSubmit={submit}
       preview={
@@ -102,20 +114,23 @@ export default function CreateCommunityPage() {
           theme={theme}
           cover={cover}
           name={name}
-          placeholder="Your community"
+          placeholder={t("create.previewName")}
           logo={logo}
           description={description}
           interests={interests.pick(interestIds)}
-          facts={[visibility === "public" ? "Public" : "Private", `${minAge}+`]}
+          facts={[
+            visibility === "public" ? t("common:visibility.public") : t("common:visibility.private"),
+            t("common:age.short", { age: minAge }),
+          ]}
         />
       }
     >
-      <SettingsSection id="basics" title="Basics" lead="Name it, give it a link and say what it is about.">
-        <FormField label="Community name" error={errors.name} helper={`Up to ${MAX_NAME} characters. ${name.length} / ${MAX_NAME}`}>
+      <SettingsSection id="basics" title={t("common:create.basics")} lead={t("create.basicsLead")}>
+        <FormField label={t("fields.name")} error={errors.name} helper={t("common:create.nameHelper", { n: name.length, max: MAX_NAME })}>
           <Input
             value={name}
             maxLength={MAX_NAME}
-            placeholder="City Sports"
+            placeholder={t("fields.namePlaceholder")}
             onChange={(e) => {
               setName(e.target.value);
               clear("name");
@@ -123,11 +138,11 @@ export default function CreateCommunityPage() {
             }}
           />
         </FormField>
-        <FormField label="Link" error={errors.slug} helper={`${LINK_PREFIX}${link || "…"}`}>
+        <FormField label={t("fields.link")} error={errors.slug} helper={`${LINK_PREFIX}${link || "…"}`}>
           <Input
             value={link}
             maxLength={50}
-            placeholder="city-sports"
+            placeholder={t("fields.linkPlaceholder")}
             autoCapitalize="none"
             spellCheck={false}
             onChange={(e) => {
@@ -136,23 +151,23 @@ export default function CreateCommunityPage() {
             }}
           />
         </FormField>
-        <FormField label="Description" helper={`Shown under the name. ${description.length} / ${MAX_DESCRIPTION}`}>
+        <FormField label={t("common:create.description")} helper={t("common:create.descriptionHelper", { n: description.length, max: MAX_DESCRIPTION })}>
           <Textarea
             value={description}
             maxLength={MAX_DESCRIPTION}
             rows={3}
-            placeholder="What brings people here"
+            placeholder={t("fields.descriptionPlaceholder")}
             onChange={(e) => setDescription(e.target.value)}
           />
         </FormField>
       </SettingsSection>
 
-      <SettingsSection id="rules" title="Rules" lead="Optional. Shown before anyone joins.">
-        <FormField label="Rules" error={errors.rules} helper={`One rule per line. ${rules.length} / ${MAX_RULES}`}>
+      <SettingsSection id="rules" title={t("rules.title")} lead={t("rules.lead")}>
+        <FormField label={t("rules.title")} error={errors.rules} helper={t("rules.helper", { n: rules.length, max: MAX_RULES })}>
           <Textarea
             value={rules}
             rows={5}
-            placeholder={"Be kind.\nStay on topic."}
+            placeholder={t("rules.placeholder")}
             onChange={(e) => {
               setRules(e.target.value);
               clear("rules");
@@ -161,7 +176,7 @@ export default function CreateCommunityPage() {
         </FormField>
       </SettingsSection>
 
-      <SettingsSection id="look" title="Look" lead="Logo, colours and cover. Its channels use these colours unless they pick their own.">
+      <SettingsSection id="look" title={t("common:look.title")} lead={t("create.lookLead")}>
         <LogoUpload
           name={name.trim() || "?"}
           theme={theme}
@@ -172,17 +187,17 @@ export default function CreateCommunityPage() {
             clear("thumbnail");
           }}
         />
-        <ThemeField value={theme} onChange={(t) => setTheme(t ?? DEFAULT_PALETTE)} />
+        <ThemeField value={theme} onChange={(next) => setTheme(next ?? DEFAULT_PALETTE)} />
         <FieldError>{errors.theme}</FieldError>
         <CoverField value={cover} onChange={setCover} />
         <FieldError>{errors.cover_pattern}</FieldError>
       </SettingsSection>
 
-      <SettingsSection id="audience" title="Audience" lead="Who sees inside it, and how old they must be.">
+      <SettingsSection id="audience" title={t("common:create.audience")} lead={t("create.audienceLead")}>
         <VisibilityField
           value={visibility}
           onChange={setVisibility}
-          privateBody="Only members see its channels and people. Joining needs a manager's approval."
+          privateBody={t("create.privateBody")}
         />
         <AgeField
           value={minAge}
@@ -195,7 +210,7 @@ export default function CreateCommunityPage() {
       </SettingsSection>
 
       <InterestsSection
-        lead="Pick 1 to 5. People find the community by them."
+        lead={t("create.interestsLead")}
         groups={interests.groups}
         onRetry={interests.retry}
         value={interestIds}

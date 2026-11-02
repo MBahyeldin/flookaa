@@ -11,7 +11,8 @@ import { readingStats } from "@/components/portable-text/readingStats";
 import type { Post } from "@/generated/graphql";
 import { cn } from "@/lib/utils";
 import { shareLink } from "@/lib/share";
-import formatDate, { formatRelativeDate } from "@/utils/formateDate";
+import { formatCompact, formatDate, formatRelativeDate } from "@/lib/format";
+import { t } from "@/i18n";
 
 const rowButton =
   "flex items-center gap-1.5 rounded-sm text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -54,7 +55,7 @@ export function PostArticle({ post, place }: { post: Post; place: { name: string
                 </time>
               </>
             ) : null}
-            {isArticle ? ` · ${minutes} min read` : null}
+            {isArticle ? ` · ${t("posts:minRead", { count: minutes })}` : null}
           </p>
         </div>
         <PostMenu post={post} onDeleted={() => navigate(place.href, { replace: true })} />
@@ -70,7 +71,7 @@ export function PostArticle({ post, place }: { post: Post; place: { name: string
           className={cn(rowButton, liked && "text-destructive hover:text-destructive")}
         >
           <Heart className={cn("size-4", liked && "fill-destructive")} />
-          {likes} {likes === 1 ? "like" : "likes"}
+          {t("posts:like.countShort", { count: likes, n: formatCompact(likes) })}
         </button>
         <button
           type="button"
@@ -78,7 +79,7 @@ export function PostArticle({ post, place }: { post: Post; place: { name: string
           onClick={() => document.getElementById("comments")?.scrollIntoView({ behavior: "smooth" })}
         >
           <MessageCircle className="size-4" />
-          {comments} {comments === 1 ? "comment" : "comments"}
+          {t("posts:comments.countShort", { count: comments, n: formatCompact(comments) })}
         </button>
         <button
           type="button"
@@ -86,7 +87,7 @@ export function PostArticle({ post, place }: { post: Post; place: { name: string
           onClick={() => shareLink(`${window.location.origin}${place.href}/posts/${post._id}`, place.name)}
         >
           <Share2 className="size-4" />
-          Share
+          {t("common:share.share")}
         </button>
       </div>
     </article>

@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { getInviteLink } from "@/services/persona";
+import { useTranslation } from "react-i18next";
+import { errorMessage } from "@/lib/errors";
 
 const inviteUrl = (token: string) => `${window.location.origin}/follow/${token}`;
 
@@ -23,6 +25,7 @@ export default function ShareInviteLink({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation(["personas", "common"]);
   const [token, setToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -30,8 +33,8 @@ export default function ShareInviteLink({
     if (!open) return;
     let cancelled = false;
     getInviteLink(personaId)
-      .then((t) => !cancelled && setToken(t))
-      .catch((err: Error) => toast.error(err.message));
+      .then((next) => !cancelled && setToken(next))
+      .catch((err: Error) => toast.error(errorMessage(err.message)));
     return () => {
       cancelled = true;
     };
@@ -41,20 +44,20 @@ export default function ShareInviteLink({
     if (!token) return;
     try {
       await navigator.clipboard.writeText(inviteUrl(token));
-      toast.success("Link copied");
+      toast.success(t("common:share.copied"));
     } catch {
-      toast.error("Couldn't copy the link");
+      toast.error(t("common:share.copyFailed"));
     }
   };
 
   const reset = async () => {
-    if (!confirm("Reset the link? The old link will stop working.")) return;
+    if (!confirm(t("followLink.resetConfirm"))) return;
     setBusy(true);
     try {
       setToken(await getInviteLink(personaId, true));
-      toast.success("New link created");
+      toast.success(t("followLink.resetDone"));
     } catch (err) {
-      toast.error((err as Error).message);
+      toast.error(errorMessage((err as Error).message));
     } finally {
       setBusy(false);
     }
@@ -64,18 +67,16 @@ export default function ShareInviteLink({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Follow-request link</DialogTitle>
-          <DialogDescription>
-            Anyone with this link can ask to follow you. You approve each request.
-          </DialogDescription>
+          <DialogTitle>{t("followLink.title")}</DialogTitle>
+          <DialogDescription>{t("followLink.dialogLead")}</DialogDescription>
         </DialogHeader>
-        <Input readOnly value={token ? inviteUrl(token) : "Loading…"} onFocus={(e) => e.target.select()} />
+        <Input readOnly value={token ? inviteUrl(token) : t("common:states.loading")} onFocus={(e) => e.target.select()} />
         <DialogFooter>
           <Button variant="outline" disabled={!token || busy} onClick={reset}>
-            Reset link
+            {t("followLink.resetLink")}
           </Button>
           <Button disabled={!token} onClick={copy}>
-            Copy
+            {t("common:actions.copy")}
           </Button>
         </DialogFooter>
       </DialogContent>

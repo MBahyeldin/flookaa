@@ -11,13 +11,15 @@ import { DEFAULT_PALETTE, isPaletteId, type PaletteId } from "@/themes/palettes"
 import type { CoverPattern } from "@/types/cover";
 import type { Persona } from "@/types/persona";
 import { usePersonaUpdate } from "./usePersonaUpdate";
+import { useTranslation } from "react-i18next";
 
 const DEFAULT_COVER: CoverPattern = "waves";
 
 function Preview({ persona, theme, cover }: { persona: Persona; theme: PaletteId; cover: CoverPattern }) {
+  const { t } = useTranslation("common");
   const name = `${persona.first_name} ${persona.last_name}`.trim();
   return (
-    <div data-theme={theme} className="flex justify-center rounded-lg bg-surface-sunken p-4 md:p-6" aria-label="Preview">
+    <div data-theme={theme} className="flex justify-center rounded-lg bg-surface-sunken p-4 md:p-6" aria-label={t("look.preview")}>
       <div className="w-full max-w-[340px] overflow-hidden rounded-lg border bg-background text-foreground">
         <div className="-mb-7 h-24">
           <Cover pattern={cover} />
@@ -37,6 +39,7 @@ function Preview({ persona, theme, cover }: { persona: Persona; theme: PaletteId
 }
 
 export function LookSection({ persona, onThemeDraft }: { persona: Persona; onThemeDraft: (theme: PaletteId) => void }) {
+  const { t } = useTranslation(["personas", "common"]);
   const savedTheme = isPaletteId(persona.theme) ? persona.theme : DEFAULT_PALETTE;
   const savedCover = persona.cover_pattern ?? DEFAULT_COVER;
   const [theme, setTheme] = useState(savedTheme);
@@ -51,19 +54,19 @@ export function LookSection({ persona, onThemeDraft }: { persona: Persona; onThe
   return (
     <SettingsSection
       id="look"
-      title="Look"
-      lead="Your profile's colours and cover. The preview changes as you pick."
+      title={t("settings.look.title")}
+      lead={t("settings.look.lead")}
       onSave={() => save({ theme, cover_pattern: cover })}
       dirty={theme !== savedTheme || cover !== savedCover}
       saving={saving}
     >
       <Preview persona={persona} theme={theme} cover={cover} />
       <div className="flex flex-col gap-2">
-        <Label id="look-theme">Theme</Label>
+        <Label id="look-theme">{t("common:look.theme")}</Label>
         <ThemeSwatchGroup aria-labelledby="look-theme" value={theme} onChange={pickTheme} />
       </div>
       <div className="flex flex-col gap-2">
-        <Label id="look-cover">Cover</Label>
+        <Label id="look-cover">{t("common:look.cover")}</Label>
         <CoverOptionGroup aria-labelledby="look-cover" value={cover} onChange={setCover} />
       </div>
     </SettingsSection>

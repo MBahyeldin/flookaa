@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
 import AuthSplit from "@/pages/auth/AuthSplit";
+import { Trans, useTranslation } from "react-i18next";
+import { t } from "@/i18n";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import verifyEmail, {
   resendVerification,
@@ -25,28 +27,27 @@ function takeEmailFailedFlag() {
 
 function verifyErrorText(error: string, attemptsLeft?: number) {
   if (error === "invalid_code") {
-    return attemptsLeft
-      ? `That code is wrong. ${attemptsLeft} ${attemptsLeft === 1 ? "try" : "tries"} left.`
-      : "That code is wrong.";
+    return attemptsLeft ? t("auth:verify.wrongCodeLeft", { count: attemptsLeft }) : t("auth:verify.wrongCode");
   }
-  if (error === "code_expired") return "This code has expired. Request a new one.";
-  return "Something went wrong. Please try again.";
+  if (error === "code_expired") return t("auth:verify.expired");
+  return t("errors:generic");
 }
 
 function resendErrorText(error: string) {
-  if (error === "email_failed") return "We couldn't send the email. Try again shortly.";
+  if (error === "email_failed") return t("errors:email_failed");
   if (error === "resend_cooldown") return null;
-  return "Something went wrong. Please try again.";
+  return t("errors:generic");
 }
 
 export default function VerifyEmailPage() {
+  const { t } = useTranslation(["auth", "common"]);
   const { revalidateUser, handleLogOut } = useAuth();
   const { user } = useUserProfileStore();
   const [code, setCode] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(() =>
-    takeEmailFailedFlag() ? "We couldn't send your code. Press Resend to get one." : null,
+    takeEmailFailedFlag() ? t("verify.sendFailed") : null,
   );
   const [isResending, setIsResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
@@ -85,7 +86,7 @@ export default function VerifyEmailPage() {
       const result = await resendVerification();
       if (result.ok) {
         setCode("");
-        setNotice("We sent you a new code.");
+        setNotice(t("verify.resent"));
       } else if (result.error === "already_verified") {
         revalidateUser();
       } else {
@@ -101,12 +102,14 @@ export default function VerifyEmailPage() {
 
   return (
     <AuthSplit
-      title="Check your email"
+      title={t("checkEmail")}
       lead={
-        <>
-          We sent a 6-digit code to{" "}
-          <span className="font-medium text-foreground break-all">{user?.email}</span>. Enter it to finish signing up.
-        </>
+        <Trans
+          t={t}
+          i18nKey="verify.lead"
+          values={{ email: user?.email }}
+          components={{ email: <span className="font-medium text-foreground break-all" /> }}
+        />
       }
     >
       <div className="flex flex-col gap-2">
@@ -130,7 +133,7 @@ export default function VerifyEmailPage() {
           <p className="text-sm text-destructive" role="alert">{error}</p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            {notice ?? "Paste works too. The code is valid for 24 hours."}
+            {notice ?? t("verify.hint")}
           </p>
         )}
       </div>
@@ -142,7 +145,7 @@ export default function VerifyEmailPage() {
         loading={isVerifying}
         onClick={() => submit(code)}
       >
-        Verify
+        {t("verify.submit")}
       </Button>
 
       <div className="flex flex-col items-start gap-2 text-sm">
@@ -152,12 +155,12 @@ export default function VerifyEmailPage() {
           disabled={isResending || cooldown > 0}
           onClick={resend}
         >
-          {cooldown > 0 ? `Didn't get an email? Resend in ${cooldown}s` : "Didn't get an email? Resend"}
+          {cooldown > 0 ? t("verify.resendIn", { seconds: cooldown }) : t("verify.resend")}
         </Button>
         <p className="text-muted-foreground">
-          Wrong email?{" "}
+          {t("verify.wrongEmail")}{" "}
           <Button variant="link" className="h-auto p-0 text-muted-foreground underline" onClick={handleLogOut}>
-            Log out
+            {t("common:shell.logOut")}
           </Button>
         </p>
       </div>

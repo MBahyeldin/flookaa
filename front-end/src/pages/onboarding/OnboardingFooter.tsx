@@ -2,12 +2,14 @@ import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import type { OnboardingAction } from "@/types/onboarding";
 import { useOnboardingStep } from "./context";
+import { useTranslation } from "react-i18next";
+import { t } from "@/i18n";
 
 function errorText(error: string) {
-  if (error === "step_incomplete") return "Finish this step to continue.";
+  if (error === "step_incomplete") return t("onboarding:stepIncomplete");
   // Another tab moved on: the new state is already in place.
   if (error === "step_mismatch" || error === "onboarding_completed") return null;
-  return "Something went wrong. Please try again.";
+  return t("errors:generic");
 }
 
 /**
@@ -18,7 +20,7 @@ export default function OnboardingFooter({
   left,
   onContinue,
   continueDisabled = false,
-  continueLabel = "Continue",
+  continueLabel,
   onMoved,
   hideSkip = false,
 }: {
@@ -29,6 +31,7 @@ export default function OnboardingFooter({
   onMoved?: (action: OnboardingAction) => void;
   hideSkip?: boolean;
 }) {
+  const { t } = useTranslation(["onboarding", "common"]);
   const { step, index, move } = useOnboardingStep();
   const [busy, setBusy] = useState<OnboardingAction | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,12 +57,12 @@ export default function OnboardingFooter({
         <div className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{left}</div>
         {index > 0 && (
           <Button variant="ghost" disabled={busy !== null} onClick={() => run("back")}>
-            Back
+            {t("common:actions.back")}
           </Button>
         )}
         {step.skippable && !hideSkip && (
           <Button variant="outline" disabled={busy !== null} onClick={() => run("skip")}>
-            Skip now
+            {t("skipNow")}
           </Button>
         )}
         <Button
@@ -67,7 +70,7 @@ export default function OnboardingFooter({
           disabled={continueDisabled || busy !== null}
           onClick={() => run("next")}
         >
-          {continueLabel}
+          {continueLabel ?? t("common:actions.continue")}
         </Button>
       </div>
     </div>

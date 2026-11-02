@@ -6,18 +6,20 @@ import { PostCreator } from "@/components/post-creator";
 import { useIsMobile } from "@/hooks/useMobile";
 import { personaInitials } from "@/lib/personaInitials";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
+import { useTranslation } from "react-i18next";
 
 type Opened = { block?: string };
 
 export function ComposerBar({
   channelName,
-  placeholder = `Write in ${channelName}…`,
+  placeholder,
   title,
 }: {
   channelName: string;
   placeholder?: string;
   title?: string;
 }) {
+  const { t } = useTranslation("posts");
   const [opened, setOpened] = useState<Opened | null>(null);
   const persona = useUserProfileStore((s) => s.persona);
   const isMobile = useIsMobile();
@@ -50,14 +52,14 @@ export function ComposerBar({
               {persona ? personaInitials(persona) : <User2 className="size-4" />}
             </AvatarFallback>
           </Avatar>
-          <span className="min-w-0 flex-1 truncate text-muted-foreground">{placeholder}</span>
+          <span className="min-w-0 flex-1 truncate text-muted-foreground">{placeholder ?? t("composer.writeIn", { channel: channelName })}</span>
         </button>
         <Button
           variant="ghost"
           size="icon"
           className="shrink-0 max-md:size-11"
-          aria-label="Add an image"
-          title="Add an image"
+          aria-label={t("composer.addImage")}
+          title={t("composer.addImage")}
           onClick={() => setOpened({ block: "image" })}
         >
           <ImageIcon className="size-4" />
@@ -66,8 +68,8 @@ export function ComposerBar({
           variant="ghost"
           size="icon"
           className="shrink-0 max-md:size-11"
-          aria-label="Add a voice note"
-          title="Add a voice note"
+          aria-label={t("composer.addVoice")}
+          title={t("composer.addVoice")}
           onClick={() => setOpened({ block: "voiceNote" })}
         >
           <Mic className="size-4" />

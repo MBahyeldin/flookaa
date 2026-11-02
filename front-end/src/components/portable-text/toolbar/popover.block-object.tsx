@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useBlockObjectPopover } from "@portabletext/toolbar";
 import type { ToolbarBlockObjectSchemaType } from "@portabletext/toolbar";
 import { PencilIcon, TrashIcon } from "lucide-react";
@@ -77,7 +78,7 @@ export function BlockObjectPopover(props: {
       >
         <ObjectForm
           key={blockObject.value._key}
-          submitLabel="Save"
+          submitLabel={t("common:actions.save")}
           fields={blockObject.schemaType.fields}
           defaultValues={toFormValue(block, {
             ...block?.defaultValues,
@@ -122,7 +123,7 @@ export function BlockObjectPopover(props: {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-label="Edit"
+                aria-label={t("editor:edit")}
                 variant="secondary"
                 size="sm"
                 className="max-md:size-11"
@@ -131,13 +132,13 @@ export function BlockObjectPopover(props: {
                 <PencilIcon className="size-3" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Edit</TooltipContent>
+            <TooltipContent>{t("editor:edit")}</TooltipContent>
           </Tooltip>
         ) : null}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              aria-label="Remove"
+              aria-label={t("common:actions.remove")}
               variant="destructive"
               size="sm"
               className="max-md:size-11"
@@ -148,7 +149,7 @@ export function BlockObjectPopover(props: {
               <TrashIcon className="size-3" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Remove</TooltipContent>
+          <TooltipContent>{t("common:actions.remove")}</TooltipContent>
         </Tooltip>
       </PopoverContent>
     </Popover>

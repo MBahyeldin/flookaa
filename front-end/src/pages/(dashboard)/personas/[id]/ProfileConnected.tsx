@@ -3,7 +3,8 @@ import { FollowButton } from "@/components/follow-button";
 import { personaPath } from "@/components/persona-link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { initials } from "@/components/ui/logo";
-import { formatCount } from "@/lib/format";
+import { formatCompact } from "@/lib/format";
+import { t } from "@/i18n";
 import type { FollowStatus, PublicPersona } from "@/types/persona";
 import { fullName } from "./ProfileHero";
 
@@ -39,7 +40,8 @@ export function ProfileConnected({
                   {p.name && <span className="block truncate text-xs">{p.name}</span>}
                   <span className="block truncate text-xs text-muted-foreground">
                     @{p.slug}
-                    {p.followers_count !== undefined && ` · ${formatCount(p.followers_count, "follower", "followers")}`}
+                    {p.followers_count !== undefined &&
+                      ` · ${t("common:counts.followers", { count: p.followers_count, n: formatCompact(p.followers_count) })}`}
                   </span>
                 </span>
               </Link>

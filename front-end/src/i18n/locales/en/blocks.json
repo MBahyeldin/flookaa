@@ -1,0 +1,235 @@
+{
+  "image": {
+    "fields": {
+      "imageUrl": "Image URL",
+      "httpsExampleComJpg": "https://example.com/jpg",
+      "altText": "Alt Text",
+      "aDescriptionOfTheImage": "A description of the image for accessibility",
+      "caption": "Caption",
+      "captionForTheImageOptional": "Caption for the image (optional)",
+      "displaySize": "Display size",
+      "extraSmall25": "Extra small (25%)",
+      "small40": "Small (40%)",
+      "medium60": "Medium (60%)",
+      "large80": "Large (80%)",
+      "fullWidth100": "Full width (100%)",
+      "alignment": "Alignment",
+      "left": "Left",
+      "centre": "Centre",
+      "right": "Right",
+      "width": "Width",
+      "height": "Height"
+    },
+    "title": "Image",
+    "description": "A picture with optional alt text and caption."
+  },
+  "gallery": {
+    "fields": {
+      "layout": "Layout",
+      "carousel": "Carousel",
+      "grid": "Grid",
+      "images": "Images",
+      "image": "Image",
+      "addImage": "Add image",
+      "altText": "Alt Text",
+      "aDescriptionOfTheImage": "A description of the image for accessibility",
+      "caption": "Caption",
+      "captionForTheImageOptional": "Caption for the image (optional)"
+    },
+    "title": "Gallery",
+    "description": "Several pictures as a grid or a carousel.",
+    "open": "Open image {{n}} of {{total}}",
+    "openMore": "{{label}}, {{more}} more",
+    "goTo": "Go to image {{n}}",
+    "position": "{{n}} of {{total}}",
+    "previous": "Previous image",
+    "next": "Next image",
+    "summary_one": "Gallery · {{count}}",
+    "summary_other": "Gallery · {{count}}",
+    "viewerHint": "Use the arrow keys to move between images."
+  },
+  "voiceNote": {
+    "fields": {
+      "audio": "Audio",
+      "title": "Title",
+      "whatItSAboutOptional": "What it's about (optional)",
+      "duration": "Duration"
+    },
+    "title": "Voice note",
+    "description": "Record or upload a short audio clip.",
+    "summary": "Voice note · {{time}}"
+  },
+  "break": {
+    "fields": {
+      "style": "Style"
+    },
+    "title": "Divider",
+    "description": "A line, dots or a sailboat between two parts of a post.",
+    "styles": {
+      "line": "Line",
+      "dashed": "Dashed",
+      "dots": "Dots",
+      "ornament": "Ornament"
+    }
+  },
+  "callout": {
+    "fields": {
+      "tone": "Tone",
+      "icon": "Icon",
+      "toneDefault": "Tone default",
+      "tag": "Tag",
+      "toneDefaultEGHeads": "Tone default, e.g. Heads up",
+      "title": "Title",
+      "optionalHeading": "Optional heading",
+      "description": "Description",
+      "whatShouldReadersNotice": "What should readers notice?"
+    },
+    "title": "Callout",
+    "description": "A highlighted note: info, success, warning or error.",
+    "tags": {
+      "info": "Good to know",
+      "success": "Nice!",
+      "warning": "Heads up",
+      "error": "Careful"
+    },
+    "tones": {
+      "info": "Info",
+      "success": "Success",
+      "warning": "Warning",
+      "error": "Error"
+    },
+    "icons": {
+      "info": "Info",
+      "check": "Check",
+      "alert": "Alert",
+      "error": "Error",
+      "lightbulb": "Lightbulb",
+      "star": "Star",
+      "heart": "Heart",
+      "megaphone": "Megaphone",
+      "none": "None"
+    }
+  },
+  "quote": {
+    "fields": {
+      "quote": "Quote",
+      "whatDidTheySay": "What did they say?",
+      "name": "Name",
+      "whoSaidIt": "Who said it",
+      "role": "Role",
+      "eGFounderAcme": "e.g. Founder, Acme"
+    },
+    "title": "Quote",
+    "description": "A highlighted quote, with who said it."
+  },
+  "steps": {
+    "fields": {
+      "title": "Title",
+      "howTo": "How to …",
+      "steps": "Steps",
+      "step": "Step",
+      "addStep": "Add step",
+      "whatToDo": "What to do",
+      "details": "Details"
+    },
+    "title": "Steps",
+    "description": "A numbered how-to, one step at a time.",
+    "summary_one": "Steps · {{count}}",
+    "summary_other": "Steps · {{count}}"
+  },
+  "accordion": {
+    "fields": {
+      "title": "Title",
+      "frequentlyAskedQuestions": "Frequently asked questions",
+      "sections": "Sections",
+      "section": "Section",
+      "addSection": "Add section",
+      "questionOrHeading": "Question or heading",
+      "content": "Content",
+      "allowSeveralOpen": "Allow several open",
+      "openTheFirstSection": "Open the first section"
+    },
+    "title": "Accordion",
+    "description": "Sections that open on tap.",
+    "summary_one": "Accordion · {{count}}",
+    "summary_other": "Accordion · {{count}}"
+  },
+  "spoiler": {
+    "fields": {
+      "label": "Label",
+      "whatSHiddenEG": "What's hidden? e.g. Finale spoilers",
+      "content": "Content",
+      "theHiddenPart": "The hidden part"
+    },
+    "title": "Spoiler",
+    "description": "Content hidden until the reader taps it.",
+    "hideNamed": "Hide spoiler: {{label}}",
+    "hide": "Hide spoiler",
+    "showNamed": "Show spoiler: {{label}}",
+    "show": "Show spoiler",
+    "tap": "Tap to reveal"
+  },
+  "countdown": {
+    "fields": {
+      "label": "Label",
+      "whatAreWeCountingDown": "What are we counting down to?",
+      "endsAt": "Ends at",
+      "endedText": "Ended text"
+    },
+    "title": "Countdown",
+    "description": "A live countdown to a date and time.",
+    "ended": "This countdown has ended.",
+    "passed": "This time has passed, so the countdown will show as ended.",
+    "yourTimeZone": "Your time, {{zone}}",
+    "yourTime": "Your time",
+    "units": {
+      "days_one": "day",
+      "days_other": "days",
+      "hours": "hours",
+      "min": "min",
+      "sec": "sec"
+    },
+    "endsIn": "Ends in {{parts}}",
+    "spoken": {
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "hours_one": "{{count}} hour",
+      "hours_other": "{{count}} hours",
+      "minutes_one": "{{count}} minute",
+      "minutes_other": "{{count}} minutes"
+    },
+    "separator": ", ",
+    "endedPrefix": "Ended",
+    "endsPrefix": "Ends"
+  },
+  "checklist": {
+    "fields": {
+      "title": "Title",
+      "packingList": "Packing list",
+      "items": "Items",
+      "item": "Item",
+      "addItem": "Add item",
+      "text": "Text",
+      "somethingToDo": "Something to do",
+      "done": "Done"
+    },
+    "title": "Checklist",
+    "description": "A list of items you tick off.",
+    "progress": "{{done}} of {{total}} done",
+    "summary": "Checklist · {{done}}/{{total}}"
+  },
+  "validation": {
+    "oneLine": "must be one line",
+    "required": "is required",
+    "maxChars": "must be at most {{max}} characters",
+    "minItems_one": "needs at least {{count}}",
+    "minItems_other": "needs at least {{count}}",
+    "httpLink": "must be an http(s) link",
+    "plainText": "must be plain text",
+    "dateRange": "must be between 2000 and {{years}} years from now"
+  },
+  "categories": {
+    "media": "Media",
+    "layout": "Layout"
+  }
+}

@@ -12,13 +12,10 @@ import { Logo } from "@/components/ui/logo";
 import { SkeletonList } from "@/components/ui/skeleton";
 import { cancelChannelRequest, removeCommunityChannel, requestChannelJoin } from "@/services/communities";
 import type { ChannelCommunityState, MyCommunity } from "@/types/community";
-import { formatDateOnly } from "@/utils/formateDate";
+import { formatDateOnly } from "@/lib/format";
+import { useTranslation } from "react-i18next";
 
-const REQUEST_ERRORS: Record<string, string> = {
-  channel_in_community: "This channel is already in a community.",
-  channel_request_pending: "This channel is already waiting on a community.",
-  recently_rejected: "That community declined this channel less than 30 days ago.",
-};
+const REQUEST_ERRORS = ["channel_in_community", "channel_request_pending", "recently_rejected"] as const;
 
 /** state: undefined while loading, null when it failed. */
 export function ChannelCommunitySection({
@@ -32,6 +29,7 @@ export function ChannelCommunitySection({
   onRetry: () => void;
   onChanged: () => void;
 }) {
+  const { t } = useTranslation(["channels", "common"]);
   const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -44,10 +42,11 @@ export function ChannelCommunitySection({
     const r = await requestChannelJoin(community.id, id);
     setBusy(false);
     if (!r.ok) {
-      setError(REQUEST_ERRORS[r.error] ?? "Couldn't send the request. Try again.");
+      const known = REQUEST_ERRORS.find((code) => code === r.error);
+      setError(known ? t(`manage.requestErrors.${known}`) : t("manage.requestFailed"));
       return;
     }
-    toast.success(`Sent to ${community.name}'s managers`);
+    toast.success(t("manage.requestSent", { community: community.name }));
     onChanged();
   };
 
@@ -57,9 +56,9 @@ export function ChannelCommunitySection({
     if (
       leave &&
       !(await confirm({
-        title: `Take this channel out of ${community.name}?`,
-        body: "It stays as it is, with its members and posts. Getting back in needs a new request.",
-        confirmLabel: "Take out",
+        title: t("manage.takeOutConfirm", { community: community.name }),
+        body: t("manage.takeOutBody"),
+        confirmLabel: t("manage.takeOut"),
         destructive: true,
       }))
     )
@@ -68,17 +67,17 @@ export function ChannelCommunitySection({
     const r = leave ? await removeCommunityChannel(community.id, id) : await cancelChannelRequest(community.id, id);
     setBusy(false);
     if (!r.ok) {
-      toast.error("Couldn't update the community. Try again.");
+      toast.error(t("manage.communityFailed"));
       return;
     }
-    toast.success(leave ? `The channel left ${community.name}` : "Request cancelled");
+    toast.success(leave ? t("manage.left", { community: community.name }) : t("manage.requestCancelled"));
     onChanged();
   };
 
   const picker = (
     <>
       <Button type="button" variant="outline" size="sm" loading={busy} onClick={() => setPicking(true)}>
-        Suggest to a community
+        {t("manage.suggest")}
       </Button>
       <CommunityPicker open={picking} onOpenChange={setPicking} value={null} onPick={suggest} request />
     </>
@@ -86,11 +85,11 @@ export function ChannelCommunitySection({
 
   let body;
   if (state === undefined) body = <SkeletonList count={1} />;
-  else if (state === null) body = <ErrorState compact title="Couldn't load the community" onRetry={onRetry} />;
+  else if (state === null) body = <ErrorState compact title={t("manage.communityLoadFailed")} onRetry={onRetry} />;
   else if (!state.community || state.status === "none") {
     body = (
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed p-3">
-        <span className="text-sm text-muted-foreground">Not in a community.</span>
+        <span className="text-sm text-muted-foreground">{t("create.noCommunity")}</span>
         {picker}
       </div>
     );
@@ -107,21 +106,23 @@ export function ChannelCommunitySection({
               {c.name}
             </Link>
             <span className="text-xs text-muted-foreground">
-              {state.status === "active" && "The channel shows on the community's page."}
-              {state.status === "pending" && "Waiting for its managers to approve."}
+              {state.status === "active" && t("manage.statusActive")}
+              {state.status === "pending" && t("manage.statusPending")}
               {state.status === "rejected" &&
-                `Declined. You can ask again on ${state.rejected_until ? formatDateOnly(state.rejected_until) : "a later date"}.`}
+                (state.rejected_until
+                  ? t("manage.statusRejectedUntil", { date: formatDateOnly(state.rejected_until) })
+                  : t("manage.statusRejected"))}
             </span>
           </div>
-          {state.status === "pending" && <Badge variant="secondary">Pending</Badge>}
+          {state.status === "pending" && <Badge variant="secondary">{t("common:status.pending")}</Badge>}
           {state.status === "active" && (
             <Button type="button" variant="ghost" size="sm" className="text-destructive" loading={busy} onClick={() => act(true)}>
-              Take out of community
+              {t("manage.takeOutLong")}
             </Button>
           )}
           {state.status === "pending" && (
             <Button type="button" variant="outline" size="sm" loading={busy} onClick={() => act(false)}>
-              Cancel request
+              {t("common:actions.cancelRequest")}
             </Button>
           )}
         </div>
@@ -131,7 +132,7 @@ export function ChannelCommunitySection({
   }
 
   return (
-    <SettingsSection id="community" title="Community" lead="A community groups channels about the same topics.">
+    <SettingsSection id="community" title={t("create.community")} lead={t("manage.communityLead")}>
       {body}
       <FieldError>{error}</FieldError>
       {confirmDialog}

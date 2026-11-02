@@ -1,0 +1,278 @@
+{
+  "nav": {
+    "home": "Home",
+    "discover": "Discover",
+    "channels": "Channels",
+    "communities": "Communities",
+    "notifications": "Notifications",
+    "personas": "Personas",
+    "settings": "Settings",
+    "admin": "Admin"
+  },
+  "shell": {
+    "appearance": "Appearance",
+    "personaMenu": "{{name}}, switch persona or log out",
+    "switchPersona": "Switch persona",
+    "switchFailed": "Couldn't switch persona. Please try again.",
+    "managePersonas": "Manage personas",
+    "logOut": "Log out",
+    "unread_one": ", {{count}} unread",
+    "unread_other": ", {{count}} unread",
+    "badgeMax": "99+",
+    "homeLink": "Flookaa, home",
+    "mainNav": "Main",
+    "breadcrumb": "Breadcrumb",
+    "toggleDark": "Toggle dark mode",
+    "menu": "Menu",
+    "menuDescription": "Main navigation.",
+    "openMenu": "Open menu",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "leadMember": "The link may be old, or the page is private or was removed.",
+    "leadVisitor": "The link may be old, or you need to log in to see it.",
+    "backToFeed": "Back to your feed",
+    "logIn": "Log in to continue"
+  },
+  "actions": {
+    "logIn": "Log in",
+    "signUp": "Sign up",
+    "more": "More",
+    "close": "Close",
+    "tryAgain": "Try again",
+    "seeAll": "See all",
+    "remove": "Remove",
+    "add": "Add",
+    "continue": "Continue",
+    "join": "Join",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "back": "Back",
+    "next": "Next",
+    "joined": "Joined",
+    "requested": "Requested",
+    "requestToJoin": "Request to join",
+    "following": "Following",
+    "follow": "Follow",
+    "clear": "Clear",
+    "done": "Done",
+    "removeNamed": "Remove {{name}}",
+    "loadMore": "Load more",
+    "delete": "Delete",
+    "search": "Search",
+    "change": "Change",
+    "showAll": "Show all",
+    "moreActions": "More actions",
+    "cancelRequest": "Cancel request",
+    "removeConfirm": "Remove {{name}}?",
+    "approve": "Approve",
+    "reject": "Reject",
+    "copy": "Copy",
+    "accept": "Accept",
+    "decline": "Decline",
+    "retry": "Retry"
+  },
+  "states": {
+    "loading": "Loading...",
+    "checkConnection": "Check your connection and try again.",
+    "saveFailed": "Couldn't save. Try again."
+  },
+  "time": {
+    "now": "now",
+    "minutes": "{{n}}m",
+    "hours": "{{n}}h"
+  },
+  "cover": {
+    "horizon": "Horizon",
+    "waves": "Waves",
+    "hills": "Hills",
+    "stripes": "Stripes"
+  },
+  "bytes": {
+    "mb": "{{n}} MB",
+    "kb": "{{n}} KB",
+    "b": "{{n}} B"
+  },
+  "upload": {
+    "tooLarge": "That file is too large to upload. Try a smaller file.",
+    "tooLargeSize": "That file is too large to upload ({{size}}). Try a smaller file.",
+    "forbidden": "You’re not signed in, or don’t have permission to upload.",
+    "unsupportedType": "That file type isn’t supported.",
+    "serviceFailed": "The upload service failed ({{status}}).",
+    "failedStatus": "Upload failed ({{status}}).",
+    "failed": "Upload failed.",
+    "noUrl": "Upload finished but no file URL was returned.",
+    "unreachable": "Couldn’t reach the upload service. Check your connection.",
+    "noTicket": "The upload service didn’t return an upload ticket.",
+    "interrupted": "Upload interrupted at part {{part}} of {{total}}. Check your connection.",
+    "failedAtPart": "{{reason}} (failed at part {{part}} of {{total}})",
+    "couldNotFinish": "Couldn’t finish the upload. Check your connection.",
+    "emptyRecording": "The recording is empty: nothing was captured."
+  },
+  "voice": {
+    "noMicrophoneAccess": "This browser can’t access the microphone.",
+    "needsHttps": "Voice notes need a secure (HTTPS) connection.",
+    "cantRecord": "This browser can’t record audio.",
+    "noFormat": "This browser doesn’t support any audio format we can upload.",
+    "denied": "Microphone access was denied.",
+    "couldNotStart": "Couldn’t start the microphone.",
+    "nothingRecorded": "Nothing was recorded. Try again.",
+    "badFormat": "That audio format isn’t supported. Use mp3, wav, m4a, flac, ogg or webm.",
+    "tooBig": "Audio files can be up to 5 MB.",
+    "tooLong": "Audio files can be up to {{time}} long.",
+    "secondsLeft_one": "{{count}} s left",
+    "secondsLeft_other": "{{count}} s left",
+    "stop": "Stop",
+    "processing": "Processing…",
+    "recordAgain": "Record again",
+    "record": "Record",
+    "uploadAnother": "Upload another",
+    "uploadFile": "Upload file",
+    "canStillUpload": "{{reason}} You can still upload a file."
+  },
+  "pic": {
+    "preview": "Thumbnail preview",
+    "uploading": "Uploading image…",
+    "drop": "Drag & drop an image or click to select",
+    "dimensions": "{{width}} × {{height}} px",
+    "dimensionsUnknown": "Dimensions unknown: pick the file again to measure it",
+    "loadFailed": "Error loading image"
+  },
+  "interests": {
+    "loadFailedReload": "Couldn't load interests. Please reload.",
+    "loading": "Loading interests…",
+    "saved": "Interests saved",
+    "saveFailed": "Couldn't save the interests. Please try again.",
+    "pickOne": "Pick at least one.",
+    "count": "{{n}} / {{max}}",
+    "loadFailed": "Couldn't load interests",
+    "forYou": "For you",
+    "all": "All",
+    "allInterests": "All interests",
+    "filterLead": "Show what's tagged with any of the interests you pick.",
+    "countSelected": "{{n}} / {{max}} selected",
+    "retired": "No longer offered",
+    "label": "Interests",
+    "pickOneInterest": "Pick at least one interest.",
+    "namesTwo": "{{a}} and {{b}}",
+    "namesMore_one": "{{a}}, {{b}} and {{count}} more",
+    "namesMore_other": "{{a}}, {{b}} and {{count}} more"
+  },
+  "form": {
+    "required": "This field is required",
+    "selectOption": "Select an option",
+    "item": "Item",
+    "moveItemUp": "Move {{item}} {{n}} up",
+    "moveItemDown": "Move {{item}} {{n}} down",
+    "removeItem": "Remove {{item}} {{n}}"
+  },
+  "counts": {
+    "members_one": "{{n}} member",
+    "members_other": "{{n}} members",
+    "channels_one": "{{n}} channel",
+    "channels_other": "{{n}} channels",
+    "followers_one": "{{n}} follower",
+    "followers_other": "{{n}} followers"
+  },
+  "share": {
+    "copied": "Link copied",
+    "copyFailed": "Couldn't copy the link",
+    "copyLink": "Copy link",
+    "shareFailed": "Couldn't share the link",
+    "share": "Share"
+  },
+  "look": {
+    "preview": "Preview",
+    "theme": "Theme",
+    "cover": "Cover",
+    "title": "Look",
+    "communityTheme": "Community's",
+    "saveFailed": "Couldn't save the look. Try again.",
+    "saved": "Look saved"
+  },
+  "confirm": {
+    "leave": "Leave {{name}}?"
+  },
+  "visibility": {
+    "private": "Private",
+    "public": "Public"
+  },
+  "membersOnly": "Members only",
+  "themes": {
+    "tide": "Deep Tide",
+    "forest": "Forest",
+    "ember": "Ember",
+    "plum": "Plum",
+    "rose": "Rose",
+    "slate": "Slate"
+  },
+  "people": {
+    "title": "People",
+    "more": "+{{more}}",
+    "moderators": "Moderators"
+  },
+  "about": {
+    "title": "About",
+    "created": "Created {{date}}"
+  },
+  "age": {
+    "label": "Ages {{age}} and over",
+    "short": "{{age}}+",
+    "helper": "Only people this age or older find it. You can raise it later.",
+    "limit": "Age limit",
+    "manageHelper": "Younger people won't see it at all, members included."
+  },
+  "manage": {
+    "title": "Manage",
+    "actionsFor": "Actions for {{name}}",
+    "membersAndRequests": "Members & requests"
+  },
+  "roles": {
+    "owner": "Owner",
+    "moderator": "Moderator"
+  },
+  "create": {
+    "previewSticky": "Stays in view while the form scrolls.",
+    "visibility": "Visibility",
+    "publicBody": "Anyone can read. Members post, comment and like.",
+    "basics": "Basics",
+    "nameHelper": "Up to {{max}} characters. {{n}} / {{max}}",
+    "description": "Description",
+    "descriptionHelper": "Shown under the name. {{n}} / {{max}}",
+    "audience": "Audience"
+  },
+  "logo": {
+    "uploading": "Uploading…",
+    "replace": "Replace logo",
+    "upload": "Upload logo",
+    "hint": "Square image, PNG or JPG. Without one, the initials show."
+  },
+  "list": {
+    "tryOtherInterests": "Try other interests, or start the first one.",
+    "startFirst": "Start the first one."
+  },
+  "members": {
+    "loadFailed": "Couldn't load members",
+    "joined": "Joined {{date}}",
+    "removeFailed": "Couldn't remove this member. Try again.",
+    "removed": "{{name}} was removed",
+    "onlyYou": "Only you so far",
+    "onlyYouBody": "Members show here once people join.",
+    "title": "Members",
+    "loading": "Loading members"
+  },
+  "status": {
+    "pending": "Pending"
+  },
+  "requests": {
+    "updateFailed": "Couldn't update the request. Try again.",
+    "rejected": "Request from {{name}} rejected",
+    "loadFailed": "Couldn't load requests",
+    "none": "No pending requests",
+    "askedOn": "Asked on {{date}}",
+    "title": "Requests"
+  }
+}

@@ -5,6 +5,7 @@ import { CreateCommentDocument, type SimpleInput } from "@/generated/graphql";
 import SimpleInputComponent from "../simple-input";
 import { contentOwner, useAppStore } from "@/stores/AppStore";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
+import { t } from "@/i18n";
 
 export default function CommentInput({
     parentId,
@@ -45,7 +46,7 @@ export default function CommentInput({
         <SimpleInputComponent
             onSend={handleSend}
             autoFocus={autoFocus}
-            placeholder={level > 1 ? "Write a reply…" : "Write a comment…"}
+            placeholder={level > 1 ? t("posts:comments.writeReply") : t("posts:comments.writeComment")}
             avatar={
                 <Avatar className="size-7 shrink-0">
                     <AvatarImage src={persona?.thumbnail || ""} />

@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { PortableText, type PortableTextBlock, type PortableTextComponents } from "@portabletext/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useIsMobile } from "@/hooks/useMobile";
@@ -187,7 +188,7 @@ export default function PreviewStream({
       </div>
       {chips.length ? (
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-medium text-muted-foreground">+{chips.length} more inside</p>
+          <p className="text-xs font-medium text-muted-foreground">{t("posts:moreInside", { count: chips.length })}</p>
           <ul className="flex flex-wrap gap-1.5">
             {chips.map(({ key, block, label }) => (
               <li

@@ -2,19 +2,22 @@ import { useCallback, useEffect, useState } from "react";
 import { SettingsSection } from "@/components/settings/SettingsSection";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatCount } from "@/lib/format";
+import { formatCompact } from "@/lib/format";
+import { t } from "@/i18n";
+import { useTranslation } from "react-i18next";
 import { fetchPersonaProfile, listFollowRequests } from "@/services/persona";
 import FollowersSheet, { type FollowersTab } from "@/pages/(dashboard)/personas/[id]/FollowersSheet";
 
 type Counts = { followers: number; requests: number };
 
 function describe({ followers, requests }: Counts) {
-  const parts = [formatCount(followers, "follower", "followers")];
-  if (requests > 0) parts.push(formatCount(requests, "request waiting", "requests waiting"));
+  const parts = [t("common:counts.followers", { count: followers, n: formatCompact(followers) })];
+  if (requests > 0) parts.push(t("personas:settings.followers.requestsWaiting", { count: requests, n: formatCompact(requests) }));
   return parts.join(" · ");
 }
 
 export function FollowersSection({ personaId }: { personaId: number }) {
+  const { t } = useTranslation(["personas", "common"]);
   const [counts, setCounts] = useState<Counts | null | "failed">(null);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<FollowersTab>("followers");
@@ -41,21 +44,21 @@ export function FollowersSection({ personaId }: { personaId: number }) {
   return (
     <SettingsSection
       id="followers"
-      title="Followers"
+      title={t("settings.followers.title")}
       lead={
         counts === null ? (
           <Skeleton className="h-3 w-48" />
         ) : counts === "failed" ? (
-          "Couldn't load the counts."
+          t("settings.followers.loadFailed")
         ) : counts.followers === 0 && counts.requests === 0 ? (
-          "No followers yet."
+          t("settings.followers.none")
         ) : (
           describe(counts)
         )
       }
       action={
         <Button variant="outline" onClick={manage}>
-          Manage
+          {t("manager.manage")}
         </Button>
       }
     >

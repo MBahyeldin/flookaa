@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useEffect, useRef } from "react";
 import type { Editor } from "@portabletext/editor";
 import { blocks, fromFormValue, type AnyBlock } from "../blocks";
@@ -47,7 +48,7 @@ export function BlockGrid(props: { onPick: (block: AnyBlock) => void }) {
       {[...groups].map(([category, list]) => (
         <section key={category} className="flex flex-col gap-2">
           <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {categoryTitle[category]}
+            {categoryTitle(category)}
           </h3>
           <div className="grid grid-cols-2 gap-2">
             {list.map((block) => (
@@ -90,7 +91,7 @@ export function BlockList(props: {
   if (props.blocks.length === 0) {
     return (
       <p className="px-2 py-1.5 text-sm text-muted-foreground">
-        No blocks match
+        {t("editor:noBlocks")}
       </p>
     );
   }
@@ -133,7 +134,7 @@ export function BlocksGalleryLink() {
       rel="noopener"
       className="mt-3 block rounded-md px-2 py-1.5 text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring max-md:min-h-11 max-md:py-3"
     >
-      See all blocks
+      {t("editor:seeAllBlocks")}
     </a>
   );
 }

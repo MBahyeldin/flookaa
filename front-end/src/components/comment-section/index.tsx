@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/AppStore";
 import useCustomInfiniteQuery from "@/hooks/useCustomInfinteQuery";
 import { useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function CommentSection({
     className,
@@ -25,6 +26,7 @@ export default function CommentSection({
     /** Replaces the comment box, e.g. a join prompt for a reader who can't comment. */
     composer?: ReactNode;
 }) {
+    const { t } = useTranslation(["posts", "common"]);
     const [showLoadMoreComments, setShowLoadMoreComments] = useState(false);
     const [loaded, setLoaded] = useState(false);
     const { loadMore, isLoading, error, result } = useCustomInfiniteQuery<GetCommentsQuery, GetCommentsQueryVariables, Comment[]>({
@@ -66,7 +68,7 @@ export default function CommentSection({
     return (
         <section aria-labelledby="comments" className={cn("flex flex-col gap-5", className)}>
             <h2 id="comments" className="scroll-mt-24 text-h4 font-medium">
-                {totalCount} {totalCount === 1 ? "comment" : "comments"}
+                {t("comments.count", { count: totalCount })}
             </h2>
 
             {composer ?? <CommentInput parentId={parentId} level={1} />}
@@ -85,16 +87,15 @@ export default function CommentSection({
                 {result.length === 0 && error && !isLoading && (
                     <ErrorState
                         icon={RefreshCw}
-                        title="Comments didn't load"
-                        body="Check your connection and try again."
+                        title={t("comments.loadFailed")}
                         onRetry={loadMore}
                     />
                 )}
                 {result.length === 0 && loaded && !error && !isLoading && (
                     <EmptyState
                         icon={MessageCircle}
-                        title="No comments yet"
-                        body="Start the conversation. Your comment shows as the persona you're using."
+                        title={t("comments.emptyTitle")}
+                        body={t("comments.emptyBody")}
                     />
                 )}
                 {result.length > 0 && isLoading && (
@@ -103,20 +104,20 @@ export default function CommentSection({
                         className="flex items-center justify-center gap-2 text-sm text-muted-foreground"
                     >
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Loading more comments…</span>
+                        <span>{t("comments.loadingMore")}</span>
                     </div>
                 )}
                 {result.length > 0 && error && !isLoading && (
                     <div role="alert" className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
-                        Couldn't load more comments.
+                        {t("comments.loadMoreFailed")}
                         <Button variant="outline" size="sm" onClick={loadMore}>
-                            Try again
+                            {t("common:actions.tryAgain")}
                         </Button>
                     </div>
                 )}
                 {showLoadMoreComments && !isLoading && !error && (
                     <Button variant="outline" className="w-full" onClick={loadMore}>
-                        Load more comments
+                        {t("comments.loadMore")}
                     </Button>
                 )}
             </div>

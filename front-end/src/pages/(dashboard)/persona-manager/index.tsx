@@ -6,8 +6,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PersonaRow, personaDisplayName } from "@/components/persona-row";
 import PersonaWizard from "@/pages/onboarding/persona-wizard/PersonaWizard";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
+import { useTranslation } from "react-i18next";
 
 export default function PersonaManagerPage() {
+  const { t } = useTranslation("personas");
   const { persona, personas } = useUserProfileStore();
   const [creating, setCreating] = useState(false);
   const ordered = [...personas].sort((a, b) => Number(!!b.is_default) - Number(!!a.is_default));
@@ -16,19 +18,17 @@ export default function PersonaManagerPage() {
     <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 md:px-8">
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="flex flex-col gap-2">
-          <h1>Personas</h1>
-          <p className="max-w-2xl text-muted-foreground">
-            Each persona is a facet of you, with its own name, theme and followers. People follow a persona, not you.
-          </p>
+          <h1>{t("manager.title")}</h1>
+          <p className="max-w-2xl text-muted-foreground">{t("manager.lead")}</p>
         </div>
         <Button className="self-start md:self-auto" onClick={() => setCreating(true)}>
           <Plus aria-hidden />
-          New persona
+          {t("select.newPersona")}
         </Button>
       </header>
 
       {ordered.length === 0 ? (
-        <EmptyState icon={UserRound} title="No personas yet" body="A persona is how you show up in channels and communities." />
+        <EmptyState icon={UserRound} title={t("select.emptyTitle")} body={t("manager.emptyBody")} />
       ) : (
         <div className="flex flex-col gap-3">
           {ordered.map((p) => (
@@ -37,8 +37,8 @@ export default function PersonaManagerPage() {
               persona={p}
               action={
                 <Button variant="outline" size="sm" asChild>
-                  <Link to={`/persona-manager/${p.id}`} aria-label={`Manage ${personaDisplayName(p)}`}>
-                    Manage
+                  <Link to={`/persona-manager/${p.id}`} aria-label={t("manager.manageNamed", { name: personaDisplayName(p) })}>
+                    {t("manager.manage")}
                   </Link>
                 </Button>
               }

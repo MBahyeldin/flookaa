@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   Archive,
@@ -53,14 +54,13 @@ export default function AdminInterestsPage() {
 }
 
 function Header({ actions }: { actions?: ReactNode }) {
+  const { t } = useTranslation(["admin", "common"]);
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="flex flex-col gap-1">
-        <p className="text-overline font-semibold text-muted-foreground uppercase">Admin</p>
-        <h1 className="text-h1 font-semibold tracking-tight">Interests</h1>
-        <p className="max-w-md text-muted-foreground">
-          What people tag personas, channels and communities with, in the order they see it.
-        </p>
+        <p className="text-overline font-semibold text-muted-foreground uppercase">{t("common:nav.admin")}</p>
+        <h1 className="text-h1 font-semibold tracking-tight">{t("interests.title")}</h1>
+        <p className="max-w-md text-muted-foreground">{t("interests.lead")}</p>
       </div>
       {actions && <div className="flex shrink-0 gap-2">{actions}</div>}
     </div>
@@ -83,12 +83,13 @@ function MoveButtons({
   onMove: (direction: Direction) => void;
   className?: string;
 }) {
+  const { t } = useTranslation("admin");
   return (
     <div className={cn("flex items-center gap-1", className)}>
       <Button
         variant="ghost"
         size="icon-sm"
-        aria-label={`Move ${label} up`}
+        aria-label={t("interests.moveUpNamed", { name: label })}
         disabled={disabled}
         className={cn(first && "invisible")}
         onClick={() => onMove("up")}
@@ -98,7 +99,7 @@ function MoveButtons({
       <Button
         variant="ghost"
         size="icon-sm"
-        aria-label={`Move ${label} down`}
+        aria-label={t("interests.moveDownNamed", { name: label })}
         disabled={disabled}
         className={cn(last && "invisible")}
         onClick={() => onMove("down")}
@@ -114,6 +115,7 @@ function SectionCard({ children }: { children: ReactNode }) {
 }
 
 function InterestsAdmin() {
+  const { t } = useTranslation(["admin", "common"]);
   const [catalogue, setCatalogue] = useState<AdminCatalogue | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [actionFailed, setActionFailed] = useState(false);
@@ -151,7 +153,7 @@ function InterestsAdmin() {
         <Header />
         {loadFailed ? (
           <ErrorState
-            title="Couldn't load interests"
+            title={t("common:interests.loadFailed")}
             onRetry={() => {
               setLoadFailed(false);
               load();
@@ -178,7 +180,7 @@ function InterestsAdmin() {
   const rowMenu = (item: AdminInterest, move?: { first: boolean; last: boolean }) => (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${item.name}`} disabled={busy}>
+        <Button variant="ghost" size="icon-sm" aria-label={t("common:manage.actionsFor", { name: item.name })} disabled={busy}>
           <MoreHorizontal />
         </Button>
       </DropdownMenuTrigger>
@@ -186,29 +188,29 @@ function InterestsAdmin() {
         {item.retired ? (
           <DropdownMenuItem onSelect={() => run(() => setInterestRetired(item.id, false))}>
             <RotateCcw />
-            Restore
+            {t("interests.restore")}
           </DropdownMenuItem>
         ) : (
           <>
             {move && !move.first && (
               <DropdownMenuItem className="sm:hidden" onSelect={() => run(() => moveInterest(item.id, "up"))}>
                 <ArrowUp />
-                Move up
+                {t("interests.moveUp")}
               </DropdownMenuItem>
             )}
             {move && !move.last && (
               <DropdownMenuItem className="sm:hidden" onSelect={() => run(() => moveInterest(item.id, "down"))}>
                 <ArrowDown />
-                Move down
+                {t("interests.moveDown")}
               </DropdownMenuItem>
             )}
             <DropdownMenuItem onSelect={() => edit(item)}>
               <Pencil />
-              Edit
+              {t("interests.edit")}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => run(() => setInterestRetired(item.id, true))}>
               <Archive />
-              Retire
+              {t("interests.retire")}
             </DropdownMenuItem>
           </>
         )}
@@ -228,13 +230,13 @@ function InterestsAdmin() {
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm text-muted-foreground">{item.slug}</p>
               {item.retired && item.group_id !== null && groupName.has(item.group_id) && (
-                <p className="truncate text-xs text-muted-foreground">in {groupName.get(item.group_id)}</p>
+                <p className="truncate text-xs text-muted-foreground">{t("interests.inGroup", { group: groupName.get(item.group_id) })}</p>
               )}
             </div>
             {item.retired && (
               <Badge variant="secondary">
                 <Archive />
-                Retired
+                {t("interests.retired")}
               </Badge>
             )}
             {move && (
@@ -261,12 +263,12 @@ function InterestsAdmin() {
           <>
             <Button variant="secondary" disabled={busy} onClick={addGroup}>
               <Plus />
-              Add group
+              {t("interests.addGroup")}
             </Button>
             {groups.length > 0 && (
               <Button disabled={busy} onClick={() => addInterest(null)}>
                 <Plus />
-                Add interest
+                {t("interests.addInterest")}
               </Button>
             )}
           </>
@@ -278,17 +280,17 @@ function InterestsAdmin() {
           className="flex items-center gap-2 rounded-lg border border-destructive px-4 py-3 text-sm text-foreground"
         >
           <CircleAlert className="size-4 shrink-0 text-destructive" />
-          That didn't work. Please try again.
+          {t("interests.actionFailed")}
         </div>
       )}
       {groups.length === 0 && (
         <EmptyState
           icon={Tags}
-          title="No interests yet"
-          body="Add a group first, then its interests."
+          title={t("interests.emptyTitle")}
+          body={t("interests.emptyBody")}
           action={
             <Button disabled={busy} onClick={addGroup}>
-              Add group
+              {t("interests.addGroup")}
             </Button>
           }
         />
@@ -315,7 +317,7 @@ function InterestsAdmin() {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label={`Edit ${group.name}`}
+                aria-label={t("interests.editNamed", { name: group.name })}
                 disabled={busy}
                 onClick={() => setEditing({ kind: "group", group })}
               >
@@ -324,7 +326,7 @@ function InterestsAdmin() {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label={`Add interest to ${group.name}`}
+                aria-label={t("interests.addInterestTo", { name: group.name })}
                 disabled={busy}
                 onClick={() => addInterest(group.id)}
               >
@@ -333,10 +335,10 @@ function InterestsAdmin() {
             </div>
             {items.length === 0 ? (
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                No interests yet
+                {t("interests.emptyTitle")}
                 <Button variant="ghost" size="sm" disabled={busy} onClick={() => addInterest(group.id)}>
                   <Plus />
-                  Add interest
+                  {t("interests.addInterest")}
                 </Button>
               </div>
             ) : (
@@ -349,12 +351,12 @@ function InterestsAdmin() {
         <SectionCard>
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <h2 className="text-h4 font-medium">Needs a group</h2>
+              <h2 className="text-h4 font-medium">{t("interests.needsGroup")}</h2>
               <Badge variant="secondary">{ungrouped.length}</Badge>
             </div>
             <p className="flex items-start gap-2 text-sm text-foreground">
               <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" />
-              People don't see these until they're in a group. Edit one to pick its group.
+              {t("interests.needsGroupBody")}
             </p>
           </div>
           {rows(ungrouped)}
@@ -364,11 +366,11 @@ function InterestsAdmin() {
         <SectionCard>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <h2 className="text-h4 font-medium">Retired</h2>
+              <h2 className="text-h4 font-medium">{t("interests.retired")}</h2>
               <Badge variant="secondary">{retired.length}</Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Not offered for new picks. Personas, channels and communities that have them keep them.
+              {t("interests.retiredBody")}
             </p>
           </div>
           {rows(retired)}

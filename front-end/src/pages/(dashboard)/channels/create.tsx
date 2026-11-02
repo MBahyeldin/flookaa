@@ -8,7 +8,7 @@ import { InterestsSection } from "@/components/create-form/InterestsSection";
 import { LogoUpload } from "@/components/create-form/LogoUpload";
 import {
   AgeField,
-  BASE_ERRORS,
+  BASE_ERROR_FIELDS,
   CoverField,
   FieldError,
   ThemeField,
@@ -29,11 +29,14 @@ import { getCommunity } from "@/services/communities";
 import { DEFAULT_PALETTE, type PaletteId } from "@/themes/palettes";
 import type { MyCommunity } from "@/types/community";
 import type { CoverPattern } from "@/types/cover";
+import { useTranslation } from "react-i18next";
+import { errorMessage } from "@/lib/errors";
 
 const MAX_NAME = 100;
 const MAX_DESCRIPTION = 500;
 
 export default function CreateChannelPage() {
+  const { t } = useTranslation(["channels", "common", "communities"]);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const communityParam = Number(searchParams.get("community")) || 0;
@@ -82,13 +85,13 @@ export default function CreateChannelPage() {
 
   const removeCommunity = () => {
     setCommunity(null);
-    setTheme((t) => t ?? DEFAULT_PALETTE);
+    setTheme((current) => current ?? DEFAULT_PALETTE);
   };
 
   const submit = async () => {
     const found: Record<string, string> = {};
-    if (!name.trim()) found.name = "Give the channel a name.";
-    if (interestIds.length === 0) found.interest_ids = "Pick at least one interest.";
+    if (!name.trim()) found.name = t("create.nameMissing");
+    if (interestIds.length === 0) found.interest_ids = t("common:interests.pickOneInterest");
     setErrors(found);
     if (Object.keys(found).length) return;
 
@@ -106,27 +109,36 @@ export default function CreateChannelPage() {
     });
     setSubmitting(false);
     if (!r.ok) {
-      const known = BASE_ERRORS[r.error];
-      if (known) setErrors({ [known.field]: known.message });
-      else toast.error("Couldn't create the channel. Try again.");
+      const field = BASE_ERROR_FIELDS[r.error];
+      if (field) setErrors({ [field]: errorMessage(r.error) });
+      else toast.error(t("create.failed"));
       return;
     }
     if (r.data.community_status === "pending" && community) {
-      toast.success(`Channel created. ${community.name}'s managers will review your request to add it.`);
+      toast.success(t("create.pendingCommunity", { community: community.name }));
     }
     navigate(`/channels/${r.data.channel.ID}`);
   };
 
   const shownTheme = theme ?? community?.theme ?? DEFAULT_PALETTE;
-  const facts = [visibility === "public" ? "Public" : "Private", `${minAge}+`];
-  if (community) facts.push(community.can_manage ? `Part of ${community.name}` : `Requested for ${community.name}`);
+  const facts = [
+    visibility === "public" ? t("common:visibility.public") : t("common:visibility.private"),
+    t("common:age.short", { age: minAge }),
+  ];
+  if (community) {
+    facts.push(
+      community.can_manage
+        ? t("create.partOf", { community: community.name })
+        : t("create.requestedFor", { community: community.name }),
+    );
+  }
 
   return (
     <CreatePage
-      title="Create a channel"
-      lead="Channels are where posts live. You can change all of this later."
+      title={t("create.title")}
+      lead={t("create.lead")}
       backTo="/channels"
-      submitLabel="Create channel"
+      submitLabel={t("create.submit")}
       submitting={submitting}
       onSubmit={submit}
       preview={
@@ -134,7 +146,7 @@ export default function CreateChannelPage() {
           theme={shownTheme}
           cover={cover}
           name={name}
-          placeholder="Your channel"
+          placeholder={t("create.previewName")}
           logo={logo}
           description={description}
           interests={interests.pick(interestIds)}
@@ -142,30 +154,30 @@ export default function CreateChannelPage() {
         />
       }
     >
-      <SettingsSection id="basics" title="Basics" lead="Name it and say what it is about.">
-        <FormField label="Channel name" error={errors.name} helper={`Up to ${MAX_NAME} characters. ${name.length} / ${MAX_NAME}`}>
+      <SettingsSection id="basics" title={t("common:create.basics")} lead={t("create.basicsLead")}>
+        <FormField label={t("fields.name")} error={errors.name} helper={t("common:create.nameHelper", { n: name.length, max: MAX_NAME })}>
           <Input
             value={name}
             maxLength={MAX_NAME}
-            placeholder="Night Runners"
+            placeholder={t("fields.namePlaceholder")}
             onChange={(e) => {
               setName(e.target.value);
               clear("name");
             }}
           />
         </FormField>
-        <FormField label="Description" helper={`Shown under the name. ${description.length} / ${MAX_DESCRIPTION}`}>
+        <FormField label={t("common:create.description")} helper={t("common:create.descriptionHelper", { n: description.length, max: MAX_DESCRIPTION })}>
           <Textarea
             value={description}
             maxLength={MAX_DESCRIPTION}
             rows={3}
-            placeholder="What people find here"
+            placeholder={t("fields.descriptionPlaceholder")}
             onChange={(e) => setDescription(e.target.value)}
           />
         </FormField>
       </SettingsSection>
 
-      <SettingsSection id="community" title="Community" lead="Optional. A community groups channels about the same topics.">
+      <SettingsSection id="community" title={t("create.community")} lead={t("create.communityLead")}>
         {community ? (
           <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-surface-sunken p-3">
             <span data-theme={community.theme}>
@@ -174,32 +186,30 @@ export default function CreateChannelPage() {
             <div className="flex min-w-0 flex-1 flex-col">
               <span className="truncate text-sm font-semibold">{community.name}</span>
               <span className="text-xs text-muted-foreground">
-                {community.can_manage
-                  ? "You manage it, so the channel goes straight in."
-                  : "Its managers review the request to add it."}
+                {community.can_manage ? t("create.communityManaged") : t("create.communityRequest")}
               </span>
             </div>
             <div className="flex gap-2">
               <Button type="button" variant="outline" size="sm" onClick={() => setPicking(true)}>
-                Change
+                {t("common:actions.change")}
               </Button>
               <Button type="button" variant="ghost" size="sm" onClick={removeCommunity}>
-                Remove
+                {t("common:actions.remove")}
               </Button>
             </div>
           </div>
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed p-3">
-            <span className="text-sm text-muted-foreground">Not in a community.</span>
+            <span className="text-sm text-muted-foreground">{t("create.noCommunity")}</span>
             <Button type="button" variant="outline" size="sm" onClick={() => setPicking(true)}>
-              Choose a community
+              {t("communities:picker.title")}
             </Button>
           </div>
         )}
         <CommunityPicker open={picking} onOpenChange={setPicking} value={community?.id ?? null} onPick={pickCommunity} />
       </SettingsSection>
 
-      <SettingsSection id="look" title="Look" lead="Logo, colours and cover. The preview follows your picks.">
+      <SettingsSection id="look" title={t("common:look.title")} lead={t("create.lookLead")}>
         <LogoUpload
           name={name.trim() || "?"}
           theme={shownTheme}
@@ -216,11 +226,11 @@ export default function CreateChannelPage() {
         <FieldError>{errors.cover_pattern}</FieldError>
       </SettingsSection>
 
-      <SettingsSection id="audience" title="Audience" lead="Who reads it, and how old they must be.">
+      <SettingsSection id="audience" title={t("common:create.audience")} lead={t("create.audienceLead")}>
         <VisibilityField
           value={visibility}
           onChange={setVisibility}
-          privateBody="Only members read. Joining needs your or a moderator's approval."
+          privateBody={t("create.privateBody")}
         />
         <AgeField
           value={minAge}
@@ -233,7 +243,7 @@ export default function CreateChannelPage() {
       </SettingsSection>
 
       <InterestsSection
-        lead="Pick 1 to 5. People find the channel by them."
+        lead={t("create.interestsLead")}
         groups={interests.groups}
         onRetry={interests.retry}
         value={interestIds}

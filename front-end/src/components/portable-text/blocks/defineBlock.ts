@@ -1,13 +1,11 @@
+import { t } from "@/i18n";
 import type { ComponentType, ReactNode } from "react";
 import type { ZodType } from "zod";
 import type { FormField } from "@/models/Forms/FormField";
 
 export type BlockCategory = "media" | "layout";
 
-export const categoryTitle: Record<BlockCategory, string> = {
-  media: "Media",
-  layout: "Layout",
-};
+export const categoryTitle = (category: BlockCategory) => t(`blocks:categories.${category}`);
 
 export type BlockEditorProps<T> = {
   value: T;

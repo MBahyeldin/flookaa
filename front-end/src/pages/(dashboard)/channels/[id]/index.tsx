@@ -25,6 +25,9 @@ import { ChannelHero } from "./ChannelHero";
 import { ChannelAbout } from "./ChannelAbout";
 import { ChannelPeople } from "./ChannelPeople";
 import { ComposerBar } from "./ComposerBar";
+import { useTranslation } from "react-i18next";
+import { t as translate } from "@/i18n";
+import { errorMessage } from "@/lib/errors";
 
 const TABS = ["posts", "about", "people"] as const;
 type Tab = (typeof TABS)[number];
@@ -46,6 +49,7 @@ export default function ChannelPage() {
 }
 
 function ChannelView({ channelId }: { channelId: string | undefined }) {
+  const { t } = useTranslation(["channels", "common", "posts"]);
   const {
     data: channelData,
     loading: channelLoading,
@@ -125,7 +129,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     // The user may have switched channels while this was in flight.
     if (!isCurrentOwner(pageOwner)) return;
     if (error) {
-      toast.error("Couldn't load more posts");
+      toast.error(t("posts:loadMoreFailed"));
       return;
     }
     if (data?.getPosts) {
@@ -153,13 +157,13 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   const handleJoin = async () => {
     if (!channelId || busy) return;
     const name = channelData?.getChannel?.name ?? "this channel";
-    if (isJoined && !confirm(`Leave ${name}?`)) return;
+    if (isJoined && !confirm(t("common:confirm.leave", { name }))) return;
     setBusy("join");
     // Leaving also cancels a pending request.
     if (isJoined || isPending) {
       const error = await leaveChannel(channelId);
       setBusy(null);
-      if (error) return toast.error(error.message);
+      if (error) return toast.error(errorMessage(error.message));
       // A cancelled request was never counted.
       if (isJoined) setMembersCount((n) => Math.max(0, n - 1));
       setIsJoined(false);
@@ -168,7 +172,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     }
     const result = await joinChannel(channelId);
     setBusy(null);
-    if (result.error) return toast.error(result.error.message);
+    if (result.error) return toast.error(errorMessage(result.error.message));
     if (result.status === "pending") {
       setIsPending(true);
       return;
@@ -183,7 +187,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     setBusy("follow");
     const error = await setFollowing(channelId, next);
     setBusy(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(errorMessage(error.message));
     setIsFollowing(next);
     setFollowersCount((n) => Math.max(0, n + (next ? 1 : -1)));
   };
@@ -260,7 +264,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
           }
           if (isMe && payload.reason === "removed") {
             setIsJoined(false);
-            toast.info("You were removed from this channel.");
+            toast.info(translate("channels:removed"));
           }
           break;
         case "follower":
@@ -322,7 +326,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
     return (
       <ErrorState
         className="mx-4 mt-24"
-        title="Couldn't load this channel"
+        title={t("loadFailed")}
         onRetry={() => refetchChannel()}
       />
     );
@@ -356,12 +360,12 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
   const membersOnly = (
     <EmptyState
       icon={Lock}
-      title="Members only"
-      body="Join to read and post here."
+      title={t("common:membersOnly")}
+      body={t("membersOnlyBody")}
       action={
         !isPending && (
           <Button onClick={handleJoin} loading={busy === "join"}>
-            Request to join
+            {t("common:actions.requestToJoin")}
           </Button>
         )
       }
@@ -411,9 +415,9 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
 
       <SectionNav value={tab} onValueChange={setTab}>
         <SectionNavList className="top-14 px-4 md:top-0 md:px-8 xl:px-16">
-          <SectionNavTab value="posts">Posts</SectionNavTab>
-          <SectionNavTab value="about">About</SectionNavTab>
-          <SectionNavTab value="people">People</SectionNavTab>
+          <SectionNavTab value="posts">{t("tabs.posts")}</SectionNavTab>
+          <SectionNavTab value="about">{t("common:about.title")}</SectionNavTab>
+          <SectionNavTab value="people">{t("common:people.title")}</SectionNavTab>
         </SectionNavList>
 
         <div className="mx-auto w-full max-w-[1192px] px-4 py-6 md:px-8 md:py-8 xl:px-16">
@@ -430,7 +434,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                     onClick={handleLoadNewPosts}
                     className="w-full cursor-pointer rounded-lg border border-success/40 bg-success/10 px-4 py-3 text-center text-sm font-medium text-success transition-colors hover:bg-success/20"
                   >
-                    {newPosts.length} new post{newPosts.length > 1 ? "s" : ""} available
+                    {t("posts:newAvailable", { count: newPosts.length })}
                   </button>
                 ) : null}
 
@@ -446,14 +450,14 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
                     />
                   ))
                 ) : (
-                  <EmptyState icon={MessageSquare} title="No posts yet" body={`Be the first to post in ${channel.name}.`} />
+                  <EmptyState icon={MessageSquare} title={t("posts:empty.title")} body={t("posts:empty.channelBody", { channel: channel.name })} />
                 )}
 
                 {loadingMore && <SkeletonList count={2} variant="post" className="space-y-6" />}
                 {showLoadMore && !loadingMore && (
                   <div className="text-center">
                     <Button variant="outline" size="lg" className="px-8" onClick={handleLoadMorePosts}>
-                      Load more posts
+                      {t("posts:loadMore")}
                     </Button>
                   </div>
                 )}
@@ -488,7 +492,7 @@ function ChannelView({ channelId }: { channelId: string | undefined }) {
 
 function ChannelSkeleton() {
   return (
-    <div role="status" aria-label="Loading channel" className="pb-8">
+    <div role="status" aria-label={translate("channels:loading")} className="pb-8">
       <Skeleton className="h-[150px] rounded-none md:h-[280px]" />
       <div className="-mt-10 flex flex-col gap-3 px-4 md:-mt-14 md:px-8 xl:px-16">
         <Skeleton className="size-20 rounded-lg border-3 border-background md:size-28" />

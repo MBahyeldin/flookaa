@@ -17,6 +17,8 @@ import { useUserProfileStore } from "@/stores/UserProfileStore";
 import PostContent from "../portable-text/PostContent";
 import { PostByline, type PostChannel } from "./PostByline";
 import { Reactions } from "./Reactions";
+import { useTranslation } from "react-i18next";
+import { graphqlErrorMessage } from "@/lib/errors";
 
 export type { PostChannel };
 
@@ -32,6 +34,7 @@ export function PostMenu({
   // The feed knows it per channel; elsewhere the page's store does.
   canModerate?: boolean;
 }) {
+  const { t } = useTranslation(["posts", "common"]);
   const { persona } = useUserProfileStore();
   const pageCanModerate = useAppStore((state) => state.canModerate);
   const canModerate = canModerateProp ?? pageCanModerate;
@@ -39,28 +42,26 @@ export function PostMenu({
   if (post.authorId !== persona?.id && !canModerate) return null;
 
   const handleDelete = async () => {
-    if (!confirm("Delete this post? This can't be undone.")) return;
+    if (!confirm(t("delete.confirm"))) return;
     try {
       await deletePost({ variables: { id: post._id } });
     } catch (err) {
       toast.error(
-        CombinedGraphQLErrors.is(err)
-          ? err.errors[0]?.message || "Couldn’t delete the post."
-          : "Couldn’t delete the post. Check your connection."
+        graphqlErrorMessage(CombinedGraphQLErrors.is(err) ? err : null, t("delete.failed"), t("delete.offline"))
       );
       return;
     }
     // Other viewers remove it from the websocket event; removePost ignores
     // the second call when that event reaches this tab too.
     useAppStore.getState().removePost(post._id);
-    toast.success("Post deleted");
+    toast.success(t("delete.done"));
     onDeleted?.();
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" className="ms-auto shrink-0" aria-label="Post options">
+        <Button variant="ghost" size="icon-sm" className="ms-auto shrink-0" aria-label={t("options")}>
           <MoreHorizontal className="size-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -71,7 +72,7 @@ export function PostMenu({
           onClick={handleDelete}
         >
           <Trash2 className="mr-2 size-4" />
-          Delete
+          {t("common:actions.delete")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -95,6 +96,7 @@ export function Post({
   isNew?: boolean;
   canModerate?: boolean;
 }) {
+  const { t } = useTranslation("posts");
   const [truncated, setTruncated] = useState(false);
   const canvas = version === "canvas";
 
@@ -123,7 +125,7 @@ export function Post({
           onClick={onOpen}
           className="flex items-center gap-1 rounded-sm text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          Read the whole post
+          {t("readWhole")}
           <ArrowRight aria-hidden className="size-3.5 rtl:-scale-x-100" />
         </button>
       ) : null}

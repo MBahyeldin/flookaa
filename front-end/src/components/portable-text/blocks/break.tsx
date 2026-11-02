@@ -2,6 +2,7 @@ import { SailboatIcon, SeparatorHorizontalIcon } from "lucide-react";
 import { tv } from "tailwind-variants";
 import { z } from "zod";
 import { FormField } from "@/models/Forms/FormField";
+import { perLanguage, t } from "@/i18n";
 import { defineBlock, type BlockEditorProps } from "./defineBlock";
 
 const styles = ["line", "dashed", "dots", "ornament"] as const;
@@ -12,19 +13,18 @@ const breakSchema = z.object({
 
 type BreakValue = z.infer<typeof breakSchema>;
 
-const label = (value: string) => value[0].toUpperCase() + value.slice(1);
 
-const breakFormFields: FormField[] = [
+const breakFormFields = perLanguage((): FormField[] => [
   new FormField({
     id: "style",
     name: "style",
-    label: "Style",
+    label: t("blocks:break.fields.style"),
     type: "string",
     interfaceType: "select",
-    options: styles.map((style) => ({ label: label(style), value: style })),
+    options: styles.map((style) => ({ label: t(`blocks:break.styles.${style}`), value: style })),
     width: "full",
   }),
-];
+]);
 
 const chipStyle = tv({
   base: "my-1 px-2 py-1 border-2 border-muted rounded",
@@ -83,11 +83,17 @@ function BreakEditor({ value, selected, focused }: BlockEditorProps<BreakValue>)
 
 export const breakBlock = defineBlock<BreakValue>({
   name: "break",
-  title: "Divider",
-  description: "A line, dots or a sailboat between two parts of a post.",
+  get title() {
+    return t("blocks:break.title");
+  },
+  get description() {
+    return t("blocks:break.description");
+  },
   icon: SeparatorHorizontalIcon,
   category: "layout",
-  fields: breakFormFields,
+  get fields() {
+    return breakFormFields();
+  },
   defaultValues: { style: "line" },
   schema: breakSchema,
   View: BreakView,

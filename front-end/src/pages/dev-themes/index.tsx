@@ -18,7 +18,7 @@ import { blocks } from "@/components/portable-text/blocks";
 import { Post } from "@/components/post-card";
 import { ComposerBar } from "@/pages/(dashboard)/channels/[id]/ComposerBar";
 import type { Post as PostData } from "@/generated/graphql";
-import { PALETTES, type PaletteId } from "@/themes/palettes";
+import { PALETTES, paletteLabel, type PaletteId } from "@/themes/palettes";
 
 function Components() {
   return (
@@ -315,9 +315,9 @@ export default function DevThemesPage() {
       </div>
       <PreviewSamples />
       <div className="grid gap-4 md:grid-cols-2">
-        {PALETTES.flatMap(({ id, label }) => [
-          <Swatch key={`${id}-light`} id={id} label={label} dark={false} />,
-          <Swatch key={`${id}-dark`} id={id} label={label} dark />,
+        {PALETTES.flatMap(({ id }) => [
+          <Swatch key={`${id}-light`} id={id} label={paletteLabel(id)} dark={false} />,
+          <Swatch key={`${id}-dark`} id={id} label={paletteLabel(id)} dark />,
         ])}
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { PortableText, type PortableTextBlock, type PortableTextComponents } from "@portabletext/react";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
@@ -12,7 +13,7 @@ function InvalidBlockNotice({ block, issues }: { block: AnyBlock; issues: string
     <div role="alert" className="rounded-md border border-destructive p-3 text-sm text-destructive">
       <div className="flex items-center gap-2 font-medium">
         <block.icon className="size-4" />
-        {block.title} needs fixing
+        {t("editor:blockNeedsFixing", { block: block.title })}
       </div>
       <ul className="mt-1 list-disc pl-6">
         {issues.map((issue) => (

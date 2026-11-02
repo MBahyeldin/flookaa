@@ -1,78 +1,70 @@
+import { t } from "@/i18n";
 import { FormField } from "@/models/Forms/FormField";
 import type { FormGroup } from "@/types/FormFields";
 import { passwordError } from "@/lib/password";
 
-export const newPasswordField = new FormField({
-  id: "password",
-  label: "Password",
-  type: "password",
-  interfaceType: "text",
-  autoComplete: "new-password",
-  isRequired: true,
-  passwordRules: true,
-  validate: passwordError,
-});
+function newPasswordField() {
+  return new FormField({
+    id: "password",
+    label: t("auth:fields.password"),
+    type: "password",
+    interfaceType: "text",
+    autoComplete: "new-password",
+    isRequired: true,
+    passwordRules: true,
+    validate: passwordError,
+  });
+}
 
-const signupFormFields = [
-  new FormField({
-    id: "first_name",
-    label: "First name",
-    type: "text",
-    interfaceType: "text",
-    autoComplete: "given-name",
-    isRequired: true,
-    width: "1/2",
-  }),
-  new FormField({
-    id: "last_name",
-    label: "Last name",
-    type: "text",
-    interfaceType: "text",
-    autoComplete: "family-name",
-    isRequired: true,
-    width: "1/2",
-  }),
-  new FormField({
+function emailField() {
+  return new FormField({
     id: "email_address",
-    label: "Email",
+    label: t("auth:fields.email"),
     type: "email",
-    placeholder: "you@example.com",
+    placeholder: t("auth:fields.emailPlaceholder"),
     interfaceType: "text",
     autoComplete: "email",
     isRequired: true,
     width: "full",
-  }),
-  newPasswordField,
-];
+  });
+}
 
-const signupFormFieldsGroups: FormGroup[] = [
-  {
-    id: "signup_group_1",
-    label: "Sign Up Information",
-    description: "Please fill in the details to create your account.",
-    fields: signupFormFields,
-    sort: 1,
-  },
-];
+export default function signupFormFieldsGroups(): FormGroup[] {
+  return [
+    {
+      id: "signup_group_1",
+      label: t("auth:signup.title"),
+      fields: [
+        new FormField({
+          id: "first_name",
+          label: t("auth:fields.firstName"),
+          type: "text",
+          interfaceType: "text",
+          autoComplete: "given-name",
+          isRequired: true,
+          width: "1/2",
+        }),
+        new FormField({
+          id: "last_name",
+          label: t("auth:fields.lastName"),
+          type: "text",
+          interfaceType: "text",
+          autoComplete: "family-name",
+          isRequired: true,
+          width: "1/2",
+        }),
+        emailField(),
+        newPasswordField(),
+      ],
+      sort: 1,
+    },
+  ];
+}
 
-export const forgotPasswordGroups: FormGroup[] = [
-  {
-    id: "forgot_password",
-    label: "Forgot password",
-    description: "The email of your account.",
-    fields: [signupFormFields[2]],
-    sort: 1,
-  },
-];
+export function forgotPasswordGroups(): FormGroup[] {
+  return [{ id: "forgot_password", label: t("auth:forgot.title"), fields: [emailField()], sort: 1 }];
+}
 
-export const resetPasswordGroups: FormGroup[] = [
-  {
-    id: "reset_password",
-    label: "New password",
-    description: "Your new password.",
-    fields: [newPasswordField],
-    sort: 1,
-  },
-];
-
-export default signupFormFieldsGroups;
+export function resetPasswordGroups(): FormGroup[] {
+  return [{ id: "reset_password", label: t("auth:reset.title"), fields: [newPasswordField()], sort: 1 }];
+}

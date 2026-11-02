@@ -6,6 +6,7 @@ import { SectionNav, SectionNavList, SectionNavTab } from "@/components/ui/secti
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { useSectionSpy } from "@/hooks/useSectionSpy";
 import type { PaletteId } from "@/themes/palettes";
+import { t } from "@/i18n";
 
 export type ManageSection<T extends string> = { id: T; label: string };
 
@@ -39,17 +40,17 @@ export function ManageSheet<T extends string>({
         <div data-theme={theme} className="flex h-full min-h-0 flex-col bg-background text-foreground">
           <div className="flex items-center gap-3 border-b px-4 py-3 md:px-6">
             <SheetClose asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="Close" className="sm:hidden">
+              <Button variant="ghost" size="icon-sm" aria-label={t("common:actions.close")} className="sm:hidden">
                 <ArrowLeft />
               </Button>
             </SheetClose>
             <Logo name={name} src={logo || null} size="sm" />
             <div className="flex min-w-0 flex-1 flex-col">
-              <SheetDescription className="text-overline text-muted-foreground">Manage</SheetDescription>
+              <SheetDescription className="text-overline text-muted-foreground">{t("common:manage.title")}</SheetDescription>
               <SheetTitle className="truncate text-h4 font-semibold">{name}</SheetTitle>
             </div>
             <SheetClose asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="Close" className="hidden sm:inline-flex">
+              <Button variant="ghost" size="icon-sm" aria-label={t("common:actions.close")} className="hidden sm:inline-flex">
                 <X />
               </Button>
             </SheetClose>

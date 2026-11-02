@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import { t } from "@/i18n";
 
 /** The picked interest slugs, kept as repeated `?interest=` params. */
 export function useInterestParams() {
@@ -24,6 +25,7 @@ export function useInterestParams() {
 
 /** "Football", "Football and Fitness", "Football, Fitness and 2 more". */
 export function interestNamesLabel(names: string[]) {
-  if (names.length <= 2) return names.join(" and ");
-  return `${names[0]}, ${names[1]} and ${names.length - 2} more`;
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return t("common:interests.namesTwo", { a: names[0], b: names[1] });
+  return t("common:interests.namesMore", { a: names[0], b: names[1], count: names.length - 2 });
 }

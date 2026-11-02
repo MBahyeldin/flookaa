@@ -14,7 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { formatCount } from "@/lib/format";
+import { formatCompact } from "@/lib/format";
+import { Trans, useTranslation } from "react-i18next";
 import type { CoverPattern } from "@/types/cover";
 
 export type HeroChannel = {
@@ -56,28 +57,29 @@ export function ChannelHero({
   onManage: () => void;
   onMembers: () => void;
 }) {
+  const { t } = useTranslation(["channels", "common"]);
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.origin + window.location.pathname);
-      toast.success("Link copied");
+      toast.success(t("common:share.copied"));
     } catch {
-      toast.error("Couldn't copy the link");
+      toast.error(t("common:share.copyFailed"));
     }
   };
 
   const joinButton = channel.isOwner ? null : isJoined ? (
     <Button variant="secondary" className="flex-1 md:flex-none" loading={busy === "join"} disabled={!!busy} onClick={onJoin}>
       <Check />
-      Joined
+      {t("common:actions.joined")}
     </Button>
   ) : isPending ? (
     <Button variant="outline" className="flex-1 md:flex-none" loading={busy === "join"} disabled={!!busy} onClick={onJoin}>
       <Clock />
-      Requested
+      {t("common:actions.requested")}
     </Button>
   ) : (
     <Button className="flex-1 md:flex-none" loading={busy === "join"} disabled={!!busy} onClick={onJoin}>
-      {channel.isPrivate ? "Request to join" : "Join channel"}
+      {channel.isPrivate ? t("common:actions.requestToJoin") : t("hero.join")}
     </Button>
   );
 
@@ -94,7 +96,7 @@ export function ChannelHero({
         <>
           <Badge variant="secondary">
             {channel.isPrivate ? <Lock /> : <Globe />}
-            {channel.isPrivate ? "Private" : "Public"}
+            {channel.isPrivate ? t("common:visibility.private") : t("common:visibility.public")}
           </Badge>
           <AgeBadge minAge={channel.minAge} />
         </>
@@ -103,13 +105,24 @@ export function ChannelHero({
       tagline={channel.description}
       facts={
         <>
-          {formatCount(membersCount, "member", "members")} · {formatCount(followersCount, "follower", "followers")}
+          {t("common:counts.members", { count: membersCount, n: formatCompact(membersCount) })} ·{" "}
+          {t("common:counts.followers", { count: followersCount, n: formatCompact(followersCount) })}
           {community && (
             <>
-              {" · Part of "}
-              <Link to={`/communities/${community.slug}`} className="rounded-sm text-foreground hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring">
-                {community.name}
-              </Link>
+              {" · "}
+              <Trans
+                t={t}
+                i18nKey="partOfLink"
+                values={{ community: community.name }}
+                components={{
+                  link: (
+                    <Link
+                      to={`/communities/${community.slug}`}
+                      className="rounded-sm text-foreground hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                    />
+                  ),
+                }}
+              />
             </>
           )}
         </>
@@ -118,29 +131,29 @@ export function ChannelHero({
         <>
           {joinButton}
           <Button variant="outline" className="flex-1 md:flex-none" loading={busy === "follow"} disabled={!!busy} onClick={onFollow}>
-            {isFollowing ? "Following" : "Follow"}
+            {isFollowing ? t("common:actions.following") : t("common:actions.follow")}
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="More actions" title="More actions">
+              <Button variant="outline" size="icon" aria-label={t("common:actions.moreActions")} title={t("common:actions.moreActions")}>
                 <Ellipsis />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={copyLink}>
                 <Link2 />
-                Copy link
+                {t("common:share.copyLink")}
               </DropdownMenuItem>
               {canModerate && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={onManage}>
                     <Settings />
-                    Manage
+                    {t("common:manage.title")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onSelect={onMembers}>
                     <Users />
-                    Members & requests
+                    {t("common:manage.membersAndRequests")}
                   </DropdownMenuItem>
                 </>
               )}

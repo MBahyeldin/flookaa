@@ -17,6 +17,8 @@ import { LockedProfileHero, ProfileHero, fullName } from "./ProfileHero";
 import { ProfilePosts } from "./ProfilePosts";
 import { ProfileChannels } from "./ProfileChannels";
 import { ProfileConnected } from "./ProfileConnected";
+import { t } from "@/i18n";
+import { errorMessage } from "@/lib/errors";
 
 type State =
   | { status: "loading" }
@@ -114,7 +116,7 @@ export default function PersonaProfilePage() {
   if (state.status === "not_found") {
     return (
       <div className={`${CONTENT} py-8`}>
-        <EmptyState icon={UserRoundX} title="Persona not found" body="It doesn't exist, or it isn't visible to you." />
+        <EmptyState icon={UserRoundX} title={t("personas:manager.notFoundTitle")} body={t("personas:profile.notFoundBody")} />
       </div>
     );
   }
@@ -122,7 +124,7 @@ export default function PersonaProfilePage() {
   if (state.status === "error") {
     return (
       <div className={`${CONTENT} py-8`}>
-        <ErrorState title="Couldn't load this persona" onRetry={() => load()} />
+        <ErrorState title={t("personas:profile.loadFailed")} onRetry={() => load()} />
       </div>
     );
   }
@@ -134,8 +136,8 @@ export default function PersonaProfilePage() {
         <div className={`${CONTENT} pb-8`}>
           <EmptyState
             icon={Lock}
-            title="Private persona"
-            body="They see your persona when you ask to follow. Once they approve, the full profile appears here."
+            title={t("personas:profile.privateTitle")}
+            body={t("personas:profile.privateBody")}
           />
         </div>
       </div>
@@ -170,9 +172,9 @@ export default function PersonaProfilePage() {
 
       <SectionNav value={tab} onValueChange={(next) => setParam("tab", next === "posts" ? null : next)}>
         <SectionNavList className="top-14 px-4 md:top-0 md:px-8 xl:px-16">
-          <SectionNavTab value="posts">Posts</SectionNavTab>
-          <SectionNavTab value="channels">Channels</SectionNavTab>
-          {tabs.includes("connected") && <SectionNavTab value="connected">Connected</SectionNavTab>}
+          <SectionNavTab value="posts">{t("channels:tabs.posts")}</SectionNavTab>
+          <SectionNavTab value="channels">{t("common:nav.channels")}</SectionNavTab>
+          {tabs.includes("connected") && <SectionNavTab value="connected">{t("personas:profile.connected")}</SectionNavTab>}
         </SectionNavList>
 
         <div className={`${CONTENT} py-6 md:py-8`}>
@@ -226,7 +228,7 @@ function InvitationBanner({
       await respondToInvitation(viewerId, inviterId, decision);
       onDone();
     } catch (err) {
-      toast.error((err as Error).message);
+      toast.error(errorMessage((err as Error).message));
     } finally {
       setBusy(null);
     }
@@ -239,15 +241,15 @@ function InvitationBanner({
     >
       <UserPlus aria-hidden="true" className="size-5 shrink-0 text-primary max-sm:hidden" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">{name} invited you to follow</p>
-        <p className="text-xs text-muted-foreground">Accept to follow them. They already see who you are.</p>
+        <p className="text-sm font-medium">{t("personas:invite.bannerTitle", { name })}</p>
+        <p className="text-xs text-muted-foreground">{t("personas:invite.bannerBody")}</p>
       </div>
       <div className="flex gap-2">
         <Button size="sm" loading={busy === "accept"} disabled={!!busy} onClick={() => respond("accept")}>
-          Accept
+          {t("common:actions.accept")}
         </Button>
         <Button size="sm" variant="outline" loading={busy === "reject"} disabled={!!busy} onClick={() => respond("reject")}>
-          Decline
+          {t("common:actions.decline")}
         </Button>
       </div>
     </div>
@@ -256,7 +258,7 @@ function InvitationBanner({
 
 function ProfileSkeleton() {
   return (
-    <div role="status" aria-label="Loading persona" className="pb-8">
+    <div role="status" aria-label={t("personas:profile.loading")} className="pb-8">
       <Skeleton className="h-[150px] rounded-none md:h-[280px]" />
       <div className="flex flex-col gap-3 px-4 md:flex-row md:gap-6 md:px-8 xl:px-16">
         <Skeleton className="-mt-10 size-20 shrink-0 rounded-full md:-mt-14 md:size-[100px]" />

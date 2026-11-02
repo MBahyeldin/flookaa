@@ -4,7 +4,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { PeopleStrip } from "@/components/people-strip";
 import { overlineClass } from "@/components/about-block";
 import { listCommunityMembers } from "@/services/communities";
-import { formatCount } from "@/lib/format";
+import { formatCompact } from "@/lib/format";
+import { t } from "@/i18n";
 import type { Community, CommunityMember } from "@/types/community";
 
 // Owner and moderators sort first, so one page covers the moderators line.
@@ -40,15 +41,17 @@ export function CommunityPeople({
   if (!canSeeInside) {
     return (
       <div className="flex flex-col gap-3">
-        <h2 className={overlineClass}>People</h2>
-        <p className="text-sm text-muted-foreground">{formatCount(community.members_count, "member", "members")}</p>
+        <h2 className={overlineClass}>{t("common:people.title")}</h2>
+        <p className="text-sm text-muted-foreground">
+          {t("common:counts.members", { count: community.members_count, n: formatCompact(community.members_count) })}
+        </p>
       </div>
     );
   }
-  if (failed && !members) return <ErrorState compact title="Couldn't load members" onRetry={load} />;
+  if (failed && !members) return <ErrorState compact title={t("common:members.loadFailed")} onRetry={load} />;
   if (!members) {
     return (
-      <div role="status" aria-label="Loading members" className="flex flex-col gap-3">
+      <div role="status" aria-label={t("common:members.loading")} className="flex flex-col gap-3">
         <Skeleton className="h-3 w-16" />
         <div className="flex">
           {Array.from({ length: 5 }, (_, i) => (

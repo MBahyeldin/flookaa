@@ -6,6 +6,7 @@ import { SettingsSection } from "@/components/settings/SettingsSection";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MAX_PERSONA_INTERESTS } from "@/types/interest";
+import { useTranslation } from "react-i18next";
 
 export function InterestsSection({ personaId }: { personaId: number }) {
   const [attempt, setAttempt] = useState(0);
@@ -13,6 +14,7 @@ export function InterestsSection({ personaId }: { personaId: number }) {
 }
 
 function Interests({ personaId, onRetry }: { personaId: number; onRetry: () => void }) {
+  const { t } = useTranslation(["personas", "common"]);
   const { data, value, setValue, save, dirty, loadError } = usePersonaInterests(personaId);
   const [saving, setSaving] = useState(false);
 
@@ -20,15 +22,15 @@ function Interests({ personaId, onRetry }: { personaId: number; onRetry: () => v
     setSaving(true);
     const r = await save();
     setSaving(false);
-    if (r.ok) toast.success("Interests saved");
-    else toast.error("Couldn't save the interests. Please try again.");
+    if (r.ok) toast.success(t("common:interests.saved"));
+    else toast.error(t("common:interests.saveFailed"));
   };
 
   return (
     <SettingsSection
       id="interests"
-      title="Interests"
-      lead="Only you see this persona's interests. They shape your suggestions."
+      title={t("settings.interests.title")}
+      lead={t("settings.interests.lead")}
       onSave={data ? onSave : undefined}
       dirty={dirty}
       canSave={value.length > 0}
@@ -36,13 +38,13 @@ function Interests({ personaId, onRetry }: { personaId: number; onRetry: () => v
       note={
         data && (
           <span aria-live="polite">
-            {value.length === 0 ? "Pick at least one." : `${value.length} / ${MAX_PERSONA_INTERESTS}`}
+            {value.length === 0 ? t("common:interests.pickOne") : t("common:interests.count", { n: value.length, max: MAX_PERSONA_INTERESTS })}
           </span>
         )
       }
     >
       {loadError ? (
-        <ErrorState compact title="Couldn't load interests" onRetry={onRetry} />
+        <ErrorState compact title={t("common:interests.loadFailed")} onRetry={onRetry} />
       ) : !data ? (
         <div className="flex flex-wrap gap-2" aria-busy="true">
           {Array.from({ length: 8 }, (_, i) => (

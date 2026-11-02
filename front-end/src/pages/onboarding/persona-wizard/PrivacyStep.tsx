@@ -1,5 +1,6 @@
 import { RadioCard, RadioCardGroup } from "@/components/ui/radio-card";
-import { PRIVACY_OPTIONS, type Privacy } from "./options";
+import { privacyOptions, type Privacy } from "./options";
+import { useTranslation } from "react-i18next";
 
 export default function PrivacyStep({
   value,
@@ -10,10 +11,11 @@ export default function PrivacyStep({
   onChange: (privacy: Privacy) => void;
   warning: string | null;
 }) {
+  const { t } = useTranslation("personas");
   return (
     <div className="flex flex-col gap-3">
-      <RadioCardGroup aria-label="Who can see this persona">
-        {PRIVACY_OPTIONS.map(({ value: option, label, note, icon }) => (
+      <RadioCardGroup aria-label={t("privacy.whoCanSee")}>
+        {privacyOptions().map(({ value: option, label, note, icon }) => (
           <RadioCard
             key={option}
             icon={icon}
@@ -25,7 +27,7 @@ export default function PrivacyStep({
         ))}
       </RadioCardGroup>
       {warning && <PrivacyWarning>{warning}</PrivacyWarning>}
-      <p className="text-xs text-muted-foreground">You can change this any time.</p>
+      <p className="text-xs text-muted-foreground">{t("wizard.changeAnyTime")}</p>
     </div>
   );
 }

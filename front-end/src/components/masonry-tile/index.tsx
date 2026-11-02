@@ -1,3 +1,5 @@
+import { t } from "@/i18n";
+import { formatCompact } from "@/lib/format";
 import { useMemo } from "react";
 import { Heart, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -57,13 +59,13 @@ export function MasonryTile({ post, channel }: { post: Post; channel?: FeedChann
             </p>
           )}
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1" aria-label={`${likes} ${likes === 1 ? "like" : "likes"}`}>
+            <span className="flex items-center gap-1" aria-label={t("posts:like.count", { count: likes })}>
               <Heart className="size-3.5" aria-hidden />
-              {likes}
+              {formatCompact(likes)}
             </span>
-            <span className="flex items-center gap-1" aria-label={`${comments} ${comments === 1 ? "comment" : "comments"}`}>
+            <span className="flex items-center gap-1" aria-label={t("posts:comments.count", { count: comments })}>
               <MessageCircle className="size-3.5" aria-hidden />
-              {comments}
+              {formatCompact(comments)}
             </span>
           </div>
         </div>

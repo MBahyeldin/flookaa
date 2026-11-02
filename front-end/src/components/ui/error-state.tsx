@@ -3,11 +3,12 @@ import { CircleAlert, type LucideIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { StateBox } from "@/components/ui/empty-state"
+import { t } from "@/i18n"
 
 function ErrorState({
   icon = CircleAlert,
   title,
-  body = "Check your connection and try again.",
+  body = t("common:states.checkConnection"),
   onRetry,
   compact,
   className,
@@ -41,7 +42,7 @@ function ErrorState({
       action={
         onRetry && (
           <Button variant="outline" loading={retrying} onClick={retry}>
-            Try again
+            {t("common:actions.tryAgain")}
           </Button>
         )
       }

@@ -10,6 +10,7 @@ import { PersonaSettingsSections } from "@/pages/(dashboard)/persona-manager/[id
 import { DEFAULT_PALETTE, isPaletteId, type PaletteId } from "@/themes/palettes";
 import OnboardingFooter from "../OnboardingFooter";
 import PersonaWizard, { type WizardMode } from "../persona-wizard/PersonaWizard";
+import { useTranslation } from "react-i18next";
 
 function ManagedPersona({ persona }: { persona: Persona }) {
   const [theme, setTheme] = useState<PaletteId>(isPaletteId(persona.theme) ? persona.theme : DEFAULT_PALETTE);
@@ -21,6 +22,7 @@ function ManagedPersona({ persona }: { persona: Persona }) {
 }
 
 export default function Personas() {
+  const { t } = useTranslation(["onboarding", "personas"]);
   const navigate = useNavigate();
   const personas = useUserProfileStore((s) => s.personas);
   const [wizard, setWizard] = useState<WizardMode | null>(null);
@@ -42,9 +44,9 @@ export default function Personas() {
               variant="outline"
               size="sm"
               onClick={() => (p.is_default ? setWizard({ kind: "edit", persona: p }) : setManaging(p))}
-              aria-label={`Manage ${personaDisplayName(p)}`}
+              aria-label={t("personas:manager.manageNamed", { name: personaDisplayName(p) })}
             >
-              Manage
+              {t("personas:manager.manage")}
             </Button>
           }
         />
@@ -55,13 +57,11 @@ export default function Personas() {
         className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <Plus className="size-5 text-primary" aria-hidden />
-        <span className="text-sm font-semibold text-foreground">Add another persona</span>
-        <span className="text-xs text-muted-foreground">
-          A work self, a cooking self… each with its own name and theme.
-        </span>
+        <span className="text-sm font-semibold text-foreground">{t("personas.add")}</span>
+        <span className="text-xs text-muted-foreground">{t("personas.addHint")}</span>
       </button>
 
-      <OnboardingFooter continueLabel="Finish" hideSkip onMoved={() => navigate("/", { replace: true })} />
+      <OnboardingFooter continueLabel={t("personas.finish")} hideSkip onMoved={() => navigate("/", { replace: true })} />
 
       {wizard && defaultPersona && (
         <PersonaWizard
@@ -75,8 +75,8 @@ export default function Personas() {
       <Sheet open={!!managed} onOpenChange={(open) => !open && setManaging(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
           <SheetHeader>
-            <SheetTitle>Manage persona</SheetTitle>
-            <SheetDescription>Changes save to this persona only.</SheetDescription>
+            <SheetTitle>{t("personas.manageTitle")}</SheetTitle>
+            <SheetDescription>{t("personas.manageLead")}</SheetDescription>
           </SheetHeader>
           {managed && <ManagedPersona key={managed.id} persona={managed} />}
         </SheetContent>

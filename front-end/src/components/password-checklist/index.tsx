@@ -1,11 +1,12 @@
 import { Check, Circle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PASSWORD_RULES } from "@/lib/password";
+import { PASSWORD_RULES, passwordRuleLabel } from "@/lib/password";
+import { t } from "@/i18n";
 
 export function PasswordChecklist({ value, id, showFailures }: { value: string; id?: string; showFailures?: boolean }) {
   const typed = value.length > 0 || !!showFailures;
   return (
-    <ul id={id} className="mt-2 grid gap-1 text-xs sm:grid-cols-2" aria-label="Password rules">
+    <ul id={id} className="mt-2 grid gap-1 text-xs sm:grid-cols-2" aria-label={t("auth:passwordRules.label")}>
       {PASSWORD_RULES.map((rule) => {
         const met = rule.met(value);
         if (rule.onlyWhenBroken && met) return null;
@@ -19,8 +20,8 @@ export function PasswordChecklist({ value, id, showFailures }: { value: string; 
             )}
           >
             <Icon aria-hidden className="size-3.5 shrink-0" />
-            {rule.label}
-            {typed && <span className="sr-only">{met ? " (met)" : " (not met)"}</span>}
+            {passwordRuleLabel(rule)}
+            {typed && <span className="sr-only">{met ? t("auth:passwordRules.met") : t("auth:passwordRules.notMet")}</span>}
           </li>
         );
       })}

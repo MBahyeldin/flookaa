@@ -3,11 +3,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { Post } from "@/generated/graphql";
 import { cn } from "@/lib/utils";
 import { useLikePost } from "./useLikePost";
+import { useTranslation } from "react-i18next";
+import { formatCompact } from "@/lib/format";
 
 const pillButton =
   "flex items-center gap-1.5 rounded-full px-1 text-sm font-medium tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 export function Reactions({ post, onOpenComments }: { post: Post; onOpenComments?: () => void }) {
+  const { t } = useTranslation("posts");
   const { liked, likes, toggleLike, burst, endBurst } = useLikePost(post);
   const comments = post.meta.commentsCount;
 
@@ -17,7 +20,7 @@ export function Reactions({ post, onOpenComments }: { post: Post; onOpenComments
         type="button"
         onClick={toggleLike}
         aria-pressed={liked}
-        aria-label={`${liked ? "Unlike" : "Like"} — ${likes} ${likes === 1 ? "like" : "likes"}`}
+        aria-label={liked ? t("like.unlikeLabel", { count: likes }) : t("like.likeLabel", { count: likes })}
         className={cn(pillButton, "relative", liked && "text-destructive")}
       >
         <motion.span
@@ -30,7 +33,7 @@ export function Reactions({ post, onOpenComments }: { post: Post; onOpenComments
         >
           <Heart className={cn("size-4", liked && "fill-destructive stroke-destructive")} />
         </motion.span>
-        <span className="text-foreground">{likes}</span>
+        <span className="text-foreground">{formatCompact(likes)}</span>
         <AnimatePresence>
           {burst && (
             <span className="pointer-events-none absolute left-1/2 -translate-x-1/2">
@@ -54,17 +57,17 @@ export function Reactions({ post, onOpenComments }: { post: Post; onOpenComments
         <button
           type="button"
           onClick={onOpenComments}
-          aria-label={`Comments — ${comments} ${comments === 1 ? "comment" : "comments"}`}
+          aria-label={t("comments.label", { count: comments })}
           className={pillButton}
         >
           <MessageCircle className="size-4" />
-          {comments}
+          {formatCompact(comments)}
         </button>
       ) : (
         <span className="flex items-center gap-1.5 px-1 text-sm font-medium">
           <MessageCircle aria-hidden className="size-4" />
-          {comments}
-          <span className="sr-only">{comments === 1 ? "comment" : "comments"}</span>
+          {formatCompact(comments)}
+          <span className="sr-only">{t("comments.word", { count: comments })}</span>
         </span>
       )}
     </div>

@@ -9,6 +9,7 @@ import uploadFile from "@/services/uploadFile";
 import type { SimpleInput } from "@/generated/graphql";
 import { toast } from "sonner";
 import { audioRecordingFormat } from "@/lib/audioRecording";
+import { t } from "@/i18n";
 
 /** Voice notes are capped so a comment can't become an unbounded upload. */
 const MAX_RECORDING_SECONDS = 60;
@@ -20,7 +21,7 @@ function formatDuration(totalSeconds: number): string {
     return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-export default function SimpleInputComponent({ onSend, avatar, placeholder = "Write a comment…", autoFocus = false }: {
+export default function SimpleInputComponent({ onSend, avatar, placeholder = t("posts:comments.writeComment"), autoFocus = false }: {
     onSend: (simpleInput: SimpleInput) => Promise<void>;
     placeholder?: string;
     autoFocus?: boolean;
@@ -73,7 +74,7 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
         } catch (error) {
             if (id !== recordingIdRef.current) return;
             console.error("Voice note processing failed:", error);
-            toast.error("Couldn’t process your voice note — it will retry when you post.");
+            toast.error(t("posts:composer.voiceProcessFailed"));
         } finally {
             if (id === recordingIdRef.current) setIsProcessingAudio(false);
         }
@@ -98,7 +99,7 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
                     // Seen on some Android builds when the recording is very
                     // short: stop resolves with nothing usable.
                     console.error("Recording produced an empty blob");
-                    toast.error("Recording failed — nothing was captured. Try holding it a little longer.");
+                    toast.error(t("posts:composer.recordingEmpty"));
                     setCommentType(null);
                     return;
                 }
@@ -199,7 +200,7 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
             // silently cleared by the code below it.
             console.error("Failed to send comment:", error);
             toast.error(
-                error instanceof Error ? error.message : "Couldn’t send your comment"
+                error instanceof Error ? error.message : t("posts:composer.sendFailed")
             );
         } finally {
             isSendingRef.current = false;
@@ -241,7 +242,7 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
         } catch (error) {
             console.error("Image upload failed:", error);
             toast.error(
-                error instanceof Error ? error.message : "Failed to upload image."
+                error instanceof Error ? error.message : t("common:upload.failed")
             );
             setCommentType(null);
         } finally {
@@ -280,7 +281,7 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
                         className="flex min-w-0 flex-1 items-center gap-2 px-1 text-sm text-muted-foreground"
                     >
                         <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
-                        <span className="truncate">Uploading image…</span>
+                        <span className="truncate">{t("common:pic.uploading")}</span>
                     </span>
                 ) : !commentType || commentType === "TEXT" ? (
                     <input
@@ -312,7 +313,7 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
                                         aria-hidden="true"
                                         className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-destructive"
                                     />
-                                    <span className="truncate">Recording…</span>
+                                    <span className="truncate">{t("posts:composer.recording")}</span>
                                     <span
                                         /* Announced periodically rather than on every
                                            tick, so it doesn't flood a screen reader. */
@@ -332,11 +333,11 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
                             ) : isProcessingAudio ? (
                                 <span role="status" className="flex min-w-0 items-center gap-2">
                                     <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
-                                    <span className="truncate">Processing voice note…</span>
+                                    <span className="truncate">{t("posts:composer.processingVoice")}</span>
                                 </span>
                             ) : (
                                 <>
-                                    <span className="truncate">Voice note ready</span>
+                                    <span className="truncate">{t("posts:composer.voiceReady")}</span>
                                     {recordedSeconds > 0 ? (
                                         <span className="ms-auto shrink-0 font-medium tabular-nums text-foreground">
                                             {formatDuration(recordedSeconds)}
@@ -345,7 +346,7 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
                                 </>
                             )
                         ) : (
-                            <span className="truncate">Image attached</span>
+                            <span className="truncate">{t("posts:composer.imageAttached")}</span>
                         )}
                     </span>
                 )}
@@ -356,7 +357,7 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
                         <Button
                             size="icon-sm"
                             variant="ghost"
-                            aria-label={isUploadingImage ? "Uploading image…" : "Attach an image"}
+                            aria-label={isUploadingImage ? t("common:pic.uploading") : t("posts:composer.attachImage")}
                             aria-busy={isUploadingImage}
                             disabled={isUploadingImage}
                             onClick={handleUploadMedia}
@@ -379,8 +380,8 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
                             variant="ghost"
                             aria-label={
                                 canRecord
-                                    ? "Record a voice note"
-                                    : `Voice notes unavailable — ${unsupportedReason}`
+                                    ? t("posts:composer.recordVoice")
+                                    : t("posts:composer.voiceUnavailable", { reason: unsupportedReason })
                             }
                             // Explains itself rather than failing on tap:
                             // without this the button looked live and the
@@ -405,7 +406,10 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
                         size="icon-sm"
                         variant="destructive"
                         className="shrink-0 animate-pulse"
-                        aria-label={`Stop recording — ${formatDuration(elapsedSeconds)} of ${formatDuration(MAX_RECORDING_SECONDS)}`}
+                        aria-label={t("posts:composer.stopRecording", {
+                            elapsed: formatDuration(elapsedSeconds),
+                            max: formatDuration(MAX_RECORDING_SECONDS),
+                        })}
                         onClick={stopRecording}
                     >
                         <Square className="h-4 w-4" />
@@ -416,7 +420,7 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
                     <Button
                         size="icon-sm"
                         className="shrink-0"
-                        aria-label="Send"
+                        aria-label={t("posts:composer.send")}
                         onClick={handleSend}
                         loading={isSending}
                     >
@@ -432,7 +436,7 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
                         stays quiet for most of the recording. */}
                     {isNearLimit ? (
                         <span className="shrink-0 text-xs font-medium tabular-nums text-destructive">
-                            {Math.ceil(remainingSeconds)}s left
+                            {t("common:voice.secondsLeft", { count: Math.ceil(remainingSeconds) })}
                         </span>
                     ) : null}
                 </div>
@@ -443,7 +447,7 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
                     {isProcessingAudio ? (
                         <div className="flex min-w-0 flex-1 items-center gap-2 px-1 text-sm text-muted-foreground">
                             <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-                            <span className="truncate">Enhancing audio…</span>
+                            <span className="truncate">{t("posts:composer.enhancingAudio")}</span>
                         </div>
                     ) : (
                         <AudioPlayer
@@ -456,7 +460,7 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
                         variant="ghost"
                         size="icon"
                         onClick={handleDeleteRecording}
-                        aria-label="Discard voice note"
+                        aria-label={t("posts:composer.discardVoice")}
                         className="shrink-0 text-destructive hover:text-destructive/80"
                     >
                         <Trash2 className="h-4 w-4" />
@@ -468,14 +472,14 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = "Wr
                 <div className="relative flex items-center justify-center gap-3 rounded-md border bg-background p-2">
                     <img
                         src={mediaUrl}
-                        alt="Uploaded Media"
+                        alt={t("posts:composer.uploadedImage")}
                         className="max-h-48 max-w-xs rounded-md"
                     />
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={handleDeleteMedia}
-                        aria-label="Remove image"
+                        aria-label={t("posts:composer.removeImage")}
                         className="absolute end-1 top-1 text-destructive hover:text-destructive/80"
                     >
                         <Trash2 className="h-4 w-4" />

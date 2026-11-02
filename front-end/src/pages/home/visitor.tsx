@@ -6,32 +6,22 @@ import { Cover } from "@/components/cover";
 import { Logo } from "@/components/ui/logo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getShowcase } from "@/services/communities";
-import { formatCount } from "@/lib/format";
+import { formatCompact } from "@/lib/format";
+import { useTranslation } from "react-i18next";
 import type { ShowcaseCommunity } from "@/types/community";
 import { cn } from "@/lib/utils";
 
-const FEATURES: { icon: LucideIcon; title: string; body: string }[] = [
-  {
-    icon: UserRound,
-    title: "Personas",
-    body: "Make a persona for each side of you. People follow the persona, never the account behind it.",
-  },
-  {
-    icon: Users,
-    title: "Channels and communities",
-    body: "Every channel and community has its own page, colours and rules. Communities group the channels that belong together.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Privacy you choose",
-    body: "Public, private or only you. Private personas appear anonymous until someone you approve follows them.",
-  },
+const FEATURES: { icon: LucideIcon; id: "personas" | "places" | "privacy" }[] = [
+  { icon: UserRound, id: "personas" },
+  { icon: Users, id: "places" },
+  { icon: ShieldCheck, id: "privacy" },
 ];
 
 const GUTTER = "px-4 md:px-6 lg:px-20";
 const INDENTS = ["", "pl-4 md:pl-8", "pl-8 md:pl-16"];
 
 export default function VisitorPage() {
+  const { t } = useTranslation(["auth", "common"]);
   const [showcase, setShowcase] = useState<ShowcaseCommunity[] | null>(null);
 
   useEffect(() => {
@@ -42,18 +32,15 @@ export default function VisitorPage() {
     <>
       <section className={cn(GUTTER, "flex flex-col gap-10 pt-8 pb-16 md:flex-row md:items-center md:gap-8 md:pt-16 md:pb-20 lg:gap-16 lg:pt-20 lg:pb-24")}>
         <div className="flex flex-1 flex-col items-start gap-5">
-          <p className="text-overline font-semibold uppercase text-primary">Channels and communities</p>
-          <h1 className="text-display font-semibold text-foreground">Follow a facet, not a person.</h1>
-          <p className="text-lead font-light text-muted-foreground">
-            Flookaa is a home for the channels and communities you belong to. Join as the side of you that fits: your
-            sport self, your work self, your cooking self.
-          </p>
+          <p className="text-overline font-semibold uppercase text-primary">{t("visitor.overline")}</p>
+          <h1 className="text-display font-semibold text-foreground">{t("split.tagline")}</h1>
+          <p className="text-lead font-light text-muted-foreground">{t("visitor.lead")}</p>
           <div className="flex flex-wrap gap-3">
             <Button asChild size="lg">
-              <Link to="/sign-up">Create your first persona</Link>
+              <Link to="/sign-up">{t("visitor.cta")}</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="hidden md:inline-flex">
-              <a href="#how-it-works">How it works</a>
+              <a href="#how-it-works">{t("visitor.howItWorks")}</a>
             </Button>
           </div>
         </div>
@@ -75,15 +62,15 @@ export default function VisitorPage() {
       </section>
 
       <section id="how-it-works" className={cn(GUTTER, "flex scroll-mt-4 flex-col gap-8 bg-surface-sunken py-12 md:py-16 lg:py-20")}>
-        <h2>How it works</h2>
+        <h2>{t("visitor.howItWorks")}</h2>
         <div className="grid gap-8 lg:grid-cols-3">
-          {FEATURES.map(({ icon: Icon, title, body }) => (
-            <div key={title} className="flex flex-col items-start gap-3">
+          {FEATURES.map(({ icon: Icon, id }) => (
+            <div key={id} className="flex flex-col items-start gap-3">
               <span className="flex size-11 items-center justify-center rounded-full border bg-card">
                 <Icon aria-hidden className="size-5 text-primary" />
               </span>
-              <h3>{title}</h3>
-              <p className="leading-relaxed text-muted-foreground">{body}</p>
+              <h3>{t(`visitor.features.${id}.title`)}</h3>
+              <p className="leading-relaxed text-muted-foreground">{t(`visitor.features.${id}.body`)}</p>
             </div>
           ))}
         </div>
@@ -93,6 +80,7 @@ export default function VisitorPage() {
 }
 
 function ShowcaseCard({ community }: { community: ShowcaseCommunity }) {
+  const { t } = useTranslation();
   return (
     <div data-theme={community.theme} className="overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm">
       <Cover pattern={community.cover_pattern} className="h-24" />
@@ -101,11 +89,12 @@ function ShowcaseCard({ community }: { community: ShowcaseCommunity }) {
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{community.name}</p>
           <p className="truncate text-xs text-muted-foreground">
-            {formatCount(community.members_count, "member", "members")} · {formatCount(community.channels_count, "channel", "channels")}
+            {t("counts.members", { count: community.members_count, n: formatCompact(community.members_count) })} ·{" "}
+            {t("counts.channels", { count: community.channels_count, n: formatCompact(community.channels_count) })}
           </p>
         </div>
         <Button asChild size="sm">
-          <Link to="/sign-up">Join</Link>
+          <Link to="/sign-up">{t("actions.join")}</Link>
         </Button>
       </div>
     </div>

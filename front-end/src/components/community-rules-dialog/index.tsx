@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { Community } from "@/types/community";
+import { useTranslation } from "react-i18next";
 
 /** "Agree and join": shown before joining a community that has rules. Nothing is stored. */
 export function CommunityRulesDialog({
@@ -23,18 +24,19 @@ export function CommunityRulesDialog({
   onAgree: () => void;
   busy?: boolean;
 }) {
+  const { t } = useTranslation(["communities", "common"]);
   const isPrivate = community.visibility === "private";
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{community.name} rules</DialogTitle>
-          <DialogDescription>Please read them before you {isPrivate ? "ask to join" : "join"}.</DialogDescription>
+          <DialogTitle>{t("rules.dialogTitle", { name: community.name })}</DialogTitle>
+          <DialogDescription>{isPrivate ? t("rules.readBeforeRequest") : t("rules.readBeforeJoin")}</DialogDescription>
         </DialogHeader>
         <p className="whitespace-pre-line text-sm">{community.rules}</p>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common:actions.cancel")}
           </Button>
           <Button
             disabled={busy}
@@ -43,7 +45,7 @@ export function CommunityRulesDialog({
               onAgree();
             }}
           >
-            {isPrivate ? "Agree and request" : "Agree and join"}
+            {isPrivate ? t("rules.agreeAndRequest") : t("rules.agreeAndJoin")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { t } from "@/i18n";
 
 export type ConfirmOptions = {
   title: string;
@@ -39,7 +40,7 @@ export function useConfirm() {
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => close(false)}>
-            Cancel
+            {t("common:actions.cancel")}
           </Button>
           <Button variant={pending?.destructive ? "destructive" : "default"} onClick={() => close(true)}>
             {pending?.confirmLabel}

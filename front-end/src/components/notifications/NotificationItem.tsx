@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 import type { Notification } from "@/types/notification";
 import { useNotificationStore } from "@/stores/NotificationStore";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
-import formatDate from "@/utils/formateDate";
+import { formatDate, shortTime } from "@/lib/format";
+import { t } from "@/i18n";
 import { describeNotification } from "./describe";
-import { shortTime } from "./time";
 
 /**
  * One notification. Clicking marks it read and opens what it's about.
@@ -106,7 +106,7 @@ export default function NotificationItem({
             {description.context && ` · ${description.context}`}
           </span>
         </span>
-        {!notification.read && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" aria-label="Unread" />}
+        {!notification.read && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" aria-label={t("notifications:unread")} />}
       </button>
     </div>
   );

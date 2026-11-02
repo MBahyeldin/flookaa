@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import {
   useEditor,
   useEditorSelector,
@@ -177,7 +178,7 @@ export function SlashMenuPlugin() {
         >
           <ObjectForm
             key={formBlock.name}
-            submitLabel="Insert"
+            submitLabel={t("editor:insert")}
             fields={formBlock.fields}
             defaultValues={toFormValue(formBlock, formBlock.defaultValues)}
             onSubmit={({ value }) => {

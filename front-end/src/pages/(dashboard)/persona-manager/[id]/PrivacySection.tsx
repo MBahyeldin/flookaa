@@ -8,13 +8,18 @@ import { Switch } from "@/components/ui/switch";
 import { privacyChangeHint } from "@/lib/privacyChangeHint";
 import { getInviteLink } from "@/services/persona";
 import type { Persona } from "@/types/persona";
-import { PRIVACY_OPTIONS, type Privacy } from "@/pages/onboarding/persona-wizard/options";
+import { privacyOptions, type Privacy } from "@/pages/onboarding/persona-wizard/options";
 import { PrivacyWarning } from "@/pages/onboarding/persona-wizard/PrivacyStep";
 import { usePersonaUpdate } from "./usePersonaUpdate";
+import { useTranslation } from "react-i18next";
+
+import { errorMessage } from "@/lib/errors";
 
 const inviteUrl = (token: string) => `${window.location.origin}/follow/${token}`;
 
 function FollowLinkRow({ personaId }: { personaId: number }) {
+  const { t } = useTranslation(["personas", "common"]);
+
   const [token, setToken] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -22,7 +27,7 @@ function FollowLinkRow({ personaId }: { personaId: number }) {
   useEffect(() => {
     let alive = true;
     getInviteLink(personaId)
-      .then((t) => alive && setToken(t))
+      .then((token) => alive && setToken(token))
       .catch(() => alive && setFailed(true));
     return () => {
       alive = false;
@@ -33,20 +38,20 @@ function FollowLinkRow({ personaId }: { personaId: number }) {
     if (!token) return;
     try {
       await navigator.clipboard.writeText(inviteUrl(token));
-      toast.success("Link copied");
+      toast.success(t("common:share.copied"));
     } catch {
-      toast.error("Couldn't copy the link");
+      toast.error(t("common:share.copyFailed"));
     }
   };
 
   const reset = async () => {
-    if (!confirm("Reset the link? The old link will stop working.")) return;
+    if (!confirm(t("followLink.resetConfirm"))) return;
     setBusy(true);
     try {
       setToken(await getInviteLink(personaId, true));
-      toast.success("New link created");
+      toast.success(t("followLink.resetDone"));
     } catch (err) {
-      toast.error((err as Error).message);
+      toast.error(errorMessage((err as Error).message));
     } finally {
       setBusy(false);
     }
@@ -54,26 +59,27 @@ function FollowLinkRow({ personaId }: { personaId: number }) {
 
   return (
     <div className="flex flex-col gap-2 rounded-lg bg-surface-sunken p-4">
-      <p className="text-sm font-medium">Follow-request link</p>
+      <p className="text-sm font-medium">{t("followLink.title")}</p>
       <div className="flex flex-wrap items-center gap-2">
         <span className="min-w-0 basis-full truncate text-sm font-medium sm:basis-0 sm:flex-1">
-          {token ? inviteUrl(token).replace(/^https?:\/\//, "") : failed ? "Couldn't load the link." : "Loading…"}
+          {token ? inviteUrl(token).replace(/^https?:\/\//, "") : failed ? t("followLink.loadFailed") : t("common:states.loading")}
         </span>
         <Button type="button" variant="outline" size="sm" disabled={!token} onClick={copy}>
           <Link2 />
-          Copy link
+          {t("common:share.copyLink")}
         </Button>
         <Button type="button" variant="ghost" size="sm" disabled={!token || busy} onClick={reset}>
           <RefreshCw />
-          Reset
+          {t("followLink.reset")}
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground">Anyone with the link can ask to follow. Reset stops the old link working.</p>
+      <p className="text-xs text-muted-foreground">{t("followLink.hint")}</p>
     </div>
   );
 }
 
 export function PrivacySection({ persona }: { persona: Persona }) {
+  const { t } = useTranslation("personas");
   const [privacy, setPrivacy] = useState<Privacy>(persona.privacy);
   const [showOnProfile, setShowOnProfile] = useState(persona.show_on_profile);
   const { save, saving } = usePersonaUpdate(persona);
@@ -92,14 +98,14 @@ export function PrivacySection({ persona }: { persona: Persona }) {
   return (
     <SettingsSection
       id="privacy"
-      title="Privacy"
-      lead="Privacy decides what others see of this persona, not what it can do."
+      title={t("settings.privacy.title")}
+      lead={t("settings.privacy.lead")}
       onSave={onSave}
       dirty={dirty}
       saving={saving}
     >
-      <RadioCardGroup aria-label="Who can see this persona">
-        {PRIVACY_OPTIONS.map(({ value, label, note, icon }) => (
+      <RadioCardGroup aria-label={t("privacy.whoCanSee")}>
+        {privacyOptions().map(({ value, label, note, icon }) => (
           <RadioCard key={value} icon={icon} title={label} body={note} checked={value === privacy} onSelect={() => setPrivacy(value)} />
         ))}
       </RadioCardGroup>
@@ -107,10 +113,8 @@ export function PrivacySection({ persona }: { persona: Persona }) {
       {privacy === "public" && (
         <label className="flex items-start justify-between gap-4 rounded-lg bg-surface-sunken p-4">
           <span className="flex flex-col gap-0.5">
-            <span className="text-sm font-medium">Show on my profile</span>
-            <span className="text-xs text-muted-foreground">
-              Your linked personas list each other, with this persona's label, for anyone who visits them.
-            </span>
+            <span className="text-sm font-medium">{t("privacy.showOnProfile")}</span>
+            <span className="text-xs text-muted-foreground">{t("privacy.showOnProfileNote")}</span>
           </span>
           <Switch checked={showOnProfile} onCheckedChange={setShowOnProfile} />
         </label>

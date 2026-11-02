@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { RadioCard, RadioCardGroup } from "@/components/ui/radio-card";
 import { ThemeSwatch } from "@/components/ui/theme-swatch";
 import { MIN_AGES } from "@/lib/minAge";
-import { PALETTES, type PaletteId } from "@/themes/palettes";
+import { PALETTES, paletteLabel, type PaletteId } from "@/themes/palettes";
 import type { CoverPattern } from "@/types/cover";
+import { t } from "@/i18n";
 
 export type Visibility = "public" | "private";
 
@@ -24,13 +25,13 @@ export function ThemeField({
   const id = useId();
   return (
     <div className="flex flex-col gap-2">
-      <Label id={id}>Theme</Label>
+      <Label id={id}>{t("common:look.theme")}</Label>
       <div role="radiogroup" aria-labelledby={id} className="flex flex-wrap gap-3">
         {inherit && (
-          <ThemeSwatch palette={inherit} label="Community's" checked={value === null} onSelect={() => onChange(null)} />
+          <ThemeSwatch palette={inherit} label={t("common:look.communityTheme")} checked={value === null} onSelect={() => onChange(null)} />
         )}
         {PALETTES.map((p) => (
-          <ThemeSwatch key={p.id} palette={p.id} label={p.label} checked={p.id === value} onSelect={() => onChange(p.id)} />
+          <ThemeSwatch key={p.id} palette={p.id} label={paletteLabel(p.id)} checked={p.id === value} onSelect={() => onChange(p.id)} />
         ))}
       </div>
     </div>
@@ -41,7 +42,7 @@ export function CoverField({ value, onChange }: { value: CoverPattern; onChange:
   const id = useId();
   return (
     <div className="flex flex-col gap-2">
-      <Label id={id}>Cover</Label>
+      <Label id={id}>{t("common:look.cover")}</Label>
       <CoverOptionGroup aria-labelledby={id} value={value} onChange={onChange} />
     </div>
   );
@@ -57,15 +58,15 @@ export function VisibilityField({
   privateBody: string;
 }) {
   return (
-    <RadioCardGroup aria-label="Visibility">
+    <RadioCardGroup aria-label={t("common:create.visibility")}>
       <RadioCard
         icon={Globe}
-        title="Public"
-        body="Anyone can read. Members post, comment and like."
+        title={t("common:visibility.public")}
+        body={t("common:create.publicBody")}
         checked={value === "public"}
         onSelect={() => onChange("public")}
       />
-      <RadioCard icon={Lock} title="Private" body={privateBody} checked={value === "private"} onSelect={() => onChange("private")} />
+      <RadioCard icon={Lock} title={t("common:visibility.private")} body={privateBody} checked={value === "private"} onSelect={() => onChange("private")} />
     </RadioCardGroup>
   );
 }
@@ -74,7 +75,7 @@ export function AgeField({
   value,
   onChange,
   error,
-  helper = "Only people this age or older find it. You can raise it later.",
+  helper = t("common:age.helper"),
 }: {
   value: number;
   onChange: (age: number) => void;
@@ -84,7 +85,7 @@ export function AgeField({
   const id = useId();
   return (
     <div className="flex flex-col gap-2">
-      <Label id={id}>Age limit</Label>
+      <Label id={id}>{t("common:age.limit")}</Label>
       <div role="radiogroup" aria-labelledby={id} className="flex flex-wrap gap-2">
         {MIN_AGES.map((age) => (
           <Chip
@@ -95,7 +96,7 @@ export function AgeField({
             selected={value === age}
             onClick={() => onChange(age)}
           >
-            {age}+
+            {t("common:age.short", { age })}
           </Chip>
         ))}
       </div>
@@ -115,12 +116,13 @@ export function FieldError({ children }: { children?: string }) {
   );
 }
 
-export const BASE_ERRORS: Record<string, { field: string; message: string }> = {
-  invalid_name: { field: "name", message: "Enter a name of at most 100 characters." },
-  invalid_min_age: { field: "min_age", message: "You can't set a limit above your own age." },
-  invalid_interests: { field: "interest_ids", message: "Pick 1 to 5 interests." },
-  invalid_interest: { field: "interest_ids", message: "One of these interests is no longer offered." },
-  invalid_logo: { field: "thumbnail", message: "That logo can't be used. Upload it again." },
-  invalid_theme: { field: "theme", message: "Pick one of the themes." },
-  invalid_cover_pattern: { field: "cover_pattern", message: "Pick one of the covers." },
+/** The form field each create error belongs to; the message is errorMessage(code). */
+export const BASE_ERROR_FIELDS: Record<string, string> = {
+  invalid_name: "name",
+  invalid_min_age: "min_age",
+  invalid_interests: "interest_ids",
+  invalid_interest: "interest_ids",
+  invalid_logo: "thumbnail",
+  invalid_theme: "theme",
+  invalid_cover_pattern: "cover_pattern",
 };

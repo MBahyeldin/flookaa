@@ -1,5 +1,6 @@
 import { Bell, Compass, Hash, House, Sailboat, Settings, ShieldCheck, UserRound, Users } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import {
   Sidebar,
@@ -16,17 +17,18 @@ import AppSidebarFooter from "./AppSidebarFooter";
 import SidebarNavItem, { type NavEntry } from "./SidebarNavItem";
 
 export function AppSidebar() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { canToggle } = useSidebar();
   const unreadCount = useNotificationStore((s) => s.unreadCount);
 
   const entries: NavEntry[] = [
-    { title: "Home", to: "/", icon: House },
-    { title: "Discover", to: "/discover", icon: Compass },
-    { title: "Channels", to: "/channels", icon: Hash },
-    { title: "Communities", to: "/communities", icon: Users },
+    { title: t("nav.home"), to: "/", icon: House },
+    { title: t("nav.discover"), to: "/discover", icon: Compass },
+    { title: t("nav.channels"), to: "/channels", icon: Hash },
+    { title: t("nav.communities"), to: "/communities", icon: Users },
     {
-      title: "Notifications",
+      title: t("nav.notifications"),
       to: "/notifications",
       icon: Bell,
       badge: unreadCount,
@@ -36,11 +38,11 @@ export function AppSidebar() {
         </NotificationPopover>
       ),
     },
-    { title: "Personas", to: "/persona-manager", icon: UserRound },
-    { title: "Settings", to: "/settings/profile", icon: Settings, match: "/settings" },
+    { title: t("nav.personas"), to: "/persona-manager", icon: UserRound },
+    { title: t("nav.settings"), to: "/settings/profile", icon: Settings, match: "/settings" },
   ];
   if (user?.is_admin) {
-    entries.push({ title: "Admin", to: "/admin/interests", icon: ShieldCheck, match: "/admin" });
+    entries.push({ title: t("nav.admin"), to: "/admin/interests", icon: ShieldCheck, match: "/admin" });
   }
 
   return (
@@ -48,7 +50,7 @@ export function AppSidebar() {
       <div className="flex w-full items-center justify-between pb-4 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1 group-data-[collapsible=icon]:pb-1">
         <Link
           to="/"
-          aria-label="Flookaa, home"
+          aria-label={t("shell.homeLink")}
           className="flex items-center gap-2.5 rounded-md pl-3 outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:pb-3 group-data-[collapsible=icon]:pl-0"
         >
           <Sailboat aria-hidden="true" className="size-6 text-primary" />
@@ -59,7 +61,7 @@ export function AppSidebar() {
         {canToggle && <SidebarTrigger />}
       </div>
       <SidebarContent>
-        <nav aria-label="Main" className="w-full">
+        <nav aria-label={t("shell.mainNav")} className="w-full">
           <SidebarMenu>
             {entries.map((entry) => (
               <SidebarNavItem key={entry.to} {...entry} />

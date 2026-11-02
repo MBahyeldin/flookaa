@@ -9,8 +9,10 @@ import { useAuth } from "@/Auth.context";
 import PersonaWizard from "@/pages/onboarding/persona-wizard/PersonaWizard";
 import { setCurrentPersona } from "@/services/persona";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
+import { useTranslation } from "react-i18next";
 
 export default function SelectPersonaPage() {
+    const { t } = useTranslation(["personas", "common"]);
     const { personas } = useUserProfileStore();
     const { handleLogOut } = useAuth();
     const [choosing, setChoosing] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export default function SelectPersonaPage() {
             return;
         }
         setChoosing(null);
-        toast.error("Couldn't switch persona. Please try again.");
+        toast.error(t("common:shell.switchFailed"));
     };
 
     return (
@@ -35,28 +37,26 @@ export default function SelectPersonaPage() {
             <header className="flex items-center justify-between px-4 py-4 md:px-10">
                 <Brand />
                 <Button variant="ghost" onClick={handleLogOut}>
-                    Log out
+                    {t("common:shell.logOut")}
                 </Button>
             </header>
 
             <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8 md:py-16">
                 <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div className="flex flex-col gap-2">
-                        <h1>Choose a persona</h1>
-                        <p className="text-muted-foreground">
-                            You post, join and follow as the persona you pick. Switch any time from the sidebar.
-                        </p>
+                        <h1>{t("select.title")}</h1>
+                        <p className="text-muted-foreground">{t("select.lead")}</p>
                     </div>
                     {defaultPersona && (
                         <Button variant="outline" className="shrink-0 self-start md:self-auto" onClick={() => setCreating(true)}>
                             <Plus aria-hidden />
-                            New persona
+                            {t("select.newPersona")}
                         </Button>
                     )}
                 </div>
 
                 {ordered.length === 0 ? (
-                    <EmptyState icon={UserRound} title="No personas yet" body="Log in again to get your default persona." />
+                    <EmptyState icon={UserRound} title={t("select.emptyTitle")} body={t("select.emptyBody")} />
                 ) : (
                     <div className="flex flex-col gap-3">
                         {ordered.map((p) => (
@@ -70,9 +70,9 @@ export default function SelectPersonaPage() {
                                         loading={choosing === p.id}
                                         disabled={choosing !== null}
                                         onClick={() => choose(p.id)}
-                                        aria-label={`Continue as ${personaDisplayName(p)}`}
+                                        aria-label={t("select.continueAs", { name: personaDisplayName(p) })}
                                     >
-                                        Continue
+                                        {t("common:actions.continue")}
                                     </Button>
                                 }
                             />

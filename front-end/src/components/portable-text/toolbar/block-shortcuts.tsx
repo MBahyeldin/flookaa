@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useRef, useState } from "react";
 import { useEditor } from "@portabletext/editor";
 import { PlusIcon } from "lucide-react";
@@ -18,7 +19,7 @@ import {
 const shortcuts = ["image", "voiceNote", "checklist", "steps"];
 // Phones keep what fits in one row; the rest is in the "More blocks" grid.
 const mobileShortcuts = ["image"];
-const shortLabel: Record<string, string> = { voiceNote: "Voice" };
+const shortLabel: Record<string, () => string> = { voiceNote: () => t("editor:voiceShort") };
 
 export function BlockShortcuts(props: { initialBlock?: string }) {
   const editor = useEditor();
@@ -80,7 +81,7 @@ export function BlockShortcuts(props: { initialBlock?: string }) {
           }}
         >
           <block.icon className="size-4" />
-          {shortLabel[block.name] ?? block.title}
+          {shortLabel[block.name]?.() ?? block.title}
         </Button>
       ))}
       <Button
@@ -95,7 +96,7 @@ export function BlockShortcuts(props: { initialBlock?: string }) {
         }}
       >
         <PlusIcon className="size-4" />
-        More blocks
+        {t("editor:moreBlocks")}
       </Button>
 
       <BlockSurface
@@ -103,14 +104,14 @@ export function BlockShortcuts(props: { initialBlock?: string }) {
         onOpenChange={(next) => {
           if (!next) close();
         }}
-        title={picked ? picked.title : "Insert block"}
+        title={picked ? picked.title : t("editor:insertBlock")}
         onBack={picked && fromPicker ? () => setPicked(null) : undefined}
         anchor={anchor}
       >
         {picked ? (
           <ObjectForm
             key={picked.name}
-            submitLabel="Insert"
+            submitLabel={t("editor:insert")}
             fields={picked.fields}
             defaultValues={toFormValue(picked, picked.defaultValues)}
             onSubmit={({ value }) => insert(picked, value)}

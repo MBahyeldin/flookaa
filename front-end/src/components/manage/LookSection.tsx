@@ -6,6 +6,10 @@ import { SettingsSection } from "@/components/settings/SettingsSection";
 import { DEFAULT_PALETTE, type PaletteId } from "@/themes/palettes";
 import type { CoverPattern } from "@/types/cover";
 import type { Interest } from "@/types/interest";
+import { t } from "@/i18n";
+import { errorMessage } from "@/lib/errors";
+
+const FIELDS: Record<string, string> = { invalid_logo: "thumbnail", invalid_theme: "theme", invalid_cover_pattern: "cover_pattern" };
 
 export type Look = { thumbnail: string; theme: PaletteId | null; cover_pattern: CoverPattern };
 
@@ -48,13 +52,11 @@ export function LookSection({
     setError(null);
     const code = await onSave(changes);
     setSaving(false);
-    if (code === "invalid_logo") setError({ field: "thumbnail", message: "That logo can't be used. Upload it again." });
-    else if (code === "invalid_theme") setError({ field: "theme", message: "Pick one of the themes." });
-    else if (code === "invalid_cover_pattern") setError({ field: "cover_pattern", message: "Pick one of the covers." });
+    if (code && FIELDS[code]) setError({ field: FIELDS[code], message: errorMessage(code) });
   };
 
   return (
-    <SettingsSection id="look" title="Look" lead={lead} dirty={dirty} saving={saving} onSave={save}>
+    <SettingsSection id="look" title={t("common:look.title")} lead={lead} dirty={dirty} saving={saving} onSave={save}>
       <CreatePreview
         theme={shown}
         cover={draft.cover_pattern}

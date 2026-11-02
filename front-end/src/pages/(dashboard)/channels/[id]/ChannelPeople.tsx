@@ -5,6 +5,8 @@ import { PeopleStrip } from "@/components/people-strip";
 import { PersonRow } from "@/components/persona-link/PersonRow";
 import { listMembers } from "@/services/channels";
 import type { ChannelMember } from "@/types/channel";
+import { formatMonthYear } from "@/lib/format";
+import { useTranslation } from "react-i18next";
 
 // `version` changes on membership events, so the list follows joins and leaves.
 export function ChannelPeople({
@@ -16,6 +18,7 @@ export function ChannelPeople({
   version: number;
   onShowAll?: () => void;
 }) {
+  const { t } = useTranslation("common");
   const [members, setMembers] = useState<ChannelMember[] | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -32,7 +35,7 @@ export function ChannelPeople({
     load();
   }, [load, version]);
 
-  if (failed && !members) return <ErrorState compact title="Couldn't load members" onRetry={load} />;
+  if (failed && !members) return <ErrorState compact title={t("members.loadFailed")} onRetry={load} />;
   if (!members) return <SkeletonList count={4} />;
 
   return (
@@ -45,8 +48,8 @@ export function ChannelPeople({
           <PersonRow
             key={m.persona_id}
             person={m}
-            detail={`Joined ${new Date(m.joined_at).toLocaleDateString(undefined, { month: "short", year: "numeric" })}`}
-            badge={m.is_owner ? "Owner" : m.is_moderator ? "Moderator" : undefined}
+            detail={t("members.joined", { date: formatMonthYear(m.joined_at, "short") })}
+            badge={m.is_owner ? t("roles.owner") : m.is_moderator ? t("roles.moderator") : undefined}
           />
         ))}
       </ul>

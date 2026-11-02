@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
 import { MAX_PERSONA_INTERESTS, type InterestGroup, type Interest } from "@/types/interest";
+import { useTranslation } from "react-i18next";
 
 export default function InterestPicker({
   groups,
@@ -17,6 +18,7 @@ export default function InterestPicker({
   max?: number;
   showCount?: boolean;
 }) {
+  const { t } = useTranslation();
   const selected = new Set(value);
   const full = value.length >= max;
   const toggle = (id: number) =>
@@ -27,16 +29,16 @@ export default function InterestPicker({
     <div className="flex flex-col gap-5">
       {showCount && (
         <p className="text-sm text-muted-foreground" aria-live="polite">
-          {value.length} / {max} selected
+          {t("interests.countSelected", { n: value.length, max })}
         </p>
       )}
 
       {keptRetired.length > 0 && (
         <div className="flex flex-col gap-2.5">
-          <p className="text-overline font-semibold uppercase text-muted-foreground">No longer offered</p>
+          <p className="text-overline font-semibold uppercase text-muted-foreground">{t("interests.retired")}</p>
           <div className="flex flex-wrap gap-2">
             {keptRetired.map((r) => (
-              <Chip key={r.id} emoji={r.emoji} onClick={() => toggle(r.id)} aria-label={`Remove ${r.name}`}>
+              <Chip key={r.id} emoji={r.emoji} onClick={() => toggle(r.id)} aria-label={t("actions.removeNamed", { name: r.name })}>
                 {r.name}
                 <X className="text-muted-foreground" />
               </Chip>

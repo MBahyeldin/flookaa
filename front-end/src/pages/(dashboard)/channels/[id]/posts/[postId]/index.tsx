@@ -15,6 +15,9 @@ import type { ChannelEventPayload, WsEventMessage } from "@/types/Ws";
 import handleChannelEvents from "../../subscribe/handleChannelEvents";
 import { ChannelBar, JoinButton } from "./ChannelBar";
 import { PostArticle } from "./PostArticle";
+import { useTranslation } from "react-i18next";
+import { t as translate } from "@/i18n";
+import { errorMessage } from "@/lib/errors";
 
 const ignore = () => {};
 
@@ -25,6 +28,7 @@ export default function PostPage() {
 }
 
 function PostView({ channelId, postId }: { channelId: string; postId: string }) {
+  const { t } = useTranslation("posts");
   const { websocketService } = useWebsocketService();
   const {
     data: barData,
@@ -101,11 +105,11 @@ function PostView({ channelId, postId }: { channelId: string; postId: string }) 
     if (channel.isPending) {
       const error = await leaveChannel(channelId);
       setBusy(false);
-      if (error) return toast.error(error.message);
+      if (error) return toast.error(errorMessage(error.message));
     } else {
       const result = await joinChannel(channelId);
       setBusy(false);
-      if (result.error) return toast.error(result.error.message);
+      if (result.error) return toast.error(errorMessage(result.error.message));
     }
     refetchBar();
   };
@@ -116,7 +120,7 @@ function PostView({ channelId, postId }: { channelId: string; postId: string }) 
     return (
       <ErrorState
         className="mx-4 mt-24"
-        title="Couldn't load this post"
+        title={t("page.loadFailed")}
         onRetry={() => Promise.all([refetchBar(), refetchPost()])}
       />
     );
@@ -127,7 +131,7 @@ function PostView({ channelId, postId }: { channelId: string; postId: string }) 
 
   const joinPrompt = channel.isMember ? undefined : (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3 text-sm text-card-foreground">
-      {channel.isPending ? "Your request to join is waiting for approval." : `Join ${channel.name} to comment.`}
+      {channel.isPending ? t("page.requestWaiting") : t("page.joinToComment", { channel: channel.name })}
       {!channel.isPending && (
         <JoinButton isPrivate={channel.isPrivate} isPending={false} busy={busy} onJoin={handleJoin} />
       )}
@@ -153,7 +157,7 @@ function PostView({ channelId, postId }: { channelId: string; postId: string }) 
 
 function PostSkeleton() {
   return (
-    <div role="status" aria-label="Loading post">
+    <div role="status" aria-label={translate("posts:page.loading")}>
       <Skeleton className="h-14 rounded-none" />
       <div className="mx-auto flex w-full max-w-[712px] flex-col gap-6 px-4 py-8 md:py-12">
         <div className="flex items-center gap-3">

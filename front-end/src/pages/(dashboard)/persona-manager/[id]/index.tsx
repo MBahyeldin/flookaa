@@ -16,6 +16,7 @@ import { FollowersSection } from "./FollowersSection";
 import { InterestsSection } from "./InterestsSection";
 import { LookSection } from "./LookSection";
 import { PrivacySection } from "./PrivacySection";
+import { useTranslation } from "react-i18next";
 
 /** The editable sections, also used by the onboarding Personas step's sheet. */
 export function PersonaSettingsSections({
@@ -36,10 +37,11 @@ export function PersonaSettingsSections({
 }
 
 function Header({ persona }: { persona: Persona }) {
+  const { t } = useTranslation("personas");
   const name = `${persona.first_name} ${persona.last_name}`.trim();
   return (
     <div className="flex items-center gap-3">
-      <Button asChild variant="ghost" size="icon-sm" aria-label="Back to personas">
+      <Button asChild variant="ghost" size="icon-sm" aria-label={t("manager.back")}>
         <Link to="/persona-manager">
           <ArrowLeft />
         </Link>
@@ -52,7 +54,7 @@ function Header({ persona }: { persona: Persona }) {
         <h1 className="truncate text-h2 font-semibold tracking-tight">{name || persona.name}</h1>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <span>@{persona.slug}</span>
-          <Badge variant="secondary" title="Only you see this label">
+          <Badge variant="secondary" title={t("settings.labelOnlyYou")}>
             <Lock />
             {persona.name}
           </Badge>
@@ -61,10 +63,10 @@ function Header({ persona }: { persona: Persona }) {
       <Button asChild variant="outline" className="max-md:hidden">
         <Link to={personaPath(persona.id)}>
           <UserRound />
-          View profile
+          {t("viewProfile")}
         </Link>
       </Button>
-      <Button asChild variant="outline" size="icon" className="md:hidden" aria-label="View profile">
+      <Button asChild variant="outline" size="icon" className="md:hidden" aria-label={t("viewProfile")}>
         <Link to={personaPath(persona.id)}>
           <UserRound />
         </Link>
@@ -74,13 +76,14 @@ function Header({ persona }: { persona: Persona }) {
 }
 
 function PersonaSettings({ persona }: { persona: Persona }) {
+  const { t } = useTranslation("personas");
   const [theme, setTheme] = useState<PaletteId>(isPaletteId(persona.theme) ? persona.theme : DEFAULT_PALETTE);
   const sections = [
-    { id: "basics", label: "Basics" },
-    { id: "look", label: "Look" },
-    { id: "privacy", label: "Privacy" },
-    { id: "interests", label: "Interests" },
-    ...(persona.privacy === "only_me" ? [] : [{ id: "followers", label: "Followers" }]),
+    { id: "basics", label: t("settings.basics.title") },
+    { id: "look", label: t("settings.look.title") },
+    { id: "privacy", label: t("settings.privacy.title") },
+    { id: "interests", label: t("settings.interests.title") },
+    ...(persona.privacy === "only_me" ? [] : [{ id: "followers", label: t("settings.followers.title") }]),
   ];
 
   return (
@@ -94,6 +97,7 @@ function PersonaSettings({ persona }: { persona: Persona }) {
 }
 
 export default function PersonaSettingsPage() {
+  const { t } = useTranslation("personas");
   const { id } = useParams();
   const persona = useUserProfileStore((s) => s.personas.find((p) => String(p.id) === id));
 
@@ -102,11 +106,11 @@ export default function PersonaSettingsPage() {
       <div className="mx-auto w-full max-w-[672px] px-4 py-12">
         <EmptyState
           icon={UserRoundX}
-          title="Persona not found"
-          body="It doesn't exist, or it isn't one of yours."
+          title={t("manager.notFoundTitle")}
+          body={t("manager.notFoundBody")}
           action={
             <Button asChild variant="outline">
-              <Link to="/persona-manager">Back to personas</Link>
+              <Link to="/persona-manager">{t("manager.back")}</Link>
             </Button>
           }
         />

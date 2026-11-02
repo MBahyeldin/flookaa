@@ -15,14 +15,15 @@ import type { PersonaInterests } from "@/types/interest";
 import type { Persona } from "@/types/persona";
 import BasicsStep from "./BasicsStep";
 import PrivacyStep from "./PrivacyStep";
-import { OTHER_TYPE, PERSONA_TYPES, type Privacy } from "./options";
+import { OTHER_TYPE, PERSONA_TYPES, personaTypeLabel, type PersonaType, type Privacy } from "./options";
+import { useTranslation } from "react-i18next";
 
 export type Draft = {
   thumbnail: string;
   first_name: string;
   last_name: string;
   slug: string;
-  type: string;
+  type: PersonaType | "";
   customType: string;
   theme: PaletteId;
   bio: string;
@@ -31,23 +32,21 @@ export type Draft = {
 
 export type WizardMode = { kind: "edit"; persona: Persona } | { kind: "create" };
 
-const SLUG_ERROR = "Use 3–50 lowercase letters, digits or single hyphens.";
-const SLUG_TAKEN = "Another of your personas already uses this user name.";
 
 function initialDraft(mode: WizardMode): Draft {
   if (mode.kind === "create") {
     return { thumbnail: "", first_name: "", last_name: "", slug: "", type: "", customType: "", theme: DEFAULT_PALETTE, bio: "", privacy: "public" };
   }
   const p = mode.persona;
-  const known = (PERSONA_TYPES as readonly string[]).includes(p.name);
   // "Default" is the column default the signup trigger leaves, not a type the user chose.
   const name = p.is_default && p.name === "Default" ? "" : p.name;
+  const known = PERSONA_TYPES.find((type) => personaTypeLabel(type) === name);
   return {
     thumbnail: p.thumbnail ?? "",
     first_name: p.first_name,
     last_name: p.last_name,
     slug: p.slug,
-    type: known ? name : name ? OTHER_TYPE : "",
+    type: known ?? (name ? OTHER_TYPE : ""),
     customType: known ? "" : name,
     theme: isPaletteId(p.theme) ? p.theme : DEFAULT_PALETTE,
     bio: p.bio ?? "",
@@ -55,7 +54,7 @@ function initialDraft(mode: WizardMode): Draft {
   };
 }
 
-const label = (d: Draft) => (d.type === OTHER_TYPE ? d.customType.trim() : d.type);
+const label = (d: Draft) => (d.type === OTHER_TYPE ? d.customType.trim() : d.type ? personaTypeLabel(d.type) : "");
 
 export default function PersonaWizard({
   mode,
@@ -67,6 +66,7 @@ export default function PersonaWizard({
   catalogPersonaId: number;
   onClose: () => void;
 }) {
+  const { t } = useTranslation(["personas", "common", "onboarding"]);
   const [step, setStep] = useState(1);
   const [draft, setDraft] = useState(() => initialDraft(mode));
   const [slugTaken, setSlugTaken] = useState(false);
@@ -99,7 +99,7 @@ export default function PersonaWizard({
     setDraft((d) => ({ ...d, ...patch }));
   };
 
-  const slugError = slugTaken ? SLUG_TAKEN : draft.slug && !SLUG_PATTERN.test(draft.slug) ? SLUG_ERROR : null;
+  const slugError = slugTaken ? t("slug.taken") : draft.slug && !SLUG_PATTERN.test(draft.slug) ? t("slug.help") : null;
   const basicsValid =
     SLUG_PATTERN.test(draft.slug) &&
     !slugTaken &&
@@ -132,7 +132,7 @@ export default function PersonaWizard({
     if (Object.keys(changes).length > 0) {
       const r = await updatePersona(persona.id, changes);
       if (!r.ok) {
-        if (!onSlugError(r.error)) toast.error("Couldn't save the persona. Please try again.");
+        if (!onSlugError(r.error)) toast.error(t("settings.saveFailed"));
         return false;
       }
       applySavedPersona(r.data);
@@ -140,7 +140,7 @@ export default function PersonaWizard({
     if (interestsChanged) {
       const r = await setPersonaInterests(Number(persona.id), interests);
       if (!r.ok) {
-        toast.error("Couldn't save the interests. Please try again.");
+        toast.error(t("common:interests.saveFailed"));
         return false;
       }
     }
@@ -161,7 +161,7 @@ export default function PersonaWizard({
         privacy: draft.privacy,
       });
       if (!r.ok) {
-        if (!onSlugError(r.error)) toast.error("Couldn't create the persona. Please try again.");
+        if (!onSlugError(r.error)) toast.error(t("wizard.createFailed"));
         return false;
       }
       id = r.data.persona_id;
@@ -170,7 +170,7 @@ export default function PersonaWizard({
     }
     const r = await setPersonaInterests(id, interests);
     if (!r.ok) {
-      toast.error("The persona was created, but its interests weren't saved. Please try again.");
+      toast.error(t("wizard.interestsFailed"));
       return false;
     }
     return true;
@@ -181,18 +181,18 @@ export default function PersonaWizard({
     const ok = editing ? await saveEdit(editing) : await saveNew();
     setSaving(false);
     if (!ok) return;
-    toast.success(editing ? "Persona saved" : "Persona created");
+    toast.success(editing ? t("settings.saved") : t("wizard.created"));
     onClose();
   };
 
-  const title = editing?.is_default ? "Your default persona" : editing ? "Edit persona" : "New persona";
+  const title = editing?.is_default ? t("wizard.defaultTitle") : editing ? t("wizard.editTitle") : t("select.newPersona");
 
   return (
     <Dialog open onOpenChange={(open) => !open && !saving && onClose()}>
       <DialogContent data-theme={draft.theme} className="max-h-[90vh] overflow-y-auto bg-background text-foreground sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>Step {step} of 3</DialogDescription>
+          <DialogDescription>{t("onboarding:stepOf", { current: step, total: 3 })}</DialogDescription>
         </DialogHeader>
         <div className="h-1 w-full overflow-hidden rounded-full bg-muted" aria-hidden>
           <div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${(step / 3) * 100}%` }} />
@@ -203,11 +203,11 @@ export default function PersonaWizard({
         {step === 3 && (
           <div className="flex flex-col gap-4">
             <div>
-              <h3 className="font-semibold">Interests</h3>
-              <p className="text-sm text-muted-foreground">Pick at least one. They shape what this persona is shown.</p>
+              <h3 className="font-semibold">{t("settings.interests.title")}</h3>
+              <p className="text-sm text-muted-foreground">{t("wizard.interestsLead")}</p>
             </div>
             {loadError ? (
-              <p className="text-sm text-destructive">Couldn't load interests. Please reload.</p>
+              <p className="text-sm text-destructive">{t("common:interests.loadFailedReload")}</p>
             ) : !catalogue ? (
               <SectionLoader />
             ) : (
@@ -224,16 +224,16 @@ export default function PersonaWizard({
         <div className="flex items-center justify-end gap-2 border-t pt-4">
           {step > 1 && (
             <Button variant="ghost" disabled={saving} onClick={() => setStep(step - 1)}>
-              Back
+              {t("common:actions.back")}
             </Button>
           )}
           {step < 3 ? (
             <Button disabled={step === 1 && !basicsValid} onClick={() => setStep(step + 1)}>
-              Next
+              {t("common:actions.next")}
             </Button>
           ) : (
             <Button loading={saving} disabled={interests.length === 0 || !catalogue} onClick={save}>
-              Save persona
+              {t("wizard.save")}
             </Button>
           )}
         </div>

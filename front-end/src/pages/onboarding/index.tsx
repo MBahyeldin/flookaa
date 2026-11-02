@@ -5,6 +5,7 @@ import { moveOnboarding } from "@/services/onboarding";
 import { fetchUserPersonas, setCurrentPersona } from "@/services/persona";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import OnboardingShell from "./OnboardingShell";
+import { useTranslation } from "react-i18next";
 
 const PERSONA_ATTEMPT_KEY = "onboarding_persona_attempt";
 
@@ -28,6 +29,7 @@ function clearAttempt() {
 
 /** Onboarding runs as the default persona, so the persona steps can use Persona-tier endpoints. */
 export default function OnboardingPage() {
+  const { t } = useTranslation(["onboarding", "common"]);
   const { user, persona } = useUserProfileStore();
   const [failed, setFailed] = useState(false);
   const started = useRef(false);
@@ -63,7 +65,7 @@ export default function OnboardingPage() {
     if (!failed) return <AppLoader />;
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
-        <p className="text-muted-foreground">We couldn't open your persona.</p>
+        <p className="text-muted-foreground">{t("personaFailed")}</p>
         <Button
          
           onClick={() => {
@@ -71,7 +73,7 @@ export default function OnboardingPage() {
             window.location.reload();
           }}
         >
-          Try again
+          {t("common:actions.tryAgain")}
         </Button>
       </main>
     );

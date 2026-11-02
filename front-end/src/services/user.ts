@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/apiFetch";
 import type { Gender, Profile } from "@/types/user";
+import type { Language } from "@/i18n";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -20,6 +21,19 @@ export async function getUserData(): Promise<Profile | null> {
   }
 }
 
+
+export async function saveLanguage(language: Language): Promise<boolean> {
+  try {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/users/language`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language }),
+    });
+    return resp.ok;
+  } catch {
+    return false;
+  }
+}
 
 export type ProfilePatch = Partial<{
   first_name: string;

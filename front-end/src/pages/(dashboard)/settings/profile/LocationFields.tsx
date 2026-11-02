@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FormField } from "@/components/ui/form-field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getCountries, getStatesByCountryID, searchCitiesByStateId } from "@/services/geo";
+import { useTranslation } from "react-i18next";
 
 type Place = { id: number | string; name: string };
 export type Location = { country_id: string; state_id: string; city_id: string };
@@ -59,6 +60,7 @@ function PlaceSelect({
 }
 
 export function LocationFields({ value, onChange }: { value: Location; onChange: (next: Location) => void }) {
+  const { t } = useTranslation("settings");
   const countries = usePlaces(getCountries, "countries");
   const states = usePlaces(value.country_id ? () => getStatesByCountryID(value.country_id) : null, value.country_id);
   const cities = usePlaces(
@@ -69,23 +71,23 @@ export function LocationFields({ value, onChange }: { value: Location; onChange:
   return (
     <div className="grid gap-4 md:grid-cols-3">
       <PlaceSelect
-        label="Country"
-        placeholder="Choose a country"
+        label={t("location.country")}
+        placeholder={t("location.chooseCountry")}
         value={value.country_id}
         places={countries}
         onChange={(country_id) => onChange({ country_id, state_id: "", city_id: "" })}
       />
       <PlaceSelect
-        label="State / province"
-        placeholder="Choose a state"
+        label={t("location.state")}
+        placeholder={t("location.chooseState")}
         value={value.state_id}
         places={states}
         disabled={!value.country_id}
         onChange={(state_id) => onChange({ ...value, state_id, city_id: "" })}
       />
       <PlaceSelect
-        label="City"
-        placeholder="Choose a city"
+        label={t("location.city")}
+        placeholder={t("location.chooseCity")}
         value={value.city_id}
         places={cities}
         disabled={!value.state_id}

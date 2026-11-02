@@ -2,6 +2,8 @@ import type { CSSProperties } from "react";
 import { ImageIcon } from "lucide-react";
 import { z } from "zod";
 import { FormField } from "@/models/Forms/FormField";
+import { perLanguage, t } from "@/i18n";
+import { httpLink } from "./validation";
 import { defineBlock } from "./defineBlock";
 import { safeUrl } from "./safeUrl";
 import { responsiveImage } from "./responsiveImage";
@@ -15,7 +17,7 @@ const sizes = ["xs", "s", "m", "l", "xl"] as const;
 const aligns = ["left", "center", "right"] as const;
 
 const imageSchema = z.object({
-  src: z.string().refine((src) => safeUrl(src, ["http", "https"]), "must be an http(s) link"),
+  src: z.string().refine((src) => safeUrl(src, ["http", "https"]), httpLink),
   alt: z.string().optional(),
   caption: z.string().optional(),
   width: side,
@@ -26,14 +28,14 @@ const imageSchema = z.object({
 
 export type ImageValue = z.infer<typeof imageSchema>;
 
-const imageFormFields: FormField[] = [
+const imageFormFields = perLanguage((): FormField[] => [
   new FormField({
     id: "src",
     name: "src",
-    label: "Image URL",
+    label: t("blocks:image.fields.imageUrl"),
     type: "string",
     interfaceType: "pic",
-    placeholder: "https://example.com/jpg",
+    placeholder: t("blocks:image.fields.httpsExampleComJpg"),
     isRequired: true,
     width: "full",
     dimensions: { width: "width", height: "height" },
@@ -41,55 +43,55 @@ const imageFormFields: FormField[] = [
   new FormField({
     id: "alt",
     name: "alt",
-    label: "Alt Text",
+    label: t("blocks:image.fields.altText"),
     type: "string",
     interfaceType: "text",
-    placeholder: "A description of the image for accessibility",
+    placeholder: t("blocks:image.fields.aDescriptionOfTheImage"),
     isRequired: false,
     width: "full",
   }),
   new FormField({
     id: "caption",
     name: "caption",
-    label: "Caption",
+    label: t("blocks:image.fields.caption"),
     type: "string",
     interfaceType: "text",
-    placeholder: "Caption for the image (optional)",
+    placeholder: t("blocks:image.fields.captionForTheImageOptional"),
     isRequired: false,
     width: "full",
   }),
   new FormField({
     id: "size",
     name: "size",
-    label: "Display size",
+    label: t("blocks:image.fields.displaySize"),
     type: "string",
     interfaceType: "select",
     options: [
-      { label: "Extra small (25%)", value: "xs" },
-      { label: "Small (40%)", value: "s" },
-      { label: "Medium (60%)", value: "m" },
-      { label: "Large (80%)", value: "l" },
-      { label: "Full width (100%)", value: "xl" },
+      { label: t("blocks:image.fields.extraSmall25"), value: "xs" },
+      { label: t("blocks:image.fields.small40"), value: "s" },
+      { label: t("blocks:image.fields.medium60"), value: "m" },
+      { label: t("blocks:image.fields.large80"), value: "l" },
+      { label: t("blocks:image.fields.fullWidth100"), value: "xl" },
     ],
     width: "full",
   }),
   new FormField({
     id: "align",
     name: "align",
-    label: "Alignment",
+    label: t("blocks:image.fields.alignment"),
     type: "string",
     interfaceType: "select",
     options: [
-      { label: "Left", value: "left" },
-      { label: "Centre", value: "center" },
-      { label: "Right", value: "right" },
+      { label: t("blocks:image.fields.left"), value: "left" },
+      { label: t("blocks:image.fields.centre"), value: "center" },
+      { label: t("blocks:image.fields.right"), value: "right" },
     ],
     width: "full",
     visibleWhen: (values) => (values.size ?? "xl") !== "xl",
   }),
-  new FormField({ id: "width", name: "width", label: "Width", type: "number" }),
-  new FormField({ id: "height", name: "height", label: "Height", type: "number" }),
-];
+  new FormField({ id: "width", name: "width", label: t("blocks:image.fields.width"), type: "number" }),
+  new FormField({ id: "height", name: "height", label: t("blocks:image.fields.height"), type: "number" }),
+]);
 
 const sizeClass: Record<(typeof sizes)[number], string> = {
   xs: "w-1/4",
@@ -157,11 +159,17 @@ function ImageView({ value, compact = false }: { value: ImageValue; compact?: bo
 
 export const image = defineBlock<ImageValue>({
   name: "image",
-  title: "Image",
-  description: "A picture with optional alt text and caption.",
+  get title() {
+    return t("blocks:image.title");
+  },
+  get description() {
+    return t("blocks:image.description");
+  },
   icon: ImageIcon,
   category: "media",
-  fields: imageFormFields,
+  get fields() {
+    return imageFormFields();
+  },
   defaultValues: { size: "xl", align: "center" },
   schema: imageSchema,
   View: ImageView,

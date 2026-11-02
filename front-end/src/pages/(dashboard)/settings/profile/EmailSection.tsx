@@ -6,14 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Profile } from "@/types/user";
 import { ChangeEmailDialog } from "./ChangeEmailDialog";
+import { useTranslation } from "react-i18next";
 
 export function EmailSection({ profile }: { profile: Profile }) {
+  const { t } = useTranslation("settings");
   const { revalidateUser } = useAuth();
   const [email, setEmail] = useState(profile.email_address);
   const [open, setOpen] = useState(false);
 
   return (
-    <SettingsSection id="email" title="Email">
+    <SettingsSection id="email" title={t("email.title")}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -21,19 +23,19 @@ export function EmailSection({ profile }: { profile: Profile }) {
             {profile.is_verified && (
               <Badge variant="secondary">
                 <ShieldCheck />
-                Verified
+                {t("email.verified")}
               </Badge>
             )}
           </div>
           <p className="text-sm text-muted-foreground">
             {profile.has_password
-              ? "To change it, we send a code to the new address first."
-              : "Managed by Google. It changes with your Google account."}
+              ? t("email.changeHint")
+              : t("email.managedByGoogle")}
           </p>
         </div>
         {profile.has_password && (
           <Button variant="outline" onClick={() => setOpen(true)}>
-            Change email
+            {t("email.change")}
           </Button>
         )}
       </div>

@@ -12,7 +12,8 @@ import { SkeletonList } from "@/components/ui/skeleton";
 import { listJoinRequests, listMembers, removeMember, resolveJoinRequest } from "@/services/channels";
 import type { PaletteId } from "@/themes/palettes";
 import type { ChannelMember, JoinRequest } from "@/types/channel";
-import { formatDateOnly } from "@/utils/formateDate";
+import { formatDateOnly } from "@/lib/format";
+import { useTranslation } from "react-i18next";
 
 export type ChannelMembersTab = "members" | "requests";
 
@@ -34,6 +35,7 @@ export function ChannelMembersSheet({
   onClose: () => void;
   version: number;
 }) {
+  const { t } = useTranslation(["channels", "common"]);
   const open = tab !== null;
   const [members, setMembers] = useState<ChannelMember[] | null>(null);
   const [requests, setRequests] = useState<JoinRequest[] | null>(null);
@@ -73,21 +75,25 @@ export function ChannelMembersSheet({
     try {
       await resolveJoinRequest(channelId, request.persona_id, decision);
     } catch {
-      toast.error("Couldn't update the request. Try again.");
+      toast.error(t("common:requests.updateFailed"));
       return;
     } finally {
       setBusyId(null);
     }
-    toast.success(decision === "approve" ? `${displayName(request)} joined the channel` : `Request from ${displayName(request)} rejected`);
+    toast.success(
+      decision === "approve"
+        ? t("members.approved", { name: displayName(request) })
+        : t("common:requests.rejected", { name: displayName(request) }),
+    );
     setRequests((prev) => prev?.filter((r) => r.persona_id !== request.persona_id) ?? null);
     if (decision === "approve") loadMembers();
   };
 
   const remove = async (member: ChannelMember) => {
     const ok = await confirm({
-      title: `Remove ${displayName(member)}?`,
-      body: "They leave the channel and lose any moderator role. They can ask to join again.",
-      confirmLabel: "Remove",
+      title: t("common:actions.removeConfirm", { name: displayName(member) }),
+      body: t("members.removeBody"),
+      confirmLabel: t("common:actions.remove"),
       destructive: true,
     });
     if (!ok) return;
@@ -95,51 +101,51 @@ export function ChannelMembersSheet({
     try {
       await removeMember(channelId, member.persona_id);
     } catch {
-      toast.error("Couldn't remove this member. Try again.");
+      toast.error(t("common:members.removeFailed"));
       return;
     } finally {
       setBusyId(null);
     }
-    toast.success(`${displayName(member)} was removed`);
+    toast.success(t("common:members.removed", { name: displayName(member) }));
     setMembers((prev) => prev?.filter((m) => m.persona_id !== member.persona_id) ?? null);
   };
 
   const membersContent = membersFailed && !members ? (
-    <ErrorState compact title="Couldn't load members" onRetry={loadMembers} />
+    <ErrorState compact title={t("common:members.loadFailed")} onRetry={loadMembers} />
   ) : !members ? (
     <SkeletonList count={3} />
   ) : members.length <= 1 ? (
-    <EmptyState compact icon={Users} title="Only you so far" body="Members show here once people join." />
+    <EmptyState compact icon={Users} title={t("common:members.onlyYou")} body={t("common:members.onlyYouBody")} />
   ) : (
     <ul className="divide-y divide-border">
       {members.map((m) => (
         <MemberRow
           key={m.persona_id}
           person={m}
-          detail={`Joined ${formatDateOnly(m.joined_at)}`}
+          detail={t("common:members.joined", { date: formatDateOnly(m.joined_at) })}
           role={m.is_owner ? "Owner" : m.is_moderator ? "Moderator" : undefined}
           busy={busyId === m.persona_id}
-          actions={m.is_owner ? [] : [{ label: "Remove from channel", destructive: true, run: () => remove(m) }]}
+          actions={m.is_owner ? [] : [{ label: t("members.removeAction"), destructive: true, run: () => remove(m) }]}
         />
       ))}
     </ul>
   );
 
   const requestsContent = requestsFailed && !requests ? (
-    <ErrorState compact title="Couldn't load requests" onRetry={loadRequests} />
+    <ErrorState compact title={t("common:requests.loadFailed")} onRetry={loadRequests} />
   ) : !requests ? (
     <SkeletonList count={3} />
   ) : requests.length === 0 ? (
-    <EmptyState compact icon={UserPlus} title="No pending requests" />
+    <EmptyState compact icon={UserPlus} title={t("common:requests.none")} />
   ) : (
     <ul className="divide-y divide-border">
       {requests.map((r) => (
-        <PersonRow key={r.persona_id} person={r} detail={`Asked on ${formatDateOnly(r.requested_at)}`}>
+        <PersonRow key={r.persona_id} person={r} detail={t("common:requests.askedOn", { date: formatDateOnly(r.requested_at) })}>
           <Button size="sm" disabled={busyId === r.persona_id} onClick={() => resolve(r, "approve")}>
-            Approve
+            {t("common:actions.approve")}
           </Button>
           <Button size="sm" variant="ghost" disabled={busyId === r.persona_id} onClick={() => resolve(r, "reject")}>
-            Reject
+            {t("common:actions.reject")}
           </Button>
         </PersonRow>
       ))}
@@ -153,14 +159,14 @@ export function ChannelMembersSheet({
         open={open}
         onClose={onClose}
         theme={theme}
-        title="Members"
-        description={count === undefined ? "Channel members" : count === 1 ? "1 member" : `${count} members`}
+        title={t("common:members.title")}
+        description={count === undefined ? t("members.description") : t("common:counts.members", { count, n: count })}
         tab={tab ?? "members"}
         onTabChange={onTabChange}
         tabs={[
-          { id: "members", label: "Members", content: membersContent },
+          { id: "members", label: t("common:members.title"), content: membersContent },
           ...(isPrivate || requests?.length
-            ? [{ id: "requests" as const, label: "Requests", count: requests?.length, content: requestsContent }]
+            ? [{ id: "requests" as const, label: t("common:requests.title"), count: requests?.length, content: requestsContent }]
             : []),
         ]}
       />

@@ -13,7 +13,9 @@ import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import React from "react";
-import formatDate, { formatRelativeDate } from "@/utils/formateDate";
+import { formatCompact, formatDate, formatRelativeDate } from "@/lib/format";
+import { graphqlErrorMessage } from "@/lib/errors";
+import { t } from "@/i18n";
 import { contentOwner, useAppStore } from "@/stores/AppStore";
 import CommentInput from "./input";
 import { Button } from "../ui/button";
@@ -97,9 +99,7 @@ const CommentItem = React.memo(({
             });
         } catch (err) {
             toast.error(
-                CombinedGraphQLErrors.is(err)
-                    ? err.errors[0]?.message || "Couldn’t update your like."
-                    : "Couldn’t update your like. Check your connection."
+                graphqlErrorMessage(CombinedGraphQLErrors.is(err) ? err : null, t("posts:like.failed"), t("posts:like.offline"))
             );
             return;
         } finally {
@@ -112,14 +112,16 @@ const CommentItem = React.memo(({
     const canDelete = isOwnComment || canModerate;
 
     const handleDelete = async () => {
-        if (!comment || !confirm("Delete this comment and its replies? This can't be undone.")) return;
+        if (!comment || !confirm(t("posts:comments.deleteConfirm"))) return;
         try {
             await deleteComment({ variables: { id: comment._id } });
         } catch (err) {
             toast.error(
-                CombinedGraphQLErrors.is(err)
-                    ? err.errors[0]?.message || "Couldn’t delete the comment."
-                    : "Couldn’t delete the comment. Check your connection."
+                graphqlErrorMessage(
+                    CombinedGraphQLErrors.is(err) ? err : null,
+                    t("posts:comments.deleteFailed"),
+                    t("posts:comments.deleteOffline")
+                )
             );
             return;
         }
@@ -215,7 +217,7 @@ const CommentItem = React.memo(({
                         {canDelete && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon-sm" className="ms-auto shrink-0" aria-label="Comment options">
+                                    <Button variant="ghost" size="icon-sm" className="ms-auto shrink-0" aria-label={t("posts:comments.options")}>
                                         <Ellipsis className="size-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -226,14 +228,14 @@ const CommentItem = React.memo(({
                                         onClick={handleDelete}
                                     >
                                         <Trash2 className="size-4" />
-                                        Delete comment
+                                        {t("posts:comments.delete")}
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         )}
                     </div>
 
-                    {replyingTo && <p className="text-xs text-muted-foreground">Replying to {replyingTo}</p>}
+                    {replyingTo && <p className="text-xs text-muted-foreground">{t("posts:comments.replyingTo", { name: replyingTo })}</p>}
 
                     {commentContent.type === "TEXT" ? (
                         <p dir="auto" className="break-words text-sm">{commentContent.content}</p>
@@ -253,10 +255,10 @@ const CommentItem = React.memo(({
                             onClick={toggleLike}
                             disabled={isLiking}
                             aria-pressed={liked}
-                            aria-label={`${liked ? "Unlike" : "Like"} — ${likesCount} ${likesCount === 1 ? "like" : "likes"}`}
+                            aria-label={liked ? t("posts:like.unlikeLabel", { count: likesCount }) : t("posts:like.likeLabel", { count: likesCount })}
                         >
                             <Heart className={cn("size-3.5", liked && "fill-primary")} />
-                            {likesCount}
+                            {formatCompact(likesCount)}
                         </button>
                         <button
                             type="button"
@@ -264,7 +266,7 @@ const CommentItem = React.memo(({
                             aria-expanded={showReplyInput}
                             onClick={() => setShowReplyInput((prev) => !prev)}
                         >
-                            Reply
+                            {t("posts:comments.reply")}
                         </button>
                     </div>
 
@@ -278,10 +280,10 @@ const CommentItem = React.memo(({
                                 className="mt-2 flex flex-col gap-1.5"
                             >
                                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                    Replying to {authorName}
+                                    {t("posts:comments.replyingTo", { name: authorName })}
                                     <button
                                         type="button"
-                                        aria-label="Cancel reply"
+                                        aria-label={t("posts:comments.cancelReply")}
                                         className="rounded-sm hover:text-foreground"
                                         onClick={() => setShowReplyInput(false)}
                                     >
@@ -319,13 +321,13 @@ const CommentItem = React.memo(({
                     {repliesLoading ? (
                         <div role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
                             <Loader2 className="size-3.5 animate-spin" />
-                            {visibleReplies.length ? "Loading more replies…" : "Loading replies…"}
+                            {visibleReplies.length ? t("posts:comments.loadingMoreReplies") : t("posts:comments.loadingReplies")}
                         </div>
                     ) : repliesError ? (
                         <div role="alert" className="flex items-center gap-2 text-xs text-muted-foreground">
-                            Couldn't load replies.
+                            {t("posts:comments.repliesFailed")}
                             <button type="button" className="font-medium text-primary hover:underline" onClick={showMoreReplies}>
-                                Try again
+                                {t("common:actions.tryAgain")}
                             </button>
                         </div>
                     ) : hiddenCount > 0 ? (
@@ -334,7 +336,9 @@ const CommentItem = React.memo(({
                             className="flex w-fit items-center gap-1 rounded-sm text-xs font-medium text-primary hover:underline"
                             onClick={showMoreReplies}
                         >
-                            {visibleReplies.length ? `View ${hiddenCount} more ${hiddenCount === 1 ? "reply" : "replies"}` : `View ${hiddenCount} ${hiddenCount === 1 ? "reply" : "replies"}`}
+                            {visibleReplies.length
+                                ? t("posts:comments.viewMoreReplies", { count: hiddenCount })
+                                : t("posts:comments.viewReplies", { count: hiddenCount })}
                             <ChevronDown className="size-3.5" />
                         </button>
                     ) : null}

@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { ArrowUp, Compass, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -41,13 +42,13 @@ export default function DiscoverPage() {
   return (
     <div className="mx-auto w-full max-w-[1192px] px-4 py-8 sm:px-6 lg:px-16">
       <header className="mb-8 flex flex-col gap-2">
-        <h1>Discover</h1>
+        <h1>{t("channels:discover.title")}</h1>
         <p className="text-muted-foreground">
           {interests.length && interestNames.length
-            ? `Posts from public channels about ${interestNamesLabel(interestNames)}.`
+            ? t("channels:discover.leadAbout", { names: interestNamesLabel(interestNames) })
             : all
-              ? "Posts from public channels you're not in yet."
-              : "Posts from public channels that share your interests."}
+              ? t("channels:discover.leadAll")
+              : t("channels:discover.leadForYou")}
         </p>
       </header>
       <div className="mb-8">
@@ -146,24 +147,24 @@ function DiscoverView({
   if (status === "loading") {
     body = (
       <div role="status" className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <span className="sr-only">Loading…</span>
+        <span className="sr-only">{t("common:states.loading")}</span>
         {[true, false, true, false].map((tall, i) => (
           <SkeletonTile key={i} tall={tall} />
         ))}
       </div>
     );
   } else if (status === "error") {
-    body = <ErrorState title="Couldn't load Discover" onRetry={loadFirstPage} />;
+    body = <ErrorState title={t("channels:discover.loadFailed")} onRetry={loadFirstPage} />;
   } else if (sortedPosts.length === 0 && newPostsCount === 0) {
     if (!mode && hasInterests === false) {
       body = (
         <EmptyState
           icon={Sparkles}
-          title="Pick your interests"
-          body="Discover shows posts from public channels that share an interest with you."
+          title={t("channels:discover.pickTitle")}
+          body={t("channels:discover.pickBody")}
           action={
             <Button asChild>
-              <Link to={`/persona-manager/${personaId}`}>Choose interests</Link>
+              <Link to={`/persona-manager/${personaId}`}>{t("channels:discover.chooseInterests")}</Link>
             </Button>
           }
         />
@@ -174,26 +175,22 @@ function DiscoverView({
           icon={Compass}
           title={
             interestNames.length
-              ? `No public posts about ${interestNamesLabel(interestNames)} yet`
-              : "No public posts about these yet"
+              ? t("channels:discover.noneAbout", { names: interestNamesLabel(interestNames) })
+              : t("channels:discover.noneAboutThese")
           }
-          body="Channels you're already in show up in your feed instead."
-          action={<Button onClick={onShowForYou}>Show For you</Button>}
+          body={t("channels:discover.inFeedInstead")}
+          action={<Button onClick={onShowForYou}>{t("channels:discover.showForYou")}</Button>}
         />
       );
     } else {
       body = (
         <EmptyState
           icon={Compass}
-          title="Nothing new yet"
-          body={
-            filter.all
-              ? "No public channel you're not in has posted yet."
-              : "No public channel you're not in has posted about your interests."
-          }
+          title={t("channels:discover.nothingNew")}
+          body={filter.all ? t("channels:discover.nothingAll") : t("channels:discover.nothingForYou")}
           action={
             <Button asChild>
-              <Link to="/channels">Browse channels</Link>
+              <Link to="/channels">{t("personas:profile.browseChannels")}</Link>
             </Button>
           }
         />
@@ -205,7 +202,7 @@ function DiscoverView({
         <Masonry items={sortedPosts} getKey={getKey} estimateHeight={estimateHeight} render={render} />
         {loadingMore && (
           <div role="status" className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <span className="sr-only">Loading…</span>
+            <span className="sr-only">{t("common:states.loading")}</span>
             {[false, true, false, true].map((tall, i) => (
               <SkeletonTile key={i} tall={tall} />
             ))}
@@ -213,9 +210,9 @@ function DiscoverView({
         )}
         {moreFailed && (
           <div role="alert" className="flex items-center justify-center gap-3 py-4 text-sm text-muted-foreground">
-            Couldn't load more posts.
+            {t("posts:loadMoreFailedShort")}
             <Button variant="outline" size="sm" onClick={loadMore}>
-              Retry
+              {t("common:actions.retry")}
             </Button>
           </div>
         )}
@@ -230,7 +227,7 @@ function DiscoverView({
         <div className="sticky top-4 z-10 mb-4 flex justify-center">
           <Button size="sm" className="rounded-full shadow-sm" loading={merging} onClick={onShowNewPosts}>
             <ArrowUp />
-            {newPostsCount} new post{newPostsCount > 1 ? "s" : ""}
+            {t("posts:newPosts", { count: newPostsCount })}
           </Button>
         </div>
       ) : null}

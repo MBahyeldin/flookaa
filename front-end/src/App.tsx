@@ -10,7 +10,10 @@ import useWakeLock from "./hooks/useWakeLock";
 import { useEffect } from "react";
 import { DialogProvider } from "./Dialog.context";
 import { useLoading } from "./Loading.context";
+import { useTranslation } from "react-i18next";
+
 function App() {
+  const { i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { isFetchUserLoading } = useLoading();
 
@@ -29,7 +32,8 @@ function App() {
   }
 
   return (
-    <DialogProvider>
+    // Remounting on a language change re-renders strings built outside React too.
+    <DialogProvider key={i18n.language}>
       <Tooltip>
         <>
           { isAuthenticated ? (

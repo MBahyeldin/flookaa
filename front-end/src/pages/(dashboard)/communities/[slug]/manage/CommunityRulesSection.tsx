@@ -4,8 +4,11 @@ import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
 import { MAX_COMMUNITY_RULES } from "@/types/community";
 import type { SaveCommunity } from "./CommunityManageSheet";
+import { useTranslation } from "react-i18next";
+import { formatNumber } from "@/lib/format";
 
 export function CommunityRulesSection({ rules, save }: { rules: string; save: SaveCommunity }) {
+  const { t } = useTranslation("communities");
   const [value, setValue] = useState(rules);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
@@ -15,24 +18,24 @@ export function CommunityRulesSection({ rules, save }: { rules: string; save: Sa
   const submit = async () => {
     setSaving(true);
     setError(undefined);
-    const code = await save({ rules: value.trim() }, "Rules saved");
+    const code = await save({ rules: value.trim() }, t("rules.saved"));
     setSaving(false);
-    if (code === "invalid_rules") setError(`Keep the rules to ${MAX_COMMUNITY_RULES.toLocaleString()} characters.`);
+    if (code === "invalid_rules") setError(t("rules.tooLong", { max: formatNumber(MAX_COMMUNITY_RULES) }));
   };
 
   return (
     <SettingsSection
       id="rules"
-      title="Rules"
-      lead="Shown before anyone joins."
+      title={t("rules.title")}
+      lead={t("rules.manageLead")}
       dirty={value.trim() !== rules}
       saving={saving}
       onSave={submit}
     >
       <FormField
-        label="Rules"
+        label={t("rules.title")}
         error={error}
-        helper={`One rule per line. ${value.length.toLocaleString()} / ${MAX_COMMUNITY_RULES.toLocaleString()}`}
+        helper={t("rules.helper", { n: formatNumber(value.length), max: formatNumber(MAX_COMMUNITY_RULES) })}
       >
         <Textarea
           value={value}

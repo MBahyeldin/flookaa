@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { SkeletonList } from "@/components/ui/skeleton";
 import { fetchPersonaChannels } from "@/services/persona";
 import type { Channel } from "@/types/channel";
+import { t } from "@/i18n";
 
 const PAGE_SIZE = 24;
 
@@ -47,21 +48,21 @@ export function ProfileChannels({ personaId, isOwn }: { personaId: number; isOwn
   };
 
   if (status === "loading") return <SkeletonList count={3} className="flex flex-col gap-3" />;
-  if (status === "error") return <ErrorState title="Couldn't load channels" onRetry={load} />;
+  if (status === "error") return <ErrorState title={t("channels:list.loadFailed")} onRetry={load} />;
   if (channels.length === 0) {
     return isOwn ? (
       <EmptyState
         icon={Hash}
-        title="You haven't joined any channels"
-        body="Channels you join show up here."
+        title={t("personas:profile.channelsOwnEmpty")}
+        body={t("personas:profile.channelsOwnEmptyBody")}
         action={
           <Button asChild>
-            <Link to="/channels">Browse channels</Link>
+            <Link to="/channels">{t("personas:profile.browseChannels")}</Link>
           </Button>
         }
       />
     ) : (
-      <EmptyState icon={Hash} title="No channels to show" body="Not in any channels you can see." />
+      <EmptyState icon={Hash} title={t("personas:profile.channelsEmpty")} body={t("personas:profile.channelsEmptyBody")} />
     );
   }
 
@@ -75,7 +76,7 @@ export function ProfileChannels({ personaId, isOwn }: { personaId: number; isOwn
       {hasMore && (
         <div className="text-center">
           <Button variant="outline" loading={loadingMore} onClick={loadMore}>
-            Load more
+            {t("common:actions.loadMore")}
           </Button>
         </div>
       )}

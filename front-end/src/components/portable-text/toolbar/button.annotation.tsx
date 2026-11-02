@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Toggle } from "@/components/ui/toggle";
 import type { ToolbarAnnotationSchemaType } from "@portabletext/toolbar";
@@ -18,7 +19,7 @@ export function AnnotationButton(props: {
         <TooltipTrigger asChild>
           <Toggle
             size="sm"
-            aria-label={`Remove ${props.schemaType.title ?? props.schemaType.name}`}
+            aria-label={t("editor:removeNamed", { name: props.schemaType.title ?? props.schemaType.name })}
             disabled={annotationButton.snapshot.matches("disabled")}
             onClick={() => {
               annotationButton.send({ type: "remove" });
@@ -29,7 +30,7 @@ export function AnnotationButton(props: {
         </TooltipTrigger>
         {/* TooltipContent is a sibling of the trigger, not a child of it. */}
         <TooltipContent side="top">
-          Remove {props.schemaType.title ?? props.schemaType.name}
+          {t("editor:removeNamed", { name: props.schemaType.title ?? props.schemaType.name })}
         </TooltipContent>
       </Tooltip>
     );
@@ -51,7 +52,7 @@ export function AnnotationButton(props: {
           <TooltipTrigger asChild>
             <Toggle
               size="sm"
-              aria-label={`Add ${props.schemaType.title ?? props.schemaType.name}`}
+              aria-label={t("editor:addNamed", { name: props.schemaType.title ?? props.schemaType.name })}
               disabled={annotationButton.snapshot.matches("disabled")}
               onClick={() => {
                 annotationButton.send({ type: "open dialog" });
@@ -62,7 +63,7 @@ export function AnnotationButton(props: {
           </TooltipTrigger>
 
           <TooltipContent>
-            Add {props.schemaType.title ?? props.schemaType.name}
+            {t("editor:addNamed", { name: props.schemaType.title ?? props.schemaType.name })}
           </TooltipContent>
         </Tooltip>
         <DialogContent className="sm:max-w-[425px]">
@@ -72,7 +73,7 @@ export function AnnotationButton(props: {
           <ObjectForm
             fields={props.schemaType.fields}
             defaultValues={props.schemaType.defaultValues}
-            submitLabel={`Add ${(props.schemaType.title ?? props.schemaType.name).toLowerCase()}`}
+            submitLabel={t("editor:addNamed", { name: (props.schemaType.title ?? props.schemaType.name).toLocaleLowerCase() })}
             onSubmit={({ value }) => {
               annotationButton.send({
                 type: "add",

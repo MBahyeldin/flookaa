@@ -4,6 +4,8 @@ import { EyeIcon, EyeOffIcon, SparklesIcon } from "lucide-react";
 import { z } from "zod";
 import { FormField } from "@/models/Forms/FormField";
 import displayBlockComponents from "../displayBlocks";
+import { perLanguage, t } from "@/i18n";
+import { maxChars, oneLine, plainText, required } from "./validation";
 import { defineBlock } from "./defineBlock";
 
 const MAX_BLOCKS = 20;
@@ -18,7 +20,7 @@ const stripes = {
 const paragraphSchema = z
   .object({
     _type: z.literal("block"),
-    _key: z.string().min(1, "is required"),
+    _key: z.string().min(1, required),
     style: z.literal("normal"),
     listItem: z.unknown().optional(),
     level: z.unknown().optional(),
@@ -38,18 +40,18 @@ const paragraphSchema = z
       block.level == null &&
       !block.markDefs?.length &&
       block.children.every((span) => !span.marks?.length),
-    "must be plain text"
+    plainText
   );
 
 const spoilerSchema = z.object({
   label: z
     .string()
-    .refine((label) => label.length <= MAX_LABEL, `must be at most ${MAX_LABEL} characters`)
-    .refine((label) => !/[\r\n]/.test(label), "must be one line")
+    .refine((label) => label.length <= MAX_LABEL, maxChars(MAX_LABEL))
+    .refine((label) => !/[\r\n]/.test(label), oneLine)
     .optional(),
   content: z
     .array(paragraphSchema)
-    .min(1, "is required")
+    .min(1, required)
     .max(MAX_BLOCKS)
     .refine(
       (content) => new Set(content.map((block) => block._key)).size === content.length,
@@ -57,7 +59,7 @@ const spoilerSchema = z.object({
     )
     .refine(
       (content) => content.some((block) => block.children.some((span) => span.text.trim() !== "")),
-      "is required"
+      required
     ),
 });
 
@@ -77,25 +79,25 @@ function paragraphs(text: string): SpoilerValue["content"] {
     }));
 }
 
-const spoilerFormFields: FormField[] = [
+const spoilerFormFields = perLanguage((): FormField[] => [
   new FormField({
     id: "label",
     name: "label",
-    label: "Label",
+    label: t("blocks:spoiler.fields.label"),
     type: "string",
     interfaceType: "text",
-    placeholder: "What's hidden? e.g. Finale spoilers",
+    placeholder: t("blocks:spoiler.fields.whatSHiddenEG"),
   }),
   new FormField({
     id: "content",
     name: "content",
-    label: "Content",
+    label: t("blocks:spoiler.fields.content"),
     type: "string",
     interfaceType: "textarea",
-    placeholder: "The hidden part",
+    placeholder: t("blocks:spoiler.fields.theHiddenPart"),
     isRequired: true,
   }),
-];
+]);
 
 function SpoilerView({ value }: { value: SpoilerValue }) {
   const [revealed, setRevealed] = useState(false);
@@ -123,13 +125,13 @@ function SpoilerView({ value }: { value: SpoilerValue }) {
             type="button"
             aria-expanded
             aria-controls={contentId}
-            aria-label={label ? `Hide spoiler: ${label}` : "Hide spoiler"}
+            aria-label={label ? t("blocks:spoiler.hideNamed", { label }) : t("blocks:spoiler.hide")}
             className="-mx-1 flex min-h-8 max-w-full items-center gap-2 rounded-md px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring max-md:min-h-11"
             onClick={() => toggle(false)}
           >
             <EyeIcon aria-hidden className="size-4 shrink-0" />
             <span dir="auto" className="min-w-0 truncate font-medium">
-              {label ?? "Spoiler"}
+              {label ?? t("blocks:spoiler.title")}
             </span>
           </button>
           <div
@@ -147,7 +149,7 @@ function SpoilerView({ value }: { value: SpoilerValue }) {
           type="button"
           aria-expanded={false}
           aria-controls={contentId}
-          aria-label={label ? `Show spoiler: ${label}` : "Show spoiler"}
+          aria-label={label ? t("blocks:spoiler.showNamed", { label }) : t("blocks:spoiler.show")}
           onClick={() => toggle(true)}
           style={stripes}
           className="flex min-h-36 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl bg-accent px-5 py-6 text-center text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -156,14 +158,14 @@ function SpoilerView({ value }: { value: SpoilerValue }) {
             <EyeOffIcon className="size-5" />
           </span>
           <span dir="auto" className="max-w-full font-semibold break-words">
-            {label ?? "Spoiler"}
+            {label ?? t("blocks:spoiler.title")}
           </span>
           <span
             aria-hidden
             className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background"
           >
             <SparklesIcon className="size-3.5" />
-            Tap to reveal
+            {t("blocks:spoiler.tap")}
           </span>
         </button>
       )}
@@ -173,11 +175,17 @@ function SpoilerView({ value }: { value: SpoilerValue }) {
 
 export const spoiler = defineBlock<SpoilerValue>({
   name: "spoiler",
-  title: "Spoiler",
-  description: "Content hidden until the reader taps it.",
+  get title() {
+    return t("blocks:spoiler.title");
+  },
+  get description() {
+    return t("blocks:spoiler.description");
+  },
   icon: EyeOffIcon,
   category: "layout",
-  fields: spoilerFormFields,
+  get fields() {
+    return spoilerFormFields();
+  },
   defaultValues: {},
   schema: spoilerSchema,
   View: SpoilerView,

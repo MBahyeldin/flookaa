@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import type { ReactNode, RefObject } from "react";
 import { ArrowLeftIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,7 @@ export function BlockSurface(props: {
           variant="ghost"
           size="icon"
           className="max-md:size-11"
-          aria-label="Back"
+          aria-label={t("common:actions.back")}
           onClick={props.onBack}
         >
           <ArrowLeftIcon className="size-4" />

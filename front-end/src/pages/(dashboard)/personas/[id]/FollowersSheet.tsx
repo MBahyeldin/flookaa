@@ -23,7 +23,9 @@ import {
   resolveFollowRequest,
 } from "@/services/persona";
 import type { ActiveFollower, Follower, FollowRequest } from "@/types/persona";
-import { formatDateOnly } from "@/utils/formateDate";
+import { formatDateOnly } from "@/lib/format";
+import { useTranslation } from "react-i18next";
+import { errorMessage } from "@/lib/errors";
 
 export type FollowersTab = "requests" | "followers";
 
@@ -46,6 +48,7 @@ export default function FollowersSheet({
   /** Bumped on live follow frames; reloads the lists while open. */
   reloadKey: number;
 }) {
+  const { t } = useTranslation(["personas", "common"]);
   const [requests, setRequests] = useState<FollowRequest[]>([]);
   const [followers, setFollowers] = useState<ActiveFollower[]>([]);
   // True until the first load, so an empty list never flashes before it.
@@ -79,31 +82,31 @@ export default function FollowersSheet({
     try {
       await resolveFollowRequest(personaId, request.persona_id, decision);
     } catch (err) {
-      toast.error((err as Error).message);
+      toast.error(errorMessage((err as Error).message));
       return;
     } finally {
       setBusyId(null);
     }
     toast.success(
       decision === "approve"
-        ? `${displayName(request)} now follows you`
-        : `Request from ${displayName(request)} rejected`
+        ? t("invite.nowFollowsNamed", { name: displayName(request) })
+        : t("common:requests.rejected", { name: displayName(request) })
     );
     load();
   };
 
   const handleRemove = async (follower: ActiveFollower) => {
-    if (!confirm(`Remove ${displayName(follower)}? They won't be told.`)) return;
+    if (!confirm(t("followers.removeConfirm", { name: displayName(follower) }))) return;
     setBusyId(follower.persona_id);
     try {
       await removeFollower(personaId, follower.persona_id);
     } catch (err) {
-      toast.error((err as Error).message);
+      toast.error(errorMessage((err as Error).message));
       return;
     } finally {
       setBusyId(null);
     }
-    toast.success(`${displayName(follower)} was removed`);
+    toast.success(t("common:members.removed", { name: displayName(follower) }));
     setFollowers((prev) => prev.filter((f) => f.persona_id !== follower.persona_id));
   };
 
@@ -111,41 +114,41 @@ export default function FollowersSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Followers</SheetTitle>
-          <SheetDescription>Approve follow requests, and remove followers.</SheetDescription>
+          <SheetTitle>{t("settings.followers.title")}</SheetTitle>
+          <SheetDescription>{t("followers.lead")}</SheetDescription>
         </SheetHeader>
 
         <div className="px-4 pb-6">
           {loading && !requests.length && !followers.length ? (
             <SkeletonList count={3} />
           ) : loadError ? (
-            <ErrorState compact title="Couldn't load followers" onRetry={load} />
+            <ErrorState compact title={t("followers.loadFailed")} onRetry={load} />
           ) : (
             <Tabs value={tab} onValueChange={(v) => onTabChange(v as FollowersTab)}>
               <TabsList className="w-full">
                 <TabsTrigger value="requests">
-                  Requests{requests.length ? ` (${requests.length})` : ""}
+                  {requests.length ? t("followers.requestsTab", { n: requests.length }) : t("common:requests.title")}
                 </TabsTrigger>
-                <TabsTrigger value="followers">Followers ({followers.length})</TabsTrigger>
+                <TabsTrigger value="followers">{t("followers.followersTab", { n: followers.length })}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="requests" className="mt-2">
                 {requests.length === 0 ? (
-                  <EmptyState compact icon={UserPlus} title="No pending requests" />
+                  <EmptyState compact icon={UserPlus} title={t("common:requests.none")} />
                 ) : (
                   <ul className="divide-y divide-border">
                     {requests.map((request) => (
                       <PersonRow
                         key={request.persona_id}
                         person={request}
-                        detail={`Asked on ${formatDateOnly(request.requested_at)}`}
+                        detail={t("common:requests.askedOn", { date: formatDateOnly(request.requested_at) })}
                       >
                         <Button
                           size="sm"
                           disabled={busyId === request.persona_id}
                           onClick={() => handleResolve(request, "approve")}
                         >
-                          Approve
+                          {t("common:actions.approve")}
                         </Button>
                         <Button
                           size="sm"
@@ -153,7 +156,7 @@ export default function FollowersSheet({
                           disabled={busyId === request.persona_id}
                           onClick={() => handleResolve(request, "reject")}
                         >
-                          Reject
+                          {t("common:actions.reject")}
                         </Button>
                       </PersonRow>
                     ))}
@@ -163,14 +166,14 @@ export default function FollowersSheet({
 
               <TabsContent value="followers" className="mt-2">
                 {followers.length === 0 ? (
-                  <EmptyState compact icon={Users} title="No followers yet" />
+                  <EmptyState compact icon={Users} title={t("settings.followers.none")} />
                 ) : (
                   <ul className="divide-y divide-border">
                     {followers.map((follower) => (
                       <PersonRow
                         key={follower.persona_id}
                         person={follower}
-                        detail={`Following since ${formatDateOnly(follower.followed_at)}`}
+                        detail={t("followers.since", { date: formatDateOnly(follower.followed_at) })}
                       >
                         <Button
                           size="sm"
@@ -179,7 +182,7 @@ export default function FollowersSheet({
                           disabled={busyId === follower.persona_id}
                           onClick={() => handleRemove(follower)}
                         >
-                          Remove
+                          {t("common:actions.remove")}
                         </Button>
                       </PersonRow>
                     ))}
