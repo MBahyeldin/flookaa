@@ -79,6 +79,10 @@ export function currentLanguage(): Language {
   return isLanguage(i18n.language) ? i18n.language : "en";
 }
 
+export function direction(): "ltr" | "rtl" {
+  return DIR[currentLanguage()];
+}
+
 function applyDocument(lang: Language) {
   document.documentElement.lang = lang;
   document.documentElement.dir = DIR[lang];

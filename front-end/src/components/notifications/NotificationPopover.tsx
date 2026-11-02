@@ -19,7 +19,7 @@ export default function NotificationPopover({
   onOpenChange,
 }: {
   children: ReactNode;
-  side?: "bottom" | "right";
+  side?: "bottom" | "right" | "left";
   align?: "start" | "end";
   onOpenChange?: (open: boolean) => void;
 }) {
