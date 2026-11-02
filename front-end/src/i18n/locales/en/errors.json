@@ -1,0 +1,17 @@
+{
+  "invalid_email": "Enter a valid email address.",
+  "generic": "Something went wrong. Please try again.",
+  "email_failed": "We couldn't send the email. Try again shortly.",
+  "same_email": "That's already your email.",
+  "email_taken": "Another account uses this email.",
+  "email_managed_by_google": "Your email comes from your Google account.",
+  "cannot_follow_private": "Private communities can't be followed.",
+  "recently_rejected": "This community declined your request recently.",
+  "invalid_name": "Enter a name of at most 100 characters.",
+  "invalid_min_age": "You can't set a limit above your own age.",
+  "invalid_interests": "Pick 1 to 5 interests.",
+  "invalid_interest": "One of these interests is no longer offered.",
+  "invalid_logo": "That logo can't be used. Upload it again.",
+  "invalid_theme": "Pick one of the themes.",
+  "invalid_cover_pattern": "Pick one of the covers."
+}

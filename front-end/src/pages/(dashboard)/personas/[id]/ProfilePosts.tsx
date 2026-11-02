@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MessageSquare, PenLine } from "lucide-react";
 import { toast } from "sonner";
+import { t } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { SkeletonList } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -96,7 +97,7 @@ export function ProfilePosts({ personaId, name, isOwn }: { personaId: number; na
     setLoadingMore(true);
     const page = await loadPage(offset);
     setLoadingMore(false);
-    if (!page) toast.error("Couldn't load more posts");
+    if (!page) toast.error(t("posts:loadMoreFailed"));
   };
 
   const sortedPosts = useMemo(
@@ -108,11 +109,11 @@ export function ProfilePosts({ personaId, name, isOwn }: { personaId: number; na
   );
 
   const composer = isOwn && (
-    <ComposerBar channelName={name} placeholder="Write on your wall…" title="New post on your wall" />
+    <ComposerBar channelName={name} placeholder={t("posts:wall.placeholder")} title={t("posts:wall.composerTitle")} />
   );
 
   if (status === "loading") return <SkeletonList count={2} variant="post" className="flex flex-col gap-6" />;
-  if (status === "error") return <ErrorState title="Couldn't load posts" onRetry={loadFirst} />;
+  if (status === "error") return <ErrorState title={t("posts:loadFailed")} onRetry={loadFirst} />;
 
   return (
     <div className="flex flex-col gap-6">
@@ -124,15 +125,15 @@ export function ProfilePosts({ personaId, name, isOwn }: { personaId: number; na
           onClick={showNewPosts}
           className="w-full cursor-pointer rounded-lg border border-success/40 bg-success/10 px-4 py-3 text-center text-sm font-medium text-success transition-colors hover:bg-success/20"
         >
-          {newPosts.length} new post{newPosts.length > 1 ? "s" : ""} available
+          {t("posts:newAvailable", { count: newPosts.length })}
         </button>
       )}
 
       {sortedPosts.length === 0 && newPosts.length === 0 ? (
         <EmptyState
           icon={isOwn ? PenLine : MessageSquare}
-          title={isOwn ? "Write your first post" : "No posts yet"}
-          body={isOwn ? "Your wall is yours: whoever sees this persona can read it." : `${name} hasn't posted yet.`}
+          title={isOwn ? t("posts:wall.firstTitle") : t("posts:empty.title")}
+          body={isOwn ? t("posts:wall.firstBody") : t("posts:wall.noneBody", { name })}
         />
       ) : (
         sortedPosts.map((post) => (
@@ -150,7 +151,7 @@ export function ProfilePosts({ personaId, name, isOwn }: { personaId: number; na
       {hasMore && (
         <div className="text-center">
           <Button variant="outline" size="lg" className="px-8" loading={loadingMore} onClick={loadMore}>
-            Load more posts
+            {t("posts:loadMore")}
           </Button>
         </div>
       )}

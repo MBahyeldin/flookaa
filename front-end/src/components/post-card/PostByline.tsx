@@ -4,7 +4,7 @@ import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { PersonaLink } from "@/components/persona-link";
 import type { Persona } from "@/generated/graphql";
 import { cn } from "@/lib/utils";
-import formatDate, { formatRelativeDate } from "@/utils/formateDate";
+import { formatDate, formatRelativeDate } from "@/lib/format";
 
 export type PostChannel = { id: number | string; name: string; theme?: string | null };
 

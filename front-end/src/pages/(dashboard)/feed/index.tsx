@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useCallback, useMemo, useRef } from "react";
 import { ArrowUp, Compass } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -69,16 +70,16 @@ function FeedView({ personaId }: { personaId: string }) {
   if (status === "loading") {
     body = <SkeletonList count={3} variant="post" className="flex flex-col gap-6" />;
   } else if (status === "error") {
-    body = <ErrorState title="Couldn't load your feed" onRetry={loadFirstPage} />;
+    body = <ErrorState title={t("channels:feed.loadFailed")} onRetry={loadFirstPage} />;
   } else if (sortedPosts.length === 0 && newPostsCount === 0) {
     body = (
       <EmptyState
         icon={Compass}
-        title="Your feed is quiet"
-        body="Join a few channels and their posts will show up here."
+        title={t("channels:feed.emptyTitle")}
+        body={t("channels:feed.emptyBody")}
         action={
           <Button asChild>
-            <Link to="/discover">Discover channels</Link>
+            <Link to="/discover">{t("channels:feed.discoverChannels")}</Link>
           </Button>
         }
       />
@@ -103,9 +104,9 @@ function FeedView({ personaId }: { personaId: string }) {
         {loadingMore && <SkeletonList count={2} variant="post" className="flex flex-col gap-6" />}
         {moreFailed && (
           <div role="alert" className="flex items-center justify-center gap-3 py-4 text-sm text-muted-foreground">
-            Couldn't load more posts.
+            {t("posts:loadMoreFailedShort")}
             <Button variant="outline" size="sm" onClick={loadMore}>
-              Retry
+              {t("common:actions.retry")}
             </Button>
           </div>
         )}
@@ -117,15 +118,15 @@ function FeedView({ personaId }: { personaId: string }) {
   return (
     <div ref={topRef} className="mx-auto w-full max-w-[1040px] scroll-mt-8 px-4 py-8 sm:px-6 lg:px-8">
       <header className="mb-8 flex flex-col gap-2">
-        <h1>Your feed</h1>
-        <p className="text-muted-foreground">New posts from the channels you're in.</p>
+        <h1>{t("channels:feed.title")}</h1>
+        <p className="text-muted-foreground">{t("channels:feed.lead")}</p>
       </header>
 
       {newPostsCount > 0 && status === "ready" ? (
         <div className="sticky top-4 z-10 mb-4 flex justify-center">
           <Button size="sm" className="rounded-full shadow-sm" loading={merging} onClick={onShowNewPosts}>
             <ArrowUp />
-            {newPostsCount} new post{newPostsCount > 1 ? "s" : ""}
+            {t("posts:newPosts", { count: newPostsCount })}
           </Button>
         </div>
       ) : null}

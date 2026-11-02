@@ -6,6 +6,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Form } from "@/models/Forms/Form";
 import AuthSplit from "@/pages/auth/AuthSplit";
 import { checkResetToken } from "@/services/passwordReset";
+import { useTranslation } from "react-i18next";
 
 // Read once, then dropped from the address bar so it doesn't stay in history.
 function takeToken() {
@@ -20,6 +21,7 @@ function takeToken() {
 }
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation(["auth", "common"]);
   const navigate = useNavigate();
   const [token] = useState(takeToken);
   const [state, setState] = useState<"checking" | "valid" | "invalid" | "error">(token ? "checking" : "invalid");
@@ -46,23 +48,23 @@ export default function ResetPasswordPage() {
 
   if (state === "invalid") {
     return (
-      <AuthSplit title="This link has expired" lead="Reset links work once, for 1 hour. Ask for a new one.">
+      <AuthSplit title={t("reset.expiredTitle")} lead={t("reset.expiredLead")}>
         <Button asChild size="lg" className="w-full">
-          <Link to="/forgot-password">Send a new link</Link>
+          <Link to="/forgot-password">{t("reset.newLink")}</Link>
         </Button>
         <Link to="/login" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
-          Back to log in
+          {t("backToLogin")}
         </Link>
       </AuthSplit>
     );
   }
 
   return (
-    <AuthSplit title="Choose a new password" lead="Pick a password you don't use anywhere else.">
+    <AuthSplit title={t("reset.title")} lead={t("reset.lead")}>
       {state === "error" ? (
         <ErrorState
           compact
-          title="We couldn't check this link."
+          title={t("reset.checkFailed")}
           onRetry={() => {
             setState("checking");
             setAttempt((a) => a + 1);

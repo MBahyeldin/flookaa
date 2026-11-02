@@ -13,16 +13,10 @@ import type { Interest } from "@/types/interest";
 import { ChannelAudienceSection } from "./ChannelAudienceSection";
 import { ChannelCommunitySection } from "./ChannelCommunitySection";
 import { ChannelInfoSection } from "./ChannelInfoSection";
+import { useTranslation } from "react-i18next";
 
 type Channel = NonNullable<GetChannelQuery["getChannel"]>;
 
-const SECTIONS = [
-  { id: "info", label: "Info" },
-  { id: "look", label: "Look" },
-  { id: "interests", label: "Interests" },
-  { id: "audience", label: "Audience" },
-  { id: "community", label: "Community" },
-] as const;
 
 /** communityKey changes when the page hears the channel's community row changed. */
 export function ChannelManageSheet({
@@ -42,6 +36,14 @@ export function ChannelManageSheet({
   onChanged: () => void;
   onInterestsSaved: (interests: Interest[]) => void;
 }) {
+  const { t } = useTranslation(["channels", "common"]);
+  const sections = [
+    { id: "info", label: t("manage.info") },
+    { id: "look", label: t("common:look.title") },
+    { id: "interests", label: t("common:interests.label") },
+    { id: "audience", label: t("common:create.audience") },
+    { id: "community", label: t("create.community") },
+  ] as const;
   const channelId = String(channel.id);
   const [community, setCommunity] = useState<ChannelCommunityState | null | undefined>(undefined);
 
@@ -70,10 +72,10 @@ export function ChannelManageSheet({
     const { theme, ...rest } = changes;
     const r = await updateChannel(channelId, { ...rest, ...(theme !== undefined && { theme: theme ?? "" }) });
     if (!r.ok) {
-      if (!r.error.startsWith("invalid_")) toast.error("Couldn't save the look. Try again.");
+      if (!r.error.startsWith("invalid_")) toast.error(t("common:look.saveFailed"));
       return r.error;
     }
-    toast.success("Look saved");
+    toast.success(t("common:look.saved"));
     onChanged();
     return null;
   };
@@ -81,11 +83,11 @@ export function ChannelManageSheet({
   const saveInterests = async (ids: number[]) => {
     const r = await setChannelInterests(channelId, ids);
     if (!r.ok) {
-      if (!r.error.startsWith("invalid_")) toast.error("Couldn't save the interests. Try again.");
+      if (!r.error.startsWith("invalid_")) toast.error(t("common:interests.saveFailed"));
       return r.error;
     }
     onInterestsSaved(r.data.interests);
-    toast.success("Interests saved");
+    toast.success(t("common:interests.saved"));
     return null;
   };
 
@@ -96,7 +98,7 @@ export function ChannelManageSheet({
       theme={theme}
       name={channel.name}
       logo={channel.thumbnailUrl ?? ""}
-      sections={SECTIONS}
+      sections={sections}
     >
       <ChannelInfoSection channelId={channelId} name={channel.name} description={channel.description ?? ""} onSaved={onChanged} />
       <LookSection
@@ -105,11 +107,14 @@ export function ChannelManageSheet({
         name={channel.name}
         description={channel.description ?? ""}
         interests={interests}
-        facts={[channel.isPrivate ? "Private" : "Public", `${channel.minAge}+`]}
-        lead="Logo, colours and cover. The preview follows your picks."
+        facts={[
+          channel.isPrivate ? t("common:visibility.private") : t("common:visibility.public"),
+          t("common:age.short", { age: channel.minAge }),
+        ]}
+        lead={t("create.lookLead")}
         onSave={saveLook}
       />
-      <InterestsManageSection lead="Pick 1 to 5. People find the channel by them." current={interests} onSave={saveInterests} />
+      <InterestsManageSection lead={t("create.interestsLead")} current={interests} onSave={saveInterests} />
       <ChannelAudienceSection channelId={channelId} minAge={channel.minAge} isPrivate={channel.isPrivate} onSaved={onChanged} />
       <ChannelCommunitySection channelId={channelId} state={community} onRetry={loadCommunity} onChanged={loadCommunity} />
     </ManageSheet>

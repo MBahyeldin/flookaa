@@ -1,4 +1,5 @@
 import { Check, Heart, Inbox, MessageCircle, UserPlus, X, type LucideIcon } from "lucide-react";
+import { t } from "@/i18n";
 import type { Notification } from "@/types/notification";
 
 export type NotificationDescription = {
@@ -19,18 +20,18 @@ function actorName(n: Notification): string | null {
 
 /** "Bob", "Bob and 1 other", "Bob and 4 others". */
 function actors(n: Notification): string {
-  const name = actorName(n) ?? "Someone";
+  const name = actorName(n) ?? t("notifications:someone");
   const others = n.count - 1;
   if (others <= 0) return name;
-  return `${name} and ${others} ${others === 1 ? "other" : "others"}`;
+  return t("notifications:andOthers", { name, count: others });
 }
 
 function channelName(n: Notification): string {
-  return n.channel?.name ?? "a channel";
+  return n.channel?.name ?? t("notifications:aChannel");
 }
 
 function communityName(n: Notification): string {
-  return n.community?.name ?? "a community";
+  return n.community?.name ?? t("notifications:aCommunity");
 }
 
 function communityHref(n: Notification, query = ""): string {
@@ -39,9 +40,9 @@ function communityHref(n: Notification, query = ""): string {
 
 function contentContext(n: Notification, viewerId?: number): string | null {
   if (n.scope?.type !== "PERSONA") return n.channel?.name ?? null;
-  if (n.scope.id === viewerId) return "on your wall";
+  if (n.scope.id === viewerId) return t("notifications:onYourWall");
   if (!n.wall) return null;
-  return `on ${`${n.wall.first_name} ${n.wall.last_name}`.trim()}’s wall`;
+  return t("notifications:onWall", { name: `${n.wall.first_name} ${n.wall.last_name}`.trim() });
 }
 
 /**
@@ -69,7 +70,7 @@ export function describeNotification(n: Notification, viewerId?: number): Notifi
     case "post_like":
       return {
         actor: actors(n),
-        message: `liked your post`,
+        message: t("notifications:kinds.post_like"),
         href: contentHref(n),
         icon: Heart,
         context: content,
@@ -77,7 +78,7 @@ export function describeNotification(n: Notification, viewerId?: number): Notifi
     case "comment_like":
       return {
         actor: actors(n),
-        message: `liked your comment`,
+        message: t("notifications:kinds.comment_like"),
         href: contentHref(n),
         icon: Heart,
         context: content,
@@ -85,7 +86,7 @@ export function describeNotification(n: Notification, viewerId?: number): Notifi
     case "post_comment":
       return {
         actor: actors(n),
-        message: `commented on your post`,
+        message: t("notifications:kinds.post_comment"),
         href: contentHref(n),
         icon: MessageCircle,
         context: content,
@@ -93,7 +94,7 @@ export function describeNotification(n: Notification, viewerId?: number): Notifi
     case "comment_reply":
       return {
         actor: actors(n),
-        message: `replied to your comment`,
+        message: t("notifications:kinds.comment_reply"),
         href: contentHref(n),
         icon: MessageCircle,
         context: content,
@@ -101,7 +102,7 @@ export function describeNotification(n: Notification, viewerId?: number): Notifi
     case "join_request":
       return {
         actor: actors(n),
-        message: `asked to join ${channelName(n)}`,
+        message: t("notifications:kinds.join_request", { channel: channelName(n) }),
         href: `/channels/${n.subject.id}`,
         icon: Inbox,
         context: channel,
@@ -109,7 +110,7 @@ export function describeNotification(n: Notification, viewerId?: number): Notifi
     case "request_approved":
       return {
         actor: null,
-        message: `Your request to join ${channelName(n)} was approved`,
+        message: t("notifications:kinds.request_approved", { channel: channelName(n) }),
         href: `/channels/${n.subject.id}`,
         icon: Check,
         context: channel,
@@ -117,7 +118,7 @@ export function describeNotification(n: Notification, viewerId?: number): Notifi
     case "removed_from_channel":
       return {
         actor: null,
-        message: `You were removed from ${channelName(n)}`,
+        message: t("notifications:kinds.removed_from_channel", { channel: channelName(n) }),
         href: `/channels/${n.subject.id}`,
         icon: X,
         context: channel,
@@ -125,7 +126,7 @@ export function describeNotification(n: Notification, viewerId?: number): Notifi
     case "new_follower":
       return {
         actor: actors(n),
-        message: "followed you",
+        message: t("notifications:kinds.new_follower"),
         href: `/personas/${n.subject.id}`,
         icon: UserPlus,
         context: null,
@@ -133,31 +134,31 @@ export function describeNotification(n: Notification, viewerId?: number): Notifi
     case "follow_request":
       return {
         actor: actors(n),
-        message: "asked to follow you",
+        message: t("notifications:kinds.follow_request"),
         href: `/personas/${n.subject.id}?followers=requests`,
         icon: Inbox,
         context: null,
       };
     case "follow_request_approved":
       return {
-        actor: actorName(n) ?? "Someone",
-        message: "accepted your follow request",
+        actor: actorName(n) ?? t("notifications:someone"),
+        message: t("notifications:kinds.follow_request_approved"),
         href: `/personas/${n.subject.id}`,
         icon: Check,
         context: null,
       };
     case "follow_invitation":
       return {
-        actor: actorName(n) ?? "Someone",
-        message: "invited you to follow them",
+        actor: actorName(n) ?? t("notifications:someone"),
+        message: t("notifications:kinds.follow_invitation"),
         href: `/personas/${n.subject.id}`,
         icon: UserPlus,
         context: null,
       };
     case "follow_invitation_accepted":
       return {
-        actor: actorName(n) ?? "Someone",
-        message: "accepted your invitation and follows you",
+        actor: actorName(n) ?? t("notifications:someone"),
+        message: t("notifications:kinds.follow_invitation_accepted"),
         href: `/personas/${n.subject.id}`,
         icon: Check,
         context: null,
@@ -165,7 +166,7 @@ export function describeNotification(n: Notification, viewerId?: number): Notifi
     case "channel_request":
       return {
         actor: actors(n),
-        message: `suggested ${n.count === 1 ? "a channel" : "channels"} for ${communityName(n)}`,
+        message: t("notifications:kinds.channel_request", { count: n.count, community: communityName(n) }),
         href: communityHref(n, "?members=channels"),
         icon: Inbox,
         context: community,
@@ -173,7 +174,7 @@ export function describeNotification(n: Notification, viewerId?: number): Notifi
     case "channel_request_approved":
       return {
         actor: null,
-        message: `${channelName(n)} was added to ${communityName(n)}`,
+        message: t("notifications:kinds.channel_request_approved", { channel: channelName(n), community: communityName(n) }),
         href: communityHref(n),
         icon: Check,
         context: community,
@@ -181,7 +182,7 @@ export function describeNotification(n: Notification, viewerId?: number): Notifi
     case "channel_request_rejected":
       return {
         actor: null,
-        message: `${communityName(n)} declined ${channelName(n)}`,
+        message: t("notifications:kinds.channel_request_rejected", { channel: channelName(n), community: communityName(n) }),
         href: n.channel ? `/channels/${n.channel.id}` : communityHref(n),
         icon: X,
         context: community,
@@ -189,7 +190,7 @@ export function describeNotification(n: Notification, viewerId?: number): Notifi
     case "community_join_request":
       return {
         actor: actors(n),
-        message: `asked to join ${communityName(n)}`,
+        message: t("notifications:kinds.community_join_request", { community: communityName(n) }),
         href: communityHref(n, "?members=requests"),
         icon: Inbox,
         context: community,
@@ -197,7 +198,7 @@ export function describeNotification(n: Notification, viewerId?: number): Notifi
     case "community_request_approved":
       return {
         actor: null,
-        message: `Your request to join ${communityName(n)} was approved`,
+        message: t("notifications:kinds.community_request_approved", { community: communityName(n) }),
         href: communityHref(n),
         icon: Check,
         context: community,
@@ -205,7 +206,7 @@ export function describeNotification(n: Notification, viewerId?: number): Notifi
     case "community_request_rejected":
       return {
         actor: null,
-        message: `Your request to join ${communityName(n)} was declined`,
+        message: t("notifications:kinds.community_request_rejected", { community: communityName(n) }),
         href: communityHref(n),
         icon: X,
         context: community,

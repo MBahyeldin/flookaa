@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { ThemeSwatchGroup } from "@/components/ui/theme-swatch";
 import useInputImage from "@/hooks/useInpuImage";
-import { OTHER_TYPE, PERSONA_TYPES } from "./options";
+import { OTHER_TYPE, PERSONA_TYPES, personaTypeLabel, type PersonaType } from "./options";
+import { useTranslation } from "react-i18next";
 import type { Draft } from "./PersonaWizard";
 
 export default function BasicsStep({
@@ -24,6 +25,7 @@ export default function BasicsStep({
   creating: boolean;
   slugError: string | null;
 }) {
+  const { t } = useTranslation(["personas", "auth", "common"]);
   const fileInput = useRef<HTMLInputElement>(null);
   const { url, handleInputChange, isUploading } = useInputImage({
     initValue: draft.thumbnail,
@@ -35,8 +37,8 @@ export default function BasicsStep({
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h3 className="font-semibold">Basics</h3>
-        <p className="text-sm text-muted-foreground">How this persona looks to others.</p>
+        <h3 className="font-semibold">{t("settings.basics.title")}</h3>
+        <p className="text-sm text-muted-foreground">{t("wizard.basicsLead")}</p>
       </div>
 
       <div className="flex items-center gap-4">
@@ -46,7 +48,7 @@ export default function BasicsStep({
             <GeneratedAvatarFallback name={displayName} />
           </Avatar>
           {isUploading && (
-            <div role="status" aria-label="Uploading image" className="absolute inset-0 flex items-center justify-center rounded-full bg-background/70">
+            <div role="status" aria-label={t("photo.uploading")} className="absolute inset-0 flex items-center justify-center rounded-full bg-background/70">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           )}
@@ -54,65 +56,65 @@ export default function BasicsStep({
         <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handleInputChange} />
         <Button type="button" variant="outline" disabled={isUploading} onClick={() => fileInput.current?.click()}>
           <Upload />
-          Upload avatar
+          {t("photo.upload")}
         </Button>
       </div>
 
       {creating && (
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="First name">
+          <Field label={t("auth:fields.firstName")}>
             <Input value={draft.first_name} onChange={(e) => set({ first_name: e.target.value })} />
           </Field>
-          <Field label="Last name">
+          <Field label={t("auth:fields.lastName")}>
             <Input value={draft.last_name} onChange={(e) => set({ last_name: e.target.value })} />
           </Field>
         </div>
       )}
 
-      <Field label="User name" error={slugError}>
+      <Field label={t("fields.handle")} error={slugError}>
         <Input
-          placeholder="@quiet-otter"
+          placeholder={t("fields.handlePlaceholder")}
           value={draft.slug ? `@${draft.slug}` : ""}
           onChange={(e) => set({ slug: e.target.value.replace(/^@+/, "").toLowerCase() })}
         />
       </Field>
 
       <div className="flex flex-col gap-1.5">
-        <Label id="wizard-type-label">Persona type</Label>
+        <Label id="wizard-type-label">{t("wizard.type")}</Label>
         <div role="radiogroup" aria-labelledby="wizard-type-label" className="flex flex-wrap gap-2">
-          {[...PERSONA_TYPES, OTHER_TYPE].map((t) => (
+          {([...PERSONA_TYPES, OTHER_TYPE] as PersonaType[]).map((type) => (
             <Chip
-              key={t}
+              key={type}
               kind="filter"
               role="radio"
-              aria-checked={draft.type === t}
+              aria-checked={draft.type === type}
               aria-pressed={undefined}
-              selected={draft.type === t}
-              onClick={() => set({ type: t })}
+              selected={draft.type === type}
+              onClick={() => set({ type })}
             >
-              {t}
+              {personaTypeLabel(type)}
             </Chip>
           ))}
         </div>
         {draft.type === OTHER_TYPE && (
           <Input
-            aria-label="Your own type"
-            placeholder="sporty, funny, family…"
+            aria-label={t("wizard.ownType")}
+            placeholder={t("wizard.ownTypePlaceholder")}
             maxLength={100}
             value={draft.customType}
             onChange={(e) => set({ customType: e.target.value })}
           />
         )}
-        <p className="text-xs text-muted-foreground">Only you see the type.</p>
+        <p className="text-xs text-muted-foreground">{t("wizard.typeOnlyYou")}</p>
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label id="wizard-theme-label">Theme</Label>
+        <Label id="wizard-theme-label">{t("common:look.theme")}</Label>
         <ThemeSwatchGroup aria-labelledby="wizard-theme-label" value={draft.theme} onChange={(theme) => set({ theme })} />
       </div>
 
-      <Field label="Bio (optional)">
-        <Textarea rows={3} placeholder="Tell others about this persona…" value={draft.bio} onChange={(e) => set({ bio: e.target.value })} />
+      <Field label={t("wizard.bioOptional")}>
+        <Textarea rows={3} placeholder={t("fields.bioPlaceholder")} value={draft.bio} onChange={(e) => set({ bio: e.target.value })} />
       </Field>
     </div>
   );

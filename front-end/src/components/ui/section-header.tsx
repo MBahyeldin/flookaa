@@ -2,6 +2,7 @@ import * as React from "react"
 import { Link } from "react-router-dom"
 import { ChevronRight } from "lucide-react"
 
+import { t } from "@/i18n"
 import { cn } from "@/lib/utils"
 
 const seeAllClass =
@@ -12,7 +13,7 @@ function SectionHeader({
   title,
   seeAllTo,
   onSeeAll,
-  seeAllLabel = "See all",
+  seeAllLabel = t("common:actions.seeAll"),
   className,
 }: {
   overline?: React.ReactNode

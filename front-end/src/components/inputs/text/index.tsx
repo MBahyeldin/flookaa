@@ -2,7 +2,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordChecklist } from "@/components/password-checklist";
 import { MARK_ONLY } from "@/models/Forms/Form";
-import { PASSWORD_RULES_ERROR } from "@/lib/password";
+import { passwordRulesError } from "@/lib/password";
+import { t } from "@/i18n";
 import { cn } from "@/lib/utils";
 import type { FormFieldProps } from "@/types/FormFields";
 import { Eye, EyeOff } from "lucide-react";
@@ -23,7 +24,7 @@ export default function TextInput({
   const isPassword = field.type === "password";
   const invalid = !!error && !!touched;
   // The checklist already says which rules fail.
-  const shownByChecklist = field.passwordRules && error === PASSWORD_RULES_ERROR;
+  const shownByChecklist = field.passwordRules && error === passwordRulesError();
   const message = invalid && error !== MARK_ONLY && !shownByChecklist ? error : null;
   const noteId = `${field.id}-note`;
   const rulesId = `${field.id}-rules`;
@@ -62,7 +63,7 @@ export default function TextInput({
           <button
             type="button"
             onClick={() => setRevealed((r) => !r)}
-            aria-label={revealed ? "Hide password" : "Show password"}
+            aria-label={revealed ? t("auth:fields.hidePassword") : t("auth:fields.showPassword")}
             aria-pressed={revealed}
             className="absolute inset-y-0 end-0 flex w-11 items-center justify-center rounded-e-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >

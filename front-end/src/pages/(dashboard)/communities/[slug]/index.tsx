@@ -28,7 +28,10 @@ import type { Channel } from "@/types/channel";
 import type { Community, ModeratedChannel } from "@/types/community";
 import { useNotificationStore } from "@/stores/NotificationStore";
 import { useSectionSpy } from "@/hooks/useSectionSpy";
-import { formatDateOnly } from "@/utils/formateDate";
+import { formatDateOnly } from "@/lib/format";
+import { useTranslation } from "react-i18next";
+import { t as translate } from "@/i18n";
+import { errorMessage } from "@/lib/errors";
 import { ChannelTile } from "@/components/tile/ChannelTile";
 import { CommunityManageSheet } from "./manage/CommunityManageSheet";
 import MembersSheet, { type MembersTab } from "./MembersSheet";
@@ -43,6 +46,7 @@ const SHOWN_CHANNELS = 6;
 const sectionClass = "scroll-mt-28 md:scroll-mt-14";
 
 export default function CommunityPage() {
+  const { t } = useTranslation(["communities", "common", "channels"]);
   const { slug = "" } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -193,11 +197,7 @@ export default function CommunityPage() {
       setBusy(null);
       if (!r.ok) {
         toast.error(
-          r.error === "cannot_follow_private"
-            ? "Private communities can't be followed."
-            : r.error === "recently_rejected"
-              ? "This community declined your request recently."
-              : failure,
+          r.error === "cannot_follow_private" || r.error === "recently_rejected" ? errorMessage(r.error) : failure,
         );
       }
       await reloadCommunity();
@@ -214,13 +214,13 @@ export default function CommunityPage() {
   };
 
   const removeChannel = async (channel: Channel) => {
-    if (!community || !confirm(`Remove ${channel.name} from ${community.name}?`)) return;
+    if (!community || !confirm(t("channelsList.removeConfirm", { channel: channel.name, community: community.name }))) return;
     const r = await removeCommunityChannel(community.id, Number(channel.id));
     if (!r.ok) {
-      toast.error("Couldn't remove the channel. Please try again.");
+      toast.error(t("channelsList.removeFailed"));
       return;
     }
-    toast.success(`${channel.name} was removed from the community`);
+    toast.success(t("channelsList.removed", { channel: channel.name }));
     setChannels((prev) => prev?.filter((c) => c.id !== channel.id) ?? null);
   };
 
@@ -230,24 +230,20 @@ export default function CommunityPage() {
       setRulesOpen(true);
       return;
     }
-    runAction("join", () => joinCommunity(community.id), "Couldn't join. Please try again.");
+    runAction("join", () => joinCommunity(community.id), t("errors.joinFailed"));
   };
 
   const leave = () => {
     if (!community) return;
     const pending = community.membership_status === "pending";
-    if (!confirm(pending ? "Cancel your request to join?" : `Leave ${community.name}?`)) return;
-    runAction(
-      "join",
-      () => leaveCommunity(community.id),
-      pending ? "Couldn't cancel the request. Please try again." : "Couldn't leave. Please try again.",
-    );
+    if (!confirm(pending ? t("cancelRequestConfirm") : t("common:confirm.leave", { name: community.name }))) return;
+    runAction("join", () => leaveCommunity(community.id), pending ? t("errors.cancelFailed") : t("errors.leaveFailed"));
   };
 
   const follow = () => {
     if (!community) return;
-    if (community.following) runAction("follow", () => unfollowCommunity(community.id), "Couldn't unfollow. Please try again.");
-    else runAction("follow", () => followCommunity(community.id), "Couldn't follow. Please try again.");
+    if (community.following) runAction("follow", () => unfollowCommunity(community.id), t("errors.unfollowFailed"));
+    else runAction("follow", () => followCommunity(community.id), t("errors.followFailed"));
   };
 
   const suggest = () => {
@@ -259,26 +255,25 @@ export default function CommunityPage() {
 
   if (state === "missing") return <NotFound />;
   if (state === "failed") {
-    return <ErrorState className="mx-4 mt-24" title="Couldn't load this community" onRetry={() => setAttempt((n) => n + 1)} />;
+    return <ErrorState className="mx-4 mt-24" title={t("loadFailed")} onRetry={() => setAttempt((n) => n + 1)} />;
   }
   if (!community) return <CommunitySkeleton />;
 
   const canSuggest = !!moderated?.some((c) => c.community_status === "none" || c.community?.id === community.id);
   const declinedNote = community.rejected_until
-    ? `Your request was declined. You can ask again on ${formatDateOnly(community.rejected_until)}.`
-    : "Your request was declined.";
+    ? t("declinedUntil", { date: formatDateOnly(community.rejected_until) })
+    : t("declined");
   const hiddenChannels = channels && !allChannels ? Math.max(channels.length - SHOWN_CHANNELS, 0) : 0;
   const shownChannels = channels && hiddenChannels > 0 ? channels.slice(0, SHOWN_CHANNELS) : channels;
   const notices = community.can_manage
     ? [
         pendingRequests > 0 && {
           tab: "requests" as const,
-          label: pendingRequests === 1 ? "1 request to join" : `${pendingRequests} requests to join`,
+          label: t("notices.requests", { count: pendingRequests }),
         },
         pendingChannelRequests > 0 && {
           tab: "channels" as const,
-          label:
-            pendingChannelRequests === 1 ? "1 channel wants to join" : `${pendingChannelRequests} channels want to join`,
+          label: t("notices.channels", { count: pendingChannelRequests }),
         },
       ].filter((n) => !!n)
     : [];
@@ -322,42 +317,42 @@ export default function CommunityPage() {
 
       <SectionNav value={section} onValueChange={(v) => jump(v as (typeof SECTIONS)[number])}>
         <SectionNavList className="top-14 px-4 md:top-0 md:px-8 xl:px-16">
-          <SectionNavTab value="channels">Channels</SectionNavTab>
-          <SectionNavTab value="about">About</SectionNavTab>
-          <SectionNavTab value="people">People</SectionNavTab>
+          <SectionNavTab value="channels">{t("common:nav.channels")}</SectionNavTab>
+          <SectionNavTab value="about">{t("common:about.title")}</SectionNavTab>
+          <SectionNavTab value="people">{t("common:people.title")}</SectionNavTab>
         </SectionNavList>
       </SectionNav>
 
       <div className="mx-auto flex w-full max-w-[1192px] flex-col gap-12 px-4 py-8 md:px-8 xl:px-16">
         <section id="channels" aria-labelledby="community-channels" className={`flex flex-col gap-6 ${sectionClass}`}>
           <SectionHeader
-            overline="Channels"
-            title={<span id="community-channels">In this community</span>}
+            overline={t("common:nav.channels")}
+            title={<span id="community-channels">{t("channelsList.title")}</span>}
             onSeeAll={hiddenChannels > 0 ? () => setAllChannels(true) : undefined}
-            seeAllLabel={`See all ${channels?.length ?? ""}`}
+            seeAllLabel={t("channelsList.seeAll", { count: channels?.length ?? 0 })}
           />
           {!canSeeInside ? (
             <EmptyState
               icon={Lock}
-              title="Members only"
+              title={t("common:membersOnly")}
               body={
                 community.membership_status === "pending"
-                  ? "Your request is waiting for approval."
+                  ? t("requestWaiting")
                   : community.membership_status === "rejected"
                     ? declinedNote
-                    : "Join to see this community's channels."
+                    : t("joinToSeeChannels")
               }
               action={
                 community.membership_status === "none" && (
                   <Button onClick={join} loading={busy === "join"}>
-                    Request to join
+                    {t("common:actions.requestToJoin")}
                   </Button>
                 )
               }
             />
           ) : channels === null && channelsFailed ? (
             <ErrorState
-              title="Couldn't load channels"
+              title={t("channels:list.loadFailed")}
               onRetry={() => {
                 setChannelsFailed(false);
                 return loadChannels();
@@ -368,14 +363,14 @@ export default function CommunityPage() {
           ) : shownChannels.length === 0 ? (
             <EmptyState
               icon={Hash}
-              title="No channels in this community yet"
+              title={t("channelsList.empty")}
               action={
                 community.can_manage ? (
                   <Button asChild>
-                    <Link to={`/channels/create?community=${community.id}`}>Create channel</Link>
+                    <Link to={`/channels/create?community=${community.id}`}>{t("channels:create.submit")}</Link>
                   </Button>
                 ) : canSuggest ? (
-                  <Button onClick={suggest}>Suggest a channel</Button>
+                  <Button onClick={suggest}>{t("suggest.title")}</Button>
                 ) : undefined
               }
             />
@@ -391,7 +386,7 @@ export default function CommunityPage() {
                       className="self-end text-destructive hover:text-destructive"
                       onClick={() => removeChannel(channel)}
                     >
-                      Remove from community
+                      {t("channelsList.removeAction")}
                     </Button>
                   </div>
                 ) : (
@@ -441,7 +436,7 @@ export default function CommunityPage() {
         open={rulesOpen}
         onOpenChange={setRulesOpen}
         busy={!!busy}
-        onAgree={() => runAction("join", () => joinCommunity(community.id), "Couldn't join. Please try again.")}
+        onAgree={() => runAction("join", () => joinCommunity(community.id), t("errors.joinFailed"))}
       />
 
       {community.can_manage && (
@@ -459,7 +454,7 @@ export default function CommunityPage() {
 
 function CommunitySkeleton() {
   return (
-    <div role="status" aria-label="Loading community" className="pb-8">
+    <div role="status" aria-label={translate("communities:loading")} className="pb-8">
       <Skeleton className="h-[150px] rounded-none md:h-[280px]" />
       <div className="-mt-10 flex flex-col gap-3 px-4 md:-mt-14 md:px-8 xl:px-16">
         <Skeleton className="size-20 rounded-lg border-3 border-background md:size-28" />

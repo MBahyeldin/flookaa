@@ -1,3 +1,4 @@
+import { schemaTitle } from "../schemaTitle";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -15,7 +16,7 @@ export function Fields(props: {
     return (
       <>
         <Label key={field.name} className="flex flex-col gap-1">
-          <span>{field.title ?? field.name}</span>
+          <span>{schemaTitle(field.name, field.title)}</span>
         </Label>
         <Input
           key={field.name}

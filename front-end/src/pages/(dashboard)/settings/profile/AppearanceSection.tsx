@@ -1,23 +1,25 @@
 import { SettingsSection } from "@/components/settings/SettingsSection";
 import { SegmentedControl, SegmentedControlItem } from "@/components/ui/segmented-control";
 import { useTheme } from "@/Theme.context";
+import { useTranslation } from "react-i18next";
 
 export function AppearanceSection() {
+  const { t } = useTranslation("settings");
   const { isDarkMode, setDarkMode } = useTheme();
 
   return (
     <SettingsSection
       id="appearance"
-      title="Appearance"
-      lead="Light or dark, on this device. Applies at once."
+      title={t("appearance.title")}
+      lead={t("appearance.lead")}
       action={
         <SegmentedControl
-          aria-label="Appearance"
+          aria-label={t("appearance.title")}
           value={isDarkMode ? "dark" : "light"}
           onValueChange={(v) => setDarkMode(v === "dark")}
         >
-          <SegmentedControlItem value="light">Light</SegmentedControlItem>
-          <SegmentedControlItem value="dark">Dark</SegmentedControlItem>
+          <SegmentedControlItem value="light">{t("appearance.light")}</SegmentedControlItem>
+          <SegmentedControlItem value="dark">{t("appearance.dark")}</SegmentedControlItem>
         </SegmentedControl>
       }
     />

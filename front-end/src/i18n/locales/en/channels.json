@@ -1,0 +1,115 @@
+{
+  "create": {
+    "nameMissing": "Give the channel a name.",
+    "failed": "Couldn't create the channel. Try again.",
+    "pendingCommunity": "Channel created. {{community}}'s managers will review your request to add it.",
+    "partOf": "Part of {{community}}",
+    "requestedFor": "Requested for {{community}}",
+    "title": "Create a channel",
+    "lead": "Channels are where posts live. You can change all of this later.",
+    "submit": "Create channel",
+    "previewName": "Your channel",
+    "basicsLead": "Name it and say what it is about.",
+    "community": "Community",
+    "communityLead": "Optional. A community groups channels about the same topics.",
+    "communityManaged": "You manage it, so the channel goes straight in.",
+    "communityRequest": "Its managers review the request to add it.",
+    "noCommunity": "Not in a community.",
+    "lookLead": "Logo, colours and cover. The preview follows your picks.",
+    "audienceLead": "Who reads it, and how old they must be.",
+    "privateBody": "Only members read. Joining needs your or a moderator's approval.",
+    "interestsLead": "Pick 1 to 5. People find the channel by them."
+  },
+  "fields": {
+    "name": "Channel name",
+    "namePlaceholder": "Night Runners",
+    "descriptionPlaceholder": "What people find here"
+  },
+  "list": {
+    "title": "Channels",
+    "lead": "Every channel you can see. Public ones open at once; private ones take a request.",
+    "loadFailed": "Couldn't load channels",
+    "noneFor": "No channels for {{names}} yet",
+    "noneWithInterests": "No channels with these interests yet",
+    "empty": "No channels yet"
+  },
+  "about": {
+    "private": "Private · members read and post; joining takes a request",
+    "public": "Public · anyone can read and join",
+    "createdBy": "Created {{date}} by <owner>{{name}}</owner>"
+  },
+  "partOfLink": "Part of <link>{{community}}</link>",
+  "hero": {
+    "join": "Join channel"
+  },
+  "removed": "You were removed from this channel.",
+  "loadFailed": "Couldn't load this channel",
+  "membersOnlyBody": "Join to read and post here.",
+  "tabs": {
+    "posts": "Posts"
+  },
+  "loading": "Loading channel",
+  "manage": {
+    "ageFailed": "Couldn't save the age limit. Try again.",
+    "ageSaved": "Only people {{age}} and over can see this channel",
+    "privateNote": "Only members read. Joins need approval.",
+    "requestErrors": {
+      "channel_in_community": "This channel is already in a community.",
+      "channel_request_pending": "This channel is already waiting on a community.",
+      "recently_rejected": "That community declined this channel less than 30 days ago."
+    },
+    "requestFailed": "Couldn't send the request. Try again.",
+    "requestSent": "Sent to {{community}}'s managers",
+    "takeOutConfirm": "Take this channel out of {{community}}?",
+    "takeOutBody": "It stays as it is, with its members and posts. Getting back in needs a new request.",
+    "takeOut": "Take out",
+    "communityFailed": "Couldn't update the community. Try again.",
+    "left": "The channel left {{community}}",
+    "requestCancelled": "Request cancelled",
+    "suggest": "Suggest to a community",
+    "communityLoadFailed": "Couldn't load the community",
+    "statusActive": "The channel shows on the community's page.",
+    "statusPending": "Waiting for its managers to approve.",
+    "statusRejectedUntil": "Declined. You can ask again on {{date}}.",
+    "statusRejected": "Declined. You can ask again later.",
+    "takeOutLong": "Take out of community",
+    "communityLead": "A community groups channels about the same topics.",
+    "nameTooLong": "Enter a name of at most {{max}} characters.",
+    "descriptionTooLong": "Keep it to {{max}} characters.",
+    "infoFailed": "Couldn't save the channel info. Try again.",
+    "infoSaved": "Channel info saved",
+    "info": "Info",
+    "infoLead": "The name and line people see on the channel."
+  },
+  "members": {
+    "approved": "{{name}} joined the channel",
+    "removeBody": "They leave the channel and lose any moderator role. They can ask to join again.",
+    "removeAction": "Remove from channel",
+    "description": "Channel members"
+  },
+  "feed": {
+    "loadFailed": "Couldn't load your feed",
+    "emptyTitle": "Your feed is quiet",
+    "emptyBody": "Join a few channels and their posts will show up here.",
+    "discoverChannels": "Discover channels",
+    "title": "Your feed",
+    "lead": "New posts from the channels you're in."
+  },
+  "discover": {
+    "title": "Discover",
+    "leadAbout": "Posts from public channels about {{names}}.",
+    "leadAll": "Posts from public channels you're not in yet.",
+    "leadForYou": "Posts from public channels that share your interests.",
+    "loadFailed": "Couldn't load Discover",
+    "pickTitle": "Pick your interests",
+    "pickBody": "Discover shows posts from public channels that share an interest with you.",
+    "chooseInterests": "Choose interests",
+    "noneAbout": "No public posts about {{names}} yet",
+    "noneAboutThese": "No public posts about these yet",
+    "inFeedInstead": "Channels you're already in show up in your feed instead.",
+    "showForYou": "Show For you",
+    "nothingNew": "Nothing new yet",
+    "nothingAll": "No public channel you're not in has posted yet.",
+    "nothingForYou": "No public channel you're not in has posted about your interests."
+  }
+}

@@ -7,14 +7,13 @@ import { getSuggestedChannels, type SuggestedChannel } from "@/services/suggesti
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { ChannelTile } from "@/components/tile/ChannelTile";
 import OnboardingFooter from "../OnboardingFooter";
+import { useTranslation } from "react-i18next";
 
-const groups = [
-  { source: "community", title: "From your communities" },
-  { source: "interest", title: "Based on your interests" },
-] as const;
+const groups = [{ source: "community" }, { source: "interest" }] as const;
 
 // Suggestions are public only. The onboarding page made the default persona current, so its suggestions and actions are the same persona's.
 export default function Channels() {
+  const { t } = useTranslation(["onboarding", "common"]);
   const persona = useUserProfileStore((s) => s.persona);
   const [items, setItems] = useState<SuggestedChannel[] | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -35,7 +34,7 @@ export default function Channels() {
   }, [persona, attempt]);
 
   if (loadError) {
-    return <ErrorState title="Couldn't load channels" onRetry={() => setAttempt((n) => n + 1)} />;
+    return <ErrorState title={t("channels.loadFailed")} onRetry={() => setAttempt((n) => n + 1)} />;
   }
   if (!items) return <SkeletonList count={3} variant="post" className="grid gap-4 sm:grid-cols-2" />;
 
@@ -52,13 +51,13 @@ export default function Channels() {
       {shown.length === 0 && (
         <EmptyState
           icon={Hash}
-          title="No suggestions yet"
-          body="Nothing matches your interests yet. You can skip this step."
+          title={t("noSuggestions")}
+          body={t("noSuggestionsBody")}
         />
       )}
       {shown.map((g) => (
         <section key={g.source} className="flex flex-col gap-3">
-          {shown.length > 1 && <h2 className="text-overline font-semibold uppercase text-muted-foreground">{g.title}</h2>}
+          {shown.length > 1 && <h2 className="text-overline font-semibold uppercase text-muted-foreground">{t(`channels.source.${g.source}`)}</h2>}
           <div className="grid gap-4 sm:grid-cols-2">
             {g.channels.map((c) => (
               <ChannelTile
@@ -71,7 +70,7 @@ export default function Channels() {
           </div>
         </section>
       ))}
-      <OnboardingFooter left={`${selected} selected`} continueDisabled={selected === 0} />
+      <OnboardingFooter left={t("selected", { count: selected })} continueDisabled={selected === 0} />
     </div>
   );
 }

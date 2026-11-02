@@ -4,6 +4,7 @@ import { SectionNav, SectionNavList, SectionNavTab } from "@/components/ui/secti
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSectionSpy } from "@/hooks/useSectionSpy";
 import { cn } from "@/lib/utils";
+import { t } from "@/i18n";
 
 export type SettingsNavItem<T extends string> = { id: T; label: string };
 
@@ -53,7 +54,7 @@ export function SettingsHeader({ title, lead }: { title: ReactNode; lead?: React
 
 export function SettingsSkeleton() {
   return (
-    <div className={cn(column, "gap-6")} aria-busy="true" aria-label="Loading settings">
+    <div className={cn(column, "gap-6")} aria-busy="true" aria-label={t("settings:loading")}>
       <div className="flex flex-col gap-3">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-3 w-80 max-w-full" />

@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useEffect, useMemo } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import type { PortableTextBlock } from "@portabletext/react";
@@ -12,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DEFAULT_PALETTE, PALETTES, isPaletteId, type PaletteId } from "@/themes/palettes";
+import { DEFAULT_PALETTE, PALETTES, isPaletteId, paletteLabel, type PaletteId } from "@/themes/palettes";
 
 function groupByCategory(list: AnyBlock[]) {
   const groups = new Map<BlockCategory, AnyBlock[]>();
@@ -86,19 +87,19 @@ export default function BlocksGalleryPage() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pb-12 pt-6 md:px-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-2">
-          <h1>Blocks</h1>
+          <h1>{t("editor:gallery.title")}</h1>
           <p className="text-lead text-muted-foreground">
-            Everything you can add to a post, with examples. Type / in the editor to insert one.
+            {t("editor:gallery.lead")}
           </p>
         </div>
         <Select value={theme} onValueChange={setTheme}>
-          <SelectTrigger className="w-40" aria-label="Theme">
+          <SelectTrigger className="w-40" aria-label={t("common:look.theme")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {PALETTES.map((palette) => (
               <SelectItem key={palette.id} value={palette.id}>
-                {palette.label}
+                {paletteLabel(palette.id)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -106,7 +107,7 @@ export default function BlocksGalleryPage() {
       </header>
 
       <nav
-        aria-label="Blocks"
+        aria-label={t("editor:gallery.title")}
         className="sticky top-14 z-30 -mx-4 overflow-x-auto border-b border-border bg-background px-4 py-2 md:top-0 md:-mx-8 md:px-8"
       >
         <ul className="flex w-max gap-2">
@@ -127,7 +128,7 @@ export default function BlocksGalleryPage() {
       {groups.map(([category, list]) => (
         <div key={category} className="flex flex-col gap-8">
           <h2 className="text-overline uppercase text-muted-foreground">
-            {categoryTitle[category]}
+            {categoryTitle(category)}
           </h2>
           {list.map((block) => (
             <BlockSection key={block.name} block={block} theme={theme} />

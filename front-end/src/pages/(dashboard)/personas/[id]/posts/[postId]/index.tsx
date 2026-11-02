@@ -18,6 +18,7 @@ import type { PersonaProfile } from "@/types/persona";
 import handleChannelEvents from "@/pages/(dashboard)/channels/[id]/subscribe/handleChannelEvents";
 import { PostArticle } from "@/pages/(dashboard)/channels/[id]/posts/[postId]/PostArticle";
 import { fullName } from "../../ProfileHero";
+import { t } from "@/i18n";
 
 const ignore = () => {};
 
@@ -90,7 +91,7 @@ function WallPostView({ personaId, postId }: { personaId: string; postId: string
     return (
       <ErrorState
         className="mx-4 mt-24"
-        title="Couldn't load this post"
+        title={t("posts:page.loadFailed")}
         onRetry={() => Promise.all([loadPersona(), refetchPost()])}
       />
     );
@@ -121,7 +122,7 @@ function PersonaBar({ persona }: { persona: PersonaProfile }) {
   return (
     <div className="sticky top-14 z-10 border-b bg-background/95 backdrop-blur md:top-0">
       <div className="flex h-14 items-center gap-3 px-4 md:px-8">
-        <Button variant="ghost" size="icon-sm" aria-label="Back" onClick={back}>
+        <Button variant="ghost" size="icon-sm" aria-label={t("common:actions.back")} onClick={back}>
           <ArrowLeft className="rtl:-scale-x-100" />
         </Button>
         <Link
@@ -144,7 +145,7 @@ function PersonaBar({ persona }: { persona: PersonaProfile }) {
 
 function WallPostSkeleton() {
   return (
-    <div role="status" aria-label="Loading post">
+    <div role="status" aria-label={t("posts:page.loading")}>
       <Skeleton className="h-14 rounded-none" />
       <div className="mx-auto flex w-full max-w-[712px] flex-col gap-6 px-4 py-8 md:py-12">
         <div className="flex items-center gap-3">

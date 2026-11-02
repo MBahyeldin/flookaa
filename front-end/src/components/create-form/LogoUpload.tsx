@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import type { PaletteId } from "@/themes/palettes";
 import uploadFile from "@/services/uploadFile";
+import { t } from "@/i18n";
 
 export function LogoUpload({
   name,
@@ -30,7 +31,7 @@ export function LogoUpload({
     try {
       onChange(await uploadFile(file));
     } catch (err) {
-      setFailed(err instanceof Error ? err.message : "Upload failed.");
+      setFailed(err instanceof Error ? err.message : t("common:upload.failed"));
     } finally {
       setUploading(false);
       if (input.current) input.current.value = "";
@@ -47,16 +48,22 @@ export function LogoUpload({
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" size="sm" loading={uploading} onClick={() => input.current?.click()}>
             {!uploading && <Upload />}
-            {uploading ? "Uploading…" : failed ? "Try again" : value ? "Replace logo" : "Upload logo"}
+            {uploading
+              ? t("common:logo.uploading")
+              : failed
+                ? t("common:actions.tryAgain")
+                : value
+                  ? t("common:logo.replace")
+                  : t("common:logo.upload")}
           </Button>
           {value && !uploading && (
             <Button type="button" variant="ghost" size="sm" onClick={() => onChange("")}>
-              Remove
+              {t("common:actions.remove")}
             </Button>
           )}
         </div>
         <p role={note ? "alert" : undefined} className={note ? "text-xs text-destructive" : "text-xs text-muted-foreground"}>
-          {note ?? "Square image, PNG or JPG. Without one, the initials show."}
+          {note ?? t("common:logo.hint")}
         </p>
       </div>
       <input

@@ -13,6 +13,8 @@ import {
 import { tv } from "tailwind-variants";
 import { z } from "zod";
 import { FormField } from "@/models/Forms/FormField";
+import { perLanguage, t } from "@/i18n";
+import { oneLine, required } from "./validation";
 import { defineBlock } from "./defineBlock";
 
 const MAX_TITLE = 120;
@@ -30,14 +32,14 @@ const calloutSchema = z.object({
   tag: z
     .string()
     .max(MAX_TAG)
-    .refine((tag) => !/[\r\n]/.test(tag), "must be one line")
+    .refine((tag) => !/[\r\n]/.test(tag), oneLine)
     .optional(),
   title: z
     .string()
     .max(MAX_TITLE)
-    .refine((title) => !/[\r\n]/.test(title), "must be one line")
+    .refine((title) => !/[\r\n]/.test(title), oneLine)
     .optional(),
-  description: z.string().refine((text) => text.trim() !== "", "is required"),
+  description: z.string().refine((text) => text.trim() !== "", required),
 });
 
 type CalloutValue = z.infer<typeof calloutSchema>;
@@ -60,12 +62,7 @@ const toneIcon: Record<Tone, Icon> = {
   error: "error",
 };
 
-const toneTag: Record<Tone, string> = {
-  info: "Good to know",
-  success: "Nice!",
-  warning: "Heads up",
-  error: "Careful",
-};
+const toneTag = (tone: Tone) => t(`blocks:callout.tags.${tone}`);
 
 const calloutStyle = tv({
   slots: {
@@ -88,63 +85,62 @@ const calloutStyle = tv({
   },
 });
 
-const label = (value: string) => value[0].toUpperCase() + value.slice(1);
 
-const calloutFormFields: FormField[] = [
+const calloutFormFields = perLanguage((): FormField[] => [
   new FormField({
     id: "tone",
     name: "tone",
-    label: "Tone",
+    label: t("blocks:callout.fields.tone"),
     type: "string",
     interfaceType: "select",
-    options: tones.map((tone) => ({ label: label(tone), value: tone })),
+    options: tones.map((tone) => ({ label: t(`blocks:callout.tones.${tone}`), value: tone })),
     width: "full",
   }),
   new FormField({
     id: "icon",
     name: "icon",
-    label: "Icon",
+    label: t("blocks:callout.fields.icon"),
     type: "string",
     interfaceType: "select",
-    placeholder: "Tone default",
-    options: icons.map((icon) => ({ label: label(icon), value: icon })),
+    placeholder: t("blocks:callout.fields.toneDefault"),
+    options: icons.map((icon) => ({ label: t(`blocks:callout.icons.${icon}`), value: icon })),
     width: "full",
   }),
   new FormField({
     id: "tag",
     name: "tag",
-    label: "Tag",
+    label: t("blocks:callout.fields.tag"),
     type: "string",
     interfaceType: "text",
-    placeholder: "Tone default, e.g. Heads up",
+    placeholder: t("blocks:callout.fields.toneDefaultEGHeads"),
     width: "full",
   }),
   new FormField({
     id: "title",
     name: "title",
-    label: "Title",
+    label: t("blocks:callout.fields.title"),
     type: "string",
     interfaceType: "text",
-    placeholder: "Optional heading",
+    placeholder: t("blocks:callout.fields.optionalHeading"),
     width: "full",
   }),
   new FormField({
     id: "description",
     name: "description",
-    label: "Description",
+    label: t("blocks:callout.fields.description"),
     type: "string",
     interfaceType: "textarea",
-    placeholder: "What should readers notice?",
+    placeholder: t("blocks:callout.fields.whatShouldReadersNotice"),
     isRequired: true,
     width: "full",
   }),
-];
+]);
 
 function CalloutView({ value }: { value: CalloutValue }) {
   const tone = value.tone ?? "info";
   const icon = value.icon ?? toneIcon[tone];
   const Icon = icon === "none" ? null : iconComponents[icon];
-  const tag = value.tag?.trim() ? value.tag : toneTag[tone];
+  const tag = value.tag?.trim() ? value.tag : toneTag(tone);
   const styles = calloutStyle({ tone });
 
   return (
@@ -174,11 +170,17 @@ function CalloutView({ value }: { value: CalloutValue }) {
 
 export const callout = defineBlock<CalloutValue>({
   name: "callout",
-  title: "Callout",
-  description: "A highlighted note: info, success, warning or error.",
+  get title() {
+    return t("blocks:callout.title");
+  },
+  get description() {
+    return t("blocks:callout.description");
+  },
   icon: MessageSquareWarningIcon,
   category: "layout",
-  fields: calloutFormFields,
+  get fields() {
+    return calloutFormFields();
+  },
   defaultValues: { tone: "info" },
   schema: calloutSchema,
   View: CalloutView,

@@ -1,15 +1,14 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-export const monthYear = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+import { t } from "@/i18n";
 
 export const overlineClass = "text-overline font-semibold tracking-wider text-muted-foreground uppercase";
 
 export function AboutBlock({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <section className={cn("flex flex-col gap-4 rounded-lg bg-surface-sunken p-6", className)}>
-      <h2 className={overlineClass}>About</h2>
+      <h2 className={overlineClass}>{t("common:about.title")}</h2>
       {children}
     </section>
   );

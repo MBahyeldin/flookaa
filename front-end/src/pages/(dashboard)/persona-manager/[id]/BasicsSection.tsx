@@ -11,8 +11,7 @@ import useInputImage from "@/hooks/useInpuImage";
 import { SLUG_PATTERN } from "@/lib/slug";
 import type { Persona } from "@/types/persona";
 import { usePersonaUpdate } from "./usePersonaUpdate";
-
-const SLUG_HELP = "3–50 lowercase letters, digits or single hyphens.";
+import { useTranslation } from "react-i18next";
 
 const valuesOf = (p: Persona) => ({
   thumbnail: p.thumbnail ?? "",
@@ -24,6 +23,8 @@ const valuesOf = (p: Persona) => ({
 });
 
 export function BasicsSection({ persona }: { persona: Persona }) {
+  const { t } = useTranslation(["personas", "common", "auth"]);
+  const SLUG_HELP = t("slug.help");
   const saved = valuesOf(persona);
   const [draft, setDraft] = useState(saved);
   const [slugError, setSlugError] = useState<string | null>(null);
@@ -48,7 +49,7 @@ export function BasicsSection({ persona }: { persona: Persona }) {
 
   const onSave = async () => {
     const error = await save(trimmed);
-    if (error === "slug_taken") setSlugError("Another of your personas already uses this handle.");
+    if (error === "slug_taken") setSlugError(t("slug.taken"));
     else if (error === "invalid_slug") setSlugError(SLUG_HELP);
     else if (!error) setDraft(trimmed);
   };
@@ -56,8 +57,8 @@ export function BasicsSection({ persona }: { persona: Persona }) {
   return (
     <SettingsSection
       id="basics"
-      title="Basics"
-      lead="How this persona shows up to others."
+      title={t("settings.basics.title")}
+      lead={t("settings.basics.lead")}
       onSave={onSave}
       dirty={dirty}
       canSave={valid && !isUploading}
@@ -70,7 +71,7 @@ export function BasicsSection({ persona }: { persona: Persona }) {
             <GeneratedAvatarFallback name={displayName} />
           </Avatar>
           {isUploading && (
-            <div role="status" aria-label="Uploading photo" className="absolute inset-0 flex items-center justify-center rounded-full bg-background/70">
+            <div role="status" aria-label={t("photo.uploading")} className="absolute inset-0 flex items-center justify-center rounded-full bg-background/70">
               <Loader2 className="size-5 animate-spin" />
             </div>
           )}
@@ -80,45 +81,45 @@ export function BasicsSection({ persona }: { persona: Persona }) {
             <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handleInputChange} />
             <Button type="button" variant="outline" size="sm" disabled={isUploading} onClick={() => fileInput.current?.click()}>
               <Upload />
-              Upload photo
+              {t("photo.upload")}
             </Button>
             {draft.thumbnail && (
               <Button type="button" variant="ghost" size="sm" disabled={isUploading} onClick={() => set({ thumbnail: "" })}>
-                Remove
+                {t("common:actions.remove")}
               </Button>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">Without a photo, your initials show.</p>
+          <p className="text-xs text-muted-foreground">{t("photo.hint")}</p>
         </div>
       </div>
 
       <FormField
-        label="Label"
-        helper="Only you see this. It tells your personas apart."
-        error={trimmed.name === "" ? "Enter a label" : null}
+        label={t("fields.label")}
+        helper={t("fields.labelHelper")}
+        error={trimmed.name === "" ? t("fields.labelMissing") : null}
       >
         <Input maxLength={255} value={draft.name} onChange={(e) => set({ name: e.target.value })} />
       </FormField>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <FormField label="First name" error={trimmed.first_name === "" ? "Enter a first name" : null}>
+        <FormField label={t("auth:fields.firstName")} error={trimmed.first_name === "" ? t("fields.firstNameMissing") : null}>
           <Input maxLength={255} value={draft.first_name} onChange={(e) => set({ first_name: e.target.value })} />
         </FormField>
-        <FormField label="Last name" error={trimmed.last_name === "" ? "Enter a last name" : null}>
+        <FormField label={t("auth:fields.lastName")} error={trimmed.last_name === "" ? t("fields.lastNameMissing") : null}>
           <Input maxLength={255} value={draft.last_name} onChange={(e) => set({ last_name: e.target.value })} />
         </FormField>
       </div>
 
-      <FormField label="Handle" helper={SLUG_HELP} error={slugError ?? (slugInvalid ? SLUG_HELP : null)}>
+      <FormField label={t("fields.handle")} helper={SLUG_HELP} error={slugError ?? (slugInvalid ? SLUG_HELP : null)}>
         <Input
-          placeholder="@quiet-otter"
+          placeholder={t("fields.handlePlaceholder")}
           value={draft.slug ? `@${draft.slug}` : ""}
           onChange={(e) => set({ slug: e.target.value.replace(/^@+/, "").toLowerCase() })}
         />
       </FormField>
 
-      <FormField label="Bio">
-        <Textarea rows={3} placeholder="Tell others about this persona…" value={draft.bio} onChange={(e) => set({ bio: e.target.value })} />
+      <FormField label={t("fields.bio")}>
+        <Textarea rows={3} placeholder={t("fields.bioPlaceholder")} value={draft.bio} onChange={(e) => set({ bio: e.target.value })} />
       </FormField>
     </SettingsSection>
   );

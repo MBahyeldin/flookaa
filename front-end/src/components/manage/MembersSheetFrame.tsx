@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import i18n from "@/i18n";
 import { ArrowLeft, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,7 @@ export function MembersSheetFrame<T extends string>({
         <div data-theme={theme} className="flex h-full min-h-0 flex-col bg-background text-foreground">
           <div className="flex items-center gap-3 px-4 pt-4 pb-2 md:px-6">
             <SheetClose asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="Close" className="sm:hidden">
+              <Button variant="ghost" size="icon-sm" aria-label={i18n.t("common:actions.close")} className="sm:hidden">
                 <ArrowLeft />
               </Button>
             </SheetClose>
@@ -50,7 +51,7 @@ export function MembersSheetFrame<T extends string>({
               <SheetDescription className="text-sm text-muted-foreground">{description}</SheetDescription>
             </div>
             <SheetClose asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="Close" className="hidden sm:inline-flex">
+              <Button variant="ghost" size="icon-sm" aria-label={i18n.t("common:actions.close")} className="hidden sm:inline-flex">
                 <X />
               </Button>
             </SheetClose>

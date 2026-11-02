@@ -1,13 +1,9 @@
 import { Cover } from "@/components/cover"
+import { t } from "@/i18n"
 import { cn } from "@/lib/utils"
 import type { CoverPattern } from "@/types/cover"
 
-export const COVER_PATTERNS: { id: CoverPattern; label: string }[] = [
-  { id: "horizon", label: "Horizon" },
-  { id: "waves", label: "Waves" },
-  { id: "hills", label: "Hills" },
-  { id: "stripes", label: "Stripes" },
-]
+export const COVER_PATTERNS: CoverPattern[] = ["horizon", "waves", "hills", "stripes"]
 
 function CoverOption({
   pattern,
@@ -54,7 +50,7 @@ function CoverOptionGroup({
   return (
     <div role="radiogroup" className={cn("flex flex-wrap gap-3", className)} {...props}>
       {COVER_PATTERNS.map((p) => (
-        <CoverOption key={p.id} pattern={p.id} label={p.label} checked={p.id === value} onSelect={() => onChange(p.id)} />
+        <CoverOption key={p} pattern={p} label={t(`common:cover.${p}`)} checked={p === value} onSelect={() => onChange(p)} />
       ))}
     </div>
   )

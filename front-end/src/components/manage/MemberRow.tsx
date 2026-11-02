@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PersonRow, displayName, type RowPerson } from "@/components/persona-link/PersonRow";
+import { t } from "@/i18n";
 
 export type MemberAction = { label: string; destructive?: boolean; run: () => void };
 
@@ -27,11 +28,11 @@ export function MemberRow({
   const plain = actions.filter((a) => !a.destructive);
   const destructive = actions.filter((a) => a.destructive);
   return (
-    <PersonRow person={person} detail={detail} badge={role}>
+    <PersonRow person={person} detail={detail} badge={role && (role === "Owner" ? t("common:roles.owner") : t("common:roles.moderator"))}>
       {actions.length > 0 && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="icon-sm" variant="ghost" aria-label={`Actions for ${displayName(person)}`} disabled={busy}>
+            <Button size="icon-sm" variant="ghost" aria-label={t("common:manage.actionsFor", { name: displayName(person) })} disabled={busy}>
               <MoreHorizontal />
             </Button>
           </DropdownMenuTrigger>

@@ -1,4 +1,5 @@
 import type { FormEvent, ReactNode } from "react";
+import { t } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +13,7 @@ export function SettingsSection({
   dirty = false,
   saving = false,
   canSave = true,
-  saveLabel = "Save",
+  saveLabel = t("common:actions.save"),
   className,
   children,
 }: {

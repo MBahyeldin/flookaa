@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { Boxes, Clock, Globe, Lock, ShieldCheck } from "lucide-react";
-import { AboutBlock, AboutFact, AboutFacts, monthYear } from "@/components/about-block";
+import { AboutBlock, AboutFact, AboutFacts } from "@/components/about-block";
+import { formatMonthYear } from "@/lib/format";
+import { Trans, useTranslation } from "react-i18next";
 import InterestChips from "@/components/interests/InterestChips";
 import { PersonaLink } from "@/components/persona-link";
 import type { Interest } from "@/types/interest";
@@ -22,38 +24,56 @@ export function ChannelAbout({
   owner: { id: string | number; username: string; profileImageUrl?: string | null; anonymous: boolean };
   community: { name: string; slug: string } | null | undefined;
 }) {
+  const { t } = useTranslation(["channels", "common"]);
   return (
     <AboutBlock>
       {description && <p className="whitespace-pre-line">{description}</p>}
       {interests.length > 0 && <InterestChips interests={interests} />}
       <AboutFacts>
         <AboutFact icon={isPrivate ? Lock : Globe}>
-          {isPrivate ? "Private · members read and post; joining takes a request" : "Public · anyone can read and join"}
+          {isPrivate ? t("about.private") : t("about.public")}
         </AboutFact>
         {createdAt && (
           <AboutFact icon={Clock}>
             <span>
-              Created {monthYear(createdAt)} by{" "}
-              <PersonaLink
-                personaId={owner.id}
-                anonymous={owner.anonymous}
-                name={owner.username}
-                thumbnail={owner.profileImageUrl || undefined}
-                className="font-medium"
-              >
-                {owner.username}
-              </PersonaLink>
+              <Trans
+                t={t}
+                i18nKey="about.createdBy"
+                values={{ date: formatMonthYear(createdAt), name: owner.username }}
+                components={{
+                  owner: (
+                    <PersonaLink
+                      personaId={owner.id}
+                      anonymous={owner.anonymous}
+                      name={owner.username}
+                      thumbnail={owner.profileImageUrl || undefined}
+                      className="font-medium"
+                    >
+                      {owner.username}
+                    </PersonaLink>
+                  ),
+                }}
+              />
             </span>
           </AboutFact>
         )}
-        <AboutFact icon={ShieldCheck}>{minAge}+</AboutFact>
+        <AboutFact icon={ShieldCheck}>{t("common:age.short", { age: minAge })}</AboutFact>
         {community && (
           <AboutFact icon={Boxes}>
             <span>
-              Part of{" "}
-              <Link to={`/communities/${community.slug}`} className="rounded-sm font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring">
-                {community.name}
-              </Link>
+              <Trans
+                t={t}
+                i18nKey="partOfLink"
+                values={{ community: community.name }}
+                components={{
+                  link: (
+                    <Link
+                      to={`/communities/${community.slug}`}
+                      className="rounded-sm font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                    />
+                  ),
+                }}
+              />
             </span>
           </AboutFact>
         )}

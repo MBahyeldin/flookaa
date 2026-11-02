@@ -1,3 +1,5 @@
+import { graphqlErrorMessage } from "@/lib/errors";
+import { t } from "@/i18n";
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Globe, User2, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -59,8 +61,8 @@ function invalidMessages(invalid: InvalidBlock[]): Map<string, string> {
   const messages = new Map<string, string>();
   for (const item of invalid) {
     if (!item.key) continue;
-    const issue = (item.issues[0] ?? "needs fixing").replace(/\.$/, "");
-    messages.set(item.key, `${item.block.title}: ${issue}. Fix it to post.`);
+    const issue = (item.issues[0] ?? t("editor:needsFixing")).replace(/\.$/, "");
+    messages.set(item.key, t("editor:invalidBlock", { block: item.block.title, issue }));
   }
   return messages;
 }
@@ -142,9 +144,7 @@ export function PostCreator(props: {
     } catch (error) {
       console.error("Failed to publish post:", error);
       toast.error(
-        CombinedGraphQLErrors.is(error)
-          ? error.errors[0]?.message || "Couldn’t publish the post."
-          : "Couldn’t publish the post. Check your connection."
+        graphqlErrorMessage(CombinedGraphQLErrors.is(error) ? error : null, t("posts:composer.publishFailed"), t("posts:composer.publishOffline"))
       );
     } finally {
       isPostingRef.current = false;
@@ -161,7 +161,7 @@ export function PostCreator(props: {
       disabled={!canSubmit}
       loading={isPosting}
     >
-      {isPosting ? "Posting…" : "Post"}
+      {isPosting ? t("posts:composer.posting") : t("posts:composer.post")}
     </Button>
   );
 
@@ -178,7 +178,7 @@ export function PostCreator(props: {
   const visibility = (
     <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
       <Globe aria-hidden className="size-3.5 shrink-0" />
-      Visible to everyone who can read this channel
+      {t("posts:composer.visibility")}
     </span>
   );
 
@@ -190,7 +190,7 @@ export function PostCreator(props: {
           {persona ? personaInitials(persona) : <User2 className="size-4" />}
         </AvatarFallback>
       </Avatar>
-      <span className="min-w-0 flex-1 truncate text-sm font-medium">Posting as {displayName}</span>
+      <span className="min-w-0 flex-1 truncate text-sm font-medium">{t("posts:composer.postingAs", { name: displayName })}</span>
     </div>
   );
 
@@ -198,8 +198,8 @@ export function PostCreator(props: {
     !isEmpty || mode === "preview" ? (
       <SectionNav value={mode} onValueChange={(value) => setMode(value as Mode)}>
         <SectionNavList className="static px-4">
-          <SectionNavTab value="write">Write</SectionNavTab>
-          <SectionNavTab value="preview">Preview</SectionNavTab>
+          <SectionNavTab value="write">{t("posts:composer.write")}</SectionNavTab>
+          <SectionNavTab value="preview">{t("common:look.preview")}</SectionNavTab>
         </SectionNavList>
       </SectionNav>
     ) : null;
@@ -232,7 +232,7 @@ export function PostCreator(props: {
               {draft.error}
             </p>
           ) : isEmpty ? (
-            <p className="text-sm text-muted-foreground">Nothing to preview yet.</p>
+            <p className="text-sm text-muted-foreground">{t("posts:composer.nothingToPreview")}</p>
           ) : (
             <PostContent rawContent={draft.rawContent} showInvalid />
           )}
@@ -245,12 +245,12 @@ export function PostCreator(props: {
     <Dialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>
       <DialogContent showCloseButton={false} className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Discard this post?</DialogTitle>
-          <DialogDescription>What you’ve written will be lost.</DialogDescription>
+          <DialogTitle>{t("posts:composer.discardTitle")}</DialogTitle>
+          <DialogDescription>{t("posts:composer.discardBody")}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => setConfirmDiscard(false)}>
-            Keep writing
+            {t("posts:composer.keepWriting")}
           </Button>
           <Button
             variant="destructive"
@@ -259,7 +259,7 @@ export function PostCreator(props: {
               props.onCancel();
             }}
           >
-            Discard
+            {t("posts:composer.discard")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -276,13 +276,13 @@ export function PostCreator(props: {
           className="h-dvh gap-0 rounded-none border-t-0 bg-card p-0"
         >
           <div className="flex items-center gap-2 border-b border-border px-2 py-2">
-            <Button variant="ghost" size="icon" className="size-11" aria-label="Close" onClick={requestCancel}>
+            <Button variant="ghost" size="icon" className="size-11" aria-label={t("common:actions.close")} onClick={requestCancel}>
               <XIcon className="size-5" />
             </Button>
             <SheetTitle className="min-w-0 flex-1 truncate text-center text-sm font-medium">
-              {props.title ?? `New post in ${props.channelName}`}
+              {props.title ?? t("posts:composer.newPostIn", { channel: props.channelName })}
             </SheetTitle>
-            <SheetDescription className="sr-only">Write a post as {displayName}</SheetDescription>
+            <SheetDescription className="sr-only">{t("posts:composer.writeAs", { name: displayName })}</SheetDescription>
             {postButton}
           </div>
           <div className="flex min-h-0 flex-1 flex-col gap-3.5 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
@@ -307,7 +307,7 @@ export function PostCreator(props: {
           <div className="ms-auto flex items-center gap-2">
             {counter}
             <Button variant="outline" onClick={requestCancel} disabled={isPosting}>
-              Cancel
+              {t("common:actions.cancel")}
             </Button>
             {postButton}
           </div>

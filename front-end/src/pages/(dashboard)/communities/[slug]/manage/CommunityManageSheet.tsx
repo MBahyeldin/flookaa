@@ -9,14 +9,7 @@ import type { Community } from "@/types/community";
 import { CommunityAudienceSection } from "./CommunityAudienceSection";
 import { CommunityInfoSection } from "./CommunityInfoSection";
 import { CommunityRulesSection } from "./CommunityRulesSection";
-
-const SECTIONS = [
-  { id: "info", label: "Info" },
-  { id: "look", label: "Look" },
-  { id: "interests", label: "Interests" },
-  { id: "rules", label: "Rules" },
-  { id: "audience", label: "Audience" },
-] as const;
+import { useTranslation } from "react-i18next";
 
 export type SaveCommunity = (changes: CommunityChanges, success: string) => Promise<string | null>;
 
@@ -33,11 +26,20 @@ export function CommunityManageSheet({
   onOpenChange: (open: boolean) => void;
   onSaved: (community: Community) => void;
 }) {
+  const { t } = useTranslation(["communities", "common", "channels"]);
+  const sections = [
+    { id: "info", label: t("channels:manage.info") },
+    { id: "look", label: t("common:look.title") },
+    { id: "interests", label: t("common:interests.label") },
+    { id: "rules", label: t("rules.title") },
+    { id: "audience", label: t("common:create.audience") },
+  ] as const;
+
   // Field codes come back to the section; anything else is a toast here.
   const save: SaveCommunity = async (changes, success) => {
     const r = await updateCommunity(community.id, changes);
     if (!r.ok) {
-      if (!r.error.startsWith("invalid_") && r.error !== "slug_taken") toast.error("Couldn't save. Try again.");
+      if (!r.error.startsWith("invalid_") && r.error !== "slug_taken") toast.error(t("common:states.saveFailed"));
       return r.error;
     }
     toast.success(success);
@@ -57,7 +59,7 @@ export function CommunityManageSheet({
       theme={community.theme}
       name={community.name}
       logo={community.thumbnail}
-      sections={SECTIONS}
+      sections={sections}
     >
       <CommunityInfoSection community={community} save={save} />
       <LookSection
@@ -65,16 +67,19 @@ export function CommunityManageSheet({
         name={community.name}
         description={community.description}
         interests={community.interests}
-        facts={[community.visibility === "public" ? "Public" : "Private", `${community.min_age}+`]}
-        lead="Logo, colours and cover. Its channels use these colours unless they pick their own."
+        facts={[
+          community.visibility === "public" ? t("common:visibility.public") : t("common:visibility.private"),
+          t("common:age.short", { age: community.min_age }),
+        ]}
+        lead={t("create.lookLead")}
         onSave={({ theme, ...rest }) =>
-          save({ ...rest, ...(theme !== undefined && { theme: theme ?? DEFAULT_PALETTE }) }, "Look saved")
+          save({ ...rest, ...(theme !== undefined && { theme: theme ?? DEFAULT_PALETTE }) }, t("common:look.saved"))
         }
       />
       <InterestsManageSection
-        lead="Pick 1 to 5. People find the community by them."
+        lead={t("create.interestsLead")}
         current={community.interests}
-        onSave={(ids) => save({ interest_ids: ids }, "Interests saved")}
+        onSave={(ids) => save({ interest_ids: ids }, t("common:interests.saved"))}
       />
       <CommunityRulesSection rules={community.rules} save={save} />
       <CommunityAudienceSection community={community} pendingRequests={pendingRequests} save={save} />

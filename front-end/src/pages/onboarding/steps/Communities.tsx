@@ -8,9 +8,11 @@ import { useUserProfileStore } from "@/stores/UserProfileStore";
 import type { Community } from "@/types/community";
 import { CommunityTile } from "@/components/tile/CommunityTile";
 import OnboardingFooter from "../OnboardingFooter";
+import { useTranslation } from "react-i18next";
 
 // Suggestions are public only. The onboarding page made the default persona current, so its suggestions and actions are the same persona's.
 export default function Communities() {
+  const { t } = useTranslation("onboarding");
   const persona = useUserProfileStore((s) => s.persona);
   const [items, setItems] = useState<Community[] | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -31,7 +33,7 @@ export default function Communities() {
   }, [persona, attempt]);
 
   if (loadError) {
-    return <ErrorState title="Couldn't load communities" onRetry={() => setAttempt((n) => n + 1)} />;
+    return <ErrorState title={t("communities.loadFailed")} onRetry={() => setAttempt((n) => n + 1)} />;
   }
   if (!items) return <SkeletonList count={3} variant="post" className="grid gap-4 sm:grid-cols-2" />;
 
@@ -45,8 +47,8 @@ export default function Communities() {
       {items.length === 0 ? (
         <EmptyState
           icon={Boxes}
-          title="No suggestions yet"
-          body="Nothing matches your interests yet. You can skip this step."
+          title={t("noSuggestions")}
+          body={t("noSuggestionsBody")}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -55,7 +57,7 @@ export default function Communities() {
           ))}
         </div>
       )}
-      <OnboardingFooter left={`${selected} selected`} continueDisabled={selected === 0} />
+      <OnboardingFooter left={t("selected", { count: selected })} continueDisabled={selected === 0} />
     </div>
   );
 }

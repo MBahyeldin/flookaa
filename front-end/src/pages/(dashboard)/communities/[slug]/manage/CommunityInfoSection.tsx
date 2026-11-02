@@ -6,12 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { SLUG_PATTERN } from "@/lib/slug";
 import type { Community } from "@/types/community";
 import type { SaveCommunity } from "./CommunityManageSheet";
+import { useTranslation } from "react-i18next";
 
 const MAX_NAME = 100;
 const MAX_DESCRIPTION = 500;
 const LINK_PREFIX = "flookaa.com/communities/";
 
 export function CommunityInfoSection({ community, save }: { community: Community; save: SaveCommunity }) {
+  const { t } = useTranslation(["communities", "common", "channels"]);
   const [name, setName] = useState(community.name);
   const [slug, setSlug] = useState(community.slug);
   const [description, setDescription] = useState(community.description);
@@ -31,27 +33,27 @@ export function CommunityInfoSection({ community, save }: { community: Community
   };
 
   const submit = async () => {
-    if (!name.trim()) return setErrors({ name: "Give the community a name." });
-    if (!SLUG_PATTERN.test(slug)) return setErrors({ slug: "Use 3–50 lowercase letters, digits or single hyphens." });
+    if (!name.trim()) return setErrors({ name: t("create.nameMissing") });
+    if (!SLUG_PATTERN.test(slug)) return setErrors({ slug: t("create.invalidSlug") });
     setSaving(true);
     setErrors({});
-    const code = await save(changes, "Community info saved");
+    const code = await save(changes, t("info.saved"));
     setSaving(false);
-    if (code === "invalid_name") setErrors({ name: `Enter a name of at most ${MAX_NAME} characters.` });
-    else if (code === "invalid_slug") setErrors({ slug: "Use 3–50 lowercase letters, digits or single hyphens." });
-    else if (code === "slug_taken") setErrors({ slug: "Another community already uses this link." });
+    if (code === "invalid_name") setErrors({ name: t("channels:manage.nameTooLong", { max: MAX_NAME }) });
+    else if (code === "invalid_slug") setErrors({ slug: t("create.invalidSlug") });
+    else if (code === "slug_taken") setErrors({ slug: t("create.slugTaken") });
   };
 
   return (
     <SettingsSection
       id="info"
-      title="Info"
-      lead="Its name, link and what it's about."
+      title={t("channels:manage.info")}
+      lead={t("info.lead")}
       dirty={Object.keys(changes).length > 0}
       saving={saving}
       onSave={submit}
     >
-      <FormField label="Community name" error={errors.name} helper={`${name.length} / ${MAX_NAME}`}>
+      <FormField label={t("fields.name")} error={errors.name} helper={t("common:interests.count", { n: name.length, max: MAX_NAME })}>
         <Input
           value={name}
           maxLength={MAX_NAME}
@@ -61,7 +63,7 @@ export function CommunityInfoSection({ community, save }: { community: Community
           }}
         />
       </FormField>
-      <FormField label="Link" error={errors.slug} helper={`${LINK_PREFIX}${slug || "…"} · Old links stop working.`}>
+      <FormField label={t("fields.link")} error={errors.slug} helper={t("info.linkHelper", { link: `${LINK_PREFIX}${slug || "…"}` })}>
         <Input
           value={slug}
           maxLength={50}
@@ -71,7 +73,7 @@ export function CommunityInfoSection({ community, save }: { community: Community
           }}
         />
       </FormField>
-      <FormField label="Description" helper={`${description.length} / ${MAX_DESCRIPTION}`}>
+      <FormField label={t("common:create.description")} helper={t("common:interests.count", { n: description.length, max: MAX_DESCRIPTION })}>
         <Textarea value={description} maxLength={MAX_DESCRIPTION} rows={3} onChange={(e) => setDescription(e.target.value)} />
       </FormField>
     </SettingsSection>

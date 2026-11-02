@@ -2,6 +2,8 @@ import { useId, useRef, type SyntheticEvent } from "react";
 import { ChevronsUpDownIcon, ChevronUpIcon, PlusIcon } from "lucide-react";
 import { z } from "zod";
 import { FormField } from "@/models/Forms/FormField";
+import { perLanguage, t } from "@/i18n";
+import { maxChars, minItems, oneLine, required } from "./validation";
 import { defineBlock } from "./defineBlock";
 
 const MAX_SECTIONS = 20;
@@ -10,22 +12,22 @@ const MAX_TITLE = 120;
 const accordionSchema = z.object({
   title: z
     .string()
-    .refine((title) => title.length <= MAX_TITLE, `must be at most ${MAX_TITLE} characters`)
-    .refine((title) => !/[\r\n]/.test(title), "must be one line")
+    .refine((title) => title.length <= MAX_TITLE, maxChars(MAX_TITLE))
+    .refine((title) => !/[\r\n]/.test(title), oneLine)
     .optional(),
   items: z
     .array(
       z.object({
-        _key: z.string().min(1, "is required"),
+        _key: z.string().min(1, required),
         title: z
           .string()
-          .refine((title) => title.trim() !== "", "is required")
-          .refine((title) => title.length <= MAX_TITLE, `must be at most ${MAX_TITLE} characters`)
-          .refine((title) => !/[\r\n]/.test(title), "must be one line"),
-        text: z.string().refine((text) => text.trim() !== "", "is required"),
+          .refine((title) => title.trim() !== "", required)
+          .refine((title) => title.length <= MAX_TITLE, maxChars(MAX_TITLE))
+          .refine((title) => !/[\r\n]/.test(title), oneLine),
+        text: z.string().refine((text) => text.trim() !== "", required),
       })
     )
-    .min(1, "at least one section is required")
+    .min(1, minItems(1))
     .max(MAX_SECTIONS)
     .refine(
       (items) => new Set(items.map((item) => item._key)).size === items.length,
@@ -37,39 +39,39 @@ const accordionSchema = z.object({
 
 type AccordionValue = z.infer<typeof accordionSchema>;
 
-const accordionFormFields: FormField[] = [
+const accordionFormFields = perLanguage((): FormField[] => [
   new FormField({
     id: "title",
     name: "title",
-    label: "Title",
+    label: t("blocks:accordion.fields.title"),
     type: "string",
     interfaceType: "text",
-    placeholder: "Frequently asked questions",
+    placeholder: t("blocks:accordion.fields.frequentlyAskedQuestions"),
   }),
   new FormField({
     id: "items",
     name: "items",
-    label: "Sections",
+    label: t("blocks:accordion.fields.sections"),
     type: "array",
     interfaceType: "list",
-    itemLabel: "Section",
-    addLabel: "Add section",
+    itemLabel: t("blocks:accordion.fields.section"),
+    addLabel: t("blocks:accordion.fields.addSection"),
     minItems: 1,
     maxItems: MAX_SECTIONS,
     itemFields: [
       new FormField({
         id: "title",
         name: "title",
-        label: "Title",
+        label: t("blocks:accordion.fields.title"),
         type: "string",
         interfaceType: "text",
-        placeholder: "Question or heading",
+        placeholder: t("blocks:accordion.fields.questionOrHeading"),
         isRequired: true,
       }),
       new FormField({
         id: "text",
         name: "text",
-        label: "Content",
+        label: t("blocks:accordion.fields.content"),
         type: "string",
         interfaceType: "textarea",
         isRequired: true,
@@ -79,18 +81,18 @@ const accordionFormFields: FormField[] = [
   new FormField({
     id: "allowMultiple",
     name: "allowMultiple",
-    label: "Allow several open",
+    label: t("blocks:accordion.fields.allowSeveralOpen"),
     type: "boolean",
     interfaceType: "switch",
   }),
   new FormField({
     id: "defaultFirstOpen",
     name: "defaultFirstOpen",
-    label: "Open the first section",
+    label: t("blocks:accordion.fields.openTheFirstSection"),
     type: "boolean",
     interfaceType: "switch",
   }),
-];
+]);
 
 function AccordionView({ value, compact = false }: { value: AccordionValue; compact?: boolean }) {
   const listRef = useRef<HTMLDivElement>(null);
@@ -149,15 +151,21 @@ function AccordionView({ value, compact = false }: { value: AccordionValue; comp
 
 export const accordion = defineBlock<AccordionValue>({
   name: "accordion",
-  title: "Accordion",
-  description: "Sections that open on tap.",
+  get title() {
+    return t("blocks:accordion.title");
+  },
+  get description() {
+    return t("blocks:accordion.description");
+  },
   icon: ChevronsUpDownIcon,
   category: "layout",
-  fields: accordionFormFields,
+  get fields() {
+    return accordionFormFields();
+  },
   defaultValues: { allowMultiple: true, defaultFirstOpen: false },
   schema: accordionSchema,
   View: AccordionView,
-  summary: (value) => `Accordion · ${value.items.length}`,
+  summary: (value) => t("blocks:accordion.summary", { count: value.items.length }),
   examples: [
     {
       title: "Frequently asked questions",

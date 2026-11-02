@@ -6,6 +6,8 @@ import { SettingsSection } from "@/components/settings/SettingsSection";
 import { ErrorState } from "@/components/ui/error-state";
 import { SkeletonList } from "@/components/ui/skeleton";
 import type { Interest } from "@/types/interest";
+import { t } from "@/i18n";
+import { errorMessage } from "@/lib/errors";
 
 const MAX = 5;
 
@@ -36,23 +38,22 @@ export function InterestsManageSection({
     setError(undefined);
     const code = await onSave(value);
     setSaving(false);
-    if (code === "invalid_interests") setError(`Pick 1 to ${MAX} interests.`);
-    else if (code === "invalid_interest") setError("One of these interests is no longer offered.");
+    if (code === "invalid_interests" || code === "invalid_interest") setError(errorMessage(code));
   };
 
   return (
     <SettingsSection
       id="interests"
-      title="Interests"
+      title={t("common:interests.label")}
       lead={lead}
       dirty={dirty}
       canSave={value.length > 0}
       saving={saving}
       onSave={save}
-      note={value.length === 0 ? "Pick at least one." : `${value.length} / ${MAX}`}
+      note={value.length === 0 ? t("common:interests.pickOne") : t("common:interests.count", { n: value.length, max: MAX })}
     >
       {groups === null && <SkeletonList count={2} />}
-      {groups === "error" && <ErrorState compact title="Couldn't load the interests" onRetry={interests.retry} />}
+      {groups === "error" && <ErrorState compact title={t("common:interests.loadFailed")} onRetry={interests.retry} />}
       {Array.isArray(groups) && (
         <InterestPicker groups={groups} retired={retired} value={value} onChange={setValue} max={MAX} />
       )}

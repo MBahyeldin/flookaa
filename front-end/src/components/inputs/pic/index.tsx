@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import useInputImage from "@/hooks/useInpuImage";
 import { cn } from "@/lib/utils";
+import { t } from "@/i18n";
 import type { FormFieldProps } from "@/types/FormFields";
 
 export default function PicInput({
@@ -53,7 +54,7 @@ export default function PicInput({
             <CardContent className="p-1">
               <img
                 src={url}
-                alt="Thumbnail preview"
+                alt={t("common:pic.preview")}
                 className="w-full h-auto max-h-48 object-contain rounded"
               />
             </CardContent>
@@ -73,18 +74,18 @@ export default function PicInput({
             className="flex items-center gap-2 text-sm text-muted-foreground"
           >
             <Loader2 className="h-4 w-4 animate-spin" />
-            Uploading image…
+            {t("common:pic.uploading")}
           </p>
         ) : (
-          <p className="text-foreground">Drag & drop an image or click to select</p>
+          <p className="text-foreground">{t("common:pic.drop")}</p>
         )}
       </div>
 
       {field.dimensions && url && !isUploading && (
         <p className="mt-1 text-xs text-muted-foreground">
           {width && height
-            ? `${width} × ${height} px`
-            : "Dimensions unknown: pick the file again to measure it"}
+            ? t("common:pic.dimensions", { width, height })
+            : t("common:pic.dimensionsUnknown")}
         </p>
       )}
 

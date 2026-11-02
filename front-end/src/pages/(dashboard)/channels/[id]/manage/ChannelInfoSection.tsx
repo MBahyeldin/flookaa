@@ -5,6 +5,7 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { updateChannel } from "@/services/channels";
+import { useTranslation } from "react-i18next";
 
 const MAX_NAME = 100;
 const MAX_DESCRIPTION = 500;
@@ -20,6 +21,7 @@ export function ChannelInfoSection({
   description: string;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation(["channels", "common"]);
   const [draftName, setDraftName] = useState(name);
   const [draftDescription, setDraftDescription] = useState(description);
   const [saving, setSaving] = useState(false);
@@ -33,7 +35,7 @@ export function ChannelInfoSection({
 
   const save = async () => {
     if (!draftName.trim()) {
-      setErrors({ name: "Give the channel a name." });
+      setErrors({ name: t("create.nameMissing") });
       return;
     }
     setSaving(true);
@@ -44,25 +46,25 @@ export function ChannelInfoSection({
     });
     setSaving(false);
     if (!r.ok) {
-      if (r.error === "invalid_name") setErrors({ name: `Enter a name of at most ${MAX_NAME} characters.` });
-      else if (r.error === "invalid_description") setErrors({ description: `Keep it to ${MAX_DESCRIPTION} characters.` });
-      else toast.error("Couldn't save the channel info. Try again.");
+      if (r.error === "invalid_name") setErrors({ name: t("manage.nameTooLong", { max: MAX_NAME }) });
+      else if (r.error === "invalid_description") setErrors({ description: t("manage.descriptionTooLong", { max: MAX_DESCRIPTION }) });
+      else toast.error(t("manage.infoFailed"));
       return;
     }
-    toast.success("Channel info saved");
+    toast.success(t("manage.infoSaved"));
     onSaved();
   };
 
   return (
     <SettingsSection
       id="info"
-      title="Info"
-      lead="The name and line people see on the channel."
+      title={t("manage.info")}
+      lead={t("manage.infoLead")}
       dirty={nameChanged || descriptionChanged}
       saving={saving}
       onSave={save}
     >
-      <FormField label="Channel name" error={errors.name} helper={`${draftName.length} / ${MAX_NAME}`}>
+      <FormField label={t("fields.name")} error={errors.name} helper={t("common:interests.count", { n: draftName.length, max: MAX_NAME })}>
         <Input
           value={draftName}
           maxLength={MAX_NAME}
@@ -72,7 +74,7 @@ export function ChannelInfoSection({
           }}
         />
       </FormField>
-      <FormField label="Description" error={errors.description} helper={`${draftDescription.length} / ${MAX_DESCRIPTION}`}>
+      <FormField label={t("common:create.description")} error={errors.description} helper={t("common:interests.count", { n: draftDescription.length, max: MAX_DESCRIPTION })}>
         <Textarea
           value={draftDescription}
           maxLength={MAX_DESCRIPTION}

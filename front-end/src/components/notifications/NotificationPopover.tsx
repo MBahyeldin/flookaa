@@ -9,6 +9,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { useNotificationStore } from "@/stores/NotificationStore";
 import { describeNotification } from "./describe";
 import NotificationItem from "./NotificationItem";
+import { useTranslation } from "react-i18next";
 
 /** The latest notifications, opened from `children` (the bell or the sidebar entry). */
 export default function NotificationPopover({
@@ -22,6 +23,7 @@ export default function NotificationPopover({
   align?: "start" | "end";
   onOpenChange?: (open: boolean) => void;
 }) {
+  const { t } = useTranslation("notifications");
   const [open, setOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const unreadCount = useNotificationStore((s) => s.unreadCount);
@@ -55,20 +57,20 @@ export default function NotificationPopover({
         className="w-[min(24rem,calc(100vw-2rem))] p-0 focus-visible:outline-none"
       >
         <div className="flex min-h-12 items-center justify-between border-b py-2 pr-3 pl-4">
-          <span className="font-medium">Notifications</span>
+          <span className="font-medium">{t("title")}</span>
           {unreadCount > 0 && (
             <Button variant="ghost" size="sm" onClick={markAllRead}>
-              Mark all read
+              {t("markAllRead")}
             </Button>
           )}
         </div>
         <div className="max-h-[60vh] overflow-y-auto p-1">
           {shown === null && recentFailed ? (
-            <ErrorState compact title="Couldn't load notifications" onRetry={refreshRecent} />
+            <ErrorState compact title={t("loadFailed")} onRetry={refreshRecent} />
           ) : shown === null ? (
             <SkeletonList count={3} className="px-2" />
           ) : shown.length === 0 ? (
-            <EmptyState compact icon={Bell} title="No notifications yet" body="Follows, requests and replies show up here." />
+            <EmptyState compact icon={Bell} title={t("emptyTitle")} body={t("emptyBody")} />
           ) : (
             shown.map((n) => <NotificationItem key={n.id} notification={n} onOpen={() => change(false)} />)
           )}
@@ -78,7 +80,7 @@ export default function NotificationPopover({
           onClick={() => change(false)}
           className="block border-t py-2.5 text-center text-sm font-medium hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
         >
-          See all notifications
+          {t("seeAll")}
         </Link>
       </PopoverContent>
     </Popover>

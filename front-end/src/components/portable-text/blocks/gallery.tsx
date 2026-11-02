@@ -5,6 +5,8 @@ import { FormField } from "@/models/Forms/FormField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { perLanguage, t } from "@/i18n";
+import { httpLink, maxChars, minItems, oneLine, required } from "./validation";
 import { defineBlock } from "./defineBlock";
 import { safeUrl } from "./safeUrl";
 import { responsiveImage } from "./responsiveImage";
@@ -24,19 +26,19 @@ const gallerySchema = z.object({
   items: z
     .array(
       z.object({
-        _key: z.string().min(1, "is required"),
-        src: z.string().refine((src) => safeUrl(src, ["http", "https"]), "must be an http(s) link"),
+        _key: z.string().min(1, required),
+        src: z.string().refine((src) => safeUrl(src, ["http", "https"]), httpLink),
         alt: z.string().max(MAX_ALT).optional(),
         caption: z
           .string()
-          .refine((caption) => caption.length <= MAX_CAPTION, `must be at most ${MAX_CAPTION} characters`)
-          .refine((caption) => !/[\r\n]/.test(caption), "must be one line")
+          .refine((caption) => caption.length <= MAX_CAPTION, maxChars(MAX_CAPTION))
+          .refine((caption) => !/[\r\n]/.test(caption), oneLine)
           .optional(),
         width: side,
         height: side,
       })
     )
-    .min(MIN_ITEMS, `at least ${MIN_ITEMS} images are required`)
+    .min(MIN_ITEMS, minItems(MIN_ITEMS))
     .max(MAX_ITEMS)
     .refine(
       (items) => new Set(items.map((item) => item._key)).size === items.length,
@@ -47,34 +49,34 @@ const gallerySchema = z.object({
 type GalleryValue = z.infer<typeof gallerySchema>;
 type GalleryItem = GalleryValue["items"][number];
 
-const galleryFormFields: FormField[] = [
+const galleryFormFields = perLanguage((): FormField[] => [
   new FormField({
     id: "layout",
     name: "layout",
-    label: "Layout",
+    label: t("blocks:gallery.fields.layout"),
     type: "string",
     interfaceType: "select",
     options: [
-      { label: "Carousel", value: "carousel" },
-      { label: "Grid", value: "grid" },
+      { label: t("blocks:gallery.fields.carousel"), value: "carousel" },
+      { label: t("blocks:gallery.fields.grid"), value: "grid" },
     ],
     width: "full",
   }),
   new FormField({
     id: "items",
     name: "items",
-    label: "Images",
+    label: t("blocks:gallery.fields.images"),
     type: "array",
     interfaceType: "list",
-    itemLabel: "Image",
-    addLabel: "Add image",
+    itemLabel: t("blocks:gallery.fields.image"),
+    addLabel: t("blocks:gallery.fields.addImage"),
     minItems: MIN_ITEMS,
     maxItems: MAX_ITEMS,
     itemFields: [
       new FormField({
         id: "src",
         name: "src",
-        label: "Image",
+        label: t("blocks:gallery.fields.image"),
         type: "string",
         interfaceType: "pic",
         isRequired: true,
@@ -84,22 +86,22 @@ const galleryFormFields: FormField[] = [
       new FormField({
         id: "alt",
         name: "alt",
-        label: "Alt Text",
+        label: t("blocks:gallery.fields.altText"),
         type: "string",
         interfaceType: "text",
-        placeholder: "A description of the image for accessibility",
+        placeholder: t("blocks:gallery.fields.aDescriptionOfTheImage"),
       }),
       new FormField({
         id: "caption",
         name: "caption",
-        label: "Caption",
+        label: t("blocks:gallery.fields.caption"),
         type: "string",
         interfaceType: "text",
-        placeholder: "Caption for the image (optional)",
+        placeholder: t("blocks:gallery.fields.captionForTheImageOptional"),
       }),
     ],
   }),
-];
+]);
 
 const BENTO = 3;
 
@@ -144,7 +146,7 @@ function Tile({
 function BentoView({ items, onOpen }: { items: GalleryItem[]; onOpen: (index: number) => void }) {
   const shown = items.slice(0, BENTO);
   const more = items.length - shown.length;
-  const label = (i: number) => `Open image ${i + 1} of ${items.length}`;
+  const label = (i: number) => t("blocks:gallery.open", { n: i + 1, total: items.length });
 
   if (shown.length === 2) {
     return (
@@ -162,7 +164,7 @@ function BentoView({ items, onOpen }: { items: GalleryItem[]; onOpen: (index: nu
         <Tile
           key={item._key}
           item={item}
-          label={i === BENTO - 1 && more > 0 ? `${label(i)}, ${more} more` : label(i)}
+          label={i === BENTO - 1 && more > 0 ? t("blocks:gallery.openMore", { label: label(i), more }) : label(i)}
           sizes={i === 0 ? 0.67 : 0.33}
           className={i === 0 ? "col-span-2 sm:col-span-1 sm:row-span-2" : undefined}
           onOpen={() => onOpen(i)}
@@ -223,7 +225,7 @@ function Dots({ count, index, onGo }: { count: number; index: number; onGo: (i: 
         <button
           key={i}
           type="button"
-          aria-label={`Go to image ${i + 1}`}
+          aria-label={t("blocks:gallery.goTo", { n: i + 1 })}
           aria-current={i === index ? "true" : undefined}
           onClick={() => onGo(i)}
           className="flex h-6 items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
@@ -245,7 +247,7 @@ function CarouselView({ items, onOpen }: { items: GalleryItem[]; onOpen: (index:
         tabIndex={0}
         role="region"
         aria-roledescription="carousel"
-        aria-label="Gallery"
+        aria-label={t("blocks:gallery.title")}
         onScroll={onScroll}
         onKeyDown={onKeyDown}
         className="flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain [scrollbar-width:none] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl"
@@ -255,12 +257,12 @@ function CarouselView({ items, onOpen }: { items: GalleryItem[]; onOpen: (index:
             key={item._key}
             role="group"
             aria-roledescription="slide"
-            aria-label={`${i + 1} of ${items.length}`}
+            aria-label={t("blocks:gallery.position", { n: i + 1, total: items.length })}
             className="w-[72%] shrink-0 snap-start rounded-2xl border bg-card p-2 text-card-foreground sm:w-[60%]"
           >
             <button
               type="button"
-              aria-label={`Open image ${i + 1} of ${items.length}`}
+              aria-label={t("blocks:gallery.open", { n: i + 1, total: items.length })}
               onClick={() => onOpen(i)}
               className="block aspect-[4/3] w-full overflow-hidden rounded-xl bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
@@ -319,14 +321,14 @@ function GalleryViewer({
         onKeyDown={onKeyDown}
         className="dark top-0 left-0 flex h-dvh w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-scrim/95 p-0 text-foreground sm:max-w-none"
       >
-        <DialogTitle className="sr-only">Gallery</DialogTitle>
-        <DialogDescription className="sr-only">Use the arrow keys to move between images.</DialogDescription>
+        <DialogTitle className="sr-only">{t("blocks:gallery.title")}</DialogTitle>
+        <DialogDescription className="sr-only">{t("blocks:gallery.viewerHint")}</DialogDescription>
         <div className="flex items-center justify-between px-4 py-3">
           <span className="text-sm tabular-nums">
             {index + 1} / {items.length}
           </span>
           <DialogClose asChild>
-            <Button type="button" variant="ghost" size="icon" aria-label="Close" className="text-foreground">
+            <Button type="button" variant="ghost" size="icon" aria-label={t("common:actions.close")} className="text-foreground">
               <XIcon className="size-5" />
             </Button>
           </DialogClose>
@@ -342,7 +344,7 @@ function GalleryViewer({
                 key={item._key}
                 role="group"
                 aria-roledescription="slide"
-                aria-label={`${i + 1} of ${items.length}`}
+                aria-label={t("blocks:gallery.position", { n: i + 1, total: items.length })}
                 className="flex size-full shrink-0 snap-start items-center justify-center p-2 md:px-16"
               >
                 <img
@@ -361,7 +363,7 @@ function GalleryViewer({
               variant="ghost"
               size="icon"
               className={cn(navButton, "start-4")}
-              aria-label="Previous image"
+              aria-label={t("blocks:gallery.previous")}
               onClick={() => go(index - 1)}
             >
               <ChevronLeftIcon className="size-6 rtl:-scale-x-100" />
@@ -373,7 +375,7 @@ function GalleryViewer({
               variant="ghost"
               size="icon"
               className={cn(navButton, "end-4")}
-              aria-label="Next image"
+              aria-label={t("blocks:gallery.next")}
               onClick={() => go(index + 1)}
             >
               <ChevronRightIcon className="size-6 rtl:-scale-x-100" />
@@ -413,15 +415,21 @@ const sample = (key: string, caption?: string): GalleryItem => ({
 
 export const gallery = defineBlock<GalleryValue>({
   name: "gallery",
-  title: "Gallery",
-  description: "Several pictures as a grid or a carousel.",
+  get title() {
+    return t("blocks:gallery.title");
+  },
+  get description() {
+    return t("blocks:gallery.description");
+  },
   icon: ImagesIcon,
   category: "media",
-  fields: galleryFormFields,
+  get fields() {
+    return galleryFormFields();
+  },
   defaultValues: { layout: "carousel" },
   schema: gallerySchema,
   View: GalleryView,
-  summary: (value) => `Gallery · ${value.items.length}`,
+  summary: (value) => t("blocks:gallery.summary", { count: value.items.length }),
   examples: [
     {
       layout: "carousel",

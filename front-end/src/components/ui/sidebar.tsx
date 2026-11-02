@@ -4,6 +4,7 @@ import { PanelLeftIcon } from "lucide-react";
 
 import { useBreakpoint } from "@/hooks/useMobile";
 import { useSidebarSwipe } from "@/hooks/useSidebarSwipe";
+import { t } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -156,8 +157,8 @@ function Sidebar({
           side="left"
         >
           <SheetHeader className="sr-only">
-            <SheetTitle>Menu</SheetTitle>
-            <SheetDescription>Main navigation.</SheetDescription>
+            <SheetTitle>{t("common:shell.menu")}</SheetTitle>
+            <SheetDescription>{t("common:shell.menuDescription")}</SheetDescription>
           </SheetHeader>
           <div className={cn("flex h-full w-full flex-col px-3 py-4", className)}>
             {children}
@@ -205,10 +206,10 @@ function SidebarTrigger({
 }: React.ComponentProps<typeof Button>) {
   const { toggleSidebar, isMobile, state } = useSidebar();
   const label = isMobile
-    ? "Open menu"
+    ? t("common:shell.openMenu")
     : state === "expanded"
-      ? "Collapse sidebar"
-      : "Expand sidebar";
+      ? t("common:shell.collapseSidebar")
+      : t("common:shell.expandSidebar");
 
   return (
     <Button

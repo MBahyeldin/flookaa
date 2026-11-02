@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 export default function OnboardingProgress({
   current,
   total,
@@ -7,6 +9,7 @@ export default function OnboardingProgress({
   total: number;
   label?: string;
 }) {
+  const { t } = useTranslation("onboarding");
   const percent = total > 0 ? Math.round((current / total) * 100) : 0;
 
   return (
@@ -16,7 +19,7 @@ export default function OnboardingProgress({
         aria-valuemin={0}
         aria-valuemax={total}
         aria-valuenow={current}
-        aria-label="Onboarding progress"
+        aria-label={t("progress")}
         className="h-1 w-full overflow-hidden rounded-full bg-muted"
       >
         <div
@@ -25,8 +28,7 @@ export default function OnboardingProgress({
         />
       </div>
       <span className="text-xs text-muted-foreground tabular-nums">
-        Step {current} of {total}
-        {label && ` · ${label}`}
+        {label ? t("stepOfLabeled", { current, total, label }) : t("stepOf", { current, total })}
       </span>
     </div>
   );

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import InterestPicker from "@/components/interests/InterestPicker";
 import { cn } from "@/lib/utils";
+import { t } from "@/i18n";
 import { listInterests } from "@/services/interests";
 import { MAX_CHANNEL_INTERESTS, type InterestGroup } from "@/types/interest";
 import type { FormFieldProps } from "@/types/FormFields";
@@ -27,9 +28,9 @@ export default function InterestsInput({ field, value, error, touched, setFieldV
     <div className={cn(className, field.width, "flex flex-col gap-2")}>
       <Label id={`${field.id}-label`}>{field.label}</Label>
       {loadError ? (
-        <p className="text-sm text-destructive">Couldn't load interests. Please reload.</p>
+        <p className="text-sm text-destructive">{t("common:interests.loadFailedReload")}</p>
       ) : !groups ? (
-        <p className="text-sm text-muted-foreground">Loading interests…</p>
+        <p className="text-sm text-muted-foreground">{t("common:interests.loading")}</p>
       ) : (
         <InterestPicker
           groups={groups}

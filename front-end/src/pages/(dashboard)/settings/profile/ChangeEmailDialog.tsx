@@ -17,35 +17,22 @@ import {
   confirmEmailChange,
   requestEmailChange,
 } from "@/services/emailChange";
+import { Trans, useTranslation } from "react-i18next";
+import { t } from "@/i18n";
+import { errorMessage } from "@/lib/errors";
 
 function requestErrorText(error: string, retryAfter?: number) {
-  switch (error) {
-    case "invalid_email":
-      return "Enter a valid email address.";
-    case "same_email":
-      return "That's already your email.";
-    case "email_taken":
-      return "Another account uses this email.";
-    case "email_managed_by_google":
-      return "Your email comes from your Google account.";
-    case "email_failed":
-      return "We couldn't send the email. Try again shortly.";
-    case "resend_cooldown":
-      return `Wait ${retryAfter ?? 60}s before asking for another code.`;
-    default:
-      return "Something went wrong. Please try again.";
-  }
+  if (error === "resend_cooldown") return t("settings:email.cooldown", { seconds: retryAfter ?? 60 });
+  return errorMessage(error);
 }
 
 function confirmErrorText(error: string, attemptsLeft?: number) {
   if (error === "invalid_code") {
-    return attemptsLeft
-      ? `That code is wrong. ${attemptsLeft} ${attemptsLeft === 1 ? "try" : "tries"} left.`
-      : "That code is wrong.";
+    return attemptsLeft ? t("auth:verify.wrongCodeLeft", { count: attemptsLeft }) : t("auth:verify.wrongCode");
   }
-  if (error === "code_expired") return "This code has expired. Send a new one.";
-  if (error === "email_taken") return "Another account took this email meanwhile.";
-  return "Something went wrong. Please try again.";
+  if (error === "code_expired") return t("settings:email.codeExpired");
+  if (error === "email_taken") return t("settings:email.takenMeanwhile");
+  return t("errors:generic");
 }
 
 export function ChangeEmailDialog({
@@ -57,6 +44,7 @@ export function ChangeEmailDialog({
   onOpenChange: (open: boolean) => void;
   onChanged: (email: string) => void;
 }) {
+  const { t } = useTranslation(["settings", "common"]);
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -104,7 +92,7 @@ export function ChangeEmailDialog({
     const result = await confirmEmailChange(value);
     setBusy(false);
     if (result.ok) {
-      toast.success("Your email was changed.");
+      toast.success(t("email.changed"));
       onChanged(result.email_address ?? email.trim());
       reset();
       onOpenChange(false);
@@ -118,15 +106,17 @@ export function ChangeEmailDialog({
     <Dialog open={open} onOpenChange={close}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{step === "email" ? "Change email" : "Check your new email"}</DialogTitle>
+          <DialogTitle>{step === "email" ? t("email.change") : t("email.checkNew")}</DialogTitle>
           <DialogDescription>
             {step === "email" ? (
-              "We'll send a code to the new address. Your email changes once you enter it."
+              t("email.dialogLead")
             ) : (
-              <>
-                We sent a 6-digit code to{" "}
-                <span className="font-medium text-foreground break-all">{email.trim()}</span>. It works for 1 hour.
-              </>
+              <Trans
+                t={t}
+                i18nKey="email.codeSent"
+                values={{ email: email.trim() }}
+                components={{ email: <span className="font-medium text-foreground break-all" /> }}
+              />
             )}
           </DialogDescription>
         </DialogHeader>
@@ -139,7 +129,7 @@ export function ChangeEmailDialog({
               void send();
             }}
           >
-            <FormField label="New email" error={error}>
+            <FormField label={t("email.newEmail")} error={error}>
               <Input
                 type="email"
                 autoComplete="email"
@@ -176,9 +166,9 @@ export function ChangeEmailDialog({
               </p>
             )}
             <p className="text-sm text-muted-foreground">
-              Didn't get it?{" "}
+              {t("email.didntGetIt")}{" "}
               <Button variant="link" className="h-auto p-0" disabled={busy || cooldown > 0} onClick={send}>
-                {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend"}
+                {cooldown > 0 ? t("email.resendIn", { seconds: cooldown }) : t("email.resend")}
               </Button>
             </p>
           </div>
@@ -186,15 +176,15 @@ export function ChangeEmailDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => close(false)}>
-            Cancel
+            {t("common:actions.cancel")}
           </Button>
           {step === "email" ? (
             <Button type="submit" form="change-email" loading={busy} disabled={!email.trim()}>
-              Send code
+              {t("email.sendCode")}
             </Button>
           ) : (
             <Button loading={busy} disabled={code.length !== 6} onClick={() => confirm(code)}>
-              Confirm
+              {t("common:actions.confirm")}
             </Button>
           )}
         </DialogFooter>

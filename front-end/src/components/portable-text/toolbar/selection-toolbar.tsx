@@ -65,6 +65,16 @@ import { DecoratorButton } from "./button.decorator";
 import { AnnotationButton } from "./button.annotation";
 import { ListButton } from "./button.list";
 import { BlockObjectPopover } from "./popover.block-object";
+import { schemaTitle } from "../schemaTitle";
+import { t } from "@/i18n";
+
+// Titles come from the schema in English; the toolbar shows them in the UI language.
+function translated<T extends { name: string; title?: string }>(extend: (type: T) => T) {
+  return (type: T) => {
+    const out = extend(type);
+    return { ...out, title: schemaTitle(out.name, out.title) };
+  };
+}
 const extendDecorator: ExtendDecoratorSchemaType = (decorator) => {
   if (decorator.name === "strong") {
     return {
@@ -230,6 +240,7 @@ const extendBlockObject: ExtendBlockObjectSchemaType = (blockObject) => {
   if (!block) return blockObject;
   return {
     ...blockObject,
+    title: block.title,
     icon: block.icon,
     defaultValues: block.defaultValues,
   };
@@ -237,10 +248,10 @@ const extendBlockObject: ExtendBlockObjectSchemaType = (blockObject) => {
 
 function useEditorToolbarSchema() {
   return useToolbarSchema({
-    extendDecorator,
-    extendAnnotation,
-    extendStyle,
-    extendList,
+    extendDecorator: translated(extendDecorator as never) as ExtendDecoratorSchemaType,
+    extendAnnotation: translated(extendAnnotation as never) as ExtendAnnotationSchemaType,
+    extendStyle: translated(extendStyle as never) as ExtendStyleSchemaType,
+    extendList: translated(extendList as never) as ExtendListSchemaType,
     extendBlockObject,
   });
 }
@@ -368,14 +379,14 @@ export function SelectionToolbar() {
           {!isMobile &&
             lists.map((list) => <ListButton key={list.name} schemaType={list} />)}
           {isMobile ? (
-            <Button variant="ghost" size="icon" aria-label="More formatting" onClick={() => setShowMore(true)}>
+            <Button variant="ghost" size="icon" aria-label={t("editor:moreFormatting")} onClick={() => setShowMore(true)}>
               <MoreHorizontalIcon className="size-4" />
             </Button>
           ) : null}
         </div>
         {isMobile ? (
           <div className={`flex items-center gap-0.5 ${showMore ? "" : "hidden"}`}>
-            <Button variant="ghost" size="icon" aria-label="Back" onClick={() => setShowMore(false)}>
+            <Button variant="ghost" size="icon" aria-label={t("common:actions.back")} onClick={() => setShowMore(false)}>
               <ArrowLeftIcon className="size-4 rtl:rotate-180" />
             </Button>
             {overflow.map((decorator) => (

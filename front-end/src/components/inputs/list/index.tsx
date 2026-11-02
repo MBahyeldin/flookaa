@@ -4,6 +4,7 @@ import FieldRender from "@/components/form/FieldRender";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/models/Forms/FormField";
 import type { FormFieldProps } from "@/types/FormFields";
+import { t } from "@/i18n";
 
 type Item = { _key: string } & Record<string, unknown>;
 
@@ -20,7 +21,8 @@ export default function ListInput({
   const min = field.minItems ?? 0;
   const max = field.maxItems ?? Infinity;
   const name = field.name ?? field.id;
-  const itemLabel = field.itemLabel ?? "Item";
+  const itemLabel = field.itemLabel ?? t("common:form.item");
+  const itemName = itemLabel.toLocaleLowerCase();
 
   useEffect(() => {
     const current = Array.isArray(value) ? (value as Item[]) : [];
@@ -69,7 +71,7 @@ export default function ListInput({
                   variant="ghost"
                   size="icon"
                   className="size-8 max-md:size-11"
-                  aria-label={`Move ${itemLabel.toLowerCase()} ${index + 1} up`}
+                  aria-label={t("common:form.moveItemUp", { item: itemName, n: index + 1 })}
                   onClick={() => move(index, -1)}
                 >
                   <ArrowUpIcon className="size-4" />
@@ -81,7 +83,7 @@ export default function ListInput({
                   variant="ghost"
                   size="icon"
                   className="size-8 max-md:size-11"
-                  aria-label={`Move ${itemLabel.toLowerCase()} ${index + 1} down`}
+                  aria-label={t("common:form.moveItemDown", { item: itemName, n: index + 1 })}
                   onClick={() => move(index, 1)}
                 >
                   <ArrowDownIcon className="size-4" />
@@ -93,7 +95,7 @@ export default function ListInput({
                   variant="ghost"
                   size="icon"
                   className="size-8 max-md:size-11"
-                  aria-label={`Remove ${itemLabel.toLowerCase()} ${index + 1}`}
+                  aria-label={t("common:form.removeItem", { item: itemName, n: index + 1 })}
                   onClick={() => update(items.filter((other) => other._key !== item._key))}
                 >
                   <Trash2Icon className="size-4" />
@@ -132,7 +134,7 @@ export default function ListInput({
           onClick={() => update([...items, newItem()])}
         >
           <PlusIcon className="size-4" />
-          {field.addLabel ?? "Add"}
+          {field.addLabel ?? t("common:actions.add")}
         </Button>
       ) : null}
     </div>

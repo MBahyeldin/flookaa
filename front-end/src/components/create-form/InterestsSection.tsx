@@ -4,6 +4,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { SkeletonList } from "@/components/ui/skeleton";
 import { MAX_CHANNEL_INTERESTS, type InterestGroup } from "@/types/interest";
 import { FieldError } from "./fields";
+import { t } from "@/i18n";
 
 export function InterestsSection({
   lead,
@@ -21,9 +22,9 @@ export function InterestsSection({
   error?: string;
 }) {
   return (
-    <SettingsSection id="interests" title="Interests" lead={lead}>
+    <SettingsSection id="interests" title={t("common:interests.label")} lead={lead}>
       {groups === null && <SkeletonList count={2} />}
-      {groups === "error" && <ErrorState compact title="Couldn't load the interests" onRetry={onRetry} />}
+      {groups === "error" && <ErrorState compact title={t("common:interests.loadFailed")} onRetry={onRetry} />}
       {Array.isArray(groups) && (
         <InterestPicker groups={groups} retired={[]} value={value} onChange={onChange} max={MAX_CHANNEL_INTERESTS} />
       )}

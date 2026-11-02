@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import { PALETTES, type PaletteId } from "@/themes/palettes"
+import { PALETTES, paletteLabel, type PaletteId } from "@/themes/palettes"
 
 // Each swatch is drawn in its own palette, so it shows the colours of the current light or dark mode.
 function ThemeSwatch({
@@ -51,7 +51,7 @@ function ThemeSwatchGroup({
   return (
     <div role="radiogroup" className={cn("flex flex-wrap gap-3", className)} {...props}>
       {PALETTES.map((p) => (
-        <ThemeSwatch key={p.id} palette={p.id} label={p.label} checked={p.id === value} onSelect={() => onChange(p.id)} />
+        <ThemeSwatch key={p.id} palette={p.id} label={paletteLabel(p.id)} checked={p.id === value} onSelect={() => onChange(p.id)} />
       ))}
     </div>
   )

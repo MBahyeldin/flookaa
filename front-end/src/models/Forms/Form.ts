@@ -1,6 +1,7 @@
 import type { FormGroup } from "@/types/FormFields";
-import { PASSWORD_RULES_ERROR } from "@/lib/password";
-import signupFormFieldsGroup, { forgotPasswordGroups, resetPasswordGroups } from "@/lib/formFields/signup";
+import { perLanguage, t } from "@/i18n";
+import { passwordRulesError } from "@/lib/password";
+import signupFormFieldsGroups, { forgotPasswordGroups, resetPasswordGroups } from "@/lib/formFields/signup";
 import loginFormFieldsGroups from "@/lib/formFields/login";
 
 // An API error code shown on a field instead of under the form; `also` fields are outlined without a message.
@@ -20,66 +21,21 @@ export class Form {
   method: string;
   serverErrors: Record<string, ServerFieldError>;
 
-  static signup = new Form({
-    id: "signup_form",
-    name: "Sign Up Form",
-    title: "Create Your Account",
-    description: "Form for user sign up",
-    submitText: "Create account",
-    groups: signupFormFieldsGroup,
-    relativeApiPath: "/api/v1/auth/register",
-    method: "POST",
-    serverErrors: {
-      weak_password: { field: "password", message: PASSWORD_RULES_ERROR },
-      email_taken: { field: "email_address", message: "An account already uses this email. Log in instead." },
-    },
-  });
+  static get signup() {
+    return signupForm();
+  }
 
-  static forgotPassword = new Form({
-    id: "forgot_password_form",
-    name: "Forgot Password Form",
-    title: "Reset your password",
-    description: "Sends a reset link to the account's email",
-    submitText: "Send link",
-    groups: forgotPasswordGroups,
-    relativeApiPath: "/api/v1/auth/password/forgot",
-    method: "POST",
-    serverErrors: {
-      invalid_email: { field: "email_address", message: "Enter a valid email address." },
-    },
-  });
+  static get forgotPassword() {
+    return forgotPasswordForm();
+  }
 
-  static resetPassword = new Form({
-    id: "reset_password_form",
-    name: "Reset Password Form",
-    title: "Choose a new password",
-    description: "Sets a new password from a reset link",
-    submitText: "Change password",
-    groups: resetPasswordGroups,
-    relativeApiPath: "/api/v1/auth/password/reset",
-    method: "POST",
-    serverErrors: {
-      weak_password: { field: "password", message: PASSWORD_RULES_ERROR },
-    },
-  });
+  static get resetPassword() {
+    return resetPasswordForm();
+  }
 
-  static login = new Form({
-    id: "login_form",
-    name: "Log In Form",
-    title: "Welcome Back",
-    description: "Enter your email below to login to your account.",
-    submitText: "Log in",
-    groups: loginFormFieldsGroups,
-    relativeApiPath: "/api/v1/auth/login",
-    method: "POST",
-    serverErrors: {
-      "Invalid email or password": { field: "password", message: "Wrong email or password.", also: ["email_address"] },
-      "you can't login with password, please use OAuth login": {
-        field: "password",
-        message: "This account logs in with Google.",
-      },
-    },
-  });
+  static get login() {
+    return loginForm();
+  }
 
   constructor({
     id,
@@ -122,7 +78,7 @@ export class Form {
         // required field check
         const value = values[field.id];
         if (field.isRequired && (!value || (Array.isArray(value) && value.length === 0))) {
-          errors[field.id] = "This field is required";
+          errors[field.id] = t("common:form.required");
         }
 
         const customValidation = field.validate?.(values[field.id], values);
@@ -134,3 +90,76 @@ export class Form {
     return errors;
   }
 }
+
+const signupForm = perLanguage(
+  () =>
+    new Form({
+      id: "signup_form",
+      name: "Sign Up Form",
+      title: t("auth:signup.title"),
+      description: "",
+      submitText: t("auth:signup.submit"),
+      groups: signupFormFieldsGroups(),
+      relativeApiPath: "/api/v1/auth/register",
+      method: "POST",
+      serverErrors: {
+        weak_password: { field: "password", message: passwordRulesError() },
+        email_taken: { field: "email_address", message: t("auth:signup.emailTaken") },
+      },
+    }),
+);
+
+const forgotPasswordForm = perLanguage(
+  () =>
+    new Form({
+      id: "forgot_password_form",
+      name: "Forgot Password Form",
+      title: t("auth:forgot.title"),
+      description: "",
+      submitText: t("auth:forgot.submit"),
+      groups: forgotPasswordGroups(),
+      relativeApiPath: "/api/v1/auth/password/forgot",
+      method: "POST",
+      serverErrors: {
+        invalid_email: { field: "email_address", message: t("errors:invalid_email") },
+      },
+    }),
+);
+
+const resetPasswordForm = perLanguage(
+  () =>
+    new Form({
+      id: "reset_password_form",
+      name: "Reset Password Form",
+      title: t("auth:reset.title"),
+      description: "",
+      submitText: t("auth:reset.submit"),
+      groups: resetPasswordGroups(),
+      relativeApiPath: "/api/v1/auth/password/reset",
+      method: "POST",
+      serverErrors: {
+        weak_password: { field: "password", message: passwordRulesError() },
+      },
+    }),
+);
+
+const loginForm = perLanguage(
+  () =>
+    new Form({
+      id: "login_form",
+      name: "Log In Form",
+      title: t("auth:login.title"),
+      description: "",
+      submitText: t("auth:login.submit"),
+      groups: loginFormFieldsGroups(),
+      relativeApiPath: "/api/v1/auth/login",
+      method: "POST",
+      serverErrors: {
+        "Invalid email or password": { field: "password", message: t("auth:login.wrongPassword"), also: ["email_address"] },
+        "you can't login with password, please use OAuth login": {
+          field: "password",
+          message: t("auth:login.googleOnly"),
+        },
+      },
+    }),
+);

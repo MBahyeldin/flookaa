@@ -4,12 +4,11 @@ import { AgeField, VisibilityField, type Visibility } from "@/components/create-
 import { useConfirm } from "@/components/confirm-dialog";
 import { SettingsSection } from "@/components/settings/SettingsSection";
 import { Badge } from "@/components/ui/badge";
-import { MIN_AGE_ERROR } from "@/lib/minAge";
-import { formatCount } from "@/lib/format";
+import { errorMessage } from "@/lib/errors";
+import { formatCompact } from "@/lib/format";
 import type { Community } from "@/types/community";
 import type { SaveCommunity } from "./CommunityManageSheet";
-
-const PRIVATE_BODY = "Only members see inside. Joining needs a manager's approval.";
+import { useTranslation } from "react-i18next";
 
 export function CommunityAudienceSection({
   community,
@@ -20,6 +19,7 @@ export function CommunityAudienceSection({
   pendingRequests: number;
   save: SaveCommunity;
 }) {
+  const { t } = useTranslation(["communities", "common"]);
   const [visibility, setVisibility] = useState<Visibility>(community.visibility);
   const [minAge, setMinAge] = useState(community.min_age);
   const [saving, setSaving] = useState(false);
@@ -34,19 +34,22 @@ export function CommunityAudienceSection({
     ? null
     : visibility === "private"
       ? community.followers_count > 0
-        ? `Going private ends ${formatCount(community.followers_count, "follow", "follows")}. Members stay.`
-        : "Going private hides the members and channels list from everyone outside."
+        ? t("audience.privateEndsFollows", { count: community.followers_count, n: formatCompact(community.followers_count) })
+        : t("audience.privateHides")
       : pendingRequests > 0
-        ? `Going public admits ${formatCount(pendingRequests, "pending request", "pending requests")} at once.`
-        : "Going public lets anyone see inside and join at once.";
+        ? t("audience.publicAdmits", { count: pendingRequests, n: formatCompact(pendingRequests) })
+        : t("audience.publicOpens");
 
   const submit = async () => {
     if (
       visibilityChanged &&
       !(await confirm({
-        title: visibility === "private" ? `Make ${community.name} private?` : `Make ${community.name} public?`,
+        title:
+          visibility === "private"
+            ? t("audience.makePrivateConfirm", { name: community.name })
+            : t("audience.makePublicConfirm", { name: community.name }),
         body: warning,
-        confirmLabel: visibility === "private" ? "Make private" : "Make public",
+        confirmLabel: visibility === "private" ? t("audience.makePrivate") : t("audience.makePublic"),
       }))
     )
       return;
@@ -54,33 +57,33 @@ export function CommunityAudienceSection({
     setError(undefined);
     const code = await save(
       { ...(visibilityChanged && { visibility }), ...(minAge !== community.min_age && { min_age: minAge }) },
-      "Audience saved",
+      t("audience.saved"),
     );
     setSaving(false);
-    if (code === "invalid_min_age") setError(MIN_AGE_ERROR);
+    if (code === "invalid_min_age") setError(errorMessage(code));
   };
 
   const Icon = community.visibility === "private" ? Lock : Globe;
   return (
     <SettingsSection
       id="audience"
-      title="Audience"
-      lead="Who sees inside it, and how old they must be."
+      title={t("common:create.audience")}
+      lead={t("create.audienceLead")}
       dirty={visibilityChanged || minAge !== community.min_age}
       saving={saving}
       onSave={submit}
     >
       {community.can_own ? (
-        <VisibilityField value={visibility} onChange={setVisibility} privateBody={PRIVATE_BODY} />
+        <VisibilityField value={visibility} onChange={setVisibility} privateBody={t("audience.privateBody")} />
       ) : (
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Visibility</span>
+          <span className="text-sm font-medium">{t("common:create.visibility")}</span>
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <Badge variant="secondary">
               <Icon />
-              {community.visibility === "private" ? "Private" : "Public"}
+              {community.visibility === "private" ? t("common:visibility.private") : t("common:visibility.public")}
             </Badge>
-            Only the owner can change this.
+            {t("audience.ownerOnly")}
           </div>
         </div>
       )}
@@ -93,7 +96,7 @@ export function CommunityAudienceSection({
       <AgeField
         value={minAge}
         error={error}
-        helper="Younger people won't see it at all, members included."
+        helper={t("common:age.manageHelper")}
         onChange={(age) => {
           setMinAge(age);
           setError(undefined);

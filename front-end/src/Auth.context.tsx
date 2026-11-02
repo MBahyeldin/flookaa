@@ -14,6 +14,8 @@ import {
 } from "@/utils/permissions";
 import { useLoading } from "./Loading.context";
 import { useUserProfileStore } from "./stores/UserProfileStore";
+import { currentLanguage, isLanguage, setLanguage } from "./i18n";
+import { saveLanguage } from "./services/user";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -38,6 +40,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsFetchUserLoading(true);
       try {
         const data = await fetchCurrentUser();
+        if (data?.language) {
+          if (isLanguage(data.language)) await setLanguage(data.language);
+        } else if (data?.is_verified) {
+          void saveLanguage(currentLanguage());
+        }
         setUser(data);
       } catch (error) {
         console.error(error);

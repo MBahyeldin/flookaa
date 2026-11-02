@@ -8,6 +8,7 @@ type CreateUserRequest struct {
 	EmailAddress string           `json:"email_address" binding:"required,email"`
 	Password     string           `json:"password" binding:"required"`
 	Thumbnail    types.NullString `json:"thumbnail"`
+	Language     string           `json:"language"`
 }
 
 type PatchUserRequest struct {

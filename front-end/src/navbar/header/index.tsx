@@ -3,8 +3,10 @@ import { SunMoon } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/Theme.context";
+import { useTranslation } from "react-i18next";
 
 export default function Header({ onlyLogo = false }: { onlyLogo?: boolean }) {
+  const { t } = useTranslation();
   const { toggleTheme } = useTheme();
 
   return (
@@ -13,14 +15,14 @@ export default function Header({ onlyLogo = false }: { onlyLogo?: boolean }) {
       {!onlyLogo && (
         <nav className="flex items-center gap-2 sm:gap-4">
           <Button asChild variant="ghost">
-            <Link to="/login">Log in</Link>
+            <Link to="/login">{t("actions.logIn")}</Link>
           </Button>
           <Button asChild>
-            <Link to="/sign-up">Sign up</Link>
+            <Link to="/sign-up">{t("actions.signUp")}</Link>
           </Button>
         </nav>
       )}
-      <Button variant="ghost" size="icon-sm" aria-label="Toggle dark mode" onClick={toggleTheme}>
+      <Button variant="ghost" size="icon-sm" aria-label={t("shell.toggleDark")} onClick={toggleTheme}>
         <SunMoon />
       </Button>
     </header>

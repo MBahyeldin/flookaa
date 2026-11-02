@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
  
 import {
   EditorProvider,
@@ -174,7 +175,7 @@ export default function Editor(props: {
                     // The "Type something" placeholder is a rendered node, not
                     // an accessible name — without this the editor announces as
                     // an unlabeled textbox.
-                    aria-label="Post content"
+                    aria-label={t("editor:postContent")}
                     className={`outline-none data-[read-only=true]:opacity-50 py-1 overflow-auto flex-1 ${
                       props.fill ? "h-full" : "min-h-30 max-h-[60vh]"
                     } ${
@@ -330,7 +331,7 @@ const renderListItem: RenderListItemFunction = (props: any) => {
 };
 
 const renderPlaceholder: RenderPlaceholderFunction = () => (
-  <span className="text-muted-foreground">Share something with the club…</span>
+  <span className="text-muted-foreground">{t("editor:placeholder")}</span>
 );
 
 const renderStyle: RenderStyleFunction = (props: any) => {

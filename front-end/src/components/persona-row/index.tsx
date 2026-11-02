@@ -4,24 +4,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { personaInitials } from "@/lib/personaInitials";
 import { cn } from "@/lib/utils";
-import { DEFAULT_PALETTE, PALETTES, isPaletteId } from "@/themes/palettes";
+import { DEFAULT_PALETTE, isPaletteId, paletteLabel } from "@/themes/palettes";
 import type { Persona } from "@/types/persona";
+import { useTranslation } from "react-i18next";
 
-const PRIVACY: Record<Persona["privacy"], { label: string; icon: LucideIcon }> = {
-  public: { label: "Public", icon: Globe },
-  private: { label: "Private", icon: Lock },
-  only_me: { label: "Only me", icon: EyeOff },
-};
+const PRIVACY_ICONS: Record<Persona["privacy"], LucideIcon> = { public: Globe, private: Lock, only_me: EyeOff };
 
 export function personaDisplayName(p: Persona) {
   return [p.first_name, p.last_name].filter(Boolean).join(" ") || `@${p.slug}`;
 }
 
 export function PersonaRow({ persona, action, className }: { persona: Persona; action?: ReactNode; className?: string }) {
+  const { t } = useTranslation("personas");
   const theme = isPaletteId(persona.theme) ? persona.theme : DEFAULT_PALETTE;
-  const themeLabel = PALETTES.find((p) => p.id === theme)?.label;
-  const privacy = PRIVACY[persona.privacy];
-  const PrivacyIcon = privacy?.icon;
+  const PrivacyIcon = PRIVACY_ICONS[persona.privacy];
 
   return (
     <div
@@ -37,17 +33,17 @@ export function PersonaRow({ persona, action, className }: { persona: Persona; a
         <p className="truncate text-sm font-semibold">{personaDisplayName(persona)}</p>
         <p className="text-xs break-words text-muted-foreground">
           @{persona.slug}
-          {themeLabel && ` · ${themeLabel} theme`}
+          {` · ${t("row.theme", { theme: paletteLabel(theme) })}`}
         </p>
       </div>
       <div className="hidden shrink-0 items-center gap-1.5 md:flex">
-        {privacy && (
+        {PrivacyIcon && (
           <Badge variant="secondary">
             <PrivacyIcon aria-hidden />
-            {privacy.label}
+            {t(`privacy.${persona.privacy}.label`)}
           </Badge>
         )}
-        {persona.is_default && <Badge variant="secondary">Default</Badge>}
+        {persona.is_default && <Badge variant="secondary">{t("row.default")}</Badge>}
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>

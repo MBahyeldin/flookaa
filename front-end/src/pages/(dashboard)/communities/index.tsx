@@ -10,8 +10,10 @@ import { SkeletonList } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { CommunityTile } from "@/components/tile/CommunityTile";
+import { useTranslation } from "react-i18next";
 
 export default function CommunitiesPage() {
+  const { t } = useTranslation(["communities", "common"]);
   const [communities, setCommunities] = useState<Community[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -37,14 +39,12 @@ export default function CommunitiesPage() {
   return (
     <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8 flex flex-col items-start gap-3">
-        <h1>Communities</h1>
-        <p className="text-muted-foreground">
-          Groups of channels around one place or passion. Join to take part, follow to keep up.
-        </p>
+        <h1>{t("list.title")}</h1>
+        <p className="text-muted-foreground">{t("list.lead")}</p>
         <Button asChild>
           <Link to="/communities/create">
             <Plus />
-            Create community
+            {t("create.submit")}
           </Link>
         </Button>
       </div>
@@ -56,23 +56,23 @@ export default function CommunitiesPage() {
       {loading ? (
         <SkeletonList count={6} variant="post" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" />
       ) : failed ? (
-        <ErrorState title="Couldn't load communities" onRetry={() => setAttempt((n) => n + 1)} />
+        <ErrorState title={t("list.loadFailed")} onRetry={() => setAttempt((n) => n + 1)} />
       ) : communities.length === 0 ? (
         interests.length > 0 ? (
           <EmptyState
             icon={Boxes}
-            title={interestNames.length ? `No communities for ${interestNamesLabel(interestNames)} yet` : "No communities with these interests yet"}
-            body="Try other interests, or start the first one."
-            action={<Button onClick={() => setInterests([])}>Show all</Button>}
+            title={interestNames.length ? t("list.noneFor", { names: interestNamesLabel(interestNames) }) : t("list.noneWithInterests")}
+            body={t("common:list.tryOtherInterests")}
+            action={<Button onClick={() => setInterests([])}>{t("common:actions.showAll")}</Button>}
           />
         ) : (
           <EmptyState
             icon={Boxes}
-            title="No communities yet"
-            body="Start the first one."
+            title={t("list.empty")}
+            body={t("common:list.startFirst")}
             action={
               <Button asChild>
-                <Link to="/communities/create">Create community</Link>
+                <Link to="/communities/create">{t("create.submit")}</Link>
               </Button>
             }
           />

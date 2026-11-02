@@ -1,0 +1,59 @@
+{
+  "stepIncomplete": "Finish this step to continue.",
+  "skipNow": "Skip now",
+  "progress": "Onboarding progress",
+  "stepOf": "Step {{current}} of {{total}}",
+  "stepOfLabeled": "Step {{current}} of {{total}} · {{label}}",
+  "unavailable": "This step isn't available yet.",
+  "saveAndExit": "Save and exit",
+  "personaFailed": "We couldn't open your persona.",
+  "saveFailed": "Couldn't save. Please try again.",
+  "noSuggestions": "No suggestions yet",
+  "noSuggestionsBody": "Nothing matches your interests yet. You can skip this step.",
+  "selected_one": "{{count}} selected",
+  "selected_other": "{{count}} selected",
+  "channels": {
+    "loadFailed": "Couldn't load channels",
+    "source": {
+      "community": "From your communities",
+      "interest": "Based on your interests"
+    }
+  },
+  "communities": {
+    "loadFailed": "Couldn't load communities"
+  },
+  "personas": {
+    "add": "Add another persona",
+    "addHint": "A work self, a cooking self… each with its own name and theme.",
+    "finish": "Finish",
+    "manageTitle": "Manage persona",
+    "manageLead": "Changes save to this persona only."
+  },
+  "steps": {
+    "about_you": {
+      "label": "About you",
+      "title": "A little about you",
+      "lead": "Used only to check age limits on channels. Nobody else sees it."
+    },
+    "interests": {
+      "label": "Interests",
+      "title": "What are you into?",
+      "lead": "Pick a few for your default persona. They shape what we suggest."
+    },
+    "communities": {
+      "label": "Communities",
+      "title": "Join your communities",
+      "lead": "Suggested from your interests. Joining is instant for public ones."
+    },
+    "channels": {
+      "label": "Channels",
+      "title": "Pick some channels",
+      "lead": "Channels are where the posts happen."
+    },
+    "personas": {
+      "label": "Personas",
+      "title": "Your personas",
+      "lead": "You start with one. Add another for a different side of you, any time."
+    }
+  }
+}

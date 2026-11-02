@@ -1,6 +1,7 @@
 import { useState, type ReactElement } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
@@ -22,6 +23,7 @@ function isActive(pathname: string, prefix: string) {
 }
 
 export default function SidebarNavItem({ title, to, icon: Icon, match, badge, popover }: NavEntry) {
+  const { t } = useTranslation();
   const { pathname } = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
   const [open, setOpen] = useState(false);
@@ -32,7 +34,7 @@ export default function SidebarNavItem({ title, to, icon: Icon, match, badge, po
       <Icon aria-hidden="true" />
       <span>
         {title}
-        {!!badge && <span className="sr-only">, {badge} unread</span>}
+        {!!badge && <span className="sr-only">{t("shell.unread", { count: badge })}</span>}
       </span>
       {!!badge && (
         <Badge
@@ -40,7 +42,7 @@ export default function SidebarNavItem({ title, to, icon: Icon, match, badge, po
           aria-hidden="true"
           className="group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:-top-1 group-data-[collapsible=icon]:-right-1"
         >
-          {badge > 99 ? "99+" : badge}
+          {badge > 99 ? t("shell.badgeMax") : badge}
         </Badge>
       )}
     </>

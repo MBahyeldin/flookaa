@@ -542,6 +542,57 @@ func (e GenderEnum) Valid() bool {
 	return false
 }
 
+type LanguageEnum string
+
+const (
+	LanguageEnumEn LanguageEnum = "en"
+	LanguageEnumAr LanguageEnum = "ar"
+)
+
+func (e *LanguageEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = LanguageEnum(s)
+	case string:
+		*e = LanguageEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for LanguageEnum: %T", src)
+	}
+	return nil
+}
+
+type NullLanguageEnum struct {
+	LanguageEnum LanguageEnum
+	Valid        bool // Valid is true if LanguageEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullLanguageEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.LanguageEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.LanguageEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullLanguageEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.LanguageEnum), nil
+}
+
+func (e LanguageEnum) Valid() bool {
+	switch e {
+	case LanguageEnumEn,
+		LanguageEnumAr:
+		return true
+	}
+	return false
+}
+
 type NotificationKindEnum string
 
 const (
@@ -1485,6 +1536,7 @@ type User struct {
 	OnboardingStep         int32
 	DateOfBirth            sql.NullTime
 	Gender                 NullGenderEnum
+	Language               NullLanguageEnum
 }
 
 type UserRole struct {

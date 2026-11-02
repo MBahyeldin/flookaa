@@ -5,6 +5,9 @@ AS ENUM ('google', 'github', 'linkedin');
 CREATE TYPE gender_enum
 AS ENUM ('male', 'female');
 
+CREATE TYPE language_enum
+AS ENUM ('en', 'ar');
+
 
 -- -------------------------------
 -- 2. Users Table
@@ -30,7 +33,8 @@ CREATE TABLE IF NOT EXISTS users (
     onboarding_completed BOOLEAN NOT NULL DEFAULT false,
     onboarding_step INTEGER NOT NULL DEFAULT 0,
     date_of_birth DATE CHECK (date_of_birth >= DATE '1900-01-01'),
-    gender gender_enum
+    gender gender_enum,
+    language language_enum
 );
 
 -- A user without a date of birth never meets a limit.

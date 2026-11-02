@@ -8,17 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { SLUG_PATTERN, slugify } from "@/lib/slug";
 import type { Result } from "@/services/interests";
 import type { AdminInterestGroup } from "@/types/interest";
+import { useTranslation } from "react-i18next";
 
 type Values = { name: string; slug: string; emoji: string; group_id: number | null };
 type Field = keyof Values;
 
-const ERRORS: Record<string, { field: Field; message: string }> = {
-  invalid_name: { field: "name", message: "Use 1–100 characters." },
-  name_taken: { field: "name", message: "This name is already used." },
-  invalid_slug: { field: "slug", message: "Use 3–50 lowercase letters, digits or single hyphens." },
-  slug_taken: { field: "slug", message: "This slug is already used." },
-  invalid_emoji: { field: "emoji", message: "Use one emoji (up to 8 characters)." },
-  invalid_group: { field: "group_id", message: "Choose a group." },
+const ERROR_FIELDS: Record<string, Field> = {
+  invalid_name: "name",
+  name_taken: "name",
+  invalid_slug: "slug",
+  slug_taken: "slug",
+  invalid_emoji: "emoji",
+  invalid_group: "group_id",
 };
 
 /** Adds or edits an interest (with `groups`) or a group (without). */
@@ -35,8 +36,9 @@ export default function CatalogueDialog({
   onClose: () => void;
   onSave: (values: Values) => Promise<Result<unknown>>;
 }) {
+  const { t } = useTranslation(["admin", "common"]);
+  const message = (code: string) => t(`dialog.errors.${code}` as "dialog.errors.invalid_name");
   const isInterest = groups !== undefined;
-  const noun = isInterest ? "interest" : "group";
   const [values, setValues] = useState<Values>({
     name: initial?.name ?? "",
     slug: initial?.slug ?? "",
@@ -52,11 +54,11 @@ export default function CatalogueDialog({
   const errors: Partial<Record<Field, string>> = {};
   const name = values.name.trim();
   const emoji = values.emoji.trim();
-  if (!name || name.length > 100) errors.name = ERRORS.invalid_name.message;
-  if (!SLUG_PATTERN.test(values.slug)) errors.slug = ERRORS.invalid_slug.message;
+  if (!name || name.length > 100) errors.name = message("invalid_name");
+  if (!SLUG_PATTERN.test(values.slug)) errors.slug = message("invalid_slug");
   if (isInterest) {
-    if (!emoji || [...emoji].length > 8) errors.emoji = ERRORS.invalid_emoji.message;
-    if (values.group_id === null) errors.group_id = ERRORS.invalid_group.message;
+    if (!emoji || [...emoji].length > 8) errors.emoji = message("invalid_emoji");
+    if (values.group_id === null) errors.group_id = message("invalid_group");
   }
   const valid = Object.keys(errors).length === 0;
 
@@ -84,14 +86,15 @@ export default function CatalogueDialog({
       onClose();
       return;
     }
-    setServerError(ERRORS[result.error] ?? { message: "Couldn't save. Please try again." });
+    const field = ERROR_FIELDS[result.error];
+    setServerError(field ? { field, message: message(result.error) } : { message: t("common:states.saveFailed") });
   };
 
   const input = (id: "name" | "slug" | "emoji", props: React.ComponentProps<typeof Input> = {}) => (
     <Input
       value={values[id]}
       onChange={(e) => set(id, e.target.value)}
-      onBlur={() => setTouched((t) => ({ ...t, [id]: true }))}
+      onBlur={() => setTouched((prev) => ({ ...prev, [id]: true }))}
       {...props}
     />
   );
@@ -105,25 +108,33 @@ export default function CatalogueDialog({
         className="max-sm:top-auto max-sm:bottom-0 max-sm:max-w-full max-sm:translate-y-0 max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0 sm:max-w-[480px]">
         <form onSubmit={submit} className="flex flex-col gap-4">
           <DialogHeader className="text-left">
-            <DialogTitle>{adding ? `Add ${noun}` : `Edit ${noun}`}</DialogTitle>
+            <DialogTitle>
+              {isInterest
+                ? adding
+                  ? t("interests.addInterest")
+                  : t("dialog.editInterest")
+                : adding
+                  ? t("interests.addGroup")
+                  : t("dialog.editGroup")}
+            </DialogTitle>
           </DialogHeader>
           {isInterest ? (
             <div className="grid grid-cols-[5rem_1fr] items-start gap-4">
-              <FormField label="Emoji" error={fieldError("emoji")}>
+              <FormField label={t("dialog.emoji")} error={fieldError("emoji")}>
                 {input("emoji", { placeholder: "💻", className: "text-center text-lg" })}
               </FormField>
-              <FormField label="Name" error={fieldError("name")}>
-                {input("name", { placeholder: "Technology", autoFocus: true })}
+              <FormField label={t("dialog.name")} error={fieldError("name")}>
+                {input("name", { placeholder: t("dialog.interestPlaceholder"), autoFocus: true })}
               </FormField>
             </div>
           ) : (
-            <FormField label="Name" error={fieldError("name")}>
-              {input("name", { placeholder: "Technology & Professional", autoFocus: true })}
+            <FormField label={t("dialog.name")} error={fieldError("name")}>
+              {input("name", { placeholder: t("dialog.groupPlaceholder"), autoFocus: true })}
             </FormField>
           )}
           <FormField
-            label="Slug"
-            helper={isInterest ? `Used in links, e.g. ?interest=${slugExample}` : "Used in links"}
+            label={t("dialog.slug")}
+            helper={isInterest ? t("dialog.slugHelperInterest", { slug: slugExample }) : t("dialog.slugHelper")}
             error={fieldError("slug")}
           >
             {input("slug", { placeholder: slugExample })}
@@ -133,12 +144,12 @@ export default function CatalogueDialog({
               value={values.group_id === null ? "" : String(values.group_id)}
               onValueChange={(v) => {
                 set("group_id", Number(v));
-                setTouched((t) => ({ ...t, group_id: true }));
+                setTouched((prev) => ({ ...prev, group_id: true }));
               }}
             >
-              <FormField label="Group" error={fieldError("group_id")}>
+              <FormField label={t("dialog.group")} error={fieldError("group_id")}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Choose a group" />
+                  <SelectValue placeholder={t("dialog.chooseGroup")} />
                 </SelectTrigger>
               </FormField>
               <SelectContent>
@@ -152,9 +163,9 @@ export default function CatalogueDialog({
           )}
           {isInterest && (name || emoji) && (
             <div className="flex flex-col gap-2">
-              <p className="text-xs text-muted-foreground">How people see it</p>
+              <p className="text-xs text-muted-foreground">{t("dialog.preview")}</p>
               <Chip emoji={emoji} className="self-start">
-                {name || "Name"}
+                {name || t("dialog.name")}
               </Chip>
             </div>
           )}
@@ -165,10 +176,10 @@ export default function CatalogueDialog({
           )}
           <DialogFooter className="flex-row justify-end gap-2">
             <Button type="button" variant="ghost" disabled={saving} onClick={onClose}>
-              Cancel
+              {t("common:actions.cancel")}
             </Button>
             <Button type="submit" loading={saving}>
-              {adding ? `Add ${noun}` : "Save"}
+              {adding ? (isInterest ? t("interests.addInterest") : t("interests.addGroup")) : t("common:actions.save")}
             </Button>
           </DialogFooter>
         </form>

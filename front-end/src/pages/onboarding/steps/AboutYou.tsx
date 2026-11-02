@@ -6,19 +6,21 @@ import SectionLoader from "@/components/section-loader";
 import { getUserData, updateProfile } from "@/services/user";
 import {
   GENDERS,
-  GENDER_LABELS,
+  genderLabel,
   dateOfBirthSchema,
   genderSchema,
   type Gender,
 } from "@/types/user";
 import OnboardingFooter from "../OnboardingFooter";
+import { useTranslation } from "react-i18next";
 
 export default function AboutYou() {
+  const { t } = useTranslation(["settings", "onboarding"]);
   const [loading, setLoading] = useState(true);
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState<Gender | "">("");
   const [dobTouched, setDobTouched] = useState(false);
-  const [serverError, setServerError] = useState<{ field: "date_of_birth" | "gender"; message: string } | null>(null);
+  const [serverError, setServerError] = useState<"date_of_birth" | "gender" | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
 
   useEffect(() => {
@@ -39,12 +41,12 @@ export default function AboutYou() {
   const dob = dateOfBirthSchema.safeParse(dateOfBirth);
   const gen = genderSchema.safeParse(gender);
   const dobError =
-    serverError?.field === "date_of_birth"
-      ? serverError.message
+    serverError === "date_of_birth"
+      ? t("dob.range")
       : dobTouched && dateOfBirth && !dob.success
         ? dob.error.issues[0]?.message
         : null;
-  const genderError = serverError?.field === "gender" ? serverError.message : null;
+  const genderError = serverError === "gender" ? t("gender.choose") : null;
 
   const save = async () => {
     if (!dob.success || !gen.success) return false;
@@ -52,9 +54,9 @@ export default function AboutYou() {
     const result = await updateProfile({ date_of_birth: dob.data, gender: gen.data });
     if (result.ok) return true;
     if (result.error === "invalid_date_of_birth") {
-      setServerError({ field: "date_of_birth", message: "Enter a date between 1900 and today" });
+      setServerError("date_of_birth");
     } else if (result.error === "invalid_gender") {
-      setServerError({ field: "gender", message: "Choose one" });
+      setServerError("gender");
     } else {
       setSaveFailed(true);
     }
@@ -64,8 +66,8 @@ export default function AboutYou() {
   return (
     <div className="flex flex-col gap-6">
       <FormField
-        label="Date of birth"
-        helper="Used only for age limits. Never shown on a persona."
+        label={t("dob.label")}
+        helper={t("dob.helper")}
         error={dobError}
       >
         <Input
@@ -81,7 +83,7 @@ export default function AboutYou() {
       </FormField>
       <div className="flex flex-col gap-1.5">
         <p id="gender-label" className="text-sm font-medium">
-          Gender
+          {t("gender.label")}
         </p>
         <div role="radiogroup" aria-labelledby="gender-label" className="flex gap-2">
           {GENDERS.map((g) => (
@@ -97,7 +99,7 @@ export default function AboutYou() {
                 setServerError(null);
               }}
             >
-              {GENDER_LABELS[g]}
+              {genderLabel(g)}
             </Chip>
           ))}
         </div>
@@ -109,7 +111,7 @@ export default function AboutYou() {
       </div>
       {saveFailed && (
         <p role="alert" className="text-sm text-destructive text-right">
-          Couldn't save. Please try again.
+          {t("onboarding:saveFailed")}
         </p>
       )}
       <OnboardingFooter onContinue={save} continueDisabled={!dob.success || !gen.success} />

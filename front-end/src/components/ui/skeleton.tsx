@@ -1,3 +1,4 @@
+import { t } from "@/i18n"
 import { cn } from "@/lib/utils"
 
 function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
@@ -53,7 +54,7 @@ function SkeletonList({
   const Item = variant === "post" ? SkeletonPost : SkeletonRow
   return (
     <div role="status" className={className}>
-      <span className="sr-only">Loading…</span>
+      <span className="sr-only">{t("common:states.loading")}</span>
       {Array.from({ length: count }, (_, i) => (
         <Item key={i} />
       ))}

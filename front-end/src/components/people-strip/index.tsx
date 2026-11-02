@@ -3,7 +3,8 @@ import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { PersonaLink } from "@/components/persona-link";
 import { displayName, type RowPerson } from "@/components/persona-link/PersonRow";
 import { overlineClass } from "@/components/about-block";
-import { formatCount } from "@/lib/format";
+import { formatCompact } from "@/lib/format";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 const STRIP = 6;
@@ -36,12 +37,13 @@ export function PeopleStrip({
   moderators: RowPerson[];
   onShowAll?: () => void;
 }) {
+  const { t } = useTranslation();
   const rest = total - Math.min(people.length, STRIP);
-  const more = formatCount(rest, "member", "members");
+  const more = t("counts.members", { count: rest, n: formatCompact(rest) });
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className={overlineClass}>People</h2>
+      <h2 className={overlineClass}>{t("people.title")}</h2>
       <div className="flex items-center">
         {people.slice(0, STRIP).map((p) => (
           <StripAvatar key={p.persona_id} person={p} className="-me-2 size-10" />
@@ -53,15 +55,15 @@ export function PeopleStrip({
               onClick={onShowAll}
               className="ms-4 cursor-pointer rounded-sm text-sm text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-ring"
             >
-              +{more}
+              {t("people.more", { more })}
             </button>
           ) : (
-            <span className="ps-4 text-sm text-muted-foreground">+{more}</span>
+            <span className="ps-4 text-sm text-muted-foreground">{t("people.more", { more })}</span>
           ))}
       </div>
       {moderators.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-muted-foreground">Moderators</span>
+          <span className="text-muted-foreground">{t("people.moderators")}</span>
           {moderators.map((m) => (
             <span key={m.persona_id} className="flex items-center gap-1.5">
               <StripAvatar person={m} className="size-6 border-0" />

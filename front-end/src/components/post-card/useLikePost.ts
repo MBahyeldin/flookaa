@@ -5,6 +5,8 @@ import { useMutation } from "@apollo/client/react";
 import { CreateLikeDocument, type Post } from "@/generated/graphql";
 import useAudioContext from "@/hooks/useAudioContext";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
+import { t } from "@/i18n";
+import { graphqlErrorMessage } from "@/lib/errors";
 
 export function useLikePost(post: Post) {
   const { persona } = useUserProfileStore();
@@ -34,9 +36,7 @@ export function useLikePost(post: Post) {
       });
     } catch (err) {
       toast.error(
-        CombinedGraphQLErrors.is(err)
-          ? err.errors[0]?.message || "Couldn’t update your like."
-          : "Couldn’t update your like. Check your connection."
+        graphqlErrorMessage(CombinedGraphQLErrors.is(err) ? err : null, t("posts:like.failed"), t("posts:like.offline"))
       );
       return;
     } finally {

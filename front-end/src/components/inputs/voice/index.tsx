@@ -6,6 +6,7 @@ import AudioPlayer from "@/components/audio-player";
 import uploadAudio from "@/services/uploadAudio";
 import { audioRecordingFormat } from "@/lib/audioRecording";
 import { cn } from "@/lib/utils";
+import { t } from "@/i18n";
 import type { FormFieldProps } from "@/types/FormFields";
 
 export const MAX_VOICE_SECONDS = 300;
@@ -110,7 +111,7 @@ export default function VoiceInput({ field, error, touched, className, initValue
       }
     } catch (err) {
       if (id !== clipId.current) return;
-      setProblem(err instanceof Error ? err.message : "Upload failed.");
+      setProblem(err instanceof Error ? err.message : t("common:upload.failed"));
       setFailed(clip);
     } finally {
       if (id === clipId.current) setPhase("idle");
@@ -135,8 +136,8 @@ export default function VoiceInput({ field, error, touched, className, initValue
       setPhase("idle");
       setProblem(
         err instanceof DOMException && err.name === "NotAllowedError"
-          ? "Microphone access was denied."
-          : "Couldn’t start the microphone."
+          ? t("common:voice.denied")
+          : t("common:voice.couldNotStart")
       );
       return;
     }
@@ -147,7 +148,7 @@ export default function VoiceInput({ field, error, touched, className, initValue
     } catch {
       releaseMicrophone();
       setPhase("idle");
-      setProblem("This browser can’t record audio.");
+      setProblem(t("common:voice.cantRecord"));
       return;
     }
     rec.ondataavailable = (event) => {
@@ -159,7 +160,7 @@ export default function VoiceInput({ field, error, touched, className, initValue
       const blob = new Blob(chunks, { type: mimeType });
       if (blob.size === 0) {
         setPhase("idle");
-        setProblem("Nothing was recorded. Try again.");
+        setProblem(t("common:voice.nothingRecorded"));
         return;
       }
       void upload({ blob, fileName: `voice-note.${fileExtension}`, mimeType, seconds });
@@ -191,16 +192,16 @@ export default function VoiceInput({ field, error, touched, className, initValue
     setFailed(null);
     const type = fileTypes[file.type];
     if (!type) {
-      setProblem("That audio format isn’t supported. Use mp3, wav, m4a, flac, ogg or webm.");
+      setProblem(t("common:voice.badFormat"));
       return;
     }
     if (file.size > MAX_FILE_BYTES) {
-      setProblem("Audio files can be up to 5 MB.");
+      setProblem(t("common:voice.tooBig"));
       return;
     }
     const seconds = await measure(file);
     if (seconds !== undefined && seconds > MAX_VOICE_SECONDS + 0.5) {
-      setProblem(`Audio files can be up to ${formatTime(MAX_VOICE_SECONDS)} long.`);
+      setProblem(t("common:voice.tooLong", { time: formatTime(MAX_VOICE_SECONDS) }));
       return;
     }
     void upload({ blob: file, fileName: file.name, mimeType: type, seconds });
@@ -237,17 +238,17 @@ export default function VoiceInput({ field, error, touched, className, initValue
             <span aria-hidden className="size-2.5 animate-pulse rounded-full bg-destructive" />
             <span className="tabular-nums text-sm text-foreground">{formatTime(elapsed)}</span>
             {left <= 30 ? (
-              <span className="text-xs text-muted-foreground">{Math.ceil(left)} s left</span>
+              <span className="text-xs text-muted-foreground">{t("common:voice.secondsLeft", { count: Math.ceil(left) })}</span>
             ) : null}
             <Button type="button" size="sm" variant="secondary" className="ml-auto" onClick={stopRecording}>
-              <Square className="size-4" /> Stop
+              <Square className="size-4" /> {t("common:voice.stop")}
             </Button>
           </div>
         ) : null}
 
         {phase === "uploading" ? (
           <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" /> Processing…
+            <Loader2 className="size-4 animate-spin" /> {t("common:voice.processing")}
           </p>
         ) : null}
 
@@ -255,27 +256,27 @@ export default function VoiceInput({ field, error, touched, className, initValue
           <div className="flex flex-wrap gap-2">
             {!unsupportedReason ? (
               <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={startRecording}>
-                <Mic className="size-4" /> {src ? "Record again" : "Record"}
+                <Mic className="size-4" /> {src ? t("common:voice.recordAgain") : t("common:voice.record")}
               </Button>
             ) : null}
             <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => fileInput.current?.click()}>
-              <Upload className="size-4" /> {src ? "Upload another" : "Upload file"}
+              <Upload className="size-4" /> {src ? t("common:voice.uploadAnother") : t("common:voice.uploadFile")}
             </Button>
             {failed ? (
               <Button type="button" size="sm" variant="secondary" onClick={() => upload(failed)}>
-                Try again
+                {t("common:actions.tryAgain")}
               </Button>
             ) : null}
             {src || failed ? (
               <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={remove}>
-                <Trash2 className="size-4" /> Remove
+                <Trash2 className="size-4" /> {t("common:actions.remove")}
               </Button>
             ) : null}
           </div>
         ) : null}
 
         {unsupportedReason && phase === "idle" ? (
-          <p className="text-xs text-muted-foreground">{unsupportedReason} You can still upload a file.</p>
+          <p className="text-xs text-muted-foreground">{t("common:voice.canStillUpload", { reason: unsupportedReason })}</p>
         ) : null}
         {problem ? <p className="text-sm text-destructive">{problem}</p> : null}
 

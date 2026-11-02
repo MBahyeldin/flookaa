@@ -8,8 +8,10 @@ import {
 } from "@/components/ui/breadcrumb";
 import { ChevronRight } from "lucide-react";
 import clsx from "clsx";
+import { useTranslation } from "react-i18next";
 
 export default function AppBreadcrumb() {
+  const { t } = useTranslation();
   const { pathname } = useLocation();
   if (pathname === "/" || pathname.slice(1).split("/").length < 2) {
     return null;
@@ -25,7 +27,7 @@ export default function AppBreadcrumb() {
       };
     });
   return (
-    <Breadcrumb className="w-full px-4 py-3" aria-label="Breadcrumb">
+    <Breadcrumb className="w-full px-4 py-3" aria-label={t("shell.breadcrumb")}>
       <BreadcrumbList>
         {parts.map((item, index) => (
           <BreadcrumbItem key={`item-${index}`}>

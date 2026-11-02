@@ -3,6 +3,7 @@ import { Pause, Play } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 import useAudioPeaks from "./useAudioPeaks";
+import { t } from "@/i18n";
 
 /**
  * Voice-note player.
@@ -153,7 +154,7 @@ export default function AudioPlayer({
         variant={pill ? "default" : "secondary"}
         className={cn("shrink-0 rounded-full", pill ? "size-12 md:size-13" : "h-9 w-9")}
         onClick={togglePlay}
-        aria-label={isPlaying ? "Pause voice note" : "Play voice note"}
+        aria-label={isPlaying ? t("posts:audio.pause") : t("posts:audio.play")}
       >
         {isPlaying ? (
           <Pause className={pill ? "size-5" : "h-4 w-4"} />
@@ -201,7 +202,7 @@ export default function AudioPlayer({
           value={Math.min(currentTime, duration || 0)}
           onChange={(event) => seekTo(Number(event.target.value))}
           disabled={!duration}
-          aria-label="Seek voice note"
+          aria-label={t("posts:audio.seek")}
           aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
         />
@@ -220,9 +221,9 @@ export default function AudioPlayer({
         variant="ghost"
         className="h-7 shrink-0 px-2 text-xs font-medium tabular-nums"
         onClick={() => setSpeedIndex((index) => (index + 1) % SPEEDS.length)}
-        aria-label={`Playback speed ${speed}x — tap to change`}
+        aria-label={t("posts:audio.speed", { speed })}
       >
-        {speed}x
+        {t("posts:audio.speedShort", { speed })}
       </Button>
     </div>
   );

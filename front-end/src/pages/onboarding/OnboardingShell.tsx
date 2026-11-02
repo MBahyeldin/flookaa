@@ -7,11 +7,13 @@ import { OnboardingStepContext, type OnboardingStepDef } from "./context";
 import OnboardingProgress from "./OnboardingProgress";
 import OnboardingFooter from "./OnboardingFooter";
 import { onboardingSteps } from "./steps";
+import { useTranslation } from "react-i18next";
 
 function UnavailableStep() {
+  const { t } = useTranslation("onboarding");
   return (
     <div className="flex flex-col gap-8">
-      <p className="text-muted-foreground">This step isn't available yet.</p>
+      <p className="text-muted-foreground">{t("unavailable")}</p>
       <OnboardingFooter />
     </div>
   );
@@ -28,6 +30,7 @@ export default function OnboardingShell({
   registry?: Record<string, OnboardingStepDef>;
   onExit?: () => void | Promise<void>;
 }) {
+  const { t } = useTranslation("onboarding");
   const { handleLogOut } = useAuth();
   const [exiting, setExiting] = useState(false);
   const index = state.steps.findIndex((s) => s.key === state.current);
@@ -52,7 +55,7 @@ export default function OnboardingShell({
       <header className="flex items-center gap-4 px-4 py-4 md:px-8">
         <Brand className="flex-1" />
         <Button variant="ghost" loading={exiting} onClick={exit}>
-          Save and exit
+          {t("saveAndExit")}
         </Button>
       </header>
       <main className="mx-auto flex w-full max-w-[540px] flex-col gap-6 px-4 pt-6 md:px-0 md:pt-10">

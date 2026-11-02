@@ -2,6 +2,8 @@ import { useId } from "react";
 import { ListOrderedIcon } from "lucide-react";
 import { z } from "zod";
 import { FormField } from "@/models/Forms/FormField";
+import { perLanguage, t } from "@/i18n";
+import { maxChars, minItems, oneLine, required } from "./validation";
 import { defineBlock } from "./defineBlock";
 
 const MAX_STEPS = 20;
@@ -10,22 +12,22 @@ const MAX_TITLE = 120;
 const stepsSchema = z.object({
   title: z
     .string()
-    .refine((title) => title.length <= MAX_TITLE, `must be at most ${MAX_TITLE} characters`)
-    .refine((title) => !/[\r\n]/.test(title), "must be one line")
+    .refine((title) => title.length <= MAX_TITLE, maxChars(MAX_TITLE))
+    .refine((title) => !/[\r\n]/.test(title), oneLine)
     .optional(),
   items: z
     .array(
       z.object({
-        _key: z.string().min(1, "is required"),
+        _key: z.string().min(1, required),
         title: z
           .string()
-          .refine((title) => title.trim() !== "", "is required")
-          .refine((title) => title.length <= MAX_TITLE, `must be at most ${MAX_TITLE} characters`)
-          .refine((title) => !/[\r\n]/.test(title), "must be one line"),
+          .refine((title) => title.trim() !== "", required)
+          .refine((title) => title.length <= MAX_TITLE, maxChars(MAX_TITLE))
+          .refine((title) => !/[\r\n]/.test(title), oneLine),
         text: z.string().optional(),
       })
     )
-    .min(1, "at least one step is required")
+    .min(1, minItems(1))
     .max(MAX_STEPS)
     .refine(
       (items) => new Set(items.map((item) => item._key)).size === items.length,
@@ -35,45 +37,45 @@ const stepsSchema = z.object({
 
 type StepsValue = z.infer<typeof stepsSchema>;
 
-const stepsFormFields: FormField[] = [
+const stepsFormFields = perLanguage((): FormField[] => [
   new FormField({
     id: "title",
     name: "title",
-    label: "Title",
+    label: t("blocks:steps.fields.title"),
     type: "string",
     interfaceType: "text",
-    placeholder: "How to …",
+    placeholder: t("blocks:steps.fields.howTo"),
   }),
   new FormField({
     id: "items",
     name: "items",
-    label: "Steps",
+    label: t("blocks:steps.fields.steps"),
     type: "array",
     interfaceType: "list",
-    itemLabel: "Step",
-    addLabel: "Add step",
+    itemLabel: t("blocks:steps.fields.step"),
+    addLabel: t("blocks:steps.fields.addStep"),
     minItems: 1,
     maxItems: MAX_STEPS,
     itemFields: [
       new FormField({
         id: "title",
         name: "title",
-        label: "Title",
+        label: t("blocks:steps.fields.title"),
         type: "string",
         interfaceType: "text",
-        placeholder: "What to do",
+        placeholder: t("blocks:steps.fields.whatToDo"),
         isRequired: true,
       }),
       new FormField({
         id: "text",
         name: "text",
-        label: "Details",
+        label: t("blocks:steps.fields.details"),
         type: "string",
         interfaceType: "textarea",
       }),
     ],
   }),
-];
+]);
 
 function StepsView({ value }: { value: StepsValue }) {
   const titleId = useId();
@@ -116,15 +118,21 @@ function StepsView({ value }: { value: StepsValue }) {
 
 export const steps = defineBlock<StepsValue>({
   name: "steps",
-  title: "Steps",
-  description: "A numbered how-to, one step at a time.",
+  get title() {
+    return t("blocks:steps.title");
+  },
+  get description() {
+    return t("blocks:steps.description");
+  },
   icon: ListOrderedIcon,
   category: "layout",
-  fields: stepsFormFields,
+  get fields() {
+    return stepsFormFields();
+  },
   defaultValues: {},
   schema: stepsSchema,
   View: StepsView,
-  summary: (value) => `Steps · ${value.items.length}`,
+  summary: (value) => t("blocks:steps.summary", { count: value.items.length }),
   examples: [
     {
       title: "Lentil soup",

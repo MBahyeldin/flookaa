@@ -3,6 +3,7 @@ import { Brand } from "@/components/brand";
 import { Cover } from "@/components/cover";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/Theme.context";
+import { useTranslation } from "react-i18next";
 
 export default function AuthSplit({
   title,
@@ -13,6 +14,7 @@ export default function AuthSplit({
   lead: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation(["auth", "common"]);
   const { toggleTheme } = useTheme();
 
   return (
@@ -24,8 +26,8 @@ export default function AuthSplit({
             <Cover pattern="hills" />
           </div>
           <div className="flex flex-col gap-2">
-            <p className="text-lead text-foreground">Follow a facet, not a person.</p>
-            <p className="text-sm text-muted-foreground">One account, as many personas as you like.</p>
+            <p className="text-lead text-foreground">{t("split.tagline")}</p>
+            <p className="text-sm text-muted-foreground">{t("split.lead")}</p>
           </div>
         </div>
       </aside>
@@ -34,7 +36,7 @@ export default function AuthSplit({
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label="Toggle dark mode"
+          aria-label={t("common:shell.toggleDark")}
           onClick={toggleTheme}
           className="absolute end-4 top-4"
         >

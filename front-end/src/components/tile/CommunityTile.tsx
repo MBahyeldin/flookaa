@@ -5,17 +5,15 @@ import { Button } from "@/components/ui/button";
 import { AgeBadge } from "@/components/age-badge";
 import { CommunityRulesDialog } from "@/components/community-rules-dialog";
 import { followCommunity, joinCommunity, leaveCommunity, unfollowCommunity } from "@/services/communities";
-import { formatCount } from "@/lib/format";
-import { formatDateOnly } from "@/utils/formateDate";
+import { formatCompact, formatDateOnly } from "@/lib/format";
+import { errorMessage } from "@/lib/errors";
 import type { Community } from "@/types/community";
 import { Tile } from "./Tile";
+import { useTranslation } from "react-i18next";
 
 export type CommunityPatch = Partial<Pick<Community, "membership_status" | "following" | "members_count">>;
 
-const errorText: Record<string, string> = {
-  cannot_follow_private: "Private communities can't be followed.",
-  recently_rejected: "This community declined your request recently.",
-};
+const KNOWN_ERRORS = ["cannot_follow_private", "recently_rejected"];
 
 export function CommunityTile({
   community,
@@ -27,6 +25,7 @@ export function CommunityTile({
   /** Off where the tile mustn't navigate away (onboarding). */
   linked?: boolean;
 }) {
+  const { t } = useTranslation(["common", "communities"]);
   const [c, setC] = useState(community);
   const [busy, setBusy] = useState<"join" | "follow" | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -50,7 +49,7 @@ export function CommunityTile({
     const r = await action();
     setBusy(null);
     if (r.ok) onDone(r.data);
-    else toast.error(errorText[r.error] ?? failure);
+    else toast.error(KNOWN_ERRORS.includes(r.error) ? errorMessage(r.error) : failure);
   };
 
   const join = () =>
@@ -59,11 +58,11 @@ export function CommunityTile({
       () => joinCommunity(c.id),
       ({ status }) =>
         apply({ membership_status: status, members_count: c.members_count + (status === "active" ? 1 : 0) }),
-      "Couldn't join. Please try again.",
+      t("communities:errors.joinFailed"),
     );
 
   const leave = () => {
-    if (status === "active" && !confirm(`Leave ${c.name}?`)) return;
+    if (status === "active" && !confirm(t("confirm.leave", { name: c.name }))) return;
     run(
       "join",
       () => leaveCommunity(c.id),
@@ -72,7 +71,7 @@ export function CommunityTile({
           membership_status: "none",
           members_count: Math.max(0, c.members_count - (status === "active" ? 1 : 0)),
         }),
-      status === "active" ? "Couldn't leave. Please try again." : "Couldn't cancel the request. Please try again.",
+      status === "active" ? t("communities:errors.leaveFailed") : t("communities:errors.cancelFailed"),
     );
   };
 
@@ -81,7 +80,7 @@ export function CommunityTile({
       "follow",
       () => (c.following ? unfollowCommunity(c.id) : followCommunity(c.id)),
       ({ following }) => apply({ following }),
-      c.following ? "Couldn't unfollow. Please try again." : "Couldn't follow. Please try again.",
+      c.following ? t("communities:errors.unfollowFailed") : t("communities:errors.followFailed"),
     );
 
   return (
@@ -94,28 +93,29 @@ export function CommunityTile({
         meta={
           <>
             <span>
-              {isPrivate ? "Private" : "Public"} · {formatCount(c.members_count, "member", "members")}
+              {isPrivate ? t("visibility.private") : t("visibility.public")} ·{" "}
+              {t("counts.members", { count: c.members_count, n: formatCompact(c.members_count) })}
             </span>
             <AgeBadge minAge={c.min_age} />
           </>
         }
         description={c.description}
         interests={c.interests}
-        facts={formatCount(c.channels_count, "channel", "channels")}
+        facts={t("counts.channels", { count: c.channels_count, n: formatCompact(c.channels_count) })}
       >
         {status === "active" ? (
           <Button variant="secondary" size="sm" className="flex-1" loading={busy === "join"} disabled={!!busy} onClick={leave}>
             <Check />
-            Joined
+            {t("actions.joined")}
           </Button>
         ) : status === "pending" ? (
           <Button variant="outline" size="sm" className="flex-1" loading={busy === "join"} disabled={!!busy} onClick={leave}>
             <Clock />
-            Requested
+            {t("actions.requested")}
           </Button>
         ) : status === "rejected" && c.rejected_until ? (
           <p className="flex-1 self-center text-xs text-muted-foreground">
-            Ask again on {formatDateOnly(c.rejected_until)}
+            {t("communities:askAgainOn", { date: formatDateOnly(c.rejected_until) })}
           </p>
         ) : (
           <Button
@@ -125,12 +125,12 @@ export function CommunityTile({
             disabled={!!busy}
             onClick={() => (c.rules ? setRulesOpen(true) : join())}
           >
-            {isPrivate ? "Request to join" : "Join"}
+            {isPrivate ? t("actions.requestToJoin") : t("actions.join")}
           </Button>
         )}
         {!isPrivate && (
           <Button variant="outline" size="sm" loading={busy === "follow"} disabled={!!busy} onClick={follow}>
-            {c.following ? "Following" : "Follow"}
+            {c.following ? t("actions.following") : t("actions.follow")}
           </Button>
         )}
       </Tile>

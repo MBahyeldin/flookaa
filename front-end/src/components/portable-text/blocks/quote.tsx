@@ -1,6 +1,8 @@
 import { QuoteIcon } from "lucide-react";
 import { z } from "zod";
 import { FormField } from "@/models/Forms/FormField";
+import { perLanguage, t } from "@/i18n";
+import { oneLine, required } from "./validation";
 import { defineBlock } from "./defineBlock";
 
 const MAX_ATTRIBUTION = 120;
@@ -8,47 +10,47 @@ const MAX_ATTRIBUTION = 120;
 const attribution = z
   .string()
   .max(MAX_ATTRIBUTION)
-  .refine((value) => !/[\r\n]/.test(value), "must be one line")
+  .refine((value) => !/[\r\n]/.test(value), oneLine)
   .optional();
 
 const quoteSchema = z.object({
-  text: z.string().refine((text) => text.trim() !== "", "is required"),
+  text: z.string().refine((text) => text.trim() !== "", required),
   name: attribution,
   role: attribution,
 });
 
 type QuoteValue = z.infer<typeof quoteSchema>;
 
-const quoteFormFields: FormField[] = [
+const quoteFormFields = perLanguage((): FormField[] => [
   new FormField({
     id: "text",
     name: "text",
-    label: "Quote",
+    label: t("blocks:quote.fields.quote"),
     type: "string",
     interfaceType: "textarea",
-    placeholder: "What did they say?",
+    placeholder: t("blocks:quote.fields.whatDidTheySay"),
     isRequired: true,
     width: "full",
   }),
   new FormField({
     id: "name",
     name: "name",
-    label: "Name",
+    label: t("blocks:quote.fields.name"),
     type: "string",
     interfaceType: "text",
-    placeholder: "Who said it",
+    placeholder: t("blocks:quote.fields.whoSaidIt"),
     width: "full",
   }),
   new FormField({
     id: "role",
     name: "role",
-    label: "Role",
+    label: t("blocks:quote.fields.role"),
     type: "string",
     interfaceType: "text",
-    placeholder: "e.g. Founder, Acme",
+    placeholder: t("blocks:quote.fields.eGFounderAcme"),
     width: "full",
   }),
-];
+]);
 
 function initials(name: string) {
   return name
@@ -94,11 +96,17 @@ function QuoteView({ value }: { value: QuoteValue }) {
 
 export const quote = defineBlock<QuoteValue>({
   name: "quote",
-  title: "Quote",
-  description: "A highlighted quote, with who said it.",
+  get title() {
+    return t("blocks:quote.title");
+  },
+  get description() {
+    return t("blocks:quote.description");
+  },
   icon: QuoteIcon,
   category: "layout",
-  fields: quoteFormFields,
+  get fields() {
+    return quoteFormFields();
+  },
   defaultValues: {},
   schema: quoteSchema,
   View: QuoteView,

@@ -8,7 +8,8 @@ import { Bell } from "lucide-react";
 import { toast } from "sonner";
 import NotificationItem from "@/components/notifications/NotificationItem";
 import { describeNotification } from "@/components/notifications/describe";
-import { dateGroup, type DateGroup } from "@/components/notifications/time";
+import { dateGroup, type DateGroup } from "@/lib/format";
+import { useTranslation } from "react-i18next";
 import { getNotifications } from "@/services/notifications";
 import { useNotificationStore } from "@/stores/NotificationStore";
 import type { Notification } from "@/types/notification";
@@ -19,6 +20,7 @@ const PAGE_SIZE = 20;
 const MAX_EMPTY_PAGES = 5;
 
 export default function NotificationsPage() {
+  const { t } = useTranslation(["notifications", "common"]);
   const [items, setItems] = useState<Notification[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -48,7 +50,7 @@ export default function NotificationsPage() {
       if (!page && collected.length === 0) {
         // Nothing new: keep what's shown, and say so.
         if (replace) setFailed(true);
-        else toast.error("Couldn't load more notifications");
+        else toast.error(t("loadMoreFailed"));
         setLoading(false);
         return;
       }
@@ -62,7 +64,7 @@ export default function NotificationsPage() {
     setCursor(next);
     setHasMore(more);
     setLoading(false);
-  }, []);
+  }, [t]);
 
   // First load, and a reload from the top whenever a notification arrives,
   // disappears, or everything was marked read.
@@ -80,12 +82,12 @@ export default function NotificationsPage() {
   return (
     <div className="mx-auto w-full max-w-[640px] px-4 py-6 md:py-12">
       <div className="mb-6 flex items-center gap-3 md:mb-8">
-        <h1>Notifications</h1>
+        <h1>{t("title")}</h1>
         {unreadCount > 0 && (
           <>
-            <Badge variant="count">{unreadCount > 99 ? "99+" : unreadCount}</Badge>
+            <Badge variant="count">{unreadCount > 99 ? t("common:shell.badgeMax") : unreadCount}</Badge>
             <Button variant="outline" size="sm" onClick={markAllRead} className="ml-auto">
-              Mark all read
+              {t("markAllRead")}
             </Button>
           </>
         )}
@@ -93,14 +95,14 @@ export default function NotificationsPage() {
       {shown.length === 0 && loading ? (
         <SkeletonList count={5} className="px-3" />
       ) : shown.length === 0 && failed ? (
-        <ErrorState title="Couldn't load notifications" onRetry={() => load(null, true)} />
+        <ErrorState title={t("loadFailed")} onRetry={() => load(null, true)} />
       ) : shown.length === 0 && !hasMore ? (
-        <EmptyState icon={Bell} title="You're all caught up" body="Follows, requests and replies show up here." />
+        <EmptyState icon={Bell} title={t("caughtUp")} body={t("emptyBody")} />
       ) : (
         <div className="space-y-6 md:space-y-8">
           {[...groups].map(([group, rows]) => (
-            <section key={group} aria-label={group} className="space-y-2">
-              <h2 className="text-overline font-semibold text-muted-foreground uppercase">{group}</h2>
+            <section key={group} aria-label={t(`groups.${group}`)} className="space-y-2">
+              <h2 className="text-overline font-semibold text-muted-foreground uppercase">{t(`groups.${group}`)}</h2>
               <div className="rounded-lg border bg-card p-1">
                 {rows.map((n) => (
                   <NotificationItem
@@ -114,7 +116,7 @@ export default function NotificationsPage() {
           ))}
           {loading && (
             <p role="status" className="py-2 text-center text-sm text-muted-foreground">
-              Loading…
+              {t("common:states.loading")}
             </p>
           )}
         </div>
@@ -122,7 +124,7 @@ export default function NotificationsPage() {
       {hasMore && !loading && shown.length > 0 && (
         <div className="mt-6 flex justify-center md:mt-8">
           <Button variant="outline" onClick={() => load(cursor, false)}>
-            Load more
+            {t("common:actions.loadMore")}
           </Button>
         </div>
       )}

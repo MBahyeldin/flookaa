@@ -1,6 +1,7 @@
 import { Check, ChevronDown, LogOut, Settings, SunMoon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import {
   SidebarFooter,
@@ -36,6 +37,7 @@ function PersonaAvatar({ persona }: { persona: Persona }) {
 }
 
 export default function AppSidebarFooter() {
+  const { t } = useTranslation();
   const { handleLogOut } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
   const { persona, personas } = useUserProfileStore();
@@ -49,9 +51,9 @@ export default function AppSidebarFooter() {
     <SidebarFooter>
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton tooltip="Appearance" aria-pressed={isDarkMode} onClick={toggleTheme}>
+          <SidebarMenuButton tooltip={t("shell.appearance")} aria-pressed={isDarkMode} onClick={toggleTheme}>
             <SunMoon aria-hidden="true" />
-            <span>Appearance</span>
+            <span>{t("shell.appearance")}</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
@@ -60,7 +62,7 @@ export default function AppSidebarFooter() {
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            aria-label={`${displayName}, switch persona or log out`}
+            aria-label={t("shell.personaMenu", { name: displayName })}
             className="flex w-full items-center gap-2.5 rounded-md border border-sidebar-border p-2 text-left outline-hidden transition-colors hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[state=open]:bg-sidebar-accent group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:p-0"
           >
             <PersonaAvatar persona={persona} />
@@ -76,7 +78,7 @@ export default function AppSidebarFooter() {
           align={collapsed && !isMobile ? "end" : "start"}
           className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
         >
-          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Switch persona</DropdownMenuLabel>
+          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">{t("shell.switchPersona")}</DropdownMenuLabel>
           {personas.map((p) => {
             const current = p.id === persona.id;
             return (
@@ -87,7 +89,7 @@ export default function AppSidebarFooter() {
                 onClick={async () => {
                   if (current) return;
                   if (await setCurrentPersona(p.id)) window.location.reload();
-                  else toast.error("Couldn't switch persona. Please try again.");
+                  else toast.error(t("shell.switchFailed"));
                 }}
               >
                 <PersonaAvatar persona={p} />
@@ -103,12 +105,12 @@ export default function AppSidebarFooter() {
           <DropdownMenuItem asChild>
             <Link to="/persona-manager" onClick={() => isMobile && setOpenMobile(false)}>
               <Settings aria-hidden />
-              Manage personas
+              {t("shell.managePersonas")}
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleLogOut}>
             <LogOut aria-hidden />
-            Log out
+            {t("shell.logOut")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

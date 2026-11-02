@@ -9,6 +9,7 @@ import { SkeletonList } from "@/components/ui/skeleton";
 import { getPersonaInterests } from "@/services/interests";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import type { Interest, InterestGroup } from "@/types/interest";
+import { useTranslation } from "react-i18next";
 
 /**
  * Any number of interests, by slug; none is All. The row shows the current
@@ -28,6 +29,7 @@ export default function InterestFilter({
   onMineLoaded?: (ids: number[]) => void;
   forYou?: { selected: boolean; onSelect: () => void };
 }) {
+  const { t } = useTranslation();
   const persona = useUserProfileStore((s) => s.persona);
   const [groups, setGroups] = useState<InterestGroup[] | null>(null);
   const [mine, setMine] = useState<number[]>([]);
@@ -71,11 +73,11 @@ export default function InterestFilter({
       <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {forYou && (
           <Chip kind="filter" selected={forYou.selected} onClick={forYou.onSelect}>
-            For you
+            {t("interests.forYou")}
           </Chip>
         )}
         <Chip kind="filter" selected={value.length === 0 && !forYou?.selected} onClick={() => onChange([])}>
-          All
+          {t("interests.all")}
         </Chip>
         {row.map((i) => (
           <InterestChip key={i.id} interest={i} selected={picked.has(i.slug)} onPick={toggle} />
@@ -83,19 +85,19 @@ export default function InterestFilter({
       </div>
       <Button variant="outline" size="sm" className="shrink-0" onClick={() => setOpen(true)}>
         <SlidersHorizontal />
-        All interests
+        {t("interests.allInterests")}
         {value.length > 0 && <Badge variant="count">{value.length}</Badge>}
       </Button>
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-md">
           <SheetHeader>
-            <SheetTitle>All interests</SheetTitle>
-            <SheetDescription>Show what's tagged with any of the interests you pick.</SheetDescription>
+            <SheetTitle>{t("interests.allInterests")}</SheetTitle>
+            <SheetDescription>{t("interests.filterLead")}</SheetDescription>
           </SheetHeader>
           <div className="flex flex-col gap-6 px-4 pb-6">
             {failed ? (
-              <ErrorState compact title="Couldn't load interests" onRetry={() => setAttempt((n) => n + 1)} />
+              <ErrorState compact title={t("interests.loadFailed")} onRetry={() => setAttempt((n) => n + 1)} />
             ) : !groups ? (
               <SkeletonList count={4} />
             ) : (
@@ -116,10 +118,10 @@ export default function InterestFilter({
           <SheetFooter className="sticky bottom-0 flex-row justify-end gap-2 border-t bg-background">
             {value.length > 0 && (
               <Button variant="ghost" onClick={() => onChange([])}>
-                Clear
+                {t("actions.clear")}
               </Button>
             )}
-            <Button onClick={() => setOpen(false)}>Done</Button>
+            <Button onClick={() => setOpen(false)}>{t("actions.done")}</Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>
