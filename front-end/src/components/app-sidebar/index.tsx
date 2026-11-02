@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/Auth.context";
 import NotificationPopover from "@/components/notifications/NotificationPopover";
 import { useNotificationStore } from "@/stores/NotificationStore";
+import { direction } from "@/i18n";
 
 import AppSidebarFooter from "./AppSidebarFooter";
 import SidebarNavItem, { type NavEntry } from "./SidebarNavItem";
@@ -33,7 +34,7 @@ export function AppSidebar() {
       icon: Bell,
       badge: unreadCount,
       popover: (button, onOpenChange) => (
-        <NotificationPopover side="right" align="start" onOpenChange={onOpenChange}>
+        <NotificationPopover side={direction() === "rtl" ? "left" : "right"} align="start" onOpenChange={onOpenChange}>
           {button}
         </NotificationPopover>
       ),

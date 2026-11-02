@@ -4,7 +4,7 @@ import { PanelLeftIcon } from "lucide-react";
 
 import { useBreakpoint } from "@/hooks/useMobile";
 import { useSidebarSwipe } from "@/hooks/useSidebarSwipe";
-import { t } from "@/i18n";
+import { direction, t } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -133,9 +133,10 @@ function Sidebar({
   ...props
 }: React.ComponentProps<"div">) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const side = direction() === "rtl" ? "right" : "left";
   const swipe = useSidebarSwipe({
     enabled: isMobile,
-    side: "left",
+    side,
     open: openMobile,
     setOpen: setOpenMobile,
   });
@@ -154,7 +155,7 @@ function Sidebar({
               ...(swipe.suppressAnimation && { animation: "none" }),
             } as React.CSSProperties
           }
-          side="left"
+          side={side}
         >
           <SheetHeader className="sr-only">
             <SheetTitle>{t("common:shell.menu")}</SheetTitle>
@@ -181,7 +182,7 @@ function Sidebar({
       />
       <div
         data-slot="sidebar-container"
-        className="fixed inset-y-0 left-0 z-10 hidden h-svh w-(--sidebar-width) border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-linear md:flex group-data-[collapsible=icon]:w-(--sidebar-width-icon)"
+        className="fixed inset-y-0 start-0 z-10 hidden h-svh w-(--sidebar-width) border-e border-sidebar-border bg-sidebar transition-[width] duration-200 ease-linear md:flex group-data-[collapsible=icon]:w-(--sidebar-width-icon)"
         {...props}
       >
         <div
@@ -286,7 +287,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
 
 // max-md: the sheet's rows stay at the 44px touch-target minimum.
 const sidebarMenuButtonClass =
-  "relative flex h-10 w-full items-center gap-3 rounded-md px-3 text-left text-sm text-muted-foreground outline-hidden transition-colors max-md:h-11 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent [&>svg]:size-5 [&>svg]:shrink-0 [&>span:first-of-type]:min-w-0 [&>span:first-of-type]:flex-1 [&>span:first-of-type]:truncate group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:[&>span:first-of-type]:sr-only";
+  "relative flex h-10 w-full items-center gap-3 rounded-md px-3 text-start text-sm text-muted-foreground outline-hidden transition-colors max-md:h-11 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent [&>svg]:size-5 [&>svg]:shrink-0 [&>span:first-of-type]:min-w-0 [&>span:first-of-type]:flex-1 [&>span:first-of-type]:truncate group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:[&>span:first-of-type]:sr-only";
 
 function SidebarMenuButton({
   asChild = false,
@@ -320,7 +321,7 @@ function SidebarMenuButton({
     <Tooltip>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
       <TooltipContent
-        side="right"
+        side={direction() === "rtl" ? "left" : "right"}
         align="center"
         hidden={state !== "collapsed" || isMobile}
       >

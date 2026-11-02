@@ -26,6 +26,7 @@ import { setCurrentPersona } from "@/services/persona";
 import type { Persona } from "@/types/persona";
 import { personaInitials as initials } from "@/lib/personaInitials";
 import { cn } from "@/lib/utils";
+import { direction } from "@/i18n";
 
 function PersonaAvatar({ persona }: { persona: Persona }) {
   return (
@@ -74,7 +75,7 @@ export default function AppSidebarFooter() {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          side={collapsed && !isMobile ? "right" : "top"}
+          side={collapsed && !isMobile ? (direction() === "rtl" ? "left" : "right") : "top"}
           align={collapsed && !isMobile ? "end" : "start"}
           className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
         >
