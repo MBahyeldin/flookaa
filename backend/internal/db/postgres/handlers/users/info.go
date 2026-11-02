@@ -42,6 +42,7 @@ func (h *Handler) Info(c *gin.Context) {
 		"thumbnail":   userRow.Thumbnail.String,
 		"is_admin":    isAdmin,
 		"language":    languageJSON(userRow.Language),
+		"gender":      genderJSON(userRow.Gender),
 		"onboarding":  h.state(ctx, userId, userRow.OnboardingStep, userRow.OnboardingCompleted),
 	})
 }

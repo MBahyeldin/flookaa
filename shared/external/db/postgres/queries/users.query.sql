@@ -103,7 +103,7 @@ WHERE u.id = $1
 -- -------------------------------
 -- name: GetUserBasicInfo :one
 SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbnail, u.created_at, u.updated_at,
-       u.onboarding_step, u.onboarding_completed, u.language
+       u.onboarding_step, u.onboarding_completed, u.language, u.gender
 FROM users u
 WHERE u.id = $1
   AND u.deleted_at IS NULL;

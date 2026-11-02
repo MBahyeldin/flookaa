@@ -1,4 +1,4 @@
-import i18n, { t } from "@/i18n";
+import { intlLocale, t } from "@/i18n";
 
 const cache = new Map<string, Intl.NumberFormat | Intl.DateTimeFormat | Intl.RelativeTimeFormat>();
 
@@ -7,7 +7,7 @@ function cached<T extends Intl.NumberFormat | Intl.DateTimeFormat | Intl.Relativ
   options: object,
   make: (locale: string) => T,
 ): T {
-  const locale = i18n.language || "en";
+  const locale = intlLocale();
   const key = `${locale}|${kind}|${JSON.stringify(options)}`;
   let f = cache.get(key) as T | undefined;
   if (!f) {

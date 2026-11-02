@@ -1,0 +1,271 @@
+{
+  "image": {
+    "fields": {
+      "imageUrl": "رابط الصورة",
+      "httpsExampleComJpg": "https://example.com/jpg",
+      "altText": "النص البديل",
+      "aDescriptionOfTheImage": "وصف للصورة لتسهيل الوصول",
+      "caption": "التعليق",
+      "captionForTheImageOptional": "تعليق على الصورة (اختياري)",
+      "displaySize": "حجم العرض",
+      "extraSmall25": "صغير جدًا (25%)",
+      "small40": "صغير (40%)",
+      "medium60": "متوسط (60%)",
+      "large80": "كبير (80%)",
+      "fullWidth100": "بكامل العرض (100%)",
+      "alignment": "المحاذاة",
+      "left": "يسار",
+      "centre": "وسط",
+      "right": "يمين",
+      "width": "العرض",
+      "height": "الارتفاع"
+    },
+    "title": "صورة",
+    "description": "صورة مع نص بديل وتعليق اختياريين."
+  },
+  "gallery": {
+    "fields": {
+      "layout": "التخطيط",
+      "carousel": "عرض دوّار",
+      "grid": "شبكة",
+      "images": "الصور",
+      "image": "صورة",
+      "addImage": "إضافة صورة",
+      "altText": "النص البديل",
+      "aDescriptionOfTheImage": "وصف للصورة لتسهيل الوصول",
+      "caption": "التعليق",
+      "captionForTheImageOptional": "تعليق على الصورة (اختياري)"
+    },
+    "title": "معرض",
+    "description": "عدة صور في شبكة أو عرض دوّار.",
+    "open": "فتح الصورة {{n}} من {{total}}",
+    "openMore": "{{label}}، و{{more}} أخرى",
+    "goTo": "الانتقال إلى الصورة {{n}}",
+    "position": "{{n}} من {{total}}",
+    "previous": "الصورة السابقة",
+    "next": "الصورة التالية",
+    "summary_zero": "معرض · {{count}}",
+    "summary_one": "معرض · {{count}}",
+    "summary_two": "معرض · {{count}}",
+    "summary_few": "معرض · {{count}}",
+    "summary_many": "معرض · {{count}}",
+    "summary_other": "معرض · {{count}}",
+    "viewerHint": "استخدم مفاتيح الأسهم للتنقل بين الصور.",
+    "viewerHint_female": "استخدمي مفاتيح الأسهم للتنقل بين الصور."
+  },
+  "voiceNote": {
+    "fields": {
+      "audio": "الصوت",
+      "title": "العنوان",
+      "whatItSAboutOptional": "عمّ هي (اختياري)",
+      "duration": "المدة"
+    },
+    "title": "ملاحظة صوتية",
+    "description": "سجّل أو ارفع مقطعًا صوتيًا قصيرًا.",
+    "description_female": "سجّلي أو ارفعي مقطعًا صوتيًا قصيرًا.",
+    "summary": "ملاحظة صوتية · {{time}}"
+  },
+  "break": {
+    "fields": {
+      "style": "النمط"
+    },
+    "title": "فاصل",
+    "description": "خط أو نقاط أو قارب شراعي بين جزأين من المنشور.",
+    "styles": {
+      "line": "خط",
+      "dashed": "متقطع",
+      "dots": "نقاط",
+      "ornament": "زخرفة"
+    }
+  },
+  "callout": {
+    "fields": {
+      "tone": "النبرة",
+      "icon": "الأيقونة",
+      "toneDefault": "حسب النبرة",
+      "tag": "الوسم",
+      "toneDefaultEGHeads": "حسب النبرة، مثل «تنبيه»",
+      "title": "العنوان",
+      "optionalHeading": "عنوان اختياري",
+      "description": "الوصف",
+      "whatShouldReadersNotice": "ما الذي يجب أن يلاحظه القرّاء؟"
+    },
+    "title": "تنويه",
+    "description": "ملاحظة بارزة: معلومة أو نجاح أو تحذير أو خطأ.",
+    "tags": {
+      "info": "معلومة مفيدة",
+      "success": "رائع!",
+      "warning": "تنبيه",
+      "error": "انتبه"
+    },
+    "tones": {
+      "info": "معلومة",
+      "success": "نجاح",
+      "warning": "تحذير",
+      "error": "خطأ"
+    },
+    "icons": {
+      "info": "معلومة",
+      "check": "علامة صح",
+      "alert": "تنبيه",
+      "error": "خطأ",
+      "lightbulb": "مصباح",
+      "star": "نجمة",
+      "heart": "قلب",
+      "megaphone": "مكبّر صوت",
+      "none": "بلا"
+    }
+  },
+  "quote": {
+    "fields": {
+      "quote": "الاقتباس",
+      "whatDidTheySay": "ماذا قال؟",
+      "name": "الاسم",
+      "whoSaidIt": "من قاله",
+      "role": "الدور",
+      "eGFounderAcme": "مثل: مؤسس، Acme"
+    },
+    "title": "اقتباس",
+    "description": "اقتباس بارز، مع قائله."
+  },
+  "steps": {
+    "fields": {
+      "title": "العنوان",
+      "howTo": "كيف …",
+      "steps": "الخطوات",
+      "step": "خطوة",
+      "addStep": "إضافة خطوة",
+      "whatToDo": "ما يجب فعله",
+      "details": "التفاصيل"
+    },
+    "title": "خطوات",
+    "description": "دليل مرقّم، خطوة بخطوة.",
+    "summary_zero": "خطوات · {{count}}",
+    "summary_one": "خطوات · {{count}}",
+    "summary_two": "خطوات · {{count}}",
+    "summary_few": "خطوات · {{count}}",
+    "summary_many": "خطوات · {{count}}",
+    "summary_other": "خطوات · {{count}}"
+  },
+  "accordion": {
+    "fields": {
+      "title": "العنوان",
+      "frequentlyAskedQuestions": "الأسئلة الشائعة",
+      "sections": "الأقسام",
+      "section": "قسم",
+      "addSection": "إضافة قسم",
+      "questionOrHeading": "سؤال أو عنوان",
+      "content": "المحتوى",
+      "allowSeveralOpen": "السماح بفتح عدة أقسام",
+      "openTheFirstSection": "فتح القسم الأول"
+    },
+    "title": "أكورديون",
+    "description": "أقسام تنفتح عند النقر.",
+    "summary_zero": "أكورديون · {{count}}",
+    "summary_one": "أكورديون · {{count}}",
+    "summary_two": "أكورديون · {{count}}",
+    "summary_few": "أكورديون · {{count}}",
+    "summary_many": "أكورديون · {{count}}",
+    "summary_other": "أكورديون · {{count}}"
+  },
+  "spoiler": {
+    "fields": {
+      "label": "التسمية",
+      "whatSHiddenEG": "ما المخفي؟ مثل: حرق الحلقة الأخيرة",
+      "content": "المحتوى",
+      "theHiddenPart": "الجزء المخفي"
+    },
+    "title": "إخفاء",
+    "description": "محتوى مخفي حتى ينقر عليه القارئ.",
+    "hideNamed": "إخفاء: {{label}}",
+    "hide": "إخفاء المحتوى",
+    "showNamed": "إظهار: {{label}}",
+    "show": "إظهار المحتوى",
+    "tap": "انقر للكشف",
+    "tap_female": "انقري للكشف"
+  },
+  "countdown": {
+    "fields": {
+      "label": "التسمية",
+      "whatAreWeCountingDown": "ما الذي نعدّ تنازليًا إليه؟",
+      "endsAt": "ينتهي في",
+      "endedText": "نص الانتهاء"
+    },
+    "title": "عدّ تنازلي",
+    "description": "عدّ تنازلي مباشر حتى تاريخ ووقت.",
+    "ended": "انتهى هذا العدّ التنازلي.",
+    "passed": "مضى هذا الوقت، لذا سيظهر العدّ التنازلي منتهيًا.",
+    "yourTimeZone": "توقيتك، {{zone}}",
+    "yourTime": "توقيتك",
+    "units": {
+      "days_zero": "يوم",
+      "days_one": "يوم",
+      "days_two": "يومان",
+      "days_few": "أيام",
+      "days_many": "يومًا",
+      "days_other": "يوم",
+      "hours": "ساعات",
+      "min": "دقيقة",
+      "sec": "ثانية"
+    },
+    "endsIn": "ينتهي بعد {{parts}}",
+    "spoken": {
+      "days_zero": "{{count}} يوم",
+      "days_one": "يوم واحد",
+      "days_two": "يومان",
+      "days_few": "{{count}} أيام",
+      "days_many": "{{count}} يومًا",
+      "days_other": "{{count}} يوم",
+      "hours_zero": "{{count}} ساعة",
+      "hours_one": "ساعة واحدة",
+      "hours_two": "ساعتان",
+      "hours_few": "{{count}} ساعات",
+      "hours_many": "{{count}} ساعة",
+      "hours_other": "{{count}} ساعة",
+      "minutes_zero": "{{count}} دقيقة",
+      "minutes_one": "دقيقة واحدة",
+      "minutes_two": "دقيقتان",
+      "minutes_few": "{{count}} دقائق",
+      "minutes_many": "{{count}} دقيقة",
+      "minutes_other": "{{count}} دقيقة"
+    },
+    "separator": "، ",
+    "endedPrefix": "انتهى",
+    "endsPrefix": "ينتهي"
+  },
+  "checklist": {
+    "fields": {
+      "title": "العنوان",
+      "packingList": "قائمة الأغراض",
+      "items": "العناصر",
+      "item": "عنصر",
+      "addItem": "إضافة عنصر",
+      "text": "النص",
+      "somethingToDo": "شيء لفعله",
+      "done": "تم"
+    },
+    "title": "قائمة مهام",
+    "description": "قائمة عناصر تؤشّر عليها.",
+    "description_female": "قائمة عناصر تؤشّرين عليها.",
+    "progress": "تم {{done}} من {{total}}",
+    "summary": "قائمة مهام · {{done}}/{{total}}"
+  },
+  "validation": {
+    "oneLine": "يجب أن يكون سطرًا واحدًا",
+    "required": "مطلوب",
+    "maxChars": "يجب ألا يتجاوز {{max}} حرفًا",
+    "minItems_zero": "يحتاج إلى {{count}} على الأقل",
+    "minItems_one": "يحتاج إلى عنصر واحد على الأقل",
+    "minItems_two": "يحتاج إلى عنصرين على الأقل",
+    "minItems_few": "يحتاج إلى {{count}} عناصر على الأقل",
+    "minItems_many": "يحتاج إلى {{count}} عنصرًا على الأقل",
+    "minItems_other": "يحتاج إلى {{count}} عنصر على الأقل",
+    "httpLink": "يجب أن يكون رابط http(s)",
+    "plainText": "يجب أن يكون نصًا عاديًا",
+    "dateRange": "يجب أن يكون بين عام 2000 و{{years}} سنوات من الآن"
+  },
+  "categories": {
+    "media": "الوسائط",
+    "layout": "التخطيط"
+  }
+}

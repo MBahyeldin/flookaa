@@ -111,7 +111,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 
 const getUserBasicInfo = `-- name: GetUserBasicInfo :one
 SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbnail, u.created_at, u.updated_at,
-       u.onboarding_step, u.onboarding_completed, u.language
+       u.onboarding_step, u.onboarding_completed, u.language, u.gender
 FROM users u
 WHERE u.id = $1
   AND u.deleted_at IS NULL
@@ -129,6 +129,7 @@ type GetUserBasicInfoRow struct {
 	OnboardingStep      int32
 	OnboardingCompleted bool
 	Language            NullLanguageEnum
+	Gender              NullGenderEnum
 }
 
 // -------------------------------
@@ -149,6 +150,7 @@ func (q *Queries) GetUserBasicInfo(ctx context.Context, id int64) (GetUserBasicI
 		&i.OnboardingStep,
 		&i.OnboardingCompleted,
 		&i.Language,
+		&i.Gender,
 	)
 	return i, err
 }
