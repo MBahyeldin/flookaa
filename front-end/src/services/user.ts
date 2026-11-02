@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/apiFetch";
 import type { Gender, Profile } from "@/types/user";
-import type { Language } from "@/i18n";
+import { setGender, type Language } from "@/i18n";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -54,7 +54,10 @@ export async function updateProfile(patch: ProfilePatch): Promise<{ ok: true } |
       body: JSON.stringify(patch),
       credentials: "include",
     });
-    if (resp.ok) return { ok: true };
+    if (resp.ok) {
+      if (patch.gender) await setGender(patch.gender);
+      return { ok: true };
+    }
     const body = await resp.json().catch(() => ({}));
     return { ok: false, error: body.error ?? "request_failed" };
   } catch {

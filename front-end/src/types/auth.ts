@@ -1,5 +1,5 @@
 import type { OnboardingState } from "@/types/onboarding";
-import type { Language } from "@/i18n";
+import type { Gender, Language } from "@/i18n";
 
 export type Info = {
   id: string;
@@ -11,6 +11,7 @@ export type Info = {
   thumbnail?: string;
   is_admin?: boolean;
   language: Language | null;
+  gender: Gender | null;
   onboarding: OnboardingState;
 };
 
