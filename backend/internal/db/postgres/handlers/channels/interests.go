@@ -14,12 +14,7 @@ import (
 
 const maxChannelInterests = 5
 
-type InterestTag struct {
-	ID    int64  `json:"id"`
-	Name  string `json:"name"`
-	Slug  string `json:"slug"`
-	Emoji string `json:"emoji"`
-}
+type InterestTag = interests.Interest
 
 // Every persona sees a channel's metadata, tags included.
 func (h *Handler) ChannelInterests(c *gin.Context) {
@@ -123,7 +118,7 @@ func (h *Handler) interestsByChannel(ctx context.Context, ids []int64) (map[int6
 		return nil, err
 	}
 	for _, r := range rows {
-		out[r.ChannelID] = append(out[r.ChannelID], InterestTag{ID: r.ID, Name: r.Name, Slug: r.Slug, Emoji: r.Emoji})
+		out[r.ChannelID] = append(out[r.ChannelID], InterestTag{ID: r.ID, Names: interests.NewNames(r.NameEn, r.NameAr), Slug: r.Slug, Emoji: r.Emoji})
 	}
 	return out, nil
 }

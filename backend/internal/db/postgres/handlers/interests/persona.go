@@ -68,15 +68,15 @@ func (h *Handler) writePersonaInterests(c *gin.Context, userID, personaID int64)
 	out := PersonaInterests{Groups: []Group{}, Selected: []int64{}, Retired: []Interest{}}
 	for _, r := range rows {
 		if len(out.Groups) == 0 || out.Groups[len(out.Groups)-1].ID != r.GroupID {
-			out.Groups = append(out.Groups, Group{ID: r.GroupID, Name: r.GroupName, Slug: r.GroupSlug})
+			out.Groups = append(out.Groups, Group{ID: r.GroupID, Names: NewNames(r.GroupNameEn, r.GroupNameAr), Slug: r.GroupSlug})
 		}
 		g := &out.Groups[len(out.Groups)-1]
-		g.Interests = append(g.Interests, Interest{ID: r.ID, Name: r.Name, Slug: r.Slug, Emoji: r.Emoji})
+		g.Interests = append(g.Interests, Interest{ID: r.ID, Names: NewNames(r.NameEn, r.NameAr), Slug: r.Slug, Emoji: r.Emoji})
 	}
 	for _, m := range mine {
 		out.Selected = append(out.Selected, m.ID)
 		if m.Retired {
-			out.Retired = append(out.Retired, Interest{ID: m.ID, Name: m.Name, Slug: m.Slug, Emoji: m.Emoji})
+			out.Retired = append(out.Retired, Interest{ID: m.ID, Names: NewNames(m.NameEn, m.NameAr), Slug: m.Slug, Emoji: m.Emoji})
 		}
 	}
 	c.JSON(http.StatusOK, out)

@@ -24,16 +24,31 @@ func NewHandler(q *db.Queries) *Handler {
 	return &Handler{q: q}
 }
 
+type Names struct {
+	// Name is name_en for clients from before WWW-125; drop it next release.
+	Name   string  `json:"name"`
+	NameEn string  `json:"name_en"`
+	NameAr *string `json:"name_ar"`
+}
+
+func NewNames(en string, ar sql.NullString) Names {
+	n := Names{Name: en, NameEn: en}
+	if ar.Valid {
+		n.NameAr = &ar.String
+	}
+	return n
+}
+
 type Interest struct {
-	ID    int64  `json:"id"`
-	Name  string `json:"name"`
+	ID int64 `json:"id"`
+	Names
 	Slug  string `json:"slug"`
 	Emoji string `json:"emoji"`
 }
 
 type Group struct {
-	ID        int64      `json:"id"`
-	Name      string     `json:"name"`
+	ID int64 `json:"id"`
+	Names
 	Slug      string     `json:"slug"`
 	Interests []Interest `json:"interests"`
 }
@@ -45,8 +60,8 @@ type AdminInterest struct {
 }
 
 type AdminGroup struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
+	ID int64 `json:"id"`
+	Names
 	Slug string `json:"slug"`
 }
 
@@ -65,10 +80,10 @@ func (h *Handler) List(c *gin.Context) {
 	out := []Group{}
 	for _, r := range rows {
 		if len(out) == 0 || out[len(out)-1].ID != r.GroupID {
-			out = append(out, Group{ID: r.GroupID, Name: r.GroupName, Slug: r.GroupSlug})
+			out = append(out, Group{ID: r.GroupID, Names: NewNames(r.GroupNameEn, r.GroupNameAr), Slug: r.GroupSlug})
 		}
 		g := &out[len(out)-1]
-		g.Interests = append(g.Interests, Interest{ID: r.ID, Name: r.Name, Slug: r.Slug, Emoji: r.Emoji})
+		g.Interests = append(g.Interests, Interest{ID: r.ID, Names: NewNames(r.NameEn, r.NameAr), Slug: r.Slug, Emoji: r.Emoji})
 	}
 	c.JSON(http.StatusOK, out)
 }
@@ -87,17 +102,18 @@ func (h *Handler) AdminList(c *gin.Context) {
 	}
 	outGroups := make([]AdminGroup, len(groups))
 	for i, g := range groups {
-		outGroups[i] = AdminGroup{ID: g.ID, Name: g.Name, Slug: g.Slug}
+		outGroups[i] = AdminGroup{ID: g.ID, Names: NewNames(g.NameEn, g.NameAr), Slug: g.Slug}
 	}
 	outInterests := make([]AdminInterest, len(rows))
 	for i, r := range rows {
-		outInterests[i] = adminInterest(r.ID, r.Name, r.Slug, r.Emoji, r.GroupID, r.Retired)
+		outInterests[i] = adminInterest(r.ID, r.NameEn, r.NameAr, r.Slug, r.Emoji, r.GroupID, r.Retired)
 	}
 	c.JSON(http.StatusOK, gin.H{"groups": outGroups, "interests": outInterests})
 }
 
 type interestInput struct {
-	Name    *string `json:"name"`
+	NameEn  *string `json:"name_en"`
+	NameAr  *string `json:"name_ar"`
 	Slug    *string `json:"slug"`
 	Emoji   *string `json:"emoji"`
 	GroupID *int64  `json:"group_id"`
@@ -110,8 +126,8 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 	ctx := c.Request.Context()
-	name, slugValue, emoji := deref(in.Name), deref(in.Slug), deref(in.Emoji)
-	if code := validate(&name, slugValue, &emoji); code != "" {
+	name, nameAr, slugValue, emoji := deref(in.NameEn), deref(in.NameAr), deref(in.Slug), deref(in.Emoji)
+	if code := validate(&name, &nameAr, slugValue, &emoji); code != "" {
 		badRequest(c, code)
 		return
 	}
@@ -122,7 +138,7 @@ func (h *Handler) Create(c *gin.Context) {
 		badRequest(c, "invalid_group")
 		return
 	}
-	row, err := h.q.CreateInterest(ctx, db.CreateInterestParams{Name: name, Slug: slugValue, Emoji: emoji, GroupID: *in.GroupID})
+	row, err := h.q.CreateInterest(ctx, db.CreateInterestParams{NameEn: name, NameAr: nullable(nameAr), Slug: slugValue, Emoji: emoji, GroupID: *in.GroupID})
 	if code := conflict(err); code != "" {
 		c.JSON(http.StatusConflict, gin.H{"error": code})
 		return
@@ -131,7 +147,7 @@ func (h *Handler) Create(c *gin.Context) {
 		internalError(c, "create", err)
 		return
 	}
-	c.JSON(http.StatusCreated, adminInterest(row.ID, row.Name, row.Slug, row.Emoji, row.GroupID, row.Retired))
+	c.JSON(http.StatusCreated, adminInterest(row.ID, row.NameEn, row.NameAr, row.Slug, row.Emoji, row.GroupID, row.Retired))
 }
 
 func (h *Handler) Update(c *gin.Context) {
@@ -155,9 +171,12 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	name, slugValue, emoji := cur.Name, cur.Slug, cur.Emoji
-	if in.Name != nil {
-		name = *in.Name
+	name, nameAr, slugValue, emoji := cur.NameEn, cur.NameAr.String, cur.Slug, cur.Emoji
+	if in.NameEn != nil {
+		name = *in.NameEn
+	}
+	if in.NameAr != nil {
+		nameAr = *in.NameAr
 	}
 	if in.Slug != nil {
 		slugValue = *in.Slug
@@ -169,7 +188,7 @@ func (h *Handler) Update(c *gin.Context) {
 	if groupID == nil && cur.GroupID.Valid {
 		groupID = &cur.GroupID.Int64
 	}
-	if code := validate(&name, slugValue, &emoji); code != "" {
+	if code := validate(&name, &nameAr, slugValue, &emoji); code != "" {
 		badRequest(c, code)
 		return
 	}
@@ -181,7 +200,7 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	row, err := h.q.UpdateInterest(ctx, db.UpdateInterestParams{ID: id, Name: name, Slug: slugValue, Emoji: emoji, GroupID: *groupID})
+	row, err := h.q.UpdateInterest(ctx, db.UpdateInterestParams{ID: id, NameEn: name, NameAr: nullable(nameAr), Slug: slugValue, Emoji: emoji, GroupID: *groupID})
 	if code := conflict(err); code != "" {
 		c.JSON(http.StatusConflict, gin.H{"error": code})
 		return
@@ -194,7 +213,7 @@ func (h *Handler) Update(c *gin.Context) {
 		internalError(c, "update", err)
 		return
 	}
-	c.JSON(http.StatusOK, adminInterest(row.ID, row.Name, row.Slug, row.Emoji, row.GroupID, row.Retired))
+	c.JSON(http.StatusOK, adminInterest(row.ID, row.NameEn, row.NameAr, row.Slug, row.Emoji, row.GroupID, row.Retired))
 }
 
 // Move swaps an interest with the nearest one in the same group and status,
@@ -267,12 +286,13 @@ func (h *Handler) setRetired(c *gin.Context, retired bool) {
 		internalError(c, "retire", err)
 		return
 	}
-	c.JSON(http.StatusOK, adminInterest(row.ID, row.Name, row.Slug, row.Emoji, row.GroupID, row.Retired))
+	c.JSON(http.StatusOK, adminInterest(row.ID, row.NameEn, row.NameAr, row.Slug, row.Emoji, row.GroupID, row.Retired))
 }
 
 type groupInput struct {
-	Name *string `json:"name"`
-	Slug *string `json:"slug"`
+	NameEn *string `json:"name_en"`
+	NameAr *string `json:"name_ar"`
+	Slug   *string `json:"slug"`
 }
 
 func (h *Handler) CreateGroup(c *gin.Context) {
@@ -281,12 +301,12 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 		badRequest(c, "invalid_input")
 		return
 	}
-	name, slugValue := deref(in.Name), deref(in.Slug)
-	if code := validateGroup(&name, slugValue); code != "" {
+	name, nameAr, slugValue := deref(in.NameEn), deref(in.NameAr), deref(in.Slug)
+	if code := validateGroup(&name, &nameAr, slugValue); code != "" {
 		badRequest(c, code)
 		return
 	}
-	row, err := h.q.CreateInterestGroup(c.Request.Context(), db.CreateInterestGroupParams{Name: name, Slug: slugValue})
+	row, err := h.q.CreateInterestGroup(c.Request.Context(), db.CreateInterestGroupParams{NameEn: name, NameAr: nullable(nameAr), Slug: slugValue})
 	if code := groupConflict(err); code != "" {
 		c.JSON(http.StatusConflict, gin.H{"error": code})
 		return
@@ -295,7 +315,7 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 		internalError(c, "create group", err)
 		return
 	}
-	c.JSON(http.StatusCreated, AdminGroup{ID: row.ID, Name: row.Name, Slug: row.Slug})
+	c.JSON(http.StatusCreated, AdminGroup{ID: row.ID, Names: NewNames(row.NameEn, row.NameAr), Slug: row.Slug})
 }
 
 func (h *Handler) UpdateGroup(c *gin.Context) {
@@ -318,18 +338,21 @@ func (h *Handler) UpdateGroup(c *gin.Context) {
 		internalError(c, "get group", err)
 		return
 	}
-	name, slugValue := cur.Name, cur.Slug
-	if in.Name != nil {
-		name = *in.Name
+	name, nameAr, slugValue := cur.NameEn, cur.NameAr.String, cur.Slug
+	if in.NameEn != nil {
+		name = *in.NameEn
+	}
+	if in.NameAr != nil {
+		nameAr = *in.NameAr
 	}
 	if in.Slug != nil {
 		slugValue = *in.Slug
 	}
-	if code := validateGroup(&name, slugValue); code != "" {
+	if code := validateGroup(&name, &nameAr, slugValue); code != "" {
 		badRequest(c, code)
 		return
 	}
-	row, err := h.q.UpdateInterestGroup(ctx, db.UpdateInterestGroupParams{ID: id, Name: name, Slug: slugValue})
+	row, err := h.q.UpdateInterestGroup(ctx, db.UpdateInterestGroupParams{ID: id, NameEn: name, NameAr: nullable(nameAr), Slug: slugValue})
 	if code := groupConflict(err); code != "" {
 		c.JSON(http.StatusConflict, gin.H{"error": code})
 		return
@@ -342,7 +365,7 @@ func (h *Handler) UpdateGroup(c *gin.Context) {
 		internalError(c, "update group", err)
 		return
 	}
-	c.JSON(http.StatusOK, AdminGroup{ID: row.ID, Name: row.Name, Slug: row.Slug})
+	c.JSON(http.StatusOK, AdminGroup{ID: row.ID, Names: NewNames(row.NameEn, row.NameAr), Slug: row.Slug})
 }
 
 func (h *Handler) MoveGroup(c *gin.Context) {
@@ -407,25 +430,25 @@ func direction(c *gin.Context) (up bool, ok bool) {
 	return in.Direction == "up", true
 }
 
-func validate(name *string, slugValue string, emoji *string) string {
-	*name = strings.TrimSpace(*name)
+func validate(name, nameAr *string, slugValue string, emoji *string) string {
+	if code := validateGroup(name, nameAr, slugValue); code != "" {
+		return code
+	}
 	*emoji = strings.TrimSpace(*emoji)
-	if *name == "" || utf8.RuneCountInString(*name) > maxNameLen {
-		return "invalid_name"
-	}
-	if !slug.Valid(slugValue) {
-		return "invalid_slug"
-	}
 	if *emoji == "" || utf8.RuneCountInString(*emoji) > maxEmojiLen {
 		return "invalid_emoji"
 	}
 	return ""
 }
 
-func validateGroup(name *string, slugValue string) string {
+func validateGroup(name, nameAr *string, slugValue string) string {
 	*name = strings.TrimSpace(*name)
+	*nameAr = strings.TrimSpace(*nameAr)
 	if *name == "" || utf8.RuneCountInString(*name) > maxNameLen {
 		return "invalid_name"
+	}
+	if utf8.RuneCountInString(*nameAr) > maxNameLen {
+		return "invalid_name_ar"
 	}
 	if !slug.Valid(slugValue) {
 		return "invalid_slug"
@@ -435,8 +458,10 @@ func validateGroup(name *string, slugValue string) string {
 
 func groupConflict(err error) string {
 	switch {
-	case postgres.IsUniqueViolation(err, "interest_groups_name_lower_key"):
+	case postgres.IsUniqueViolation(err, "interest_groups_name_en_lower_key"):
 		return "name_taken"
+	case postgres.IsUniqueViolation(err, "interest_groups_name_ar_key"):
+		return "name_ar_taken"
 	case postgres.IsUniqueViolation(err, "interest_groups_slug_key"):
 		return "slug_taken"
 	}
@@ -445,16 +470,18 @@ func groupConflict(err error) string {
 
 func conflict(err error) string {
 	switch {
-	case postgres.IsUniqueViolation(err, "interests_name_lower_key"):
+	case postgres.IsUniqueViolation(err, "interests_name_en_lower_key"):
 		return "name_taken"
+	case postgres.IsUniqueViolation(err, "interests_name_ar_key"):
+		return "name_ar_taken"
 	case postgres.IsUniqueViolation(err, "interests_slug_key"):
 		return "slug_taken"
 	}
 	return ""
 }
 
-func adminInterest(id int64, name, slugValue, emoji string, groupID sql.NullInt64, retired bool) AdminInterest {
-	a := AdminInterest{Interest: Interest{ID: id, Name: name, Slug: slugValue, Emoji: emoji}, Retired: retired}
+func adminInterest(id int64, nameEn string, nameAr sql.NullString, slugValue, emoji string, groupID sql.NullInt64, retired bool) AdminInterest {
+	a := AdminInterest{Interest: Interest{ID: id, Names: NewNames(nameEn, nameAr), Slug: slugValue, Emoji: emoji}, Retired: retired}
 	if groupID.Valid {
 		a.GroupID = &groupID.Int64
 	}
@@ -468,6 +495,10 @@ func pathID(c *gin.Context) (int64, bool) {
 		return 0, false
 	}
 	return id, true
+}
+
+func nullable(s string) sql.NullString {
+	return sql.NullString{String: s, Valid: s != ""}
 }
 
 func deref(s *string) string {

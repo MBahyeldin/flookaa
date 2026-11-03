@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
 import { MAX_PERSONA_INTERESTS, type InterestGroup, type Interest } from "@/types/interest";
+import { interestName } from "@/lib/interests";
 import { useTranslation } from "react-i18next";
 
 export default function InterestPicker({
@@ -38,8 +39,8 @@ export default function InterestPicker({
           <p className="text-overline font-semibold uppercase text-muted-foreground">{t("interests.retired")}</p>
           <div className="flex flex-wrap gap-2">
             {keptRetired.map((r) => (
-              <Chip key={r.id} emoji={r.emoji} onClick={() => toggle(r.id)} aria-label={t("actions.removeNamed", { name: r.name })}>
-                {r.name}
+              <Chip key={r.id} emoji={r.emoji} onClick={() => toggle(r.id)} aria-label={t("actions.removeNamed", { name: interestName(r) })}>
+                {interestName(r)}
                 <X className="text-muted-foreground" />
               </Chip>
             ))}
@@ -50,14 +51,14 @@ export default function InterestPicker({
       {groups.map((g) => (
         <section key={g.id} className="flex flex-col gap-2.5" aria-labelledby={`interest-group-${g.id}`}>
           <h3 id={`interest-group-${g.id}`} className="text-overline font-semibold uppercase text-muted-foreground">
-            {g.name}
+            {interestName(g)}
           </h3>
           <div className="flex flex-wrap gap-2">
             {g.interests.map((i) => {
               const on = selected.has(i.id);
               return (
                 <Chip key={i.id} emoji={i.emoji} selected={on} disabled={!on && full} onClick={() => toggle(i.id)}>
-                  {i.name}
+                  {interestName(i)}
                 </Chip>
               );
             })}

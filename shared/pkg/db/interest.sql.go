@@ -59,19 +59,21 @@ func (q *Queries) CountAllowedPersonaInterests(ctx context.Context, arg CountAll
 }
 
 const createInterest = `-- name: CreateInterest :one
-INSERT INTO interests (name, slug, emoji, group_id, sort_order)
+INSERT INTO interests (name_en, name_ar, slug, emoji, group_id, sort_order)
 VALUES (
     $1,
     $2,
     $3,
-    $4::bigint,
+    $4,
+    $5::bigint,
     (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM interests)
 )
-RETURNING id, name, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired
+RETURNING id, name_en, name_ar, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired
 `
 
 type CreateInterestParams struct {
-	Name    string
+	NameEn  string
+	NameAr  sql.NullString
 	Slug    string
 	Emoji   string
 	GroupID int64
@@ -79,7 +81,8 @@ type CreateInterestParams struct {
 
 type CreateInterestRow struct {
 	ID        int64
-	Name      string
+	NameEn    string
+	NameAr    sql.NullString
 	Slug      string
 	Emoji     string
 	GroupID   sql.NullInt64
@@ -89,7 +92,8 @@ type CreateInterestRow struct {
 
 func (q *Queries) CreateInterest(ctx context.Context, arg CreateInterestParams) (CreateInterestRow, error) {
 	row := q.db.QueryRowContext(ctx, createInterest,
-		arg.Name,
+		arg.NameEn,
+		arg.NameAr,
 		arg.Slug,
 		arg.Emoji,
 		arg.GroupID,
@@ -97,7 +101,8 @@ func (q *Queries) CreateInterest(ctx context.Context, arg CreateInterestParams) 
 	var i CreateInterestRow
 	err := row.Scan(
 		&i.ID,
-		&i.Name,
+		&i.NameEn,
+		&i.NameAr,
 		&i.Slug,
 		&i.Emoji,
 		&i.GroupID,
@@ -108,30 +113,38 @@ func (q *Queries) CreateInterest(ctx context.Context, arg CreateInterestParams) 
 }
 
 const createInterestGroup = `-- name: CreateInterestGroup :one
-INSERT INTO interest_groups (name, slug, sort_order)
+INSERT INTO interest_groups (name_en, name_ar, slug, sort_order)
 VALUES (
     $1,
     $2,
+    $3,
     (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM interest_groups)
 )
-RETURNING id, name, slug
+RETURNING id, name_en, name_ar, slug
 `
 
 type CreateInterestGroupParams struct {
-	Name string
-	Slug string
+	NameEn string
+	NameAr sql.NullString
+	Slug   string
 }
 
 type CreateInterestGroupRow struct {
-	ID   int64
-	Name string
-	Slug string
+	ID     int64
+	NameEn string
+	NameAr sql.NullString
+	Slug   string
 }
 
 func (q *Queries) CreateInterestGroup(ctx context.Context, arg CreateInterestGroupParams) (CreateInterestGroupRow, error) {
-	row := q.db.QueryRowContext(ctx, createInterestGroup, arg.Name, arg.Slug)
+	row := q.db.QueryRowContext(ctx, createInterestGroup, arg.NameEn, arg.NameAr, arg.Slug)
 	var i CreateInterestGroupRow
-	err := row.Scan(&i.ID, &i.Name, &i.Slug)
+	err := row.Scan(
+		&i.ID,
+		&i.NameEn,
+		&i.NameAr,
+		&i.Slug,
+	)
 	return i, err
 }
 
@@ -172,15 +185,51 @@ func (q *Queries) FillInterestGroup(ctx context.Context, arg FillInterestGroupPa
 	return err
 }
 
+const fillInterestGroupNameAr = `-- name: FillInterestGroupNameAr :exec
+UPDATE interest_groups
+SET name_ar = $1,
+    updated_at = now()
+WHERE slug = $2 AND name_ar IS NULL
+`
+
+type FillInterestGroupNameArParams struct {
+	NameAr sql.NullString
+	Slug   string
+}
+
+func (q *Queries) FillInterestGroupNameAr(ctx context.Context, arg FillInterestGroupNameArParams) error {
+	_, err := q.db.ExecContext(ctx, fillInterestGroupNameAr, arg.NameAr, arg.Slug)
+	return err
+}
+
+const fillInterestNameAr = `-- name: FillInterestNameAr :exec
+UPDATE interests
+SET name_ar = $1,
+    updated_at = now()
+WHERE slug = $2 AND name_ar IS NULL
+`
+
+type FillInterestNameArParams struct {
+	NameAr sql.NullString
+	Slug   string
+}
+
+// Gives an existing interest its seeded Arabic name, only if it has none.
+func (q *Queries) FillInterestNameAr(ctx context.Context, arg FillInterestNameArParams) error {
+	_, err := q.db.ExecContext(ctx, fillInterestNameAr, arg.NameAr, arg.Slug)
+	return err
+}
+
 const getInterest = `-- name: GetInterest :one
-SELECT id, name, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired
+SELECT id, name_en, name_ar, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired
 FROM interests
 WHERE id = $1
 `
 
 type GetInterestRow struct {
 	ID        int64
-	Name      string
+	NameEn    string
+	NameAr    sql.NullString
 	Slug      string
 	Emoji     string
 	GroupID   sql.NullInt64
@@ -193,7 +242,8 @@ func (q *Queries) GetInterest(ctx context.Context, id int64) (GetInterestRow, er
 	var i GetInterestRow
 	err := row.Scan(
 		&i.ID,
-		&i.Name,
+		&i.NameEn,
+		&i.NameAr,
 		&i.Slug,
 		&i.Emoji,
 		&i.GroupID,
@@ -204,21 +254,27 @@ func (q *Queries) GetInterest(ctx context.Context, id int64) (GetInterestRow, er
 }
 
 const getInterestGroup = `-- name: GetInterestGroup :one
-SELECT id, name, slug
+SELECT id, name_en, name_ar, slug
 FROM interest_groups
 WHERE id = $1
 `
 
 type GetInterestGroupRow struct {
-	ID   int64
-	Name string
-	Slug string
+	ID     int64
+	NameEn string
+	NameAr sql.NullString
+	Slug   string
 }
 
 func (q *Queries) GetInterestGroup(ctx context.Context, id int64) (GetInterestGroupRow, error) {
 	row := q.db.QueryRowContext(ctx, getInterestGroup, id)
 	var i GetInterestGroupRow
-	err := row.Scan(&i.ID, &i.Name, &i.Slug)
+	err := row.Scan(
+		&i.ID,
+		&i.NameEn,
+		&i.NameAr,
+		&i.Slug,
+	)
 	return i, err
 }
 
@@ -234,21 +290,23 @@ func (q *Queries) InterestGroupExists(ctx context.Context, id int64) (bool, erro
 }
 
 const listActiveInterests = `-- name: ListActiveInterests :many
-SELECT i.id, i.name, i.slug, i.emoji, g.id AS group_id, g.name AS group_name, g.slug AS group_slug
+SELECT i.id, i.name_en, i.name_ar, i.slug, i.emoji, g.id AS group_id, g.name_en AS group_name_en, g.name_ar AS group_name_ar, g.slug AS group_slug
 FROM interests i
 JOIN interest_groups g ON g.id = i.group_id
 WHERE i.retired_at IS NULL
-ORDER BY g.sort_order, g.name, i.sort_order, i.name
+ORDER BY g.sort_order, g.name_en, i.sort_order, i.name_en
 `
 
 type ListActiveInterestsRow struct {
-	ID        int64
-	Name      string
-	Slug      string
-	Emoji     string
-	GroupID   int64
-	GroupName string
-	GroupSlug string
+	ID          int64
+	NameEn      string
+	NameAr      sql.NullString
+	Slug        string
+	Emoji       string
+	GroupID     int64
+	GroupNameEn string
+	GroupNameAr sql.NullString
+	GroupSlug   string
 }
 
 func (q *Queries) ListActiveInterests(ctx context.Context) ([]ListActiveInterestsRow, error) {
@@ -262,11 +320,13 @@ func (q *Queries) ListActiveInterests(ctx context.Context) ([]ListActiveInterest
 		var i ListActiveInterestsRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.Name,
+			&i.NameEn,
+			&i.NameAr,
 			&i.Slug,
 			&i.Emoji,
 			&i.GroupID,
-			&i.GroupName,
+			&i.GroupNameEn,
+			&i.GroupNameAr,
 			&i.GroupSlug,
 		); err != nil {
 			return nil, err
@@ -283,14 +343,15 @@ func (q *Queries) ListActiveInterests(ctx context.Context) ([]ListActiveInterest
 }
 
 const listAllInterests = `-- name: ListAllInterests :many
-SELECT id, name, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired
+SELECT id, name_en, name_ar, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired
 FROM interests
-ORDER BY (retired_at IS NOT NULL), sort_order, name
+ORDER BY (retired_at IS NOT NULL), sort_order, name_en
 `
 
 type ListAllInterestsRow struct {
 	ID        int64
-	Name      string
+	NameEn    string
+	NameAr    sql.NullString
 	Slug      string
 	Emoji     string
 	GroupID   sql.NullInt64
@@ -309,7 +370,8 @@ func (q *Queries) ListAllInterests(ctx context.Context) ([]ListAllInterestsRow, 
 		var i ListAllInterestsRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.Name,
+			&i.NameEn,
+			&i.NameAr,
 			&i.Slug,
 			&i.Emoji,
 			&i.GroupID,
@@ -330,7 +392,7 @@ func (q *Queries) ListAllInterests(ctx context.Context) ([]ListAllInterestsRow, 
 }
 
 const listChannelInterests = `-- name: ListChannelInterests :many
-SELECT ci.channel_id, i.id, i.name, i.slug, i.emoji
+SELECT ci.channel_id, i.id, i.name_en, i.name_ar, i.slug, i.emoji
 FROM channel_interests ci
 JOIN interests i ON i.id = ci.interest_id
 WHERE ci.channel_id = ANY($1::bigint[])
@@ -340,7 +402,8 @@ ORDER BY ci.channel_id, ci.created_at, i.id
 type ListChannelInterestsRow struct {
 	ChannelID int64
 	ID        int64
-	Name      string
+	NameEn    string
+	NameAr    sql.NullString
 	Slug      string
 	Emoji     string
 }
@@ -357,7 +420,8 @@ func (q *Queries) ListChannelInterests(ctx context.Context, channelIds []int64) 
 		if err := rows.Scan(
 			&i.ChannelID,
 			&i.ID,
-			&i.Name,
+			&i.NameEn,
+			&i.NameAr,
 			&i.Slug,
 			&i.Emoji,
 		); err != nil {
@@ -375,15 +439,16 @@ func (q *Queries) ListChannelInterests(ctx context.Context, channelIds []int64) 
 }
 
 const listInterestGroups = `-- name: ListInterestGroups :many
-SELECT id, name, slug
+SELECT id, name_en, name_ar, slug
 FROM interest_groups
-ORDER BY sort_order, name
+ORDER BY sort_order, name_en
 `
 
 type ListInterestGroupsRow struct {
-	ID   int64
-	Name string
-	Slug string
+	ID     int64
+	NameEn string
+	NameAr sql.NullString
+	Slug   string
 }
 
 func (q *Queries) ListInterestGroups(ctx context.Context) ([]ListInterestGroupsRow, error) {
@@ -395,7 +460,12 @@ func (q *Queries) ListInterestGroups(ctx context.Context) ([]ListInterestGroupsR
 	var items []ListInterestGroupsRow
 	for rows.Next() {
 		var i ListInterestGroupsRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.Slug); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.NameEn,
+			&i.NameAr,
+			&i.Slug,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -410,7 +480,7 @@ func (q *Queries) ListInterestGroups(ctx context.Context) ([]ListInterestGroupsR
 }
 
 const listPersonaInterests = `-- name: ListPersonaInterests :many
-SELECT i.id, i.name, i.slug, i.emoji, (i.retired_at IS NOT NULL)::boolean AS retired
+SELECT i.id, i.name_en, i.name_ar, i.slug, i.emoji, (i.retired_at IS NOT NULL)::boolean AS retired
 FROM persona_interests pi
 JOIN interests i ON i.id = pi.interest_id
 WHERE pi.persona_id = $1
@@ -419,7 +489,8 @@ ORDER BY pi.created_at, i.id
 
 type ListPersonaInterestsRow struct {
 	ID      int64
-	Name    string
+	NameEn  string
+	NameAr  sql.NullString
 	Slug    string
 	Emoji   string
 	Retired bool
@@ -436,7 +507,8 @@ func (q *Queries) ListPersonaInterests(ctx context.Context, personaID int64) ([]
 		var i ListPersonaInterestsRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.Name,
+			&i.NameEn,
+			&i.NameAr,
 			&i.Slug,
 			&i.Emoji,
 			&i.Retired,
@@ -465,22 +537,24 @@ WITH viewer AS (
     WHERE (SELECT gender FROM viewer) IS NULL OR u.gender = (SELECT gender FROM viewer)
     GROUP BY pi.interest_id
 )
-SELECT i.id, i.name, i.slug, i.emoji, g.id AS group_id, g.name AS group_name, g.slug AS group_slug
+SELECT i.id, i.name_en, i.name_ar, i.slug, i.emoji, g.id AS group_id, g.name_en AS group_name_en, g.name_ar AS group_name_ar, g.slug AS group_slug
 FROM interests i
 JOIN interest_groups g ON g.id = i.group_id
 LEFT JOIN popularity pop ON pop.interest_id = i.id
 WHERE i.retired_at IS NULL
-ORDER BY g.sort_order, g.name, COALESCE(pop.n, 0) DESC, i.sort_order, i.name
+ORDER BY g.sort_order, g.name_en, COALESCE(pop.n, 0) DESC, i.sort_order, i.name_en
 `
 
 type RankedActiveInterestsRow struct {
-	ID        int64
-	Name      string
-	Slug      string
-	Emoji     string
-	GroupID   int64
-	GroupName string
-	GroupSlug string
+	ID          int64
+	NameEn      string
+	NameAr      sql.NullString
+	Slug        string
+	Emoji       string
+	GroupID     int64
+	GroupNameEn string
+	GroupNameAr sql.NullString
+	GroupSlug   string
 }
 
 // Within a group, by popularity among personas of users with the viewer's gender (everyone if unset).
@@ -495,11 +569,13 @@ func (q *Queries) RankedActiveInterests(ctx context.Context, userID int64) ([]Ra
 		var i RankedActiveInterestsRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.Name,
+			&i.NameEn,
+			&i.NameAr,
 			&i.Slug,
 			&i.Emoji,
 			&i.GroupID,
-			&i.GroupName,
+			&i.GroupNameEn,
+			&i.GroupNameAr,
 			&i.GroupSlug,
 		); err != nil {
 			return nil, err
@@ -558,20 +634,22 @@ func (q *Queries) ReplacePersonaInterests(ctx context.Context, arg ReplacePerson
 }
 
 const seedInterest = `-- name: SeedInterest :exec
-INSERT INTO interests (name, slug, emoji, group_id, sort_order)
+INSERT INTO interests (name_en, name_ar, slug, emoji, group_id, sort_order)
 SELECT
     $1,
     $2,
     $3,
+    $4,
     g.id,
     (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM interests)
 FROM interest_groups g
-WHERE g.slug = $4
+WHERE g.slug = $5
 ON CONFLICT DO NOTHING
 `
 
 type SeedInterestParams struct {
-	Name      string
+	NameEn    string
+	NameAr    sql.NullString
 	Slug      string
 	Emoji     string
 	GroupSlug string
@@ -580,7 +658,8 @@ type SeedInterestParams struct {
 // Seeding skips an interest whose name or slug already exists.
 func (q *Queries) SeedInterest(ctx context.Context, arg SeedInterestParams) error {
 	_, err := q.db.ExecContext(ctx, seedInterest,
-		arg.Name,
+		arg.NameEn,
+		arg.NameAr,
 		arg.Slug,
 		arg.Emoji,
 		arg.GroupSlug,
@@ -589,23 +668,25 @@ func (q *Queries) SeedInterest(ctx context.Context, arg SeedInterestParams) erro
 }
 
 const seedInterestGroup = `-- name: SeedInterestGroup :exec
-INSERT INTO interest_groups (name, slug, sort_order)
+INSERT INTO interest_groups (name_en, name_ar, slug, sort_order)
 VALUES (
     $1,
     $2,
+    $3,
     (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM interest_groups)
 )
 ON CONFLICT DO NOTHING
 `
 
 type SeedInterestGroupParams struct {
-	Name string
-	Slug string
+	NameEn string
+	NameAr sql.NullString
+	Slug   string
 }
 
 // Seeding skips a group whose name or slug already exists.
 func (q *Queries) SeedInterestGroup(ctx context.Context, arg SeedInterestGroupParams) error {
-	_, err := q.db.ExecContext(ctx, seedInterestGroup, arg.Name, arg.Slug)
+	_, err := q.db.ExecContext(ctx, seedInterestGroup, arg.NameEn, arg.NameAr, arg.Slug)
 	return err
 }
 
@@ -650,7 +731,7 @@ UPDATE interests
 SET retired_at = CASE WHEN $1::boolean THEN COALESCE(retired_at, now()) END,
     updated_at = now()
 WHERE id = $2
-RETURNING id, name, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired
+RETURNING id, name_en, name_ar, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired
 `
 
 type SetInterestRetiredParams struct {
@@ -660,7 +741,8 @@ type SetInterestRetiredParams struct {
 
 type SetInterestRetiredRow struct {
 	ID        int64
-	Name      string
+	NameEn    string
+	NameAr    sql.NullString
 	Slug      string
 	Emoji     string
 	GroupID   sql.NullInt64
@@ -673,7 +755,8 @@ func (q *Queries) SetInterestRetired(ctx context.Context, arg SetInterestRetired
 	var i SetInterestRetiredRow
 	err := row.Scan(
 		&i.ID,
-		&i.Name,
+		&i.NameEn,
+		&i.NameAr,
 		&i.Slug,
 		&i.Emoji,
 		&i.GroupID,
@@ -685,22 +768,24 @@ func (q *Queries) SetInterestRetired(ctx context.Context, arg SetInterestRetired
 
 const updateInterest = `-- name: UpdateInterest :one
 UPDATE interests
-SET name = $1::text,
-    slug = $2::text,
-    emoji = $3::text,
+SET name_en = $1::text,
+    name_ar = $2,
+    slug = $3::text,
+    emoji = $4::text,
     sort_order = CASE
-        WHEN group_id IS DISTINCT FROM $4::bigint
+        WHEN group_id IS DISTINCT FROM $5::bigint
         THEN (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM interests)
         ELSE sort_order
     END,
-    group_id = $4::bigint,
+    group_id = $5::bigint,
     updated_at = now()
-WHERE id = $5::bigint
-RETURNING id, name, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired
+WHERE id = $6::bigint
+RETURNING id, name_en, name_ar, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired
 `
 
 type UpdateInterestParams struct {
-	Name    string
+	NameEn  string
+	NameAr  sql.NullString
 	Slug    string
 	Emoji   string
 	GroupID int64
@@ -709,7 +794,8 @@ type UpdateInterestParams struct {
 
 type UpdateInterestRow struct {
 	ID        int64
-	Name      string
+	NameEn    string
+	NameAr    sql.NullString
 	Slug      string
 	Emoji     string
 	GroupID   sql.NullInt64
@@ -720,7 +806,8 @@ type UpdateInterestRow struct {
 // Moving to another group puts the interest last.
 func (q *Queries) UpdateInterest(ctx context.Context, arg UpdateInterestParams) (UpdateInterestRow, error) {
 	row := q.db.QueryRowContext(ctx, updateInterest,
-		arg.Name,
+		arg.NameEn,
+		arg.NameAr,
 		arg.Slug,
 		arg.Emoji,
 		arg.GroupID,
@@ -729,7 +816,8 @@ func (q *Queries) UpdateInterest(ctx context.Context, arg UpdateInterestParams) 
 	var i UpdateInterestRow
 	err := row.Scan(
 		&i.ID,
-		&i.Name,
+		&i.NameEn,
+		&i.NameAr,
 		&i.Slug,
 		&i.Emoji,
 		&i.GroupID,
@@ -741,28 +829,41 @@ func (q *Queries) UpdateInterest(ctx context.Context, arg UpdateInterestParams) 
 
 const updateInterestGroup = `-- name: UpdateInterestGroup :one
 UPDATE interest_groups
-SET name = $1,
-    slug = $2,
+SET name_en = $1,
+    name_ar = $2,
+    slug = $3,
     updated_at = now()
-WHERE id = $3
-RETURNING id, name, slug
+WHERE id = $4
+RETURNING id, name_en, name_ar, slug
 `
 
 type UpdateInterestGroupParams struct {
-	Name string
-	Slug string
-	ID   int64
+	NameEn string
+	NameAr sql.NullString
+	Slug   string
+	ID     int64
 }
 
 type UpdateInterestGroupRow struct {
-	ID   int64
-	Name string
-	Slug string
+	ID     int64
+	NameEn string
+	NameAr sql.NullString
+	Slug   string
 }
 
 func (q *Queries) UpdateInterestGroup(ctx context.Context, arg UpdateInterestGroupParams) (UpdateInterestGroupRow, error) {
-	row := q.db.QueryRowContext(ctx, updateInterestGroup, arg.Name, arg.Slug, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateInterestGroup,
+		arg.NameEn,
+		arg.NameAr,
+		arg.Slug,
+		arg.ID,
+	)
 	var i UpdateInterestGroupRow
-	err := row.Scan(&i.ID, &i.Name, &i.Slug)
+	err := row.Scan(
+		&i.ID,
+		&i.NameEn,
+		&i.NameAr,
+		&i.Slug,
+	)
 	return i, err
 }

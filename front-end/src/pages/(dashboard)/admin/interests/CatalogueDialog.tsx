@@ -8,14 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { SLUG_PATTERN, slugify } from "@/lib/slug";
 import type { Result } from "@/services/interests";
 import type { AdminInterestGroup } from "@/types/interest";
+import { interestName } from "@/lib/interests";
 import { useTranslation } from "react-i18next";
 
-type Values = { name: string; slug: string; emoji: string; group_id: number | null };
+type Values = { name_en: string; name_ar: string; slug: string; emoji: string; group_id: number | null };
 type Field = keyof Values;
 
 const ERROR_FIELDS: Record<string, Field> = {
-  invalid_name: "name",
-  name_taken: "name",
+  invalid_name: "name_en",
+  name_taken: "name_en",
+  invalid_name_ar: "name_ar",
+  name_ar_taken: "name_ar",
   invalid_slug: "slug",
   slug_taken: "slug",
   invalid_emoji: "emoji",
@@ -40,7 +43,8 @@ export default function CatalogueDialog({
   const message = (code: string) => t(`dialog.errors.${code}` as "dialog.errors.invalid_name");
   const isInterest = groups !== undefined;
   const [values, setValues] = useState<Values>({
-    name: initial?.name ?? "",
+    name_en: initial?.name_en ?? "",
+    name_ar: initial?.name_ar ?? "",
     slug: initial?.slug ?? "",
     emoji: initial?.emoji ?? "",
     group_id: initial?.group_id ?? null,
@@ -52,9 +56,11 @@ export default function CatalogueDialog({
   const [saving, setSaving] = useState(false);
 
   const errors: Partial<Record<Field, string>> = {};
-  const name = values.name.trim();
+  const name = values.name_en.trim();
+  const nameAr = values.name_ar.trim();
   const emoji = values.emoji.trim();
-  if (!name || name.length > 100) errors.name = message("invalid_name");
+  if (!name || name.length > 100) errors.name_en = message("invalid_name");
+  if (nameAr.length > 100) errors.name_ar = message("invalid_name_ar");
   if (!SLUG_PATTERN.test(values.slug)) errors.slug = message("invalid_slug");
   if (isInterest) {
     if (!emoji || [...emoji].length > 8) errors.emoji = message("invalid_emoji");
@@ -66,7 +72,7 @@ export default function CatalogueDialog({
     setServerError(null);
     setValues((prev) => {
       const next = { ...prev, [field]: value };
-      if (field === "name" && !slugTouched) next.slug = slugify(value as string);
+      if (field === "name_en" && !slugTouched) next.slug = slugify(value as string);
       return next;
     });
     if (field === "slug") setSlugTouched(true);
@@ -77,10 +83,10 @@ export default function CatalogueDialog({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setTouched({ name: true, slug: true, emoji: true, group_id: true });
+    setTouched({ name_en: true, name_ar: true, slug: true, emoji: true, group_id: true });
     if (!valid || saving) return;
     setSaving(true);
-    const result = await onSave({ ...values, name, emoji });
+    const result = await onSave({ ...values, name_en: name, name_ar: nameAr, emoji });
     setSaving(false);
     if (result.ok) {
       onClose();
@@ -90,7 +96,7 @@ export default function CatalogueDialog({
     setServerError(field ? { field, message: message(result.error) } : { message: t("common:states.saveFailed") });
   };
 
-  const input = (id: "name" | "slug" | "emoji", props: React.ComponentProps<typeof Input> = {}) => (
+  const input = (id: "name_en" | "name_ar" | "slug" | "emoji", props: React.ComponentProps<typeof Input> = {}) => (
     <Input
       value={values[id]}
       onChange={(e) => set(id, e.target.value)}
@@ -123,15 +129,22 @@ export default function CatalogueDialog({
               <FormField label={t("dialog.emoji")} error={fieldError("emoji")}>
                 {input("emoji", { placeholder: "💻", className: "text-center text-lg" })}
               </FormField>
-              <FormField label={t("dialog.name")} error={fieldError("name")}>
-                {input("name", { placeholder: t("dialog.interestPlaceholder"), autoFocus: true })}
+              <FormField label={t("dialog.name")} error={fieldError("name_en")}>
+                {input("name_en", { placeholder: t("dialog.interestPlaceholder"), dir: "ltr", autoFocus: true })}
               </FormField>
             </div>
           ) : (
-            <FormField label={t("dialog.name")} error={fieldError("name")}>
-              {input("name", { placeholder: t("dialog.groupPlaceholder"), autoFocus: true })}
+            <FormField label={t("dialog.name")} error={fieldError("name_en")}>
+              {input("name_en", { placeholder: t("dialog.groupPlaceholder"), dir: "ltr", autoFocus: true })}
             </FormField>
           )}
+          <FormField label={t("dialog.nameAr")} helper={t("dialog.nameArHelper")} error={fieldError("name_ar")}>
+            {input("name_ar", {
+              placeholder: isInterest ? t("dialog.interestPlaceholderAr") : t("dialog.groupPlaceholderAr"),
+              dir: "rtl",
+              lang: "ar",
+            })}
+          </FormField>
           <FormField
             label={t("dialog.slug")}
             helper={isInterest ? t("dialog.slugHelperInterest", { slug: slugExample }) : t("dialog.slugHelper")}
@@ -155,18 +168,25 @@ export default function CatalogueDialog({
               <SelectContent>
                 {groups.map((g) => (
                   <SelectItem key={g.id} value={String(g.id)}>
-                    {g.name}
+                    {interestName(g)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           )}
-          {isInterest && (name || emoji) && (
+          {isInterest && (name || nameAr || emoji) && (
             <div className="flex flex-col gap-2">
               <p className="text-xs text-muted-foreground">{t("dialog.preview")}</p>
-              <Chip emoji={emoji} className="self-start">
-                {name || t("dialog.name")}
-              </Chip>
+              <div className="flex flex-wrap gap-2">
+                <Chip emoji={emoji} dir="ltr">
+                  {name || t("dialog.name")}
+                </Chip>
+                {nameAr && (
+                  <Chip emoji={emoji} dir="rtl" lang="ar">
+                    {nameAr}
+                  </Chip>
+                )}
+              </div>
             </div>
           )}
           {serverError && !serverError.field && (
