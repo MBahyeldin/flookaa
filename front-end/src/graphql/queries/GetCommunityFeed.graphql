@@ -1,0 +1,15 @@
+query GetCommunityFeed($communityId: Int64!, $after: String, $limit: Int) {
+  getCommunityFeed(communityId: $communityId, after: $after, limit: $limit) {
+    posts {
+      ...PostFields
+    }
+    channels {
+      id
+      name
+      theme
+      thumbnail
+      canModerate
+    }
+    nextCursor
+  }
+}

@@ -538,6 +538,15 @@ func (r *queryResolver) GetDiscover(ctx context.Context, interests []string, all
 	return r.discover(ctx, personaId, interests, all, after, limit)
 }
 
+// GetCommunityFeed is the resolver for the getCommunityFeed field.
+func (r *queryResolver) GetCommunityFeed(ctx context.Context, communityID int64, after *string, limit *int32) (*models.FeedPage, error) {
+	personaId, err := getPersonaIdFromContext(ctx)
+	if err != nil || personaId == 0 {
+		return nil, fmt.Errorf("unauthenticated: %w", err)
+	}
+	return r.communityFeed(ctx, personaId, communityID, after, limit)
+}
+
 // Mutation returns graph.MutationResolver implementation.
 func (r *Resolver) Mutation() graph.MutationResolver { return &mutationResolver{r} }
 

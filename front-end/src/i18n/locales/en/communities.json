@@ -162,5 +162,12 @@
     "saved": "Community info saved",
     "lead": "Its name, link and what it's about.",
     "linkHelper": "{{link}} · Old links stop working."
+  },
+  "latest": {
+    "overline": "Latest",
+    "title": "Latest from its channels",
+    "empty": "No posts in its channels yet",
+    "loadFailed": "Couldn't load the latest posts",
+    "showMore": "Show more"
   }
 }

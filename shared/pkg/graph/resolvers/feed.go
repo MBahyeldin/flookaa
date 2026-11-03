@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"shared/pkg/access"
 	"shared/pkg/db"
 	"shared/pkg/graph/models"
 	"strconv"
@@ -69,6 +70,36 @@ func (r *Resolver) discover(ctx context.Context, personaID int64, interests []st
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list discover channels: %w", err)
+	}
+	channels := make([]*models.FeedChannel, len(rows))
+	for i, row := range rows {
+		channels[i] = &models.FeedChannel{
+			ID:          row.ID,
+			Name:        row.Name,
+			Theme:       models.Theme(row.Theme),
+			Thumbnail:   row.Thumbnail,
+			CanModerate: row.CanModerate,
+		}
+	}
+	return r.channelPostsPage(ctx, personaID, channels, after, limit)
+}
+
+// communityFeed pages the posts of a community's channels the persona may read,
+// for whoever may see inside the community.
+func (r *Resolver) communityFeed(ctx context.Context, personaID, communityID int64, after *string, limit *int32) (*models.FeedPage, error) {
+	community, err := access.LoadCommunity(ctx, r.Queries, communityID, personaID)
+	if err != nil {
+		return nil, err
+	}
+	if !community.CanSeeInside() {
+		return nil, access.ErrCommunityNotFound
+	}
+	rows, err := r.Queries.ListCommunityFeedChannels(ctx, db.ListCommunityFeedChannelsParams{
+		PersonaID:   personaID,
+		CommunityID: communityID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list community feed channels: %w", err)
 	}
 	channels := make([]*models.FeedChannel, len(rows))
 	for i, row := range rows {

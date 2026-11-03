@@ -80,6 +80,11 @@ type SubscribeProfilePayload = {
   owner_id: number;
 };
 
+type SubscribeCommunityFeedPayload = {
+  owner: "COMMUNITY_FEED";
+  owner_id: number;
+};
+
 type Event = {
   name: EventType;
   action: EventActionType;
@@ -145,6 +150,7 @@ export type {
   SubscribeFeedPayload,
   SubscribeDiscoverPayload,
   SubscribeProfilePayload,
+  SubscribeCommunityFeedPayload,
   Event,
   EventType,
   EventActionType,

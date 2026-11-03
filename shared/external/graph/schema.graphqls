@@ -282,5 +282,6 @@ type Query {
 
   getFeed(after: String, limit: Int): FeedPage!
   getDiscover(interests: [String!], all: Boolean, after: String, limit: Int): FeedPage!
+  getCommunityFeed(communityId: Int64!, after: String, limit: Int): FeedPage!
 }
 

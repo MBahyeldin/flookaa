@@ -31,6 +31,7 @@ type QueryResolver interface {
 	GetChannel(ctx context.Context, id int64) (*models.Channel, error)
 	GetFeed(ctx context.Context, after *string, limit *int32) (*models.FeedPage, error)
 	GetDiscover(ctx context.Context, interests []string, all *bool, after *string, limit *int32) (*models.FeedPage, error)
+	GetCommunityFeed(ctx context.Context, communityID int64, after *string, limit *int32) (*models.FeedPage, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -132,6 +133,27 @@ func (ec *executionContext) field_Query_getComments_args(ctx context.Context, ra
 		return nil, err
 	}
 	args["offset"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getCommunityFeed_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "communityId", ec.unmarshalNInt642int64)
+	if err != nil {
+		return nil, err
+	}
+	args["communityId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg2
 	return args, nil
 }
 
@@ -4101,6 +4123,55 @@ func (ec *executionContext) fieldContext_Query_getDiscover(ctx context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_getCommunityFeed(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_getCommunityFeed,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().GetCommunityFeed(ctx, fc.Args["communityId"].(int64), fc.Args["after"].(*string), fc.Args["limit"].(*int32))
+		},
+		nil,
+		ec.marshalNFeedPage2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐFeedPage,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_getCommunityFeed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "posts":
+				return ec.fieldContext_FeedPage_posts(ctx, field)
+			case "channels":
+				return ec.fieldContext_FeedPage_channels(ctx, field)
+			case "nextCursor":
+				return ec.fieldContext_FeedPage_nextCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FeedPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getCommunityFeed_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5623,6 +5694,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_getDiscover(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getCommunityFeed":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getCommunityFeed(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

@@ -12,8 +12,8 @@ type Page = Pick<FeedPage, "nextCursor"> & { posts: Post[]; channels: FeedChanne
 const MAX_MERGE = 30;
 
 /**
- * Pages posts of many channels (feed, Discover) into AppStore under `owner`,
- * loads more through `sentinel`, and collects new posts behind a pill.
+ * Pages posts of many channels (feed, Discover, a community) into AppStore under `owner`,
+ * loads more through `sentinel` (or `loadMore`), and collects new posts behind a pill.
  * Without `mergeNew`, showing new posts reloads the first page.
  */
 export function useChannelPostsPager({
@@ -175,6 +175,7 @@ export function useChannelPostsPager({
     loadMore,
     loadingMore,
     moreFailed,
+    hasMore: !!cursor,
     sentinel,
     newPostsCount: newPosts.length,
     showNewPosts,

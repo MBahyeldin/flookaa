@@ -476,6 +476,51 @@ WHERE c.deleted_at IS NULL
   )
 ORDER BY c.id;
 
+-- name: ListCommunityFeedChannels :many
+SELECT
+    c.id,
+    c.name,
+    channel_theme(c.theme, c.id)::theme_enum AS theme,
+    c.thumbnail,
+    (
+        c.owner_id = sqlc.arg(persona_id)::bigint
+        OR EXISTS (
+            SELECT 1
+            FROM channel_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.channel_id = c.id
+              AND cr.persona_id = sqlc.arg(persona_id)::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name IN ('moderator', 'Administrator')
+        )
+        OR EXISTS (
+            SELECT 1
+            FROM personas p
+            JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
+            JOIN roles r ON r.id = ur.role_id
+            WHERE p.id = sqlc.arg(persona_id)::bigint
+              AND r.name = 'Administrator'
+        )
+    )::boolean AS can_moderate
+FROM channels c
+JOIN community_channels cc
+  ON cc.channel_id = c.id
+ AND cc.community_id = sqlc.arg(community_id)::bigint
+ AND cc.status = 'active' AND cc.removed_at IS NULL
+WHERE c.deleted_at IS NULL
+  AND persona_meets_min_age(sqlc.arg(persona_id)::bigint, c.min_age)
+  AND (
+      c.visibility = 'public'
+      OR EXISTS (
+          SELECT 1
+          FROM channel_members cm
+          WHERE cm.channel_id = c.id
+            AND cm.persona_id = sqlc.arg(persona_id)::bigint
+            AND cm.left_at IS NULL AND cm.status = 'active'
+      )
+  )
+ORDER BY c.id;
+
 -- Discover: public channels the persona isn't in and doesn't follow; all of
 -- them, those tagged with any of the interests, or (neither) those sharing an
 -- interest with the persona.

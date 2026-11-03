@@ -316,11 +316,12 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		GetChannel  func(childComplexity int, id int64) int
-		GetComments func(childComplexity int, parentID string, limit *int32, offset *int32) int
-		GetDiscover func(childComplexity int, interests []string, all *bool, after *string, limit *int32) int
-		GetFeed     func(childComplexity int, after *string, limit *int32) int
-		GetPosts    func(childComplexity int, owner models.OwnerInput, ids []string, limit *int32, offset *int32) int
+		GetChannel       func(childComplexity int, id int64) int
+		GetComments      func(childComplexity int, parentID string, limit *int32, offset *int32) int
+		GetCommunityFeed func(childComplexity int, communityID int64, after *string, limit *int32) int
+		GetDiscover      func(childComplexity int, interests []string, all *bool, after *string, limit *int32) int
+		GetFeed          func(childComplexity int, after *string, limit *int32) int
+		GetPosts         func(childComplexity int, owner models.OwnerInput, ids []string, limit *int32, offset *int32) int
 	}
 
 	QuoteBlock struct {
@@ -1737,6 +1738,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.GetComments(childComplexity, args["parentId"].(string), args["limit"].(*int32), args["offset"].(*int32)), true
 
+	case "Query.getCommunityFeed":
+		if e.complexity.Query.GetCommunityFeed == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getCommunityFeed_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetCommunityFeed(childComplexity, args["communityId"].(int64), args["after"].(*string), args["limit"].(*int32)), true
+
 	case "Query.getDiscover":
 		if e.complexity.Query.GetDiscover == nil {
 			break
@@ -2820,6 +2833,7 @@ type Query {
 
   getFeed(after: String, limit: Int): FeedPage!
   getDiscover(interests: [String!], all: Boolean, after: String, limit: Int): FeedPage!
+  getCommunityFeed(communityId: Int64!, after: String, limit: Int): FeedPage!
 }
 
 `, BuiltIn: false},

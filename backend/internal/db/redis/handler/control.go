@@ -29,13 +29,14 @@ type WsMessage struct {
 type OwnerType string
 
 const (
-	OwnerTypeChannel   OwnerType = "CHANNEL"
-	OwnerTypePersona   OwnerType = "PERSONA"
-	OwnerTypeCommunity OwnerType = "COMMUNITY"
-	OwnerTypeDefault   OwnerType = "DEFAULT"
-	OwnerTypeFeed      OwnerType = "FEED"
-	OwnerTypeDiscover  OwnerType = "DISCOVER"
-	OwnerTypeProfile   OwnerType = "PROFILE"
+	OwnerTypeChannel       OwnerType = "CHANNEL"
+	OwnerTypePersona       OwnerType = "PERSONA"
+	OwnerTypeCommunity     OwnerType = "COMMUNITY"
+	OwnerTypeDefault       OwnerType = "DEFAULT"
+	OwnerTypeFeed          OwnerType = "FEED"
+	OwnerTypeDiscover      OwnerType = "DISCOVER"
+	OwnerTypeProfile       OwnerType = "PROFILE"
+	OwnerTypeCommunityFeed OwnerType = "COMMUNITY_FEED"
 )
 
 type Payload struct {
@@ -101,6 +102,9 @@ func (h *Handler) Control(c *gin.Context) {
 
 	case OwnerTypeProfile:
 		h.profile(c, bodyData, personaIdInt64)
+
+	case OwnerTypeCommunityFeed:
+		h.communityFeed(c, bodyData, personaIdInt64)
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid owner type %s", bodyData.Payload.Owner)})
 		return

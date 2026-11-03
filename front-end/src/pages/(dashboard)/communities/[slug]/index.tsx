@@ -39,9 +39,10 @@ import SuggestChannelDialog from "./SuggestChannelDialog";
 import { CommunityHero } from "./CommunityHero";
 import { CommunityAbout } from "./CommunityAbout";
 import { CommunityPeople } from "./CommunityPeople";
+import { CommunityLatest } from "./CommunityLatest";
 
 const membersTabs: MembersTab[] = ["members", "requests", "channels"];
-const SECTIONS = ["channels", "about", "people"] as const;
+const SECTIONS = ["channels", "latest", "about", "people"] as const;
 const SHOWN_CHANNELS = 6;
 const sectionClass = "scroll-mt-28 md:scroll-mt-14";
 
@@ -55,6 +56,8 @@ export default function CommunityPage() {
   const [state, setState] = useState<"loading" | "ready" | "missing" | "failed">("loading");
   const [channels, setChannels] = useState<Channel[] | null>(null);
   const [channelsFailed, setChannelsFailed] = useState(false);
+  // Remounts the latest posts when the community's channels change, so they reload and resubscribe.
+  const [latestKey, setLatestKey] = useState(0);
   const [editing, setEditing] = useState(false);
   const linkedTab = searchParams.get("members") as MembersTab | null;
   const [membersTab, setMembersTab] = useState<MembersTab | null>(
@@ -159,6 +162,7 @@ export default function CommunityPage() {
       if (msg.event.name === "info") reloadCommunity();
       if (msg.event.name === "channels") {
         loadChannels();
+        setLatestKey((k) => k + 1);
         reloadCommunity();
       }
       if (msg.event.name === "counts") {
@@ -318,6 +322,7 @@ export default function CommunityPage() {
       <SectionNav value={section} onValueChange={(v) => jump(v as (typeof SECTIONS)[number])}>
         <SectionNavList className="top-14 px-4 md:top-0 md:px-8 xl:px-16">
           <SectionNavTab value="channels">{t("common:nav.channels")}</SectionNavTab>
+          {canSeeInside && <SectionNavTab value="latest">{t("latest.overline")}</SectionNavTab>}
           <SectionNavTab value="about">{t("common:about.title")}</SectionNavTab>
           <SectionNavTab value="people">{t("common:people.title")}</SectionNavTab>
         </SectionNavList>
@@ -396,6 +401,8 @@ export default function CommunityPage() {
             </div>
           )}
         </section>
+
+        {canSeeInside && <CommunityLatest key={latestKey} communityId={community.id} className={sectionClass} />}
 
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
           <div id="about" className={`lg:col-span-7 ${sectionClass}`}>

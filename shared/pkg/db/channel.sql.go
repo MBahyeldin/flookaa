@@ -724,6 +724,94 @@ func (q *Queries) ListChannels(ctx context.Context, arg ListChannelsParams) ([]C
 	return items, nil
 }
 
+const listCommunityFeedChannels = `-- name: ListCommunityFeedChannels :many
+SELECT
+    c.id,
+    c.name,
+    channel_theme(c.theme, c.id)::theme_enum AS theme,
+    c.thumbnail,
+    (
+        c.owner_id = $1::bigint
+        OR EXISTS (
+            SELECT 1
+            FROM channel_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.channel_id = c.id
+              AND cr.persona_id = $1::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name IN ('moderator', 'Administrator')
+        )
+        OR EXISTS (
+            SELECT 1
+            FROM personas p
+            JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
+            JOIN roles r ON r.id = ur.role_id
+            WHERE p.id = $1::bigint
+              AND r.name = 'Administrator'
+        )
+    )::boolean AS can_moderate
+FROM channels c
+JOIN community_channels cc
+  ON cc.channel_id = c.id
+ AND cc.community_id = $2::bigint
+ AND cc.status = 'active' AND cc.removed_at IS NULL
+WHERE c.deleted_at IS NULL
+  AND persona_meets_min_age($1::bigint, c.min_age)
+  AND (
+      c.visibility = 'public'
+      OR EXISTS (
+          SELECT 1
+          FROM channel_members cm
+          WHERE cm.channel_id = c.id
+            AND cm.persona_id = $1::bigint
+            AND cm.left_at IS NULL AND cm.status = 'active'
+      )
+  )
+ORDER BY c.id
+`
+
+type ListCommunityFeedChannelsParams struct {
+	PersonaID   int64
+	CommunityID int64
+}
+
+type ListCommunityFeedChannelsRow struct {
+	ID          int64
+	Name        string
+	Theme       ThemeEnum
+	Thumbnail   string
+	CanModerate bool
+}
+
+func (q *Queries) ListCommunityFeedChannels(ctx context.Context, arg ListCommunityFeedChannelsParams) ([]ListCommunityFeedChannelsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCommunityFeedChannels, arg.PersonaID, arg.CommunityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCommunityFeedChannelsRow
+	for rows.Next() {
+		var i ListCommunityFeedChannelsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Theme,
+			&i.Thumbnail,
+			&i.CanModerate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDiscoverChannels = `-- name: ListDiscoverChannels :many
 SELECT
     c.id,
