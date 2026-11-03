@@ -36,6 +36,7 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 
 - 2026-10-29 (WWW-100 admin interests): Components: icons `arrow-up` `145:10114`, `arrow-down` `145:10118`, `archive` `145:10123`, `rotate-ccw` `145:10127`; `Sidebar` (`11:232`) gains an Admin entry (`shield-check`, `145:5966` expanded / `145:5975` collapsed) behind `Show admin#145:0` (default off, so earlier frames are unchanged). Patterns: `Interest Row` `147:560` (State Active `147:502` / Ungrouped `147:525` / Retired `147:538`; the `Chip` is exposed; move buttons sit in fixed slots so hidden ends keep their place). New page `Admin` `148:6`: Interests `148:7` (desktop) / `150:522` (mobile); Interest dialog · States `151:805`, Group dialog · States `151:1214`; Desktop · Edit interest `151:1416`, · Menus `151:1533`, · Busy `151:2102`, · Action failed `151:2632`, · Deep Tide Dark `151:2822`, · Not an admin `151:5635`, · Empty `151:5727`, · Loading `151:5938`, · Error `151:6144`, · Sidebar collapsed `151:6359`; Mobile · Add interest (sheet) `152:4105`, · Row menu (Move up/down, Edit, Retire) `152:4242`, · Sidebar sheet `152:4456`, · Empty `153:5053`, · Loading `153:5200`, · Error `153:5341`, · Action failed `153:5477`, · Busy `153:5602`.
 - 2026-11-03 (WWW-79 community latest posts): Community `20:1038` / `20:1517` / `20:1903` gain a `Latest band` (`154:15118` / `155:15411` / `155:15659`) between the channel grid and About: Section Header ("Latest", "Latest from its channels", no link), a column of `Post` Spine instances in their channels' palettes (Slate, Ember; 640 wide, Fill on mobile) and an Outline `Show more` button. The frames' Section Navs were replaced by fresh four-tab instances (Channels, Latest, About, People: `154:15105` / `155:15398` / `155:15646`), since the old ones held three tabs. Everything on Channel & Community below the Community row moved down 2200 px.
+- 2026-11-03 (WWW-101 saved posts + comment attachments): Components: icons `bookmark-filled` `159:4522`, `send` `160:356`, `square` `160:359`, `trash-2` `160:366`, `loader-circle` `160:369`; `Save Button` set `159:4538` (Style Labelled/Icon × State Unsaved/Saved: `159:4524`, `159:4528`, `159:4532`, `159:4535`); `Toast` gains an action (`Action#159:0`, `Show action#159:1`, default off); `Sidebar` gains a Saved entry after Discover (`159:4648` expanded / `159:4656` collapsed) behind `Show saved#159:2` (default off). Patterns: `Post` set `36:748` carries an exposed `Save` (Spine header before ⋯ `159:11136`, Canvas footer `Actions` `159:11139`, Strip footer `159:11143`); `Masonry Tile` footers end with `Save` (`159:18139` / `159:18143`); `Comment` set `70:602` gains `Show body#159:5`, `Show image#159:10`, `Show voice#159:15`; `Voice Pill` `159:20194` (`Duration#159:20`); `Comment Composer` `161:916` (Idle `161:710`, Typing `161:727`, Image uploading `161:737`, Image ready `161:757`, Recording `161:779`, Recording near limit `161:790`, Voice processing `161:801`, Voice ready `161:816`, Mic unavailable `161:871`, Upload failed `161:883`, Sending `161:907`); `Saved Unavailable Row` `162:4975`. Feed & Discovery: Desktop / Saved `162:4989`, Tablet `162:5445`, Mobile `162:5867`, · Empty `162:6246`, · Loading `162:6361`, · Error `162:6497`, Mobile · Empty `162:6622`, · Deep Tide Dark `162:6656`, Mobile · Sidebar sheet `162:6668`. Channel & Community: Post · Save & comment attachments · States `163:16109`; Desktop / Post · Saved, voice and image comments `163:17068`; Tablet / Post · Image comment `163:17399`; Mobile / Post · Recording `163:17664`.
 
 ## Next steps
 
@@ -218,6 +219,7 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Menu/Item` | `11:257` |
 | `Menu` | `11:262` |
 | `Toast` | `11:288` |
+| `Save Button` | `159:4538` |
 | `Skeleton` | `12:168` |
 | `Skeleton/Post` | `12:169` |
 | `Empty State` | `12:178` |
@@ -250,6 +252,9 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Community Option` | `130:17001` |
 | `Channel Request Row` | `136:19531` |
 | `Interest Row` | `147:560` |
+| `Voice Pill` | `159:20194` |
+| `Comment Composer` | `161:916` |
+| `Saved Unavailable Row` | `162:4975` |
 
 ### Variants
 | Variant | ID |
@@ -274,7 +279,7 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Tag` | `{"Label": "Label#9:127", "Show icon": "Show icon#9:128", "Icon": "Icon#9:129"}` |
 | `Count Badge` | `{"Count": "Count#11:0"}` |
 | `Sidebar/Item` | `{"Label": "Label#11:1", "Icon": "Icon#11:6", "Show badge": "Show badge#11:11"}` |
-| `Sidebar` | `{"Show admin": "Show admin#145:0"}` |
+| `Sidebar` | `{"Show admin": "Show admin#145:0", "Show saved": "Show saved#159:2"}` |
 | `Interest Row` | `{"Slug": "Slug#147:0", "Group": "Group#147:4", "Show move up": "Show move up#147:8", "Show move down": "Show move down#147:12"}` (label and emoji on the nested `Chip`) |
 | `Segmented Control` | `{"Option 1": "Option 1#119:0", "Option 2": "Option 2#119:3"}` |
 | `Radio Card` | `{"Title": "Title#119:6", "Body": "Body#119:9", "Icon": "Icon#119:12"}` |
@@ -283,7 +288,9 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Checklist Rule` | `{"Label": "Label#119:21"}` |
 | `Tooltip` | `{"Text": "Text#11:16"}` |
 | `Menu/Item` | `{"Label": "Label#11:17", "Icon": "Icon#11:18"}` |
-| `Toast` | `{"Message": "Message#11:19"}` |
+| `Toast` | `{"Message": "Message#11:19", "Action": "Action#159:0", "Show action": "Show action#159:1"}` |
+| `Comment` | `{"Show body": "Show body#159:5", "Show image": "Show image#159:10", "Show voice": "Show voice#159:15"}` (plus the earlier Name/Time/Body/… keys) |
+| `Voice Pill` | `{"Duration": "Duration#159:20"}` |
 | `Form Field` | `{"Label": "Label#10:0", "Value": "Value#10:9", "Helper": "Helper#10:18", "Show helper": "Show helper#10:27"}` |
 | `Section Nav/Tab` | `{"Label": "Label#10:36"}` |
 | `Avatar` | `{"Initials": "Initials#10:39"}` |
@@ -355,6 +362,11 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `arrow-down` | `145:10118` |
 | `archive` | `145:10123` |
 | `rotate-ccw` | `145:10127` |
+| `bookmark-filled` | `159:4522` |
+| `send` | `160:356` |
+| `square` | `160:359` |
+| `trash-2` | `160:366` |
+| `loader-circle` | `160:369` |
 
 ## Resume prompt
 
