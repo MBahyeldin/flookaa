@@ -11,6 +11,7 @@ import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { cancelChannelRequest, requestChannelJoin } from "@/services/communities";
 import type { Community, ModeratedChannel } from "@/types/community";
 import { useTranslation } from "react-i18next";
+import { isolate } from "@/i18n";
 
 const KNOWN_ERRORS = ["recently_rejected", "channel_in_community", "channel_request_pending"] as const;
 
@@ -56,7 +57,7 @@ export default function SuggestChannelDialog({
     if (here && channel.community_status === "pending") {
       return (
         <Button size="sm" variant="secondary" disabled={busyId === channel.id} onClick={() => run(channel, true)}>
-          <Clock className="mr-1 h-4 w-4" />
+          <Clock className="me-1 h-4 w-4" />
           {t("common:actions.cancelRequest")}
         </Button>
       );
@@ -65,8 +66,8 @@ export default function SuggestChannelDialog({
     return (
       <span className="truncate text-xs text-muted-foreground">
         {channel.community_status === "active"
-          ? t("suggest.inOther", { community: channel.community?.name })
-          : t("suggest.waitingOn", { community: channel.community?.name })}
+          ? t("suggest.inOther", { community: isolate(channel.community?.name ?? "") })
+          : t("suggest.waitingOn", { community: isolate(channel.community?.name ?? "") })}
       </span>
     );
   };
@@ -76,7 +77,7 @@ export default function SuggestChannelDialog({
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("suggest.title")}</DialogTitle>
-          <DialogDescription>{t("suggest.lead", { community: community.name })}</DialogDescription>
+          <DialogDescription>{t("suggest.lead", { community: isolate(community.name) })}</DialogDescription>
         </DialogHeader>
         {channels === null ? (
           <SkeletonList count={3} />
@@ -113,7 +114,7 @@ export default function SuggestChannelDialog({
           className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
         >
           <Plus className="h-4 w-4" />
-          {t("suggest.createFor", { community: community.name })}
+          {t("suggest.createFor", { community: isolate(community.name) })}
         </Link>
       </DialogContent>
     </Dialog>

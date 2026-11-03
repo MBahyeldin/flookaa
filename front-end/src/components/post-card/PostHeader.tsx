@@ -18,7 +18,7 @@ export function PostHeader({
 }) {
   return (
     <div className="flex items-start justify-between mb-4">
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center gap-3">
         <PersonaLink
           personaId={authorId}
           anonymous={author?.anonymous ?? true}

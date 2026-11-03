@@ -140,7 +140,7 @@ export function CommunityHero({
               </DropdownMenuItem>
               {canSuggest && (
                 <DropdownMenuItem onSelect={onSuggest}>
-                  <Send />
+                  <Send className="rtl:-scale-x-100" />
                   {t("suggest.title")}
                 </DropdownMenuItem>
               )}

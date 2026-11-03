@@ -1,5 +1,5 @@
 import { graphqlErrorMessage } from "@/lib/errors";
-import { t } from "@/i18n";
+import { isolate, t } from "@/i18n";
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Globe, User2, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -190,7 +190,7 @@ export function PostCreator(props: {
           {persona ? personaInitials(persona) : <User2 className="size-4" />}
         </AvatarFallback>
       </Avatar>
-      <span className="min-w-0 flex-1 truncate text-sm font-medium">{t("posts:composer.postingAs", { name: displayName })}</span>
+      <span className="min-w-0 flex-1 truncate text-sm font-medium">{t("posts:composer.postingAs", { name: isolate(displayName) })}</span>
     </div>
   );
 
@@ -280,9 +280,9 @@ export function PostCreator(props: {
               <XIcon className="size-5" />
             </Button>
             <SheetTitle className="min-w-0 flex-1 truncate text-center text-sm font-medium">
-              {props.title ?? t("posts:composer.newPostIn", { channel: props.channelName })}
+              {props.title ?? t("posts:composer.newPostIn", { channel: isolate(props.channelName) })}
             </SheetTitle>
-            <SheetDescription className="sr-only">{t("posts:composer.writeAs", { name: displayName })}</SheetDescription>
+            <SheetDescription className="sr-only">{t("posts:composer.writeAs", { name: isolate(displayName) })}</SheetDescription>
             {postButton}
           </div>
           <div className="flex min-h-0 flex-1 flex-col gap-3.5 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">

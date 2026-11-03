@@ -46,7 +46,7 @@ export function PostArticle({ post, place }: { post: Post; place: { name: string
             {post.author?.fullName}
           </PersonaLink>
           <p className="truncate text-xs text-muted-foreground">
-            {place.name}
+            <bdi>{place.name}</bdi>
             {post.createdAt ? (
               <>
                 {" · "}

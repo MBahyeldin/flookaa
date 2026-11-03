@@ -140,6 +140,7 @@ export default function CreateCommunityPage() {
         </FormField>
         <FormField label={t("fields.link")} error={errors.slug} helper={`${LINK_PREFIX}${link || "…"}`}>
           <Input
+            dir="ltr"
             value={link}
             maxLength={50}
             placeholder={t("fields.linkPlaceholder")}

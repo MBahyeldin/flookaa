@@ -8,7 +8,7 @@ import type { Notification } from "@/types/notification";
 import { useNotificationStore } from "@/stores/NotificationStore";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { formatDate, shortTime } from "@/lib/format";
-import { t } from "@/i18n";
+import { isolate, t } from "@/i18n";
 import { describeNotification } from "./describe";
 
 /**
@@ -61,7 +61,7 @@ export default function NotificationItem({
       {mark}
       <span
         aria-hidden="true"
-        className="absolute -right-1 -bottom-1 flex size-[18px] items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-card"
+        className="absolute -end-1 -bottom-1 flex size-[18px] items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-card"
       >
         <KindIcon className="size-[11px]" strokeWidth={2.5} />
       </span>
@@ -92,7 +92,7 @@ export default function NotificationItem({
       <button
         type="button"
         onClick={open}
-        className="flex min-w-0 flex-1 items-start gap-3 text-left focus-visible:outline-none"
+        className="flex min-w-0 flex-1 items-start gap-3 text-start focus-visible:outline-none"
       >
         <span className="min-w-0 flex-1 space-y-1">
           <span className="block break-words">
@@ -103,7 +103,7 @@ export default function NotificationItem({
             <time dateTime={notification.updated_at} title={formatDate(notification.updated_at)}>
               {shortTime(notification.updated_at)}
             </time>
-            {description.context && ` · ${description.context}`}
+            {description.context && ` · ${isolate(description.context)}`}
           </span>
         </span>
         {!notification.read && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" aria-label={t("notifications:unread")} />}

@@ -155,7 +155,7 @@ function Sidebar({
               ...(swipe.suppressAnimation && { animation: "none" }),
             } as React.CSSProperties
           }
-          side={side}
+          side="start"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>{t("common:shell.menu")}</SheetTitle>

@@ -286,6 +286,7 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = t("
                 ) : !commentType || commentType === "TEXT" ? (
                     <input
                         type="text"
+                        dir={newComment ? "auto" : undefined}
                         placeholder={placeholder}
                         aria-label={placeholder}
                         autoFocus={autoFocus}

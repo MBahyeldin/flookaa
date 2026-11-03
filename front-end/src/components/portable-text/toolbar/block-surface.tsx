@@ -44,7 +44,7 @@ export function BlockSurface(props: {
           aria-label={t("common:actions.back")}
           onClick={props.onBack}
         >
-          <ArrowLeftIcon className="size-4" />
+          <ArrowLeftIcon className="size-4 rtl:-scale-x-100" />
         </Button>
       ) : null}
       <span className="font-semibold">{props.title}</span>
@@ -61,7 +61,7 @@ export function BlockSurface(props: {
           side="bottom"
           className="max-h-[85dvh] gap-0 overflow-y-auto rounded-t-xl pb-[max(1rem,env(safe-area-inset-bottom))]"
         >
-          <SheetHeader className="pr-14">
+          <SheetHeader className="pe-14">
             <SheetTitle asChild>{header}</SheetTitle>
             <SheetDescription className="sr-only">
               {props.title}

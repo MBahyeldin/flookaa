@@ -36,10 +36,10 @@ export function ProfileConnected({
                   <AvatarFallback>{initials(name)}</AvatarFallback>
                 </Avatar>
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium hover:underline">{name}</span>
-                  {p.name && <span className="block truncate text-xs">{p.name}</span>}
+                  <span dir="auto" className="block truncate text-match-parent text-sm font-medium hover:underline">{name}</span>
+                  {p.name && <span dir="auto" className="block truncate text-match-parent text-xs">{p.name}</span>}
                   <span className="block truncate text-xs text-muted-foreground">
-                    @{p.slug}
+                    <span dir="ltr">@{p.slug}</span>
                     {p.followers_count !== undefined &&
                       ` · ${t("common:counts.followers", { count: p.followers_count, n: formatCompact(p.followers_count) })}`}
                   </span>

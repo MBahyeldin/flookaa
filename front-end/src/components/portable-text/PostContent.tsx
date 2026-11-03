@@ -15,7 +15,7 @@ function InvalidBlockNotice({ block, issues }: { block: AnyBlock; issues: string
         <block.icon className="size-4" />
         {t("editor:blockNeedsFixing", { block: block.title })}
       </div>
-      <ul className="mt-1 list-disc pl-6">
+      <ul className="mt-1 list-disc ps-6">
         {issues.map((issue) => (
           <li key={issue}>{issue}</li>
         ))}

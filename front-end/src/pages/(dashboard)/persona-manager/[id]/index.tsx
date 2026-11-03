@@ -43,7 +43,7 @@ function Header({ persona }: { persona: Persona }) {
     <div className="flex items-center gap-3">
       <Button asChild variant="ghost" size="icon-sm" aria-label={t("manager.back")}>
         <Link to="/persona-manager">
-          <ArrowLeft />
+          <ArrowLeft className="rtl:-scale-x-100" />
         </Link>
       </Button>
       <Avatar className="size-12 text-base">

@@ -48,6 +48,7 @@ export function PostByline({
       {channel ? (
         <Link
           to={`/channels/${channel.id}`}
+          dir="auto"
           className="shrink-0 truncate rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground max-w-40 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           {channel.name}

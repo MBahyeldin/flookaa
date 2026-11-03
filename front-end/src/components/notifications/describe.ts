@@ -1,5 +1,5 @@
 import { Check, Heart, Inbox, MessageCircle, UserPlus, X, type LucideIcon } from "lucide-react";
-import { t } from "@/i18n";
+import { isolate, t } from "@/i18n";
 import type { Notification } from "@/types/notification";
 
 export type NotificationDescription = {
@@ -23,15 +23,15 @@ function actors(n: Notification): string {
   const name = actorName(n) ?? t("notifications:someone");
   const others = n.count - 1;
   if (others <= 0) return name;
-  return t("notifications:andOthers", { name, count: others });
+  return t("notifications:andOthers", { name: isolate(name), count: others });
 }
 
 function channelName(n: Notification): string {
-  return n.channel?.name ?? t("notifications:aChannel");
+  return n.channel ? isolate(n.channel.name) : t("notifications:aChannel");
 }
 
 function communityName(n: Notification): string {
-  return n.community?.name ?? t("notifications:aCommunity");
+  return n.community ? isolate(n.community.name) : t("notifications:aCommunity");
 }
 
 function communityHref(n: Notification, query = ""): string {
@@ -42,7 +42,7 @@ function contentContext(n: Notification, viewerId?: number): string | null {
   if (n.scope?.type !== "PERSONA") return n.channel?.name ?? null;
   if (n.scope.id === viewerId) return t("notifications:onYourWall");
   if (!n.wall) return null;
-  return t("notifications:onWall", { name: `${n.wall.first_name} ${n.wall.last_name}`.trim() });
+  return t("notifications:onWall", { name: isolate(`${n.wall.first_name} ${n.wall.last_name}`.trim()) });
 }
 
 /**

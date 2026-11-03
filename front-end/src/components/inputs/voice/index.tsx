@@ -240,7 +240,7 @@ export default function VoiceInput({ field, error, touched, className, initValue
             {left <= 30 ? (
               <span className="text-xs text-muted-foreground">{t("common:voice.secondsLeft", { count: Math.ceil(left) })}</span>
             ) : null}
-            <Button type="button" size="sm" variant="secondary" className="ml-auto" onClick={stopRecording}>
+            <Button type="button" size="sm" variant="secondary" className="ms-auto" onClick={stopRecording}>
               <Square className="size-4" /> {t("common:voice.stop")}
             </Button>
           </div>

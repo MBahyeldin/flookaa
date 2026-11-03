@@ -31,7 +31,7 @@ function Preview({ persona, theme, cover }: { persona: Persona; theme: PaletteId
           </Avatar>
           <Badge variant="secondary">@{persona.slug}</Badge>
           <p className="text-h3 font-semibold tracking-tight break-words">{name}</p>
-          {persona.bio && <p className="line-clamp-2 text-sm text-muted-foreground">{persona.bio}</p>}
+          {persona.bio && <p dir="auto" className="line-clamp-2 text-sm text-muted-foreground">{persona.bio}</p>}
         </div>
       </div>
     </div>

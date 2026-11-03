@@ -43,7 +43,7 @@ export function MembersSheetFrame<T extends string>({
           <div className="flex items-center gap-3 px-4 pt-4 pb-2 md:px-6">
             <SheetClose asChild>
               <Button variant="ghost" size="icon-sm" aria-label={i18n.t("common:actions.close")} className="sm:hidden">
-                <ArrowLeft />
+                <ArrowLeft className="rtl:-scale-x-100" />
               </Button>
             </SheetClose>
             <div className="flex min-w-0 flex-1 flex-col">

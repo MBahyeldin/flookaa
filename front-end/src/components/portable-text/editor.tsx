@@ -308,7 +308,7 @@ const RenderBlock = (props: BlockRenderProps) => {
         <div
           contentEditable={false}
           draggable={!readOnly}
-          className={`absolute top-0 -left-3 bottom-0 w-1.5 bg-muted rounded cursor-grab`}
+          className={`absolute top-0 -start-3 bottom-0 w-1.5 bg-muted rounded cursor-grab`}
         >
           <span />
         </div>
@@ -370,20 +370,24 @@ const decoratorMap: Map<
   ["superscript", (props) => <sup>{props.children}</sup>],
 ]);
 
+// An empty dir="auto" block resolves to ltr, so it inherits the UI direction until it has text.
+const textDir = (props: BlockStyleRenderProps) =>
+  props.block.children.some((c) => "text" in c && typeof c.text === "string" && c.text.trim() !== "") ? "auto" : undefined;
+
 const styleMap: Map<string, (props: BlockStyleRenderProps) => JSX.Element> =
   new Map([
-    ["normal", (props) => <p className="my-1">{props.children}</p>],
+    ["normal", (props) => <p dir={textDir(props)} className="my-1">{props.children}</p>],
     // Same sizes as displayBlocks, so the draft looks like the post.
-    ["h1", (props) => <h3 className="mt-4 mb-2 text-2xl font-bold">{props.children}</h3>],
-    ["h2", (props) => <h4 className="mt-4 mb-2 text-xl font-semibold">{props.children}</h4>],
-    ["h3", (props) => <h5 className="mt-3 mb-2 text-lg font-semibold">{props.children}</h5>],
-    ["h4", (props) => <h4 className="my-1">{props.children}</h4>],
-    ["h5", (props) => <h5 className="my-1">{props.children}</h5>],
-    ["h6", (props) => <h6 className="my-1">{props.children}</h6>],
+    ["h1", (props) => <h3 dir={textDir(props)} className="mt-4 mb-2 text-2xl font-bold">{props.children}</h3>],
+    ["h2", (props) => <h4 dir={textDir(props)} className="mt-4 mb-2 text-xl font-semibold">{props.children}</h4>],
+    ["h3", (props) => <h5 dir={textDir(props)} className="mt-3 mb-2 text-lg font-semibold">{props.children}</h5>],
+    ["h4", (props) => <h4 dir={textDir(props)} className="my-1">{props.children}</h4>],
+    ["h5", (props) => <h5 dir={textDir(props)} className="my-1">{props.children}</h5>],
+    ["h6", (props) => <h6 dir={textDir(props)} className="my-1">{props.children}</h6>],
     [
       "blockquote",
       (props) => (
-        <blockquote className="my-3 border-s-2 border-border ps-4 italic text-muted-foreground">
+        <blockquote dir={textDir(props)} className="my-3 border-s-2 border-border ps-4 italic text-muted-foreground">
           {props.children}
         </blockquote>
       ),

@@ -15,7 +15,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import React from "react";
 import { formatCompact, formatDate, formatRelativeDate } from "@/lib/format";
 import { graphqlErrorMessage } from "@/lib/errors";
-import { t } from "@/i18n";
+import { isolate, t } from "@/i18n";
 import { contentOwner, useAppStore } from "@/stores/AppStore";
 import CommentInput from "./input";
 import { Button } from "../ui/button";
@@ -235,7 +235,7 @@ const CommentItem = React.memo(({
                         )}
                     </div>
 
-                    {replyingTo && <p className="text-xs text-muted-foreground">{t("posts:comments.replyingTo", { name: replyingTo })}</p>}
+                    {replyingTo && <p className="text-xs text-muted-foreground">{t("posts:comments.replyingTo", { name: isolate(replyingTo) })}</p>}
 
                     {commentContent.type === "TEXT" ? (
                         <p dir="auto" className="break-words text-sm">{commentContent.content}</p>
@@ -280,7 +280,7 @@ const CommentItem = React.memo(({
                                 className="mt-2 flex flex-col gap-1.5"
                             >
                                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                    {t("posts:comments.replyingTo", { name: authorName })}
+                                    {t("posts:comments.replyingTo", { name: isolate(authorName) })}
                                     <button
                                         type="button"
                                         aria-label={t("posts:comments.cancelReply")}

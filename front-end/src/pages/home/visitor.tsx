@@ -18,7 +18,7 @@ const FEATURES: { icon: LucideIcon; id: "personas" | "places" | "privacy" }[] = 
 ];
 
 const GUTTER = "px-4 md:px-6 lg:px-20";
-const INDENTS = ["", "pl-4 md:pl-8", "pl-8 md:pl-16"];
+const INDENTS = ["", "ps-4 md:ps-8", "ps-8 md:ps-16"];
 
 export default function VisitorPage() {
   const { t } = useTranslation(["auth", "common"]);

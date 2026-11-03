@@ -40,7 +40,7 @@ export default function SidebarNavItem({ title, to, icon: Icon, match, badge, po
         <Badge
           variant="count"
           aria-hidden="true"
-          className="group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:-top-1 group-data-[collapsible=icon]:-right-1"
+          className="group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:-top-1 group-data-[collapsible=icon]:-end-1"
         >
           {badge > 99 ? t("shell.badgeMax") : badge}
         </Badge>

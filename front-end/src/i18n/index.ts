@@ -83,6 +83,11 @@ export function direction(): "ltr" | "rtl" {
   return DIR[currentLanguage()];
 }
 
+// The plain-text <bdi>: user text interpolated into a t() sentence keeps its own direction.
+export function isolate(text: string): string {
+  return `⁨${text}⁩`;
+}
+
 function applyDocument(lang: Language) {
   document.documentElement.lang = lang;
   document.documentElement.dir = DIR[lang];

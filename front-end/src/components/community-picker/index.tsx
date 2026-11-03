@@ -35,7 +35,7 @@ function Row({
       aria-checked={selected}
       onClick={onSelect}
       className={cn(
-        "flex w-full items-center gap-3 rounded-lg border px-2 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "flex w-full items-center gap-3 rounded-lg border px-2 py-2 text-start outline-none focus-visible:ring-2 focus-visible:ring-ring",
         selected ? "border-primary bg-accent" : "border-transparent hover:bg-muted",
       )}
     >

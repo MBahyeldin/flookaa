@@ -17,7 +17,7 @@ import { LockedProfileHero, ProfileHero, fullName } from "./ProfileHero";
 import { ProfilePosts } from "./ProfilePosts";
 import { ProfileChannels } from "./ProfileChannels";
 import { ProfileConnected } from "./ProfileConnected";
-import { t } from "@/i18n";
+import { isolate, t } from "@/i18n";
 import { errorMessage } from "@/lib/errors";
 
 type State =
@@ -241,7 +241,7 @@ function InvitationBanner({
     >
       <UserPlus aria-hidden="true" className="size-5 shrink-0 text-primary max-sm:hidden" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">{t("personas:invite.bannerTitle", { name })}</p>
+        <p className="text-sm font-medium">{t("personas:invite.bannerTitle", { name: isolate(name) })}</p>
         <p className="text-xs text-muted-foreground">{t("personas:invite.bannerBody")}</p>
       </div>
       <div className="flex gap-2">

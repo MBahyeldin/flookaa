@@ -30,9 +30,9 @@ export function PersonaRow({ persona, action, className }: { persona: Persona; a
         <AvatarFallback>{personaInitials(persona)}</AvatarFallback>
       </Avatar>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <p className="truncate text-sm font-semibold">{personaDisplayName(persona)}</p>
+        <p dir="auto" className="truncate text-match-parent text-sm font-semibold">{personaDisplayName(persona)}</p>
         <p className="text-xs break-words text-muted-foreground">
-          @{persona.slug}
+          <span dir="ltr">@{persona.slug}</span>
           {` · ${t("row.theme", { theme: paletteLabel(theme) })}`}
         </p>
       </div>

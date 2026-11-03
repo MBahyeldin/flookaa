@@ -89,9 +89,9 @@ export function PersonaCard({
           <GeneratedAvatarFallback name={displayName} />
         </Avatar>
         <div className="min-w-0">
-          <p className="truncate font-medium">{displayName}</p>
+          <p dir="auto" className="truncate text-match-parent font-medium">{displayName}</p>
           {full && (
-            <p className="truncate text-xs text-muted-foreground">
+            <p dir="ltr" className="truncate text-match-parent text-xs text-muted-foreground">
               @{full.slug}
             </p>
           )}

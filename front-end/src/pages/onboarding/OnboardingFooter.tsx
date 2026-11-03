@@ -52,7 +52,7 @@ export default function OnboardingFooter({
 
   return (
     <div className="flex flex-col gap-2 border-t pt-4">
-      {error && <p role="alert" className="text-sm text-destructive text-right">{error}</p>}
+      {error && <p role="alert" className="text-sm text-destructive text-end">{error}</p>}
       <div className="flex items-center gap-2">
         <div className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{left}</div>
         {index > 0 && (

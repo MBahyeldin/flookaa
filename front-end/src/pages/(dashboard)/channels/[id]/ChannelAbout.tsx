@@ -27,7 +27,7 @@ export function ChannelAbout({
   const { t } = useTranslation(["channels", "common"]);
   return (
     <AboutBlock>
-      {description && <p className="whitespace-pre-line">{description}</p>}
+      {description && <p dir="auto" className="whitespace-pre-line">{description}</p>}
       {interests.length > 0 && <InterestChips interests={interests} />}
       <AboutFacts>
         <AboutFact icon={isPrivate ? Lock : Globe}>

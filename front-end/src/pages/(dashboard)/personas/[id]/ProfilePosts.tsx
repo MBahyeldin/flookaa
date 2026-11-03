@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MessageSquare, PenLine } from "lucide-react";
 import { toast } from "sonner";
-import { t } from "@/i18n";
+import { isolate, t } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { SkeletonList } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -133,7 +133,7 @@ export function ProfilePosts({ personaId, name, isOwn }: { personaId: number; na
         <EmptyState
           icon={isOwn ? PenLine : MessageSquare}
           title={isOwn ? t("posts:wall.firstTitle") : t("posts:empty.title")}
-          body={isOwn ? t("posts:wall.firstBody") : t("posts:wall.noneBody", { name })}
+          body={isOwn ? t("posts:wall.firstBody") : t("posts:wall.noneBody", { name: isolate(name) })}
         />
       ) : (
         sortedPosts.map((post) => (

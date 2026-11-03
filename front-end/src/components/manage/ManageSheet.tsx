@@ -41,7 +41,7 @@ export function ManageSheet<T extends string>({
           <div className="flex items-center gap-3 border-b px-4 py-3 md:px-6">
             <SheetClose asChild>
               <Button variant="ghost" size="icon-sm" aria-label={t("common:actions.close")} className="sm:hidden">
-                <ArrowLeft />
+                <ArrowLeft className="rtl:-scale-x-100" />
               </Button>
             </SheetClose>
             <Logo name={name} src={logo || null} size="sm" />

@@ -28,8 +28,8 @@ export function Hero({
         <div className="relative shrink-0">{media}</div>
         <div className="flex w-full min-w-0 flex-col items-start gap-2 md:flex-1 md:pt-[68px]">
           {tags && <div className="flex flex-wrap items-center gap-1.5">{tags}</div>}
-          <h1 className="w-full text-display font-semibold tracking-tight break-words">{name}</h1>
-          {tagline && <p className="line-clamp-2 text-lead font-light text-muted-foreground">{tagline}</p>}
+          <h1 className="w-full text-display font-semibold tracking-tight break-words"><bdi>{name}</bdi></h1>
+          {tagline && <p dir="auto" className="line-clamp-2 text-match-parent text-lead font-light text-muted-foreground">{tagline}</p>}
           {facts && <p className="text-sm text-muted-foreground">{facts}</p>}
         </div>
         {actions && (

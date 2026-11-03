@@ -34,7 +34,7 @@ export function CreatePreview({
         <Logo name={name.trim() || "?"} src={logo || null} size="lg" className="relative" />
         <InterestChips interests={interests} limit={3} />
         <p className="w-full text-h2 font-semibold tracking-tight break-words">{shown}</p>
-        {description.trim() && <p className="line-clamp-2 text-muted-foreground">{description}</p>}
+        {description.trim() && <p dir="auto" className="line-clamp-2 text-muted-foreground">{description}</p>}
         <p className="text-xs text-muted-foreground">{facts.join(" · ")}</p>
       </div>
     </div>

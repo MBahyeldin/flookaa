@@ -52,7 +52,7 @@ export function AppSidebar() {
         <Link
           to="/"
           aria-label={t("shell.homeLink")}
-          className="flex items-center gap-2.5 rounded-md pl-3 outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:pb-3 group-data-[collapsible=icon]:pl-0"
+          className="flex items-center gap-2.5 rounded-md ps-3 outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:pb-3 group-data-[collapsible=icon]:ps-0"
         >
           <Sailboat aria-hidden="true" className="size-6 text-primary" />
           <span className="text-xl font-semibold text-foreground group-data-[collapsible=icon]:hidden">

@@ -71,7 +71,7 @@ export function PostMenu({
           disabled={isDeleting}
           onClick={handleDelete}
         >
-          <Trash2 className="mr-2 size-4" />
+          <Trash2 className="me-2 size-4" />
           {t("common:actions.delete")}
         </DropdownMenuItem>
       </DropdownMenuContent>

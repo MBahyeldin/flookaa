@@ -56,7 +56,7 @@ export function BlockGrid(props: { onPick: (block: AnyBlock) => void }) {
                 key={block.name}
                 type="button"
                 onClick={() => props.onPick(block)}
-                className="flex min-h-11 flex-col items-start gap-1 rounded-lg border border-border bg-card p-3 text-left text-card-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex min-h-11 flex-col items-start gap-1 rounded-lg border border-border bg-card p-3 text-start text-card-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <block.icon className="size-5 text-primary" />
                 <span className="text-sm font-medium">{block.title}</span>

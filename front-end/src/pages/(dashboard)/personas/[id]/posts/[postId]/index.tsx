@@ -134,8 +134,8 @@ function PersonaBar({ persona }: { persona: PersonaProfile }) {
             <AvatarFallback>{initials(name)}</AvatarFallback>
           </Avatar>
           <span className="flex min-w-0 flex-col">
-            <span className="truncate text-sm font-medium">{name}</span>
-            <span className="hidden truncate text-xs text-muted-foreground sm:block">@{persona.slug}</span>
+            <span dir="auto" className="truncate text-match-parent text-sm font-medium">{name}</span>
+            <span dir="ltr" className="hidden truncate text-match-parent text-xs text-muted-foreground sm:block">@{persona.slug}</span>
           </span>
         </Link>
       </div>

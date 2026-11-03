@@ -30,7 +30,7 @@ function RadioCard({
       data-slot="radio-card"
       onClick={onSelect}
       className={cn(
-        "flex w-full items-start gap-3 rounded-lg border p-4 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "flex w-full items-start gap-3 rounded-lg border p-4 text-start transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
         checked ? "border-primary bg-accent" : "bg-card hover:tint",
         className
       )}

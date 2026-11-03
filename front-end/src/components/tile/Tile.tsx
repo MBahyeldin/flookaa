@@ -37,7 +37,7 @@ export function Tile({
             <Logo name={name} src={logo} />
           </span>
           <div className="min-w-0">
-            <h3 className="truncate text-h4 font-medium">
+            <h3 dir="auto" className="truncate text-match-parent text-h4 font-medium">
               {href ? (
                 <Link to={href} className="rounded-sm hover:text-primary focus-visible:outline-2 focus-visible:outline-ring">
                   {name}
@@ -49,7 +49,7 @@ export function Tile({
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">{meta}</div>
           </div>
         </div>
-        {description && <p className="line-clamp-3 text-sm text-muted-foreground">{description}</p>}
+        {description && <p dir="auto" className="line-clamp-3 text-sm text-muted-foreground">{description}</p>}
         <InterestChips interests={interests} limit={3} />
         {facts && <p className="text-xs text-muted-foreground">{facts}</p>}
         {children && <div className="mt-auto flex gap-2 pt-1">{children}</div>}

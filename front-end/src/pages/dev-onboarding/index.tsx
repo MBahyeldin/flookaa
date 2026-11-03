@@ -25,7 +25,7 @@ function OptionalDemo() {
             key={n}
             type="button"
             onClick={() => setPicked((p) => (p === n ? 0 : n))}
-            className={`rounded-xl border p-6 text-left ${picked === n ? "bg-primary text-primary-foreground" : "bg-card text-card-foreground"}`}
+            className={`rounded-xl border p-6 text-start ${picked === n ? "bg-primary text-primary-foreground" : "bg-card text-card-foreground"}`}
           >
             Card {n}
           </button>

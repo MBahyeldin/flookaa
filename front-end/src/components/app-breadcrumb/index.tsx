@@ -42,7 +42,7 @@ export default function AppBreadcrumb() {
             {item.addSeparator && (
               <ChevronRight
                 key={`separator-${index}`}
-                className="size-4 mt-1"
+                className="size-4 mt-1 rtl:rotate-180"
               />
             )}
           </BreadcrumbItem>

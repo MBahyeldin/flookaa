@@ -253,6 +253,11 @@
   }
 }
 
+/* With dir="auto": the text takes its own direction (and cut side) but lines up with the UI. */
+@utility text-match-parent {
+  text-align: match-parent;
+}
+
 /* Figma's hover on filled controls: scrim at 12% over whatever fill is there. */
 @utility tint {
   background-image: linear-gradient(

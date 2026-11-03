@@ -66,7 +66,7 @@ export function ChannelBar({
         <Link to={channelPath} className="flex min-w-0 items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <Logo name={channel.name} src={channel.thumbnailUrl} size="sm" />
           <span className="flex min-w-0 flex-col">
-            <span className="truncate text-sm font-medium">{channel.name}</span>
+            <bdi className="truncate text-match-parent text-sm font-medium">{channel.name}</bdi>
             <span className="hidden truncate text-xs text-muted-foreground sm:block">
               {t("counts.members", { count: channel.membersCount ?? 0, n: formatCompact(channel.membersCount ?? 0) })} ·{" "}
               {channel.isPrivate ? t("visibility.private") : t("visibility.public")}

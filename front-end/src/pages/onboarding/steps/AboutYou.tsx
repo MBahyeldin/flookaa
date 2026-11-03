@@ -110,7 +110,7 @@ export default function AboutYou() {
         )}
       </div>
       {saveFailed && (
-        <p role="alert" className="text-sm text-destructive text-right">
+        <p role="alert" className="text-sm text-destructive text-end">
           {t("onboarding:saveFailed")}
         </p>
       )}

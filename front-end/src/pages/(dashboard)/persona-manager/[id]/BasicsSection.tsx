@@ -112,6 +112,7 @@ export function BasicsSection({ persona }: { persona: Persona }) {
 
       <FormField label={t("fields.handle")} helper={SLUG_HELP} error={slugError ?? (slugInvalid ? SLUG_HELP : null)}>
         <Input
+          dir="ltr"
           placeholder={t("fields.handlePlaceholder")}
           value={draft.slug ? `@${draft.slug}` : ""}
           onChange={(e) => set({ slug: e.target.value.replace(/^@+/, "").toLowerCase() })}

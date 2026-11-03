@@ -37,7 +37,7 @@ export function CreatePage({
     <div className="mx-auto grid w-full max-w-[1110px] gap-6 px-4 py-8 md:py-12 lg:grid-cols-[minmax(0,640px)_390px] lg:gap-x-10 lg:px-8">
       <div className="flex items-start gap-3">
         <Button type="button" variant="ghost" size="icon-sm" onClick={back} aria-label={t("common:actions.back")} className="mt-1.5 shrink-0">
-          <ArrowLeft />
+          <ArrowLeft className="rtl:-scale-x-100" />
         </Button>
         <div className="flex min-w-0 flex-col gap-1">
           <h1 className="text-h1 font-semibold tracking-tight">{title}</h1>

@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import type { Community } from "@/types/community";
 import { useTranslation } from "react-i18next";
+import { isolate } from "@/i18n";
 
 /** "Agree and join": shown before joining a community that has rules. Nothing is stored. */
 export function CommunityRulesDialog({
@@ -30,10 +31,10 @@ export function CommunityRulesDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t("rules.dialogTitle", { name: community.name })}</DialogTitle>
+          <DialogTitle>{t("rules.dialogTitle", { name: isolate(community.name) })}</DialogTitle>
           <DialogDescription>{isPrivate ? t("rules.readBeforeRequest") : t("rules.readBeforeJoin")}</DialogDescription>
         </DialogHeader>
-        <p className="whitespace-pre-line text-sm">{community.rules}</p>
+        <p dir="auto" className="whitespace-pre-line text-sm">{community.rules}</p>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("common:actions.cancel")}

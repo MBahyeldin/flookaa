@@ -38,7 +38,7 @@ export default function Interests() {
         showCount={false}
       />
       {saveFailed && (
-        <p role="alert" className="text-sm text-destructive text-right">
+        <p role="alert" className="text-sm text-destructive text-end">
           {t("saveFailed")}
         </p>
       )}

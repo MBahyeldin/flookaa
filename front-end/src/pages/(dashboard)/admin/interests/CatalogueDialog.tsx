@@ -113,7 +113,7 @@ export default function CatalogueDialog({
         aria-describedby={undefined}
         className="max-sm:top-auto max-sm:bottom-0 max-sm:max-w-full max-sm:translate-y-0 max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0 sm:max-w-[480px]">
         <form onSubmit={submit} className="flex flex-col gap-4">
-          <DialogHeader className="text-left">
+          <DialogHeader className="text-start">
             <DialogTitle>
               {isInterest
                 ? adding
@@ -150,7 +150,7 @@ export default function CatalogueDialog({
             helper={isInterest ? t("dialog.slugHelperInterest", { slug: slugExample }) : t("dialog.slugHelper")}
             error={fieldError("slug")}
           >
-            {input("slug", { placeholder: slugExample })}
+            {input("slug", { placeholder: slugExample, dir: "ltr" })}
           </FormField>
           {isInterest && (
             <Select

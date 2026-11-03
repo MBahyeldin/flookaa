@@ -64,12 +64,12 @@ export default function AppSidebarFooter() {
           <button
             type="button"
             aria-label={t("shell.personaMenu", { name: displayName })}
-            className="flex w-full items-center gap-2.5 rounded-md border border-sidebar-border p-2 text-left outline-hidden transition-colors hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[state=open]:bg-sidebar-accent group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:p-0"
+            className="flex w-full items-center gap-2.5 rounded-md border border-sidebar-border p-2 text-start outline-hidden transition-colors hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[state=open]:bg-sidebar-accent group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:p-0"
           >
             <PersonaAvatar persona={persona} />
             <span className="flex min-w-0 flex-1 flex-col group-data-[collapsible=icon]:hidden">
-              <span className="truncate text-sm font-medium text-foreground">{displayName}</span>
-              <span className="truncate text-xs text-muted-foreground">@{persona.slug}</span>
+              <span dir="auto" className="truncate text-match-parent text-sm font-medium text-foreground">{displayName}</span>
+              <span dir="ltr" className="truncate text-match-parent text-xs text-muted-foreground">@{persona.slug}</span>
             </span>
             <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
           </button>
@@ -95,8 +95,8 @@ export default function AppSidebarFooter() {
               >
                 <PersonaAvatar persona={p} />
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-sm font-medium">{p.first_name} {p.last_name}</span>
-                  <span className="truncate text-xs text-muted-foreground">@{p.slug}</span>
+                  <span dir="auto" className="truncate text-match-parent text-sm font-medium">{p.first_name} {p.last_name}</span>
+                  <span dir="ltr" className="truncate text-match-parent text-xs text-muted-foreground">@{p.slug}</span>
                 </span>
                 {current && <Check aria-hidden className="text-primary" />}
               </DropdownMenuItem>
@@ -110,7 +110,7 @@ export default function AppSidebarFooter() {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleLogOut}>
-            <LogOut aria-hidden />
+            <LogOut aria-hidden className="rtl:-scale-x-100" />
             {t("shell.logOut")}
           </DropdownMenuItem>
         </DropdownMenuContent>

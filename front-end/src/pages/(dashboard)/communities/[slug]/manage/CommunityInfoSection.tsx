@@ -65,6 +65,7 @@ export function CommunityInfoSection({ community, save }: { community: Community
       </FormField>
       <FormField label={t("fields.link")} error={errors.slug} helper={t("info.linkHelper", { link: `${LINK_PREFIX}${slug || "…"}` })}>
         <Input
+          dir="ltr"
           value={slug}
           maxLength={50}
           onChange={(e) => {

@@ -52,7 +52,7 @@ export function SettingsSection({
       {children}
       {onSave && (
         <div className="flex items-center justify-end gap-3">
-          {note && <div className="mr-auto text-sm text-muted-foreground">{note}</div>}
+          {note && <div className="me-auto text-sm text-muted-foreground">{note}</div>}
           <Button type="submit" loading={saving} disabled={!dirty || !canSave}>
             {saveLabel}
           </Button>

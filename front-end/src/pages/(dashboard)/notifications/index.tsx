@@ -86,7 +86,7 @@ export default function NotificationsPage() {
         {unreadCount > 0 && (
           <>
             <Badge variant="count">{unreadCount > 99 ? t("common:shell.badgeMax") : unreadCount}</Badge>
-            <Button variant="outline" size="sm" onClick={markAllRead} className="ml-auto">
+            <Button variant="outline" size="sm" onClick={markAllRead} className="ms-auto">
               {t("markAllRead")}
             </Button>
           </>

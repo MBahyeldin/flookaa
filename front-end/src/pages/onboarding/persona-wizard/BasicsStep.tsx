@@ -73,6 +73,7 @@ export default function BasicsStep({
 
       <Field label={t("fields.handle")} error={slugError}>
         <Input
+          dir="ltr"
           placeholder={t("fields.handlePlaceholder")}
           value={draft.slug ? `@${draft.slug}` : ""}
           onChange={(e) => set({ slug: e.target.value.replace(/^@+/, "").toLowerCase() })}

@@ -56,7 +56,7 @@ export default function NotificationPopover({
         }}
         className="w-[min(24rem,calc(100vw-2rem))] p-0 focus-visible:outline-none"
       >
-        <div className="flex min-h-12 items-center justify-between border-b py-2 pr-3 pl-4">
+        <div className="flex min-h-12 items-center justify-between border-b py-2 pe-3 ps-4">
           <span className="font-medium">{t("title")}</span>
           {unreadCount > 0 && (
             <Button variant="ghost" size="sm" onClick={markAllRead}>

@@ -27,7 +27,7 @@ export function CommunityAbout({ community, className }: { community: Community;
 
   return (
     <AboutBlock className={className}>
-      {community.description && <p className="whitespace-pre-line">{community.description}</p>}
+      {community.description && <p dir="auto" className="whitespace-pre-line">{community.description}</p>}
       {community.interests.length > 0 && <InterestChips interests={community.interests} />}
       <AboutFacts>
         <AboutFact icon={isPrivate ? Lock : Globe}>
@@ -69,7 +69,7 @@ export function CommunityAbout({ community, className }: { community: Community;
             {shown.map((rule, i) => (
               <li key={i} className="flex gap-3">
                 <span className="w-4 shrink-0 font-semibold text-primary tabular-nums">{i + 1}</span>
-                <span>{rule}</span>
+                <span dir="auto">{rule}</span>
               </li>
             ))}
           </ol>

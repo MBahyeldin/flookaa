@@ -33,9 +33,10 @@ export function PersonaLink({
         <button
           type="button"
           tabIndex={tabIndex}
+          dir="auto"
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            "cursor-pointer text-left hover:underline underline-offset-2",
+            "cursor-pointer text-match-parent hover:underline underline-offset-2",
             className,
           )}
         >

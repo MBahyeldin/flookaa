@@ -15,7 +15,7 @@ export default function NotificationBell() {
     <NotificationPopover>
       <Button
         variant="ghost"
-        className="h-9 gap-1 px-2 -mr-2"
+        className="h-9 gap-1 px-2 -me-2"
         aria-label={unreadCount > 0 ? t("notifications:bellUnread", { count: unreadCount }) : t("nav.notifications")}
       >
         <Bell aria-hidden="true" className="size-[22px]" />
