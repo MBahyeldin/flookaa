@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Chip } from "@/components/ui/chip";
 import type { Interest } from "@/types/interest";
+import { interestName } from "@/lib/interests";
 import { t } from "@/i18n";
 
 export default function InterestChips({
@@ -20,7 +21,7 @@ export default function InterestChips({
       {shown.map((i) => (
         <li key={i.id}>
           <Chip size="sm" emoji={i.emoji}>
-            {i.name}
+            {interestName(i)}
           </Chip>
         </li>
       ))}

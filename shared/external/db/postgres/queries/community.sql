@@ -151,7 +151,7 @@ ORDER BY o.overlap DESC, m.members DESC, m.same_gender DESC, c.id DESC
 LIMIT sqlc.arg(lim) OFFSET sqlc.arg(off);
 
 -- name: ListCommunityInterests :many
-SELECT ci.community_id, i.id, i.name, i.slug, i.emoji
+SELECT ci.community_id, i.id, i.name_en, i.name_ar, i.slug, i.emoji
 FROM community_interests ci
 JOIN interests i ON i.id = ci.interest_id
 WHERE ci.community_id = ANY(sqlc.arg(community_ids)::bigint[])

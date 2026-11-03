@@ -20,12 +20,15 @@
     "addInterestTo": "Add interest to {{name}}",
     "needsGroup": "Needs a group",
     "needsGroupBody": "People don't see these until they're in a group. Edit one to pick its group.",
-    "retiredBody": "Not offered for new picks. Personas, channels and communities that have them keep them."
+    "retiredBody": "Not offered for new picks. Personas, channels and communities that have them keep them.",
+    "noArabic": "No Arabic name"
   },
   "dialog": {
     "errors": {
       "invalid_name": "Use 1–100 characters.",
       "name_taken": "This name is already used.",
+      "invalid_name_ar": "Use at most 100 characters.",
+      "name_ar_taken": "This Arabic name is already used.",
       "invalid_slug": "Use 3–50 lowercase letters, digits or single hyphens.",
       "slug_taken": "This slug is already used.",
       "invalid_emoji": "Use one emoji (up to 8 characters).",
@@ -34,9 +37,13 @@
     "editInterest": "Edit interest",
     "editGroup": "Edit group",
     "emoji": "Emoji",
-    "name": "Name",
+    "name": "English name",
+    "nameAr": "Arabic name",
+    "nameArHelper": "Shown when the app is in Arabic. Leave empty to show the English name.",
     "interestPlaceholder": "Technology",
     "groupPlaceholder": "Technology & Professional",
+    "interestPlaceholderAr": "التقنية",
+    "groupPlaceholderAr": "التقنية والعمل",
     "slug": "Slug",
     "slugHelperInterest": "Used in links, e.g. ?interest={{slug}}",
     "slugHelper": "Used in links",

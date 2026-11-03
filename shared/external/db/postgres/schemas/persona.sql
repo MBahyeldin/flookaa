@@ -60,7 +60,8 @@ CREATE UNIQUE INDEX personas_invite_token_key ON personas (invite_token) WHERE i
 
 CREATE TABLE interest_groups (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
+    name_en VARCHAR(100) NOT NULL,
+    name_ar VARCHAR(100),
     slug VARCHAR(50) NOT NULL,
     sort_order INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
@@ -68,11 +69,13 @@ CREATE TABLE interest_groups (
     CONSTRAINT interest_groups_slug_key UNIQUE (slug)
 );
 
-CREATE UNIQUE INDEX interest_groups_name_lower_key ON interest_groups (lower(name));
+CREATE UNIQUE INDEX interest_groups_name_en_lower_key ON interest_groups (lower(name_en));
+CREATE UNIQUE INDEX interest_groups_name_ar_key ON interest_groups (name_ar) WHERE name_ar IS NOT NULL;
 
 CREATE TABLE interests (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
+    name_en VARCHAR(100) NOT NULL,
+    name_ar VARCHAR(100),
     slug VARCHAR(50) NOT NULL UNIQUE,
     emoji VARCHAR(32) NOT NULL,
     sort_order INT NOT NULL DEFAULT 0,
@@ -82,7 +85,8 @@ CREATE TABLE interests (
     group_id BIGINT REFERENCES interest_groups(id)
 );
 
-CREATE UNIQUE INDEX interests_name_lower_key ON interests (lower(name));
+CREATE UNIQUE INDEX interests_name_en_lower_key ON interests (lower(name_en));
+CREATE UNIQUE INDEX interests_name_ar_key ON interests (name_ar) WHERE name_ar IS NOT NULL;
 CREATE INDEX interests_group_id_idx ON interests (group_id);
 
 CREATE TABLE persona_interests (

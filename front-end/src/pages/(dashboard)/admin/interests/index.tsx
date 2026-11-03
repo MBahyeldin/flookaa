@@ -27,6 +27,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { useAuth } from "@/Auth.context";
 import { cn } from "@/lib/utils";
+import { interestName } from "@/lib/interests";
 import {
   adminListInterests,
   createInterest,
@@ -168,7 +169,7 @@ function InterestsAdmin() {
 
   const groups = catalogue.groups ?? [];
   const interests = catalogue.interests ?? [];
-  const groupName = new Map(groups.map((g) => [g.id, g.name]));
+  const groupName = new Map(groups.map((g) => [g.id, interestName(g)]));
   const active = interests.filter((i) => !i.retired);
   const ungrouped = active.filter((i) => i.group_id === null || !groupName.has(i.group_id));
   const retired = interests.filter((i) => i.retired);
@@ -180,7 +181,7 @@ function InterestsAdmin() {
   const rowMenu = (item: AdminInterest, move?: { first: boolean; last: boolean }) => (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={t("common:manage.actionsFor", { name: item.name })} disabled={busy}>
+        <Button variant="ghost" size="icon-sm" aria-label={t("common:manage.actionsFor", { name: interestName(item) })} disabled={busy}>
           <MoreHorizontal />
         </Button>
       </DropdownMenuTrigger>
@@ -225,10 +226,11 @@ function InterestsAdmin() {
         return (
           <li key={item.id} className="flex min-h-10 items-center gap-3">
             <Chip emoji={item.emoji} className={cn(item.retired && "opacity-60")}>
-              {item.name}
+              {interestName(item)}
             </Chip>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm text-muted-foreground">{item.slug}</p>
+              {!item.name_ar && <p className="truncate text-xs text-muted-foreground">{t("interests.noArabic")}</p>}
               {item.retired && item.group_id !== null && groupName.has(item.group_id) && (
                 <p className="truncate text-xs text-muted-foreground">{t("interests.inGroup", { group: groupName.get(item.group_id) })}</p>
               )}
@@ -242,7 +244,7 @@ function InterestsAdmin() {
             {move && (
               <MoveButtons
                 className="hidden sm:flex"
-                label={item.name}
+                label={interestName(item)}
                 first={move.first}
                 last={move.last}
                 disabled={busy}
@@ -301,14 +303,15 @@ function InterestsAdmin() {
           <SectionCard key={group.id}>
             <div className="flex items-start gap-2">
               <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 pt-1">
-                <h2 className="text-h4 min-w-0 font-medium break-words max-sm:w-full">{group.name}</h2>
+                <h2 className="text-h4 min-w-0 font-medium break-words max-sm:w-full">{interestName(group)}</h2>
                 <span className="truncate text-sm text-muted-foreground">{group.slug}</span>
+                {!group.name_ar && <span className="truncate text-xs text-muted-foreground">{t("interests.noArabic")}</span>}
                 <Badge variant="secondary">
                   {items.length} {items.length === 1 ? "interest" : "interests"}
                 </Badge>
               </div>
               <MoveButtons
-                label={group.name}
+                label={interestName(group)}
                 first={gi === 0}
                 last={gi === groups.length - 1}
                 disabled={busy}
@@ -317,7 +320,7 @@ function InterestsAdmin() {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label={t("interests.editNamed", { name: group.name })}
+                aria-label={t("interests.editNamed", { name: interestName(group) })}
                 disabled={busy}
                 onClick={() => setEditing({ kind: "group", group })}
               >
@@ -326,7 +329,7 @@ function InterestsAdmin() {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label={t("interests.addInterestTo", { name: group.name })}
+                aria-label={t("interests.addInterestTo", { name: interestName(group) })}
                 disabled={busy}
                 onClick={() => addInterest(group.id)}
               >
@@ -379,11 +382,11 @@ function InterestsAdmin() {
       {editing?.kind === "interest" && (
         <CatalogueDialog
           adding={!editing.interest}
-          initial={{ ...editing.interest, group_id: editing.groupId }}
+          initial={{ ...editing.interest, name_ar: editing.interest?.name_ar ?? "", group_id: editing.groupId }}
           groups={groups}
           onClose={() => setEditing(null)}
           onSave={async (v) => {
-            const input = { name: v.name, slug: v.slug, emoji: v.emoji, group_id: v.group_id };
+            const input = { name_en: v.name_en, name_ar: v.name_ar, slug: v.slug, emoji: v.emoji, group_id: v.group_id };
             const result = editing.interest ? await updateInterest(editing.interest.id, input) : await createInterest(input);
             if (result.ok) await load();
             return result;
@@ -393,10 +396,10 @@ function InterestsAdmin() {
       {editing?.kind === "group" && (
         <CatalogueDialog
           adding={!editing.group}
-          initial={editing.group ?? undefined}
+          initial={editing.group ? { ...editing.group, name_ar: editing.group.name_ar ?? "" } : undefined}
           onClose={() => setEditing(null)}
           onSave={async (v) => {
-            const input = { name: v.name, slug: v.slug };
+            const input = { name_en: v.name_en, name_ar: v.name_ar, slug: v.slug };
             const result = editing.group ? await updateInterestGroup(editing.group.id, input) : await createInterestGroup(input);
             if (result.ok) await load();
             return result;

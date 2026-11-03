@@ -796,7 +796,7 @@ func (q *Queries) ListCommunityInheritingChannelIDs(ctx context.Context, communi
 }
 
 const listCommunityInterests = `-- name: ListCommunityInterests :many
-SELECT ci.community_id, i.id, i.name, i.slug, i.emoji
+SELECT ci.community_id, i.id, i.name_en, i.name_ar, i.slug, i.emoji
 FROM community_interests ci
 JOIN interests i ON i.id = ci.interest_id
 WHERE ci.community_id = ANY($1::bigint[])
@@ -806,7 +806,8 @@ ORDER BY ci.community_id, ci.created_at, i.id
 type ListCommunityInterestsRow struct {
 	CommunityID int64
 	ID          int64
-	Name        string
+	NameEn      string
+	NameAr      sql.NullString
 	Slug        string
 	Emoji       string
 }
@@ -823,7 +824,8 @@ func (q *Queries) ListCommunityInterests(ctx context.Context, communityIds []int
 		if err := rows.Scan(
 			&i.CommunityID,
 			&i.ID,
-			&i.Name,
+			&i.NameEn,
+			&i.NameAr,
 			&i.Slug,
 			&i.Emoji,
 		); err != nil {

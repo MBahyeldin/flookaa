@@ -1343,7 +1343,8 @@ type Event struct {
 
 type Interest struct {
 	ID        int64
-	Name      string
+	NameEn    string
+	NameAr    sql.NullString
 	Slug      string
 	Emoji     string
 	SortOrder int32
@@ -1355,7 +1356,8 @@ type Interest struct {
 
 type InterestGroup struct {
 	ID        int64
-	Name      string
+	NameEn    string
+	NameAr    sql.NullString
 	Slug      string
 	SortOrder int32
 	CreatedAt time.Time

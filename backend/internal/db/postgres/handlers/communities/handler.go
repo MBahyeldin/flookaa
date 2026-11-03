@@ -30,12 +30,7 @@ func NewHandler(pg *sql.DB, q *db.Queries, nats *nats.NatsHelper) *Handler {
 	return &Handler{pg: pg, q: q, nats: nats}
 }
 
-type InterestTag struct {
-	ID    int64  `json:"id"`
-	Name  string `json:"name"`
-	Slug  string `json:"slug"`
-	Emoji string `json:"emoji"`
-}
+type InterestTag = interests.Interest
 
 type Owner struct {
 	ID        int64  `json:"id"`
@@ -156,7 +151,7 @@ func (h *Handler) build(ctx context.Context, viewerID int64, rows []row) ([]Comm
 		return nil, err
 	}
 	for _, t := range interestRows {
-		tags[t.CommunityID] = append(tags[t.CommunityID], InterestTag{ID: t.ID, Name: t.Name, Slug: t.Slug, Emoji: t.Emoji})
+		tags[t.CommunityID] = append(tags[t.CommunityID], InterestTag{ID: t.ID, Names: interests.NewNames(t.NameEn, t.NameAr), Slug: t.Slug, Emoji: t.Emoji})
 	}
 
 	stats := make(map[int64]db.ListCommunityStatsRow, len(ids))

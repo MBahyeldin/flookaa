@@ -9,6 +9,7 @@ import { SkeletonList } from "@/components/ui/skeleton";
 import { getPersonaInterests } from "@/services/interests";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import type { Interest, InterestGroup } from "@/types/interest";
+import { interestName } from "@/lib/interests";
 import { useTranslation } from "react-i18next";
 
 /**
@@ -63,7 +64,7 @@ export default function InterestFilter({
   const mineSet = new Set(mine);
   const row = [...selected.filter((i) => !mineSet.has(i.id)), ...all.filter((i) => mineSet.has(i.id))];
 
-  const selectedNames = selected.map((i) => i.name).join("\n");
+  const selectedNames = selected.map(interestName).join("\n");
   useEffect(() => onSelectedNames?.(selectedNames ? selectedNames.split("\n") : []), [selectedNames, onSelectedNames]);
 
   const toggle = (slug: string) => onChange(picked.has(slug) ? value.filter((s) => s !== slug) : [...value, slug]);
@@ -105,7 +106,7 @@ export default function InterestFilter({
                 .filter((g) => g.interests.length > 0)
                 .map((g) => (
                   <section key={g.id} className="flex flex-col gap-2">
-                    <h3 className="text-overline text-muted-foreground">{g.name}</h3>
+                    <h3 className="text-overline text-muted-foreground">{interestName(g)}</h3>
                     <div className="flex flex-wrap gap-2">
                       {g.interests.map((i) => (
                         <InterestChip key={i.id} interest={i} selected={picked.has(i.slug)} onPick={toggle} />
@@ -140,7 +141,7 @@ function InterestChip({
 }) {
   return (
     <Chip kind="filter" emoji={interest.emoji} selected={selected} onClick={() => onPick(interest.slug)}>
-      {interest.name}
+      {interestName(interest)}
     </Chip>
   );
 }
