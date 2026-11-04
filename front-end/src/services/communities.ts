@@ -47,6 +47,9 @@ export type CreateCommunityInput = {
   theme: string;
   cover_pattern: string;
   thumbnail: string;
+  banner: string;
+  banner_x: number;
+  banner_y: number;
   interest_ids: number[];
 };
 
@@ -58,9 +61,7 @@ export const getCommunityBySlug = (slug: string) =>
 
 export const getCommunity = (id: number) => call<{ community: Community }>(`/${id}`);
 
-export type CommunityChanges = Partial<
-  Omit<CreateCommunityInput, "interest_ids"> & { interest_ids: number[]; banner: string; banner_x: number; banner_y: number }
->;
+export type CommunityChanges = Partial<Omit<CreateCommunityInput, "interest_ids"> & { interest_ids: number[] }>;
 
 export const updateCommunity = (id: number, changes: CommunityChanges) =>
   call<{ community: Community }>(`/${id}`, "PATCH", "/communities", changes);

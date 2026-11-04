@@ -21,6 +21,8 @@ type CreateChannelRequest struct {
 	Description string `json:"description"`
 	Thumbnail   string `json:"thumbnail"`
 	Banner      string `json:"banner"`
+	BannerX     *int   `json:"banner_x"`
+	BannerY     *int   `json:"banner_y"`
 	// public: readable by every persona; private: members only, joins need approval.
 	Visibility  string  `json:"visibility" binding:"required,oneof=public private"`
 	InterestIDs []int64 `json:"interest_ids"`
@@ -36,9 +38,12 @@ type CreateParams struct {
 	Description string
 	Thumbnail   string
 	Banner      string
-	Visibility  db.ChannelVisibilityEnum
-	OwnerID     int64
-	MinAge      int16
+	// Unset: the centre.
+	BannerX    sql.NullInt16
+	BannerY    sql.NullInt16
+	Visibility db.ChannelVisibilityEnum
+	OwnerID    int64
+	MinAge     int16
 	// Empty: the community's theme.
 	Theme db.ThemeEnum
 	// Empty: horizon.
@@ -71,6 +76,8 @@ func Create(ctx context.Context, pg *sql.DB, queries *db.Queries, p CreateParams
 		Description:  p.Description,
 		Thumbnail:    p.Thumbnail,
 		Banner:       p.Banner,
+		BannerX:      p.BannerX,
+		BannerY:      p.BannerY,
 		OwnerID:      p.OwnerID,
 		Visibility:   p.Visibility,
 		MinAge:       p.MinAge,
@@ -155,6 +162,10 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": code})
 		return
 	}
+	if !logo.ValidPosition(req.BannerX) || !logo.ValidPosition(req.BannerY) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_cover_position"})
+		return
+	}
 	if req.MinAge == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_min_age"})
 		return
@@ -187,6 +198,8 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 		Description:      req.Description,
 		Thumbnail:        req.Thumbnail,
 		Banner:           req.Banner,
+		BannerX:          logo.NullPosition(req.BannerX),
+		BannerY:          logo.NullPosition(req.BannerY),
 		Visibility:       db.ChannelVisibilityEnum(req.Visibility),
 		OwnerID:          personaId,
 		MinAge:           *req.MinAge,

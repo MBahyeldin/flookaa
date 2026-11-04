@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { CreatePage } from "@/components/create-form/CreatePage";
 import { CreatePreview } from "@/components/create-form/CreatePreview";
 import { InterestsSection } from "@/components/create-form/InterestsSection";
+import { CoverUpload } from "@/components/create-form/CoverUpload";
 import { LogoUpload } from "@/components/create-form/LogoUpload";
 import {
   AgeField,
@@ -53,6 +54,8 @@ export default function CreateCommunityPage() {
   const [logo, setLogo] = useState("");
   const [theme, setTheme] = useState<PaletteId>(DEFAULT_PALETTE);
   const [cover, setCover] = useState<CoverPattern>("horizon");
+  const [banner, setBanner] = useState("");
+  const [bannerFocus, setBannerFocus] = useState({ x: 50, y: 50 });
   const [visibility, setVisibility] = useState<Visibility>("public");
   const [minAge, setMinAge] = useState<number>(BASE_MIN_AGE);
   const [interestIds, setInterestIds] = useState<number[]>([]);
@@ -89,6 +92,9 @@ export default function CreateCommunityPage() {
       theme,
       cover_pattern: cover,
       thumbnail: logo,
+      banner,
+      banner_x: bannerFocus.x,
+      banner_y: bannerFocus.y,
       interest_ids: interestIds,
     });
     setSubmitting(false);
@@ -113,6 +119,8 @@ export default function CreateCommunityPage() {
         <CreatePreview
           theme={theme}
           cover={cover}
+          banner={banner}
+          bannerFocus={bannerFocus}
           name={name}
           placeholder={t("create.previewName")}
           logo={logo}
@@ -190,7 +198,23 @@ export default function CreateCommunityPage() {
         />
         <ThemeField value={theme} onChange={(next) => setTheme(next ?? DEFAULT_PALETTE)} />
         <FieldError>{errors.theme}</FieldError>
-        <CoverField value={cover} onChange={setCover} />
+        <CoverUpload
+          value={banner}
+          focus={bannerFocus}
+          error={errors.banner}
+          onChange={(url) => {
+            setBanner(url);
+            setBannerFocus({ x: 50, y: 50 });
+            clear("banner");
+          }}
+          onFocusChange={setBannerFocus}
+        />
+        <CoverField
+          label={t("common:look.pattern")}
+          hint={t("common:look.patternHint")}
+          value={cover}
+          onChange={setCover}
+        />
         <FieldError>{errors.cover_pattern}</FieldError>
       </SettingsSection>
 

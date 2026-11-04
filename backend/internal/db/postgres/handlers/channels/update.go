@@ -105,12 +105,8 @@ func (h *Handler) UpdateChannel(c *gin.Context) {
 	if req.Banner != nil {
 		params.Banner = sql.NullString{String: *req.Banner, Valid: true}
 	}
-	if req.BannerX != nil {
-		params.BannerX = sql.NullInt16{Int16: int16(*req.BannerX), Valid: true}
-	}
-	if req.BannerY != nil {
-		params.BannerY = sql.NullInt16{Int16: int16(*req.BannerY), Valid: true}
-	}
+	params.BannerX = logo.NullPosition(req.BannerX)
+	params.BannerY = logo.NullPosition(req.BannerY)
 	if req.Name != nil {
 		params.Name = sql.NullString{String: *req.Name, Valid: true}
 	}

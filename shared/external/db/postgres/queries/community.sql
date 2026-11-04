@@ -1,10 +1,11 @@
 -- The owner is the first active member.
 -- name: CreateCommunity :one
 WITH created AS (
-    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, visibility, owner_id, min_age, theme, cover_pattern)
+    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, banner_x, banner_y, visibility, owner_id, min_age, theme, cover_pattern)
     VALUES (
         sqlc.arg(name), sqlc.arg(slug), sqlc.arg(description), sqlc.arg(rules), sqlc.arg(thumbnail),
-        sqlc.arg(banner), sqlc.arg(visibility), sqlc.arg(owner_id), sqlc.arg(min_age)::smallint,
+        sqlc.arg(banner), COALESCE(sqlc.narg(banner_x)::smallint, 50), COALESCE(sqlc.narg(banner_y)::smallint, 50),
+        sqlc.arg(visibility), sqlc.arg(owner_id), sqlc.arg(min_age)::smallint,
         sqlc.arg(theme)::theme_enum, sqlc.arg(cover_pattern)::cover_pattern_enum
     )
     RETURNING id, owner_id

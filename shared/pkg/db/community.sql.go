@@ -130,11 +130,12 @@ func (q *Queries) CountAllowedCommunityInterests(ctx context.Context, arg CountA
 
 const createCommunity = `-- name: CreateCommunity :one
 WITH created AS (
-    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, visibility, owner_id, min_age, theme, cover_pattern)
+    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, banner_x, banner_y, visibility, owner_id, min_age, theme, cover_pattern)
     VALUES (
         $1, $2, $3, $4, $5,
-        $6, $7, $8, $9::smallint,
-        $10::theme_enum, $11::cover_pattern_enum
+        $6, COALESCE($7::smallint, 50), COALESCE($8::smallint, 50),
+        $9, $10, $11::smallint,
+        $12::theme_enum, $13::cover_pattern_enum
     )
     RETURNING id, owner_id
 ), owner_member AS (
@@ -151,6 +152,8 @@ type CreateCommunityParams struct {
 	Rules        string
 	Thumbnail    string
 	Banner       string
+	BannerX      sql.NullInt16
+	BannerY      sql.NullInt16
 	Visibility   CommunityVisibilityEnum
 	OwnerID      int64
 	MinAge       int16
@@ -167,6 +170,8 @@ func (q *Queries) CreateCommunity(ctx context.Context, arg CreateCommunityParams
 		arg.Rules,
 		arg.Thumbnail,
 		arg.Banner,
+		arg.BannerX,
+		arg.BannerY,
 		arg.Visibility,
 		arg.OwnerID,
 		arg.MinAge,

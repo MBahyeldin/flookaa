@@ -136,4 +136,6 @@ export const BASE_ERROR_FIELDS: Record<string, string> = {
   invalid_logo: "thumbnail",
   invalid_theme: "theme",
   invalid_cover_pattern: "cover_pattern",
+  invalid_cover: "banner",
+  invalid_cover_position: "banner",
 };

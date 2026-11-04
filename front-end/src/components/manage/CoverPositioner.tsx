@@ -96,12 +96,13 @@ export function CoverPositioner({
         onPointerCancel={end}
         onKeyDown={onKeyDown}
         className={cn(
-          "relative aspect-[1192/280] w-full cursor-grab touch-none select-none overflow-hidden rounded-lg bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "relative aspect-[1192/280] w-full touch-none select-none overflow-hidden rounded-lg bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          natural && "cursor-grab",
           dragging && "cursor-grabbing ring-2 ring-ring",
         )}
       >
         <Cover pattern="horizon" src={src} focus={focus} className="pointer-events-none" />
-        {!dragging && (
+        {natural && !dragging && (
           <span className="pointer-events-none absolute start-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full bg-card px-2.5 py-1 text-xs whitespace-nowrap text-card-foreground shadow-sm rtl:translate-x-1/2">
             <Move aria-hidden className="size-3.5" />
             {t("common:coverPhoto.drag")}

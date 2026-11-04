@@ -42,8 +42,8 @@ func (q *Queries) AddUserToChannel(ctx context.Context, arg AddUserToChannelPara
 }
 
 const createChannel = `-- name: CreateChannel :one
-INSERT INTO channels (name, description,  owner_id, thumbnail, banner, visibility, min_age, theme, cover_pattern, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7::smallint, $8::theme_enum, $9, NOW())
+INSERT INTO channels (name, description,  owner_id, thumbnail, banner, banner_x, banner_y, visibility, min_age, theme, cover_pattern, created_at)
+VALUES ($1, $2, $3, $4, $5, COALESCE($7::smallint, 50), COALESCE($8::smallint, 50), $6, $9::smallint, $10::theme_enum, $11, NOW())
 RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at, min_age, theme, cover_pattern, banner_x, banner_y
 `
 
@@ -54,6 +54,8 @@ type CreateChannelParams struct {
 	Thumbnail    string
 	Banner       string
 	Visibility   ChannelVisibilityEnum
+	BannerX      sql.NullInt16
+	BannerY      sql.NullInt16
 	MinAge       int16
 	Theme        NullThemeEnum
 	CoverPattern CoverPatternEnum
@@ -70,6 +72,8 @@ func (q *Queries) CreateChannel(ctx context.Context, arg CreateChannelParams) (C
 		arg.Thumbnail,
 		arg.Banner,
 		arg.Visibility,
+		arg.BannerX,
+		arg.BannerY,
 		arg.MinAge,
 		arg.Theme,
 		arg.CoverPattern,

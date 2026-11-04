@@ -15,7 +15,7 @@ Who can change it is unchanged: `CanManage` on a community, `CanModerate` on a c
 1. **Reuse the `banner` column for the photo.** WWW-80 left this open. `channels.banner` and `communities.banner` already exist (`VARCHAR(255) NOT NULL`), are on the list and single responses, and are `bannerImageUrl` in GraphQL (already in `GetChannel`). Only the position needs new columns.
 2. **No scrim.** The ticket asks for `hero-overlay` to keep hero text readable, but text never sits on the cover since WWW-82, so there is nothing to protect. The token stays for later use.
 3. **Drag positioning, not a crop tool.** The band is roughly 4:1 or wider on desktop and about 2.6:1 on a phone, so a normal photo loses most of its height and a centre-crop can cut off the subject. A cropped rectangle has one ratio and the band's ratio changes with the width, so we store a focal point and keep the original file. The browser crops around that point at every width (`object-cover` + `object-position`). The ticket's 3:1 and 16:9 are dropped, and hero heights stay as they are (150 px on mobile, 280 px from `md`). One focal point can't guarantee the same framing on desktop and phone, so the editor shows both. Separate framing per width would be a later ticket.
-4. **Manage sheets only.** Create forms keep the patterns; a photo can be added right after creating.
+4. **Manage sheets and create forms.** Both channel and community create forms take the photo and its position (added after QA, at the user's request), so nobody has to create first and open Manage after.
 5. **The pattern stays stored underneath.** Removing a photo sets `banner: ""` and the chosen pattern shows again. The pattern picker stays visible, labelled as the fallback while a photo is set.
 
 ## Data
@@ -35,7 +35,7 @@ The values are percentages, so 50/50 is a centre-crop. `shared/external/db/postg
 | `backend/internal/logo` | `Valid` is the same rule covers need (empty or an s3 file URL). Reuse it, with a short name note if needed. |
 | `PATCH /channels/:channel_id` | Add `banner` (absent = unchanged, `""` = remove), 400 `invalid_cover`, and `banner_x`, `banner_y` (absent = unchanged), 400 `invalid_cover_position` outside 0–100. `UpdateChannel` gains the three `COALESCE(sqlc.narg(...))` fields and the answer returns them. It already publishes `info.update`. |
 | `PATCH /communities/:community_id` | `banner` is already accepted and written, but not validated. Add 400 `invalid_cover` to `lookError`, and `banner_x`, `banner_y` as on channels. `UpdateCommunity` gains the two position fields. It already publishes `info.update`. |
-| `POST` create, both | `banner` is accepted unvalidated today. Add the same check, so an external image can't be set through the API. Position isn't taken on create. |
+| `POST` create, both | `banner` is accepted unvalidated today. Add the same check, so an external image can't be set through the API. `banner_x`, `banner_y` are taken too, optional, and default to the centre, so the seeder is unchanged. |
 | Responses | `banner_x`, `banner_y` next to `banner` on channel list items and `Community` responses. |
 | `ListShowcaseCommunities` | Add `c.banner`, `c.banner_x`, `c.banner_y`, and the same fields on `ShowcaseCommunity`, so the visitor home shows photos. |
 | GraphQL `Channel` | Add `bannerX: Int!`, `bannerY: Int!` in `schema.graphqls`, set in the resolver next to `BannerImageURL`, and add both to `GetChannel.graphql`. |
@@ -61,7 +61,8 @@ Any non-empty row was set directly through the API and would start rendering, so
   - **Keyboard:** the band is focusable and the arrow keys move the point, with an accessible name from i18n. The percentages are physical, so they don't flip in RTL; the drag follows the pointer either way.
   - **Second preview:** a small band at the phone ratio updates alongside, so the phone framing is visible while dragging.
   - **Reset:** a new photo goes back to 50/50.
-- **`components/manage/LookSection`:** `Look` gains `banner`, `banner_x`, `banner_y`, sent only when changed like the other fields. `CreatePreview` takes an optional `banner` and position so the preview shows the photo; create pages don't pass them. `invalid_cover` and `invalid_cover_position` map to the new field.
+- **`components/manage/LookSection`:** `Look` gains `banner`, `banner_x`, `banner_y`, sent only when changed like the other fields. `CreatePreview` takes an optional `banner` and position so the preview shows the photo. `invalid_cover` and `invalid_cover_position` map to the new field.
+- **`channels/create` and `communities/create`:** `CoverUpload` above the pattern picker, and the fields sent on create.
 - **Services and types:** `banner`, `banner_x`, `banner_y` on the channel, community and showcase types and on both update calls.
 - **i18n:** new strings, `errors.invalid_cover` and `errors.invalid_cover_position` in `en` and `ar`, with `_female` variants where the Arabic addresses the reader.
 

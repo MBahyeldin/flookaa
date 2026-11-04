@@ -45,13 +45,6 @@ func optionalMinAge(v *int16) sql.NullInt16 {
 	return sql.NullInt16{Int16: *v, Valid: true}
 }
 
-func optionalPosition(v *int) sql.NullInt16 {
-	if v == nil {
-		return sql.NullInt16{}
-	}
-	return sql.NullInt16{Int16: int16(*v), Valid: true}
-}
-
 func optionalTheme(v *string) db.NullThemeEnum {
 	if v == nil {
 		return db.NullThemeEnum{}
@@ -164,8 +157,8 @@ func (h *Handler) UpdateCommunity(c *gin.Context) {
 		Rules:        optional(req.Rules),
 		Thumbnail:    optional(req.Thumbnail),
 		Banner:       optional(req.Banner),
-		BannerX:      optionalPosition(req.BannerX),
-		BannerY:      optionalPosition(req.BannerY),
+		BannerX:      logo.NullPosition(req.BannerX),
+		BannerY:      logo.NullPosition(req.BannerY),
 		Visibility:   visibility,
 		MinAge:       optionalMinAge(req.MinAge),
 		Theme:        optionalTheme(req.Theme),

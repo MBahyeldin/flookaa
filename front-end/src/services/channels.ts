@@ -167,6 +167,9 @@ export type CreateChannelInput = {
   theme: string;
   cover_pattern: string;
   thumbnail: string;
+  banner: string;
+  banner_x: number;
+  banner_y: number;
   interest_ids: number[];
   community_id?: number;
 };

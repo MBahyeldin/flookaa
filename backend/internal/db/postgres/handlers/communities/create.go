@@ -20,6 +20,8 @@ type CreateCommunityRequest struct {
 	Rules       string  `json:"rules"`
 	Thumbnail   string  `json:"thumbnail"`
 	Banner      string  `json:"banner"`
+	BannerX     *int    `json:"banner_x"`
+	BannerY     *int    `json:"banner_y"`
 	Visibility  string  `json:"visibility"`
 	InterestIDs []int64 `json:"interest_ids"`
 	MinAge      *int16  `json:"min_age"`
@@ -84,6 +86,10 @@ func (h *Handler) CreateCommunity(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": code})
 		return
 	}
+	if !logo.ValidPosition(req.BannerX) || !logo.ValidPosition(req.BannerY) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_cover_position"})
+		return
+	}
 	switch {
 	case !validName(req.Name):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_name"})
@@ -134,6 +140,8 @@ func (h *Handler) CreateCommunity(c *gin.Context) {
 		Rules:        req.Rules,
 		Thumbnail:    req.Thumbnail,
 		Banner:       req.Banner,
+		BannerX:      logo.NullPosition(req.BannerX),
+		BannerY:      logo.NullPosition(req.BannerY),
 		Visibility:   db.CommunityVisibilityEnum(req.Visibility),
 		OwnerID:      personaID,
 		MinAge:       *req.MinAge,
