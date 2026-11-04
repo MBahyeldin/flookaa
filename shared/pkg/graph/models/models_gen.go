@@ -167,6 +167,8 @@ type Channel struct {
 	Name            string        `json:"name"`
 	Description     *string       `json:"description,omitempty"`
 	BannerImageURL  *string       `json:"bannerImageUrl,omitempty"`
+	BannerX         int32         `json:"bannerX"`
+	BannerY         int32         `json:"bannerY"`
 	ThumbnailURL    *string       `json:"thumbnailUrl,omitempty"`
 	ProfileImageURL *string       `json:"profileImageUrl,omitempty"`
 	CreatedAt       time.Time     `json:"createdAt"`

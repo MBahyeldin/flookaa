@@ -372,7 +372,7 @@ func (q *Queries) GetCommunityAccess(ctx context.Context, arg GetCommunityAccess
 }
 
 const getCommunityByID = `-- name: GetCommunityByID :one
-SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age, c.theme, c.cover_pattern,
+SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
      WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
        AND ch.deleted_at IS NULL)::int AS channels_count
@@ -404,13 +404,15 @@ func (q *Queries) GetCommunityByID(ctx context.Context, id int64) (GetCommunityB
 		&i.Community.MinAge,
 		&i.Community.Theme,
 		&i.Community.CoverPattern,
+		&i.Community.BannerX,
+		&i.Community.BannerY,
 		&i.ChannelsCount,
 	)
 	return i, err
 }
 
 const getCommunityBySlug = `-- name: GetCommunityBySlug :one
-SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age, c.theme, c.cover_pattern,
+SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
      WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
        AND ch.deleted_at IS NULL)::int AS channels_count
@@ -442,6 +444,8 @@ func (q *Queries) GetCommunityBySlug(ctx context.Context, slug string) (GetCommu
 		&i.Community.MinAge,
 		&i.Community.Theme,
 		&i.Community.CoverPattern,
+		&i.Community.BannerX,
+		&i.Community.BannerY,
 		&i.ChannelsCount,
 	)
 	return i, err
@@ -628,7 +632,7 @@ func (q *Queries) ListChannelCommunities(ctx context.Context, arg ListChannelCom
 }
 
 const listCommunities = `-- name: ListCommunities :many
-SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age, c.theme, c.cover_pattern,
+SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
      WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
        AND ch.deleted_at IS NULL)::int AS channels_count
@@ -687,6 +691,8 @@ func (q *Queries) ListCommunities(ctx context.Context, arg ListCommunitiesParams
 			&i.Community.MinAge,
 			&i.Community.Theme,
 			&i.Community.CoverPattern,
+			&i.Community.BannerX,
+			&i.Community.BannerY,
 			&i.ChannelsCount,
 		); err != nil {
 			return nil, err
@@ -1234,8 +1240,8 @@ func (q *Queries) ListPersonaCommunities(ctx context.Context, personaID int64) (
 }
 
 const listShowcaseCommunities = `-- name: ListShowcaseCommunities :many
-SELECT slug, name, thumbnail, theme, cover_pattern, members_count, channels_count, id FROM (
-    SELECT c.slug, c.name, c.thumbnail, c.theme, c.cover_pattern,
+SELECT slug, name, thumbnail, banner, banner_x, banner_y, theme, cover_pattern, members_count, channels_count, id FROM (
+    SELECT c.slug, c.name, c.thumbnail, c.banner, c.banner_x, c.banner_y, c.theme, c.cover_pattern,
         (SELECT COUNT(*) FROM community_members cm JOIN personas p ON p.id = cm.persona_id
          WHERE cm.community_id = c.id AND cm.status = 'active' AND cm.left_at IS NULL
            AND p.deleted_at IS NULL)::int AS members_count,
@@ -1254,6 +1260,9 @@ type ListShowcaseCommunitiesRow struct {
 	Slug          string
 	Name          string
 	Thumbnail     string
+	Banner        string
+	BannerX       int16
+	BannerY       int16
 	Theme         ThemeEnum
 	CoverPattern  CoverPatternEnum
 	MembersCount  int32
@@ -1275,6 +1284,9 @@ func (q *Queries) ListShowcaseCommunities(ctx context.Context, lim int64) ([]Lis
 			&i.Slug,
 			&i.Name,
 			&i.Thumbnail,
+			&i.Banner,
+			&i.BannerX,
+			&i.BannerY,
 			&i.Theme,
 			&i.CoverPattern,
 			&i.MembersCount,
@@ -1472,7 +1484,7 @@ WITH viewer AS (
     JOIN users u ON u.id = p.user_id
     WHERE p.id = $1::bigint
 )
-SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age, c.theme, c.cover_pattern,
+SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
      WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
        AND ch.deleted_at IS NULL)::int AS channels_count
@@ -1549,6 +1561,8 @@ func (q *Queries) SuggestCommunities(ctx context.Context, arg SuggestCommunities
 			&i.Community.MinAge,
 			&i.Community.Theme,
 			&i.Community.CoverPattern,
+			&i.Community.BannerX,
+			&i.Community.BannerY,
 			&i.ChannelsCount,
 		); err != nil {
 			return nil, err
@@ -1592,13 +1606,15 @@ SET name = COALESCE($1, name),
     rules = COALESCE($4, rules),
     thumbnail = COALESCE($5, thumbnail),
     banner = COALESCE($6, banner),
-    visibility = COALESCE($7::community_visibility_enum, visibility),
-    min_age = COALESCE($8::smallint, min_age),
-    theme = COALESCE($9::theme_enum, theme),
-    cover_pattern = COALESCE($10::cover_pattern_enum, cover_pattern),
+    banner_x = COALESCE($7::smallint, banner_x),
+    banner_y = COALESCE($8::smallint, banner_y),
+    visibility = COALESCE($9::community_visibility_enum, visibility),
+    min_age = COALESCE($10::smallint, min_age),
+    theme = COALESCE($11::theme_enum, theme),
+    cover_pattern = COALESCE($12::cover_pattern_enum, cover_pattern),
     updated_at = now()
-WHERE id = $11 AND deleted_at IS NULL
-RETURNING id, name, slug, description, thumbnail, banner, visibility, owner_id, created_at, updated_at, deleted_at, rules, min_age, theme, cover_pattern
+WHERE id = $13 AND deleted_at IS NULL
+RETURNING id, name, slug, description, thumbnail, banner, visibility, owner_id, created_at, updated_at, deleted_at, rules, min_age, theme, cover_pattern, banner_x, banner_y
 `
 
 type UpdateCommunityParams struct {
@@ -1608,6 +1624,8 @@ type UpdateCommunityParams struct {
 	Rules        sql.NullString
 	Thumbnail    sql.NullString
 	Banner       sql.NullString
+	BannerX      sql.NullInt16
+	BannerY      sql.NullInt16
 	Visibility   NullCommunityVisibilityEnum
 	MinAge       sql.NullInt16
 	Theme        NullThemeEnum
@@ -1623,6 +1641,8 @@ func (q *Queries) UpdateCommunity(ctx context.Context, arg UpdateCommunityParams
 		arg.Rules,
 		arg.Thumbnail,
 		arg.Banner,
+		arg.BannerX,
+		arg.BannerY,
 		arg.Visibility,
 		arg.MinAge,
 		arg.Theme,
@@ -1646,6 +1666,8 @@ func (q *Queries) UpdateCommunity(ctx context.Context, arg UpdateCommunityParams
 		&i.MinAge,
 		&i.Theme,
 		&i.CoverPattern,
+		&i.BannerX,
+		&i.BannerY,
 	)
 	return i, err
 }

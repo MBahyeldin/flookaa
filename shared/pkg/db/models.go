@@ -1175,6 +1175,8 @@ type Channel struct {
 	MinAge       int16
 	Theme        NullThemeEnum
 	CoverPattern CoverPatternEnum
+	BannerX      int16
+	BannerY      int16
 }
 
 type ChannelFollower struct {
@@ -1240,6 +1242,8 @@ type Community struct {
 	MinAge       int16
 	Theme        ThemeEnum
 	CoverPattern CoverPatternEnum
+	BannerX      int16
+	BannerY      int16
 }
 
 type CommunityChannel struct {

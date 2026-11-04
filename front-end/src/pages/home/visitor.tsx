@@ -83,7 +83,7 @@ function ShowcaseCard({ community }: { community: ShowcaseCommunity }) {
   const { t } = useTranslation();
   return (
     <div data-theme={community.theme} className="overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm">
-      <Cover pattern={community.cover_pattern} className="h-24" />
+      <Cover pattern={community.cover_pattern} src={community.banner} focus={{ x: community.banner_x, y: community.banner_y }} className="h-24" />
       <div className="flex items-center gap-3 px-4 py-3">
         <Logo name={community.name} src={community.thumbnail} />
         <div className="min-w-0 flex-1">

@@ -48,8 +48,15 @@ export function CommunityManageSheet({
   };
 
   const look = useMemo<Look>(
-    () => ({ thumbnail: community.thumbnail, theme: community.theme, cover_pattern: community.cover_pattern }),
-    [community.thumbnail, community.theme, community.cover_pattern],
+    () => ({
+      thumbnail: community.thumbnail,
+      theme: community.theme,
+      cover_pattern: community.cover_pattern,
+      banner: community.banner,
+      banner_x: community.banner_x,
+      banner_y: community.banner_y,
+    }),
+    [community.thumbnail, community.theme, community.cover_pattern, community.banner, community.banner_x, community.banner_y],
   );
 
   return (

@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { fullWidthImage } from "@/components/portable-text/blocks/responsiveImage";
 import { cn } from "@/lib/utils";
 import type { CoverPattern } from "@/types/cover";
 
@@ -55,8 +56,34 @@ const PATTERNS: Record<CoverPattern, ReactNode> = {
   ),
 };
 
-// Generated from the palette in scope, so it recolours with data-theme and dark mode.
-export function Cover({ pattern, className }: { pattern: CoverPattern; className?: string }) {
+// A pattern is generated from the palette in scope, so it recolours with data-theme and dark mode.
+export function Cover({
+  pattern,
+  src,
+  focus,
+  className,
+}: {
+  pattern: CoverPattern;
+  /** A photo, shown instead of the pattern unless it fails to load. */
+  src?: string | null;
+  /** The photo's focal point, in percent. */
+  focus?: { x: number; y: number };
+  className?: string;
+}) {
+  const [failed, setFailed] = useState<string | null>(null);
+  if (src && failed !== src) {
+    return (
+      <img
+        src={src}
+        {...fullWidthImage(src)}
+        alt=""
+        draggable={false}
+        onError={() => setFailed(src)}
+        style={{ objectPosition: `${focus?.x ?? 50}% ${focus?.y ?? 50}%` }}
+        className={cn("block size-full object-cover", className)}
+      />
+    );
+  }
   return (
     <svg
       viewBox="0 0 1200 300"

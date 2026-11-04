@@ -48,6 +48,8 @@ type Community struct {
 	Rules          string              `json:"rules"`
 	Thumbnail      string              `json:"thumbnail"`
 	Banner         string              `json:"banner"`
+	BannerX        int16               `json:"banner_x"`
+	BannerY        int16               `json:"banner_y"`
 	Visibility     string              `json:"visibility"`
 	MinAge         int16               `json:"min_age"`
 	Theme          db.ThemeEnum        `json:"theme"`
@@ -189,6 +191,8 @@ func (h *Handler) build(ctx context.Context, viewerID int64, rows []row) ([]Comm
 			Rules:            r.Rules,
 			Thumbnail:        r.Thumbnail,
 			Banner:           r.Banner,
+			BannerX:          r.BannerX,
+			BannerY:          r.BannerY,
 			Visibility:       string(r.Visibility),
 			MinAge:           r.MinAge,
 			Theme:            r.Theme,

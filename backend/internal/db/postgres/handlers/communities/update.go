@@ -2,6 +2,7 @@ package communities
 
 import (
 	"app/internal/auth"
+	"app/internal/logo"
 	"database/sql"
 	"net/http"
 	"shared/external/db/nats"
@@ -21,6 +22,8 @@ type UpdateCommunityRequest struct {
 	Rules        *string  `json:"rules"`
 	Thumbnail    *string  `json:"thumbnail"`
 	Banner       *string  `json:"banner"`
+	BannerX      *int     `json:"banner_x"`
+	BannerY      *int     `json:"banner_y"`
 	Visibility   *string  `json:"visibility"`
 	InterestIDs  *[]int64 `json:"interest_ids"`
 	MinAge       *int16   `json:"min_age"`
@@ -40,6 +43,13 @@ func optionalMinAge(v *int16) sql.NullInt16 {
 		return sql.NullInt16{}
 	}
 	return sql.NullInt16{Int16: *v, Valid: true}
+}
+
+func optionalPosition(v *int) sql.NullInt16 {
+	if v == nil {
+		return sql.NullInt16{}
+	}
+	return sql.NullInt16{Int16: int16(*v), Valid: true}
 }
 
 func optionalTheme(v *string) db.NullThemeEnum {
@@ -105,8 +115,12 @@ func (h *Handler) UpdateCommunity(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_visibility"})
 		return
 	}
-	if code := lookError(req.Theme, req.CoverPattern, req.Thumbnail); code != "" {
+	if code := lookError(req.Theme, req.CoverPattern, req.Thumbnail, req.Banner); code != "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": code})
+		return
+	}
+	if !logo.ValidPosition(req.BannerX) || !logo.ValidPosition(req.BannerY) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_cover_position"})
 		return
 	}
 
@@ -150,6 +164,8 @@ func (h *Handler) UpdateCommunity(c *gin.Context) {
 		Rules:        optional(req.Rules),
 		Thumbnail:    optional(req.Thumbnail),
 		Banner:       optional(req.Banner),
+		BannerX:      optionalPosition(req.BannerX),
+		BannerY:      optionalPosition(req.BannerY),
 		Visibility:   visibility,
 		MinAge:       optionalMinAge(req.MinAge),
 		Theme:        optionalTheme(req.Theme),

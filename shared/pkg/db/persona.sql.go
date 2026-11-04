@@ -524,7 +524,7 @@ func (q *Queries) GetPersonaFollowInfo(ctx context.Context, arg GetPersonaFollow
 }
 
 const getPersonaFollowedChannels = `-- name: GetPersonaFollowedChannels :many
-SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern
+SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y
 FROM channel_followers cf
 JOIN channels c ON cf.channel_id = c.id
 WHERE cf.persona_id = $1
@@ -557,6 +557,8 @@ func (q *Queries) GetPersonaFollowedChannels(ctx context.Context, personaID int6
 			&i.MinAge,
 			&i.Theme,
 			&i.CoverPattern,
+			&i.BannerX,
+			&i.BannerY,
 		); err != nil {
 			return nil, err
 		}
@@ -572,7 +574,7 @@ func (q *Queries) GetPersonaFollowedChannels(ctx context.Context, personaID int6
 }
 
 const getPersonaJoinedChannels = `-- name: GetPersonaJoinedChannels :many
-SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern
+SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y
 FROM channel_members cm
 JOIN channels c ON cm.channel_id = c.id
 WHERE cm.persona_id = $1
@@ -605,6 +607,8 @@ func (q *Queries) GetPersonaJoinedChannels(ctx context.Context, personaID int64)
 			&i.MinAge,
 			&i.Theme,
 			&i.CoverPattern,
+			&i.BannerX,
+			&i.BannerY,
 		); err != nil {
 			return nil, err
 		}

@@ -16,6 +16,9 @@ SET theme = CASE WHEN sqlc.arg(clear_theme)::bool THEN NULL
                  ELSE COALESCE(sqlc.narg(theme)::theme_enum, theme) END,
     cover_pattern = COALESCE(sqlc.narg(cover_pattern)::cover_pattern_enum, cover_pattern),
     thumbnail = COALESCE(sqlc.narg(thumbnail), thumbnail),
+    banner = COALESCE(sqlc.narg(banner), banner),
+    banner_x = COALESCE(sqlc.narg(banner_x)::smallint, banner_x),
+    banner_y = COALESCE(sqlc.narg(banner_y)::smallint, banner_y),
     name = COALESCE(sqlc.narg(name), name),
     description = COALESCE(sqlc.narg(description), description),
     updated_at = NOW()

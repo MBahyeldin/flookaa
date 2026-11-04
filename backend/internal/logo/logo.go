@@ -9,3 +9,8 @@ var pattern = regexp.MustCompile(`^(https?://[^/\s?#]+(/[^\s?#]*)?)?/files/[A-Za
 func Valid(s string) bool {
 	return s == "" || pattern.MatchString(s)
 }
+
+// ValidPosition is a cover's focal point on one axis, in percent; nil leaves it as it is.
+func ValidPosition(p *int) bool {
+	return p == nil || (*p >= 0 && *p <= 100)
+}

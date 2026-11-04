@@ -8,6 +8,8 @@ import type { Interest } from "@/types/interest";
 export function CreatePreview({
   theme,
   cover,
+  banner,
+  bannerFocus,
   name,
   placeholder,
   logo,
@@ -17,6 +19,8 @@ export function CreatePreview({
 }: {
   theme: PaletteId;
   cover: CoverPattern;
+  banner?: string;
+  bannerFocus?: { x: number; y: number };
   name: string;
   placeholder: string;
   logo: string;
@@ -28,7 +32,7 @@ export function CreatePreview({
   return (
     <div data-theme={theme} className="overflow-hidden rounded-lg border bg-background text-foreground">
       <div className="-mb-10 h-[130px]">
-        <Cover pattern={cover} />
+        <Cover pattern={cover} src={banner} focus={bannerFocus} />
       </div>
       <div className="flex flex-col items-start gap-2 px-4 pb-5">
         <Logo name={name.trim() || "?"} src={logo || null} size="lg" className="relative" />

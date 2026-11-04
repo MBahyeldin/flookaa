@@ -38,11 +38,22 @@ export function ThemeField({
   );
 }
 
-export function CoverField({ value, onChange }: { value: CoverPattern; onChange: (cover: CoverPattern) => void }) {
+export function CoverField({
+  value,
+  onChange,
+  label,
+  hint,
+}: {
+  value: CoverPattern;
+  onChange: (cover: CoverPattern) => void;
+  label?: string;
+  hint?: string;
+}) {
   const id = useId();
   return (
     <div className="flex flex-col gap-2">
-      <Label id={id}>{t("common:look.cover")}</Label>
+      <Label id={id}>{label ?? t("common:look.cover")}</Label>
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       <CoverOptionGroup aria-labelledby={id} value={value} onChange={onChange} />
     </div>
   );

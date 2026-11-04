@@ -21,5 +21,9 @@
   "invalid_theme": "اختر إحدى السمات.",
   "invalid_theme_female": "اختاري إحدى السمات.",
   "invalid_cover_pattern": "اختر أحد الأغلفة.",
-  "invalid_cover_pattern_female": "اختاري أحد الأغلفة."
+  "invalid_cover_pattern_female": "اختاري أحد الأغلفة.",
+  "invalid_cover": "لا يمكن استخدام هذه الصورة. ارفعها مرة أخرى.",
+  "invalid_cover_female": "لا يمكن استخدام هذه الصورة. ارفعيها مرة أخرى.",
+  "invalid_cover_position": "اسحب الصورة لوضعها مرة أخرى.",
+  "invalid_cover_position_female": "اسحبي الصورة لوضعها مرة أخرى."
 }

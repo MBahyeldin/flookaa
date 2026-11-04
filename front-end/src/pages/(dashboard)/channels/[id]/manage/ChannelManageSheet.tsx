@@ -63,8 +63,11 @@ export function ChannelManageSheet({
       thumbnail: channel.thumbnailUrl ?? "",
       theme: isPaletteId(channel.ownTheme) ? channel.ownTheme : null,
       cover_pattern: channel.coverPattern as CoverPattern,
+      banner: channel.bannerImageUrl ?? "",
+      banner_x: channel.bannerX,
+      banner_y: channel.bannerY,
     }),
-    [channel.thumbnailUrl, channel.ownTheme, channel.coverPattern],
+    [channel.thumbnailUrl, channel.ownTheme, channel.coverPattern, channel.bannerImageUrl, channel.bannerX, channel.bannerY],
   );
   const inherit = community?.status === "active" ? community.community?.theme : undefined;
 
