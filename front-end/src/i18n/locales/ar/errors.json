@@ -25,5 +25,8 @@
   "invalid_cover": "لا يمكن استخدام هذه الصورة. ارفعها مرة أخرى.",
   "invalid_cover_female": "لا يمكن استخدام هذه الصورة. ارفعيها مرة أخرى.",
   "invalid_cover_position": "اسحب الصورة لوضعها مرة أخرى.",
-  "invalid_cover_position_female": "اسحبي الصورة لوضعها مرة أخرى."
+  "invalid_cover_position_female": "اسحبي الصورة لوضعها مرة أخرى.",
+  "invalid_comment": "لا يمكن أن يكون التعليق فارغًا أو أطول من 2000 حرف.",
+  "invalid_comment_attachment": "لا يمكن استخدام هذا المرفق. ارفعه مرة أخرى.",
+  "invalid_comment_attachment_female": "لا يمكن استخدام هذا المرفق. ارفعيه مرة أخرى."
 }

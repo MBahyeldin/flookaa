@@ -132,11 +132,12 @@ func StartServer(cfg config.Server) error {
 		),
 	}
 	resolver := &resolvers.Resolver{
-		Queries: q,
-		Objects: objects,
-		NATS:    natsHelper,
-		Content: stores.Content,
-		Persona: stores.Persona,
+		Queries:   q,
+		Objects:   objects,
+		NATS:      natsHelper,
+		Content:   stores.Content,
+		Persona:   stores.Persona,
+		S3BaseURL: cfg.S3BaseURL,
 	}
 
 	sig := make(chan os.Signal, 1)

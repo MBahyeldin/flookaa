@@ -26,6 +26,7 @@ import {
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import AudioPlayer from "../audio-player";
+import { GalleryViewer } from "@/components/portable-text/blocks/gallery";
 import useNewlyAdded from "@/hooks/useNewlyAdded";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 
@@ -76,6 +77,7 @@ const CommentItem = React.memo(({
 
     const isOwnComment = persona?.id != null && comment?.authorId === persona.id;
     const [showReplyInput, setShowReplyInput] = useState(false);
+    const [viewingImage, setViewingImage] = useState(false);
 
     const [createLike] = useMutation(CreateLikeDocument);
     const [liked, setLiked] = useState(comment?.personalizedMeta?.likedByPersona ?? false);
@@ -195,7 +197,7 @@ const CommentItem = React.memo(({
     return (
         <div ref={containerRef} className={cn("min-w-0", isNew && "post-enter")}>
             <div className="flex min-w-0 gap-2.5">
-                <PersonaLink {...link} tabIndex={-1} className="shrink-0">
+                <PersonaLink {...link} tabIndex={-1} className="shrink-0 self-start">
                     <Avatar className={depth === 1 ? "size-7" : "size-6"}>
                         <AvatarImage src={comment.author.profileImageUrl ?? ""} />
                         <GeneratedAvatarFallback name={authorName} />
@@ -240,9 +242,16 @@ const CommentItem = React.memo(({
                     {commentContent.type === "TEXT" ? (
                         <p dir="auto" className="break-words text-sm">{commentContent.content}</p>
                     ) : commentContent.type === "MEDIA" ? (
-                        <img src={commentContent.content} alt="" className="h-auto max-w-full rounded-md sm:max-w-[300px]" />
+                        <button
+                            type="button"
+                            aria-label={t("posts:comments.openImage")}
+                            onClick={() => setViewingImage(true)}
+                            className="block w-full rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:w-auto sm:max-w-[300px]"
+                        >
+                            <img src={commentContent.content} alt="" className="h-auto w-full rounded-md" />
+                        </button>
                     ) : commentContent.type === "VOICE" ? (
-                        <AudioPlayer src={commentContent.content} className="mt-1" />
+                        <AudioPlayer src={commentContent.content} variant="pill-sm" className="mt-1 max-w-[285px]" />
                     ) : null}
 
                     <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground">
@@ -343,6 +352,13 @@ const CommentItem = React.memo(({
                         </button>
                     ) : null}
                 </div>
+            )}
+            {commentContent.type === "MEDIA" && (
+                <GalleryViewer
+                    items={[{ _key: "comment", src: commentContent.content }]}
+                    start={viewingImage ? 0 : null}
+                    onClose={() => setViewingImage(false)}
+                />
             )}
         </div>
     );
