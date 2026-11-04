@@ -350,6 +350,30 @@ func (r *mutationResolver) DeleteComment(ctx context.Context, id string) (bool, 
 	return true, nil
 }
 
+// SavePost is the resolver for the savePost field.
+func (r *mutationResolver) SavePost(ctx context.Context, id string) (bool, error) {
+	personaId, err := getPersonaIdFromContext(ctx)
+	if err != nil || personaId == 0 {
+		return false, fmt.Errorf("unauthenticated: %w", err)
+	}
+	if err := r.savePost(ctx, personaId, id); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// UnsavePost is the resolver for the unsavePost field.
+func (r *mutationResolver) UnsavePost(ctx context.Context, id string) (bool, error) {
+	personaId, err := getPersonaIdFromContext(ctx)
+	if err != nil || personaId == 0 {
+		return false, fmt.Errorf("unauthenticated: %w", err)
+	}
+	if err := r.unsavePost(ctx, personaId, id); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // GetPosts is the resolver for the getPosts field.
 func (r *queryResolver) GetPosts(ctx context.Context, owner models.OwnerInput, ids []string, limit *int32, offset *int32) ([]*models.Post, error) {
 	personaId, err := getPersonaIdFromContext(ctx)
@@ -545,6 +569,15 @@ func (r *queryResolver) GetCommunityFeed(ctx context.Context, communityID int64,
 		return nil, fmt.Errorf("unauthenticated: %w", err)
 	}
 	return r.communityFeed(ctx, personaId, communityID, after, limit)
+}
+
+// GetSaved is the resolver for the getSaved field.
+func (r *queryResolver) GetSaved(ctx context.Context, after *string, limit *int32) (*models.SavedPage, error) {
+	personaId, err := getPersonaIdFromContext(ctx)
+	if err != nil || personaId == 0 {
+		return nil, fmt.Errorf("unauthenticated: %w", err)
+	}
+	return r.saved(ctx, personaId, after, limit)
 }
 
 // Mutation returns graph.MutationResolver implementation.

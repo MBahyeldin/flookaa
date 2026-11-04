@@ -251,6 +251,8 @@ type ComplexityRoot struct {
 		CreatePost    func(childComplexity int, input models.PostInput) int
 		DeleteComment func(childComplexity int, id string) int
 		DeletePost    func(childComplexity int, id string) int
+		SavePost      func(childComplexity int, id string) int
+		UnsavePost    func(childComplexity int, id string) int
 	}
 
 	Owner struct {
@@ -269,6 +271,7 @@ type ComplexityRoot struct {
 	PersonalizedMeta struct {
 		ACL             func(childComplexity int) int
 		LikedByPersona  func(childComplexity int) int
+		SavedByPersona  func(childComplexity int) int
 		SharedByPersona func(childComplexity int) int
 		ViewedByPersona func(childComplexity int) int
 	}
@@ -322,6 +325,7 @@ type ComplexityRoot struct {
 		GetDiscover      func(childComplexity int, interests []string, all *bool, after *string, limit *int32) int
 		GetFeed          func(childComplexity int, after *string, limit *int32) int
 		GetPosts         func(childComplexity int, owner models.OwnerInput, ids []string, limit *int32, offset *int32) int
+		GetSaved         func(childComplexity int, after *string, limit *int32) int
 	}
 
 	QuoteBlock struct {
@@ -330,6 +334,18 @@ type ComplexityRoot struct {
 		Role func(childComplexity int) int
 		Text func(childComplexity int) int
 		Type func(childComplexity int) int
+	}
+
+	SavedPage struct {
+		Channels   func(childComplexity int) int
+		Items      func(childComplexity int) int
+		NextCursor func(childComplexity int) int
+	}
+
+	SavedPost struct {
+		Post    func(childComplexity int) int
+		PostID  func(childComplexity int) int
+		SavedAt func(childComplexity int) int
 	}
 
 	Span struct {
@@ -1406,6 +1422,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.DeletePost(childComplexity, args["id"].(string)), true
 
+	case "Mutation.savePost":
+		if e.complexity.Mutation.SavePost == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_savePost_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SavePost(childComplexity, args["id"].(string)), true
+
+	case "Mutation.unsavePost":
+		if e.complexity.Mutation.UnsavePost == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_unsavePost_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UnsavePost(childComplexity, args["id"].(string)), true
+
 	case "Owner.id":
 		if e.complexity.Owner.ID == nil {
 			break
@@ -1468,6 +1508,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PersonalizedMeta.LikedByPersona(childComplexity), true
+
+	case "PersonalizedMeta.savedByPersona":
+		if e.complexity.PersonalizedMeta.SavedByPersona == nil {
+			break
+		}
+
+		return e.complexity.PersonalizedMeta.SavedByPersona(childComplexity), true
 
 	case "PersonalizedMeta.sharedByPersona":
 		if e.complexity.PersonalizedMeta.SharedByPersona == nil {
@@ -1786,6 +1833,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.GetPosts(childComplexity, args["owner"].(models.OwnerInput), args["ids"].([]string), args["limit"].(*int32), args["offset"].(*int32)), true
 
+	case "Query.getSaved":
+		if e.complexity.Query.GetSaved == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getSaved_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetSaved(childComplexity, args["after"].(*string), args["limit"].(*int32)), true
+
 	case "QuoteBlock._key":
 		if e.complexity.QuoteBlock.Key == nil {
 			break
@@ -1820,6 +1879,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuoteBlock.Type(childComplexity), true
+
+	case "SavedPage.channels":
+		if e.complexity.SavedPage.Channels == nil {
+			break
+		}
+
+		return e.complexity.SavedPage.Channels(childComplexity), true
+
+	case "SavedPage.items":
+		if e.complexity.SavedPage.Items == nil {
+			break
+		}
+
+		return e.complexity.SavedPage.Items(childComplexity), true
+
+	case "SavedPage.nextCursor":
+		if e.complexity.SavedPage.NextCursor == nil {
+			break
+		}
+
+		return e.complexity.SavedPage.NextCursor(childComplexity), true
+
+	case "SavedPost.post":
+		if e.complexity.SavedPost.Post == nil {
+			break
+		}
+
+		return e.complexity.SavedPost.Post(childComplexity), true
+
+	case "SavedPost.postId":
+		if e.complexity.SavedPost.PostID == nil {
+			break
+		}
+
+		return e.complexity.SavedPost.PostID(childComplexity), true
+
+	case "SavedPost.savedAt":
+		if e.complexity.SavedPost.SavedAt == nil {
+			break
+		}
+
+		return e.complexity.SavedPost.SavedAt(childComplexity), true
 
 	case "Span._key":
 		if e.complexity.Span.Key == nil {
@@ -2618,6 +2719,7 @@ type Meta {
 # will be fetched separately based on the current persona context
 type PersonalizedMeta {
   likedByPersona: Boolean!
+  savedByPersona: Boolean!
   sharedByPersona: Boolean!
   viewedByPersona: Boolean!
   acl: ACL!
@@ -2759,6 +2861,10 @@ type Mutation {
   deletePost(id: ObjectId!): Boolean!
 
   deleteComment(id: ObjectId!): Boolean!
+
+  savePost(id: ObjectId!): Boolean!
+
+  unsavePost(id: ObjectId!): Boolean!
 }
 
 # Inputs
@@ -2808,6 +2914,19 @@ type FeedPage {
   nextCursor: String
 }
 
+type SavedPost {
+  postId: ObjectId!
+  savedAt: DateTime!
+  # null: deleted, or the persona can no longer read it
+  post: Post
+}
+
+type SavedPage {
+  items: [SavedPost!]!
+  channels: [FeedChannel!]!
+  nextCursor: String
+}
+
 type CommunityRef {
   id: Int64!
   name: String!
@@ -2834,6 +2953,7 @@ type Query {
   getFeed(after: String, limit: Int): FeedPage!
   getDiscover(interests: [String!], all: Boolean, after: String, limit: Int): FeedPage!
   getCommunityFeed(communityId: Int64!, after: String, limit: Int): FeedPage!
+  getSaved(after: String, limit: Int): SavedPage!
 }
 
 `, BuiltIn: false},

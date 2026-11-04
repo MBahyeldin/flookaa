@@ -5,6 +5,7 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { PersonaLink } from "@/components/persona-link";
 import { PostMenu } from "@/components/post-card";
+import { SaveButton } from "@/components/post-card/SaveButton";
 import { useLikePost } from "@/components/post-card/useLikePost";
 import PostContent, { parsePostContent } from "@/components/portable-text/PostContent";
 import { readingStats } from "@/components/portable-text/readingStats";
@@ -81,6 +82,7 @@ export function PostArticle({ post, place }: { post: Post; place: { name: string
           <MessageCircle className="size-4" />
           {t("posts:comments.countShort", { count: comments, n: formatCompact(comments) })}
         </button>
+        <SaveButton post={post} labelled className={rowButton} />
         <button
           type="button"
           className={rowButton}

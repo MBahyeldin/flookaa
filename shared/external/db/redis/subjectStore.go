@@ -9,6 +9,7 @@ import (
 	"shared/pkg/graph/models"
 	"shared/pkg/subject"
 	"shared/pkg/types"
+	"slices"
 	"strconv"
 	"time"
 
@@ -27,34 +28,38 @@ func newSubjectStore(client *redis.Client, ttl time.Duration) *SubjectStore {
 	}
 }
 
-// add default subjects for a new persona
-func (c *SubjectStore) AddDefaultSubjectsToPersona(ctx context.Context, personaID string) (*[]types.SubjectOffsets, error) {
-	var StreamName = nats.USER_EVENTS_STREAM
-	events := []string{
-		"direct_messages",
-		"notifications",
-		"alerts",
-	}
-	var subjectOffsets []types.SubjectOffsets
+var defaultSubjectEvents = []string{
+	"direct_messages",
+	"notifications",
+	"alerts",
+	string(nats.EventSaved),
+}
 
+// EnsureDefaultSubjects adds the default subjects the persona's stored list
+// lacks, so a new default reaches existing personas too, and returns the list.
+func (c *SubjectStore) EnsureDefaultSubjects(ctx context.Context, personaID string) (*[]types.SubjectOffsets, error) {
 	personaIdInt, err := strconv.ParseInt(personaID, 10, 64)
 	if err != nil {
 		return nil, err
 	}
-
-	for _, event := range events {
-		subjectHelper := subject.New(&StreamName, &models.Owner{
-			ID:   personaIdInt,
-			Type: models.OwnerTypePersona,
-		}, event, "*")
-		subject := subjectHelper.GetSubject()
-		if result, err := c.AddSubjectToPersona(ctx, personaID, subject, 0); err != nil {
-			return nil, err
-		} else {
-			subjectOffsets = append(subjectOffsets, *result)
-		}
+	stored, err := c.ListSubjectsForPersona(ctx, personaID)
+	if err != nil {
+		return nil, err
 	}
-	return &subjectOffsets, nil
+	subjects := *stored
+	streamName := nats.USER_EVENTS_STREAM
+	owner := &models.Owner{ID: personaIdInt, Type: models.OwnerTypePersona}
+	for _, event := range defaultSubjectEvents {
+		name := subject.New(&streamName, owner, event, "*").GetSubject()
+		if slices.ContainsFunc(subjects, func(s types.SubjectOffsets) bool { return s.Subject == name }) {
+			continue
+		}
+		if _, err := c.AddSubjectToPersona(ctx, personaID, name, 0); err != nil {
+			return nil, err
+		}
+		subjects = append(subjects, types.SubjectOffsets{Subject: name})
+	}
+	return &subjects, nil
 }
 
 // AddSubjectToPersona creates a new subject for the persona with initial offsets

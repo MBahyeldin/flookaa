@@ -3,12 +3,12 @@ import { immer } from "zustand/middleware/immer";
 import type { Post, Comment, Owner } from "@/generated/graphql";
 
 // The feed, Discover and a community's latest posts show posts of many channels, so they aren't content owners.
-export type ListOwner = { id: string; type: "FEED" | "DISCOVER" | "COMMUNITY_FEED" };
+export type ListOwner = { id: string; type: "FEED" | "DISCOVER" | "COMMUNITY_FEED" | "SAVED" };
 type PageOwner = Owner | ListOwner;
 type OwnerRef = Pick<Owner, "id" | "type"> | ListOwner;
 
 const isListOwner = (owner: PageOwner): owner is ListOwner =>
-  owner.type === "FEED" || owner.type === "DISCOVER" || owner.type === "COMMUNITY_FEED";
+  owner.type === "FEED" || owner.type === "DISCOVER" || owner.type === "COMMUNITY_FEED" || owner.type === "SAVED";
 
 /** The page's owner as a GraphQL owner, or null on the feed and Discover. */
 export const contentOwner = (owner: PageOwner | null): Owner | null =>
@@ -51,6 +51,7 @@ export interface AppState {
   addCommentsToComment: (commentId: string, comments: Comment[]) => void;
 
   addOrRemoveLike: (targetType: "POST" | "COMMENT", targetId: string, inc: number) => void;
+  setPostSaved: (postId: string, saved: boolean) => void;
 
   canModerate: boolean;
   setCanModerate: (canModerate: boolean) => void;
@@ -149,6 +150,12 @@ export const useAppStore = create(
             comment.meta.likesCount = (comment.meta.likesCount ?? 0) + inc;
           }
         }
+      }),
+
+    setPostSaved: (postId, saved) =>
+      set((s) => {
+        const post = s.posts[postId];
+        if (post) post.personalizedMeta.savedByPersona = saved;
       }),
 
     setCanModerate: (canModerate) =>

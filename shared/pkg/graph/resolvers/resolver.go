@@ -472,8 +472,12 @@ func getPosts(ctx context.Context, owner models.Owner, ids *[]string, r *queryRe
 	if err != nil {
 		return nil, err
 	}
+	saved, err := r.savedTargets(ctx, personaId, postIDs)
+	if err != nil {
+		return nil, err
+	}
 	for _, post := range posts {
-		post.PersonalizedMeta = personalizedMeta(liked[post.ID])
+		post.PersonalizedMeta = personalizedMeta(liked[post.ID], saved[post.ID])
 	}
 
 	return posts, nil
@@ -612,7 +616,7 @@ func getComments(ctx context.Context, postID string, owner *models.Owner, r *que
 		return nil, err
 	}
 	for _, comment := range comments {
-		comment.PersonalizedMeta = personalizedMeta(liked[comment.ID])
+		comment.PersonalizedMeta = personalizedMeta(liked[comment.ID], false)
 	}
 
 	return comments, nil
@@ -639,9 +643,10 @@ func (r *Resolver) likedTargets(ctx context.Context, personaID int64, ids []stri
 }
 
 // personalizedMeta is the per-persona view of a post or comment.
-func personalizedMeta(likedByPersona bool) *models.PersonalizedMeta {
+func personalizedMeta(likedByPersona, savedByPersona bool) *models.PersonalizedMeta {
 	return &models.PersonalizedMeta{
 		LikedByPersona: likedByPersona,
+		SavedByPersona: savedByPersona,
 		ACL: &models.ACL{
 			CanComment: true,            // Simplified for this example
 			CanShare:   true,            // Simplified for this example

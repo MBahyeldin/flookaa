@@ -1,4 +1,4 @@
-import { Bell, Compass, Hash, House, Sailboat, Settings, ShieldCheck, UserRound, Users } from "lucide-react";
+import { Bell, Bookmark, Compass, Hash, House, Sailboat, Settings, ShieldCheck, UserRound, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -26,6 +26,7 @@ export function AppSidebar() {
   const entries: NavEntry[] = [
     { title: t("nav.home"), to: "/", icon: House },
     { title: t("nav.discover"), to: "/discover", icon: Compass },
+    { title: t("nav.saved"), to: "/saved", icon: Bookmark },
     { title: t("nav.channels"), to: "/channels", icon: Hash },
     { title: t("nav.communities"), to: "/communities", icon: Users },
     {

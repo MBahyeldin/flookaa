@@ -17,6 +17,7 @@ import { useUserProfileStore } from "@/stores/UserProfileStore";
 import PostContent from "../portable-text/PostContent";
 import { PostByline, type PostChannel } from "./PostByline";
 import { Reactions } from "./Reactions";
+import { SaveButton } from "./SaveButton";
 import { useTranslation } from "react-i18next";
 import { graphqlErrorMessage } from "@/lib/errors";
 
@@ -129,8 +130,9 @@ export function Post({
           <ArrowRight aria-hidden className="size-3.5 rtl:-scale-x-100" />
         </button>
       ) : null}
-      <div className="ms-auto">
+      <div className="ms-auto flex items-center gap-2">
         <Reactions post={post} onOpenComments={onOpen} />
+        {canvas ? <SaveButton post={post} /> : null}
       </div>
     </div>
   );
@@ -166,7 +168,10 @@ export function Post({
       <div className="flex min-w-0 flex-1 flex-col gap-3.5 px-5 pt-5 pb-4.5">
         <div className="flex min-w-0 items-center gap-2">
           {byline}
-          <PostMenu post={post} canModerate={canModerate} />
+          <div className="ms-auto flex shrink-0 items-center gap-1">
+            <SaveButton post={post} />
+            <PostMenu post={post} canModerate={canModerate} />
+          </div>
         </div>
         {content}
         <div className="h-px bg-border" />

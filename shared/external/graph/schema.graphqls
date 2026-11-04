@@ -67,6 +67,7 @@ type Meta {
 # will be fetched separately based on the current persona context
 type PersonalizedMeta {
   likedByPersona: Boolean!
+  savedByPersona: Boolean!
   sharedByPersona: Boolean!
   viewedByPersona: Boolean!
   acl: ACL!
@@ -208,6 +209,10 @@ type Mutation {
   deletePost(id: ObjectId!): Boolean!
 
   deleteComment(id: ObjectId!): Boolean!
+
+  savePost(id: ObjectId!): Boolean!
+
+  unsavePost(id: ObjectId!): Boolean!
 }
 
 # Inputs
@@ -257,6 +262,19 @@ type FeedPage {
   nextCursor: String
 }
 
+type SavedPost {
+  postId: ObjectId!
+  savedAt: DateTime!
+  # null: deleted, or the persona can no longer read it
+  post: Post
+}
+
+type SavedPage {
+  items: [SavedPost!]!
+  channels: [FeedChannel!]!
+  nextCursor: String
+}
+
 type CommunityRef {
   id: Int64!
   name: String!
@@ -283,5 +301,6 @@ type Query {
   getFeed(after: String, limit: Int): FeedPage!
   getDiscover(interests: [String!], all: Boolean, after: String, limit: Int): FeedPage!
   getCommunityFeed(communityId: Int64!, after: String, limit: Int): FeedPage!
+  getSaved(after: String, limit: Int): SavedPage!
 }
 

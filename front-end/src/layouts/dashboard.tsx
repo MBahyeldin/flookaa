@@ -9,6 +9,7 @@ import VerifyEmailPage from "@/pages/verify-email";
 import OnboardingPage from "@/pages/onboarding";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import useNotificationsRealtime from "@/hooks/useNotificationsRealtime";
+import useSavedRealtime from "@/hooks/useSavedRealtime";
 import usePersonaTheme from "@/hooks/usePersonaTheme";
 import useResumeAuthNext from "@/hooks/useResumeAuthNext";
 
@@ -21,6 +22,7 @@ export default function DashboardLayout({
   const { isFetchCurrentPersonaLoading, isFetchAllPersonasLoading } = useLoading();
   // Before the early returns: hooks must run on every render.
   useNotificationsRealtime(user?.is_verified ? persona?.id : undefined);
+  useSavedRealtime(user?.is_verified ? persona?.id : undefined);
   usePersonaTheme(persona?.theme);
   useResumeAuthNext();
 

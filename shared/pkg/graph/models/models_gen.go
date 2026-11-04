@@ -431,6 +431,7 @@ type Persona struct {
 
 type PersonalizedMeta struct {
 	LikedByPersona  bool `json:"likedByPersona"`
+	SavedByPersona  bool `json:"savedByPersona"`
 	SharedByPersona bool `json:"sharedByPersona"`
 	ViewedByPersona bool `json:"viewedByPersona"`
 	ACL             *ACL `json:"acl"`
@@ -514,6 +515,18 @@ type QuoteBlockInput struct {
 	Text string    `json:"text"`
 	Name *string   `json:"name,omitempty"`
 	Role *string   `json:"role,omitempty"`
+}
+
+type SavedPage struct {
+	Items      []*SavedPost   `json:"items"`
+	Channels   []*FeedChannel `json:"channels"`
+	NextCursor *string        `json:"nextCursor,omitempty"`
+}
+
+type SavedPost struct {
+	PostID  string    `json:"postId"`
+	SavedAt time.Time `json:"savedAt"`
+	Post    *Post     `json:"post,omitempty"`
 }
 
 type SimpleInput struct {

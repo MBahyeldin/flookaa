@@ -1484,6 +1484,13 @@ type Role struct {
 	DeletedAt   sql.NullTime
 }
 
+type SavedPost struct {
+	PersonaID int64
+	PostID    string
+	SavedAt   time.Time
+	UnsavedAt sql.NullTime
+}
+
 type State struct {
 	ID          int64
 	Name        string

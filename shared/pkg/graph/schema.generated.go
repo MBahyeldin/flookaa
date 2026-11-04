@@ -24,6 +24,8 @@ type MutationResolver interface {
 	CreateLike(ctx context.Context, input models.LikeInput) (bool, error)
 	DeletePost(ctx context.Context, id string) (bool, error)
 	DeleteComment(ctx context.Context, id string) (bool, error)
+	SavePost(ctx context.Context, id string) (bool, error)
+	UnsavePost(ctx context.Context, id string) (bool, error)
 }
 type QueryResolver interface {
 	GetPosts(ctx context.Context, owner models.OwnerInput, ids []string, limit *int32, offset *int32) ([]*models.Post, error)
@@ -32,6 +34,7 @@ type QueryResolver interface {
 	GetFeed(ctx context.Context, after *string, limit *int32) (*models.FeedPage, error)
 	GetDiscover(ctx context.Context, interests []string, all *bool, after *string, limit *int32) (*models.FeedPage, error)
 	GetCommunityFeed(ctx context.Context, communityID int64, after *string, limit *int32) (*models.FeedPage, error)
+	GetSaved(ctx context.Context, after *string, limit *int32) (*models.SavedPage, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -83,6 +86,28 @@ func (ec *executionContext) field_Mutation_deleteComment_args(ctx context.Contex
 }
 
 func (ec *executionContext) field_Mutation_deletePost_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNObjectId2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_savePost_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNObjectId2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_unsavePost_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNObjectId2string)
@@ -222,6 +247,22 @@ func (ec *executionContext) field_Query_getPosts_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["offset"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getSaved_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg1
 	return args, nil
 }
 
@@ -1646,6 +1687,8 @@ func (ec *executionContext) fieldContext_Comment_personalizedMeta(_ context.Cont
 			switch field.Name {
 			case "likedByPersona":
 				return ec.fieldContext_PersonalizedMeta_likedByPersona(ctx, field)
+			case "savedByPersona":
+				return ec.fieldContext_PersonalizedMeta_savedByPersona(ctx, field)
 			case "sharedByPersona":
 				return ec.fieldContext_PersonalizedMeta_sharedByPersona(ctx, field)
 			case "viewedByPersona":
@@ -2469,6 +2512,88 @@ func (ec *executionContext) fieldContext_Mutation_deleteComment(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_savePost(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_savePost,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().SavePost(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_savePost(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_savePost_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_unsavePost(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_unsavePost,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UnsavePost(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_unsavePost(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_unsavePost_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Owner_type(ctx context.Context, field graphql.CollectedField, obj *models.Owner) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2689,6 +2814,35 @@ func (ec *executionContext) _PersonalizedMeta_likedByPersona(ctx context.Context
 }
 
 func (ec *executionContext) fieldContext_PersonalizedMeta_likedByPersona(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PersonalizedMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PersonalizedMeta_savedByPersona(ctx context.Context, field graphql.CollectedField, obj *models.PersonalizedMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PersonalizedMeta_savedByPersona,
+		func(ctx context.Context) (any, error) {
+			return obj.SavedByPersona, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PersonalizedMeta_savedByPersona(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PersonalizedMeta",
 		Field:      field,
@@ -3322,6 +3476,8 @@ func (ec *executionContext) fieldContext_Post_personalizedMeta(_ context.Context
 			switch field.Name {
 			case "likedByPersona":
 				return ec.fieldContext_PersonalizedMeta_likedByPersona(ctx, field)
+			case "savedByPersona":
+				return ec.fieldContext_PersonalizedMeta_savedByPersona(ctx, field)
 			case "sharedByPersona":
 				return ec.fieldContext_PersonalizedMeta_sharedByPersona(ctx, field)
 			case "viewedByPersona":
@@ -4172,6 +4328,55 @@ func (ec *executionContext) fieldContext_Query_getCommunityFeed(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_getSaved(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_getSaved,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().GetSaved(ctx, fc.Args["after"].(*string), fc.Args["limit"].(*int32))
+		},
+		nil,
+		ec.marshalNSavedPage2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐSavedPage,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_getSaved(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "items":
+				return ec.fieldContext_SavedPage_items(ctx, field)
+			case "channels":
+				return ec.fieldContext_SavedPage_channels(ctx, field)
+			case "nextCursor":
+				return ec.fieldContext_SavedPage_nextCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SavedPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getSaved_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4275,6 +4480,236 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SavedPage_items(ctx context.Context, field graphql.CollectedField, obj *models.SavedPage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SavedPage_items,
+		func(ctx context.Context) (any, error) {
+			return obj.Items, nil
+		},
+		nil,
+		ec.marshalNSavedPost2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐSavedPostᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SavedPage_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SavedPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "postId":
+				return ec.fieldContext_SavedPost_postId(ctx, field)
+			case "savedAt":
+				return ec.fieldContext_SavedPost_savedAt(ctx, field)
+			case "post":
+				return ec.fieldContext_SavedPost_post(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SavedPost", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SavedPage_channels(ctx context.Context, field graphql.CollectedField, obj *models.SavedPage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SavedPage_channels,
+		func(ctx context.Context) (any, error) {
+			return obj.Channels, nil
+		},
+		nil,
+		ec.marshalNFeedChannel2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐFeedChannelᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SavedPage_channels(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SavedPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_FeedChannel_id(ctx, field)
+			case "name":
+				return ec.fieldContext_FeedChannel_name(ctx, field)
+			case "theme":
+				return ec.fieldContext_FeedChannel_theme(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_FeedChannel_thumbnail(ctx, field)
+			case "canModerate":
+				return ec.fieldContext_FeedChannel_canModerate(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FeedChannel", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SavedPage_nextCursor(ctx context.Context, field graphql.CollectedField, obj *models.SavedPage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SavedPage_nextCursor,
+		func(ctx context.Context) (any, error) {
+			return obj.NextCursor, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SavedPage_nextCursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SavedPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SavedPost_postId(ctx context.Context, field graphql.CollectedField, obj *models.SavedPost) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SavedPost_postId,
+		func(ctx context.Context) (any, error) {
+			return obj.PostID, nil
+		},
+		nil,
+		ec.marshalNObjectId2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SavedPost_postId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SavedPost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ObjectId does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SavedPost_savedAt(ctx context.Context, field graphql.CollectedField, obj *models.SavedPost) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SavedPost_savedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.SavedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SavedPost_savedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SavedPost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SavedPost_post(ctx context.Context, field graphql.CollectedField, obj *models.SavedPost) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SavedPost_post,
+		func(ctx context.Context) (any, error) {
+			return obj.Post, nil
+		},
+		nil,
+		ec.marshalOPost2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐPost,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SavedPost_post(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SavedPost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_id":
+				return ec.fieldContext_Post__id(ctx, field)
+			case "type":
+				return ec.fieldContext_Post_type(ctx, field)
+			case "authorId":
+				return ec.fieldContext_Post_authorId(ctx, field)
+			case "author":
+				return ec.fieldContext_Post_author(ctx, field)
+			case "owner":
+				return ec.fieldContext_Post_owner(ctx, field)
+			case "content":
+				return ec.fieldContext_Post_content(ctx, field)
+			case "rawContent":
+				return ec.fieldContext_Post_rawContent(ctx, field)
+			case "tags":
+				return ec.fieldContext_Post_tags(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Post_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Post_updatedAt(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_Post_deletedAt(ctx, field)
+			case "edited":
+				return ec.fieldContext_Post_edited(ctx, field)
+			case "privacy":
+				return ec.fieldContext_Post_privacy(ctx, field)
+			case "deniedPersonaIds":
+				return ec.fieldContext_Post_deniedPersonaIds(ctx, field)
+			case "allowedPersonaIds":
+				return ec.fieldContext_Post_allowedPersonaIds(ctx, field)
+			case "meta":
+				return ec.fieldContext_Post_meta(ctx, field)
+			case "personalizedMeta":
+				return ec.fieldContext_Post_personalizedMeta(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
 		},
 	}
 	return fc, nil
@@ -5199,6 +5634,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "savePost":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_savePost(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unsavePost":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_unsavePost(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5335,6 +5784,11 @@ func (ec *executionContext) _PersonalizedMeta(ctx context.Context, sel ast.Selec
 			out.Values[i] = graphql.MarshalString("PersonalizedMeta")
 		case "likedByPersona":
 			out.Values[i] = ec._PersonalizedMeta_likedByPersona(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "savedByPersona":
+			out.Values[i] = ec._PersonalizedMeta_savedByPersona(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -5728,6 +6182,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getSaved":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getSaved(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -5736,6 +6212,98 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var savedPageImplementors = []string{"SavedPage"}
+
+func (ec *executionContext) _SavedPage(ctx context.Context, sel ast.SelectionSet, obj *models.SavedPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, savedPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SavedPage")
+		case "items":
+			out.Values[i] = ec._SavedPage_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "channels":
+			out.Values[i] = ec._SavedPage_channels(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "nextCursor":
+			out.Values[i] = ec._SavedPage_nextCursor(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var savedPostImplementors = []string{"SavedPost"}
+
+func (ec *executionContext) _SavedPost(ctx context.Context, sel ast.SelectionSet, obj *models.SavedPost) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, savedPostImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SavedPost")
+		case "postId":
+			out.Values[i] = ec._SavedPost_postId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "savedAt":
+			out.Values[i] = ec._SavedPost_savedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "post":
+			out.Values[i] = ec._SavedPost_post(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6188,6 +6756,74 @@ func (ec *executionContext) marshalNPrivacy2sharedᚋpkgᚋgraphᚋmodelsᚐPriv
 	return v
 }
 
+func (ec *executionContext) marshalNSavedPage2sharedᚋpkgᚋgraphᚋmodelsᚐSavedPage(ctx context.Context, sel ast.SelectionSet, v models.SavedPage) graphql.Marshaler {
+	return ec._SavedPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSavedPage2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐSavedPage(ctx context.Context, sel ast.SelectionSet, v *models.SavedPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SavedPage(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSavedPost2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐSavedPostᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.SavedPost) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNSavedPost2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐSavedPost(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSavedPost2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐSavedPost(ctx context.Context, sel ast.SelectionSet, v *models.SavedPost) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SavedPost(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNSimpleInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐSimpleInput(ctx context.Context, v any) (*models.SimpleInput, error) {
 	res, err := ec.unmarshalInputSimpleInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -6358,6 +6994,13 @@ func (ec *executionContext) marshalOOwner2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐOwn
 		return graphql.Null
 	}
 	return ec._Owner(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOPost2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐPost(ctx context.Context, sel ast.SelectionSet, v *models.Post) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Post(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOTheme2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐTheme(ctx context.Context, v any) (*models.Theme, error) {

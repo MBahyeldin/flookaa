@@ -6,6 +6,24 @@
     "done": "Post deleted"
   },
   "options": "Post options",
+  "save": {
+    "save": "Save",
+    "saved": "Saved",
+    "saveLabel": "Save post",
+    "savedLabel": "Saved. Remove from saved",
+    "view": "View",
+    "failed": "Couldn’t update your saved posts.",
+    "offline": "Couldn’t update your saved posts. Check your connection."
+  },
+  "savedPage": {
+    "title": "Saved",
+    "lead": "Only you see what this persona saves.",
+    "loadFailed": "Couldn't load your saved posts",
+    "emptyTitle": "Nothing saved yet",
+    "emptyBody": "Tap Save on a post to keep it here.",
+    "unavailable": "This post isn't available anymore.",
+    "remove": "Remove"
+  },
   "readWhole": "Read the whole post",
   "like": {
     "failed": "Couldn’t update your like.",

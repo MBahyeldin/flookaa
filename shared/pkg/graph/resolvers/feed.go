@@ -199,12 +199,16 @@ func (r *Resolver) channelPostsPage(ctx context.Context, personaID int64, rows [
 	if err != nil {
 		return nil, err
 	}
+	saved, err := r.savedTargets(ctx, personaID, postIDs)
+	if err != nil {
+		return nil, err
+	}
 	for _, post := range page.Posts {
 		post.Author = authors[post.AuthorID]
 		if post.Author == nil {
 			post.Author = anonymousPersona(post.AuthorID, post.Owner)
 		}
-		post.PersonalizedMeta = personalizedMeta(liked[post.ID])
+		post.PersonalizedMeta = personalizedMeta(liked[post.ID], saved[post.ID])
 	}
 	return page, nil
 }

@@ -1202,6 +1202,91 @@ func (q *Queries) ListProfileChannels(ctx context.Context, arg ListProfileChanne
 	return items, nil
 }
 
+const listReadableChannels = `-- name: ListReadableChannels :many
+SELECT
+    c.id,
+    c.name,
+    channel_theme(c.theme, c.id)::theme_enum AS theme,
+    c.thumbnail,
+    (
+        c.owner_id = $1::bigint
+        OR EXISTS (
+            SELECT 1
+            FROM channel_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.channel_id = c.id
+              AND cr.persona_id = $1::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name IN ('moderator', 'Administrator')
+        )
+        OR EXISTS (
+            SELECT 1
+            FROM personas p
+            JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
+            JOIN roles r ON r.id = ur.role_id
+            WHERE p.id = $1::bigint
+              AND r.name = 'Administrator'
+        )
+    )::boolean AS can_moderate
+FROM channels c
+WHERE c.id = ANY($2::bigint[])
+  AND c.deleted_at IS NULL
+  AND persona_meets_min_age($1::bigint, c.min_age)
+  AND (
+      c.visibility = 'public'
+      OR EXISTS (
+          SELECT 1
+          FROM channel_members cm
+          WHERE cm.channel_id = c.id
+            AND cm.persona_id = $1::bigint
+            AND cm.left_at IS NULL AND cm.status = 'active'
+      )
+  )
+ORDER BY c.id
+`
+
+type ListReadableChannelsParams struct {
+	PersonaID int64
+	Ids       []int64
+}
+
+type ListReadableChannelsRow struct {
+	ID          int64
+	Name        string
+	Theme       ThemeEnum
+	Thumbnail   string
+	CanModerate bool
+}
+
+func (q *Queries) ListReadableChannels(ctx context.Context, arg ListReadableChannelsParams) ([]ListReadableChannelsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listReadableChannels, arg.PersonaID, pq.Array(arg.Ids))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListReadableChannelsRow
+	for rows.Next() {
+		var i ListReadableChannelsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Theme,
+			&i.Thumbnail,
+			&i.CanModerate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const personaMeetsMinAge = `-- name: PersonaMeetsMinAge :one
 SELECT persona_meets_min_age($1::bigint, $2::smallint)::boolean
 `

@@ -1,0 +1,3 @@
+mutation UnsavePost($id: ObjectId!) {
+  unsavePost(id: $id)
+}

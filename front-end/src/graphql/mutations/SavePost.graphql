@@ -1,0 +1,3 @@
+mutation SavePost($id: ObjectId!) {
+  savePost(id: $id)
+}

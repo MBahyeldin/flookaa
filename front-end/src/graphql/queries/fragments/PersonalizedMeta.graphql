@@ -1,5 +1,6 @@
 fragment PersonalizedMetaFields on PersonalizedMeta {
     likedByPersona
+    savedByPersona
     viewedByPersona
     sharedByPersona
     acl {

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Heart, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { FeedChannel, Post } from "@/generated/graphql";
+import { SaveButton } from "@/components/post-card/SaveButton";
 import { Logo } from "@/components/ui/logo";
 import { responsiveImage } from "@/components/portable-text/blocks/responsiveImage";
 import { cn } from "@/lib/utils";
@@ -67,6 +68,7 @@ export function MasonryTile({ post, channel }: { post: Post; channel?: FeedChann
               <MessageCircle className="size-3.5" aria-hidden />
               {formatCompact(comments)}
             </span>
+            <SaveButton post={post} className="ms-auto" />
           </div>
         </div>
       </article>
