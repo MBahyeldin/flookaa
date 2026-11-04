@@ -228,7 +228,7 @@ export default function SimpleInputComponent({ onSend, avatar, placeholder = t("
     );
 
     const failedNote = (
-        <span role="alert" className="min-w-0 flex-1 truncate px-1 text-sm text-destructive">
+        <span role="alert" className="min-w-0 flex-1 px-1 text-sm text-destructive">
             {t("posts:composer.uploadFailed")}
         </span>
     );
