@@ -15,5 +15,7 @@
   "invalid_theme": "Pick one of the themes.",
   "invalid_cover_pattern": "Pick one of the covers.",
   "invalid_cover": "That photo can't be used. Upload it again.",
-  "invalid_cover_position": "Drag the photo to place it again."
+  "invalid_cover_position": "Drag the photo to place it again.",
+  "invalid_comment": "Comment can't be empty or longer than 2000 characters.",
+  "invalid_comment_attachment": "That attachment can't be used. Upload it again."
 }

@@ -129,7 +129,11 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 		return nil, err
 	}
 	owner := parent.Owner
-	rawContent, err := json.Marshal(input.Content)
+	content, err := r.parseSimpleInput(*input.Content)
+	if err != nil {
+		return nil, err
+	}
+	rawContent, err := json.Marshal(content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal content: %w", err)
 	}

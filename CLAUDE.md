@@ -323,7 +323,7 @@ Only `config` packages call `os.Getenv`. A new dependency means a constructor pa
 ### Data split
 
 - **Postgres** (sqlc): users, personas, roles, communities, channels, memberships, geo, verification, events, notifications, saved posts.
-- **MongoDB** (`app.objects`): posts, comments, replies as portable-text documents. A post stores `content` (parsed and validated by `portabletext.ParseContent`) and `rawContent`, marshalled from `content` so the two can't drift. Everything renders from `rawContent`; comments are plain `SimpleInput` strings.
+- **MongoDB** (`app.objects`): posts, comments, replies as portable-text documents. A post stores `content` (parsed and validated by `portabletext.ParseContent`) and `rawContent`, marshalled from `content` so the two can't drift. Everything renders from `rawContent`; comments are plain `SimpleInput` strings, exactly one of text (1 to 2000 characters, GraphQL error `invalid_comment`), an image or a voice note (must be on the `S3_BASE_URL` origin, `invalid_comment_attachment`; `shared/util/s3url`), checked by `parseSimpleInput` on create.
 - **Neo4j**: not wired into any binary for now (planned for friends-of-friends recommendations); `shared/external/db/neo` keeps a `Connect` for when it returns.
 - **Redis**: sessions, subscription lists, per-subject offsets, content counters, persona cache.
 

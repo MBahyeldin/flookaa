@@ -66,12 +66,17 @@
     "loadMoreFailed": "Couldn't load more comments.",
     "loadMore": "Load more comments",
     "writeReply": "Write a reply…",
+    "openImage": "Open image",
     "writeComment": "Write a comment…",
     "countShort_one": "{{n}} comment",
     "countShort_other": "{{n}} comments"
   },
   "composer": {
-    "voiceProcessFailed": "Couldn’t process your voice note. It will retry when you post.",
+    "retry": "Retry",
+    "uploadFailed": "Couldn't upload. Try again.",
+    "uploadingPhoto": "Uploading photo…",
+    "preparingVoice": "Preparing your voice note…",
+    "micOff": "Microphone access is off. Allow it in your browser to record a voice note.",
     "recordingEmpty": "Recording failed: nothing was captured. Try holding it a little longer.",
     "sendFailed": "Couldn’t send your comment",
     "attachImage": "Attach an image",
@@ -98,11 +103,7 @@
     "discard": "Discard",
     "newPostIn": "New post in {{channel}}",
     "writeAs": "Write a post as {{name}}",
-    "recording": "Recording…",
-    "processingVoice": "Processing voice note…",
-    "voiceReady": "Voice note ready",
-    "imageAttached": "Image attached",
-    "enhancingAudio": "Enhancing audio…",
+    "recording": "Recording",
     "visibility": "Visible to everyone who can read this channel"
   },
   "audio": {

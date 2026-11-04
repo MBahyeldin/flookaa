@@ -37,6 +37,8 @@ type Resolver struct {
 	NATS    *nats.NatsHelper
 	Content *redis.ContentStore
 	Persona *redis.PersonaStore
+	// Origin of the s3 service; comment attachments must live on it.
+	S3BaseURL string
 	// Neo4j is not used in the first version of the app (see shared/external/db/neo).
 	// Neo4j neo4j.DriverWithContext
 }

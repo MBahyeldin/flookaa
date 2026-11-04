@@ -291,7 +291,7 @@ function CarouselView({ items, onOpen }: { items: GalleryItem[]; onOpen: (index:
   );
 }
 
-function GalleryViewer({
+export function GalleryViewer({
   items,
   start,
   onClose,
