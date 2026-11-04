@@ -158,7 +158,7 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_description"})
 		return
 	}
-	if code := checkLook(req.Theme, req.CoverPattern, req.Thumbnail, req.Banner); code != "" {
+	if code := h.checkLook(req.Theme, req.CoverPattern, req.Thumbnail, req.Banner); code != "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": code})
 		return
 	}
@@ -226,15 +226,15 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 }
 
 // Empty theme and cover pattern are allowed: inherit and the default.
-func checkLook(theme, coverPattern, thumbnail, banner string) string {
+func (h *Handler) checkLook(theme, coverPattern, thumbnail, banner string) string {
 	switch {
 	case theme != "" && !db.ThemeEnum(theme).Valid():
 		return "invalid_theme"
 	case coverPattern != "" && !db.CoverPatternEnum(coverPattern).Valid():
 		return "invalid_cover_pattern"
-	case !logo.Valid(thumbnail):
+	case !logo.Valid(h.s3BaseURL, thumbnail):
 		return "invalid_logo"
-	case !logo.Valid(banner):
+	case !logo.Valid(h.s3BaseURL, banner):
 		return "invalid_cover"
 	}
 	return ""

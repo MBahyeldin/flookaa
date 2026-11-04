@@ -116,8 +116,8 @@ func StartServer(cfg config.Server) error {
 	)
 	restHandlers := v1.Handlers{
 		Users:         usersHandler,
-		Channels:      channels.NewHandler(pg, q, natsHelper),
-		Communities:   communities.NewHandler(pg, q, natsHelper),
+		Channels:      channels.NewHandler(pg, q, natsHelper, cfg.S3BaseURL),
+		Communities:   communities.NewHandler(pg, q, natsHelper, cfg.S3BaseURL),
 		Followers:     followersHandler,
 		Geo:           geo.NewHandler(q),
 		Interests:     interests.NewHandler(q),

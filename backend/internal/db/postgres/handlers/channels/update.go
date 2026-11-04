@@ -82,7 +82,7 @@ func (h *Handler) UpdateChannel(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_cover_pattern"})
 		return
 	}
-	if code := checkLook(deref(req.Theme), deref(req.CoverPattern), deref(req.Thumbnail), deref(req.Banner)); code != "" {
+	if code := h.checkLook(deref(req.Theme), deref(req.CoverPattern), deref(req.Thumbnail), deref(req.Banner)); code != "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": code})
 		return
 	}

@@ -46,15 +46,15 @@ func validRules(rules string) bool {
 }
 
 // lookError checks the fields a request sets; nil ones are left as they are.
-func lookError(theme, coverPattern, thumbnail, banner *string) string {
+func (h *Handler) lookError(theme, coverPattern, thumbnail, banner *string) string {
 	switch {
 	case theme != nil && !db.ThemeEnum(*theme).Valid():
 		return "invalid_theme"
 	case coverPattern != nil && !db.CoverPatternEnum(*coverPattern).Valid():
 		return "invalid_cover_pattern"
-	case thumbnail != nil && !logo.Valid(*thumbnail):
+	case thumbnail != nil && !logo.Valid(h.s3BaseURL, *thumbnail):
 		return "invalid_logo"
-	case banner != nil && !logo.Valid(*banner):
+	case banner != nil && !logo.Valid(h.s3BaseURL, *banner):
 		return "invalid_cover"
 	}
 	return ""
@@ -82,7 +82,7 @@ func (h *Handler) CreateCommunity(c *gin.Context) {
 	if req.CoverPattern == "" {
 		req.CoverPattern = string(db.CoverPatternEnumHorizon)
 	}
-	if code := lookError(&req.Theme, &req.CoverPattern, &req.Thumbnail, &req.Banner); code != "" {
+	if code := h.lookError(&req.Theme, &req.CoverPattern, &req.Thumbnail, &req.Banner); code != "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": code})
 		return
 	}

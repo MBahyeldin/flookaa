@@ -21,13 +21,14 @@ import (
 const maxCommunityInterests = 5
 
 type Handler struct {
-	pg   *sql.DB
-	q    *db.Queries
-	nats *nats.NatsHelper
+	pg        *sql.DB
+	q         *db.Queries
+	nats      *nats.NatsHelper
+	s3BaseURL string
 }
 
-func NewHandler(pg *sql.DB, q *db.Queries, nats *nats.NatsHelper) *Handler {
-	return &Handler{pg: pg, q: q, nats: nats}
+func NewHandler(pg *sql.DB, q *db.Queries, nats *nats.NatsHelper, s3BaseURL string) *Handler {
+	return &Handler{pg: pg, q: q, nats: nats, s3BaseURL: s3BaseURL}
 }
 
 type InterestTag = interests.Interest

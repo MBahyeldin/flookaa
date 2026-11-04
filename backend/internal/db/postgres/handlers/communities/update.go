@@ -108,7 +108,7 @@ func (h *Handler) UpdateCommunity(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_visibility"})
 		return
 	}
-	if code := lookError(req.Theme, req.CoverPattern, req.Thumbnail, req.Banner); code != "" {
+	if code := h.lookError(req.Theme, req.CoverPattern, req.Thumbnail, req.Banner); code != "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": code})
 		return
 	}
