@@ -11,6 +11,9 @@ type ShowcaseCommunity struct {
 	Slug          string              `json:"slug"`
 	Name          string              `json:"name"`
 	Thumbnail     string              `json:"thumbnail"`
+	Banner        string              `json:"banner"`
+	BannerX       int16               `json:"banner_x"`
+	BannerY       int16               `json:"banner_y"`
 	Theme         db.ThemeEnum        `json:"theme"`
 	CoverPattern  db.CoverPatternEnum `json:"cover_pattern"`
 	MembersCount  int32               `json:"members_count"`
@@ -25,7 +28,7 @@ func (h *Handler) Showcase(c *gin.Context) {
 	}
 	communities := make([]ShowcaseCommunity, len(rows))
 	for i, r := range rows {
-		communities[i] = ShowcaseCommunity{r.Slug, r.Name, r.Thumbnail, r.Theme, r.CoverPattern, r.MembersCount, r.ChannelsCount}
+		communities[i] = ShowcaseCommunity{r.Slug, r.Name, r.Thumbnail, r.Banner, r.BannerX, r.BannerY, r.Theme, r.CoverPattern, r.MembersCount, r.ChannelsCount}
 	}
 	c.JSON(http.StatusOK, gin.H{"communities": communities})
 }

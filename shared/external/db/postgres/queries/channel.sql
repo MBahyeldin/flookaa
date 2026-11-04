@@ -2,8 +2,8 @@
 -- 1. Create a channel
 -- -------------------------------
 -- name: CreateChannel :one
-INSERT INTO channels (name, description,  owner_id, thumbnail, banner, visibility, min_age, theme, cover_pattern, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, sqlc.arg(min_age)::smallint, sqlc.narg(theme)::theme_enum, sqlc.arg(cover_pattern), NOW())
+INSERT INTO channels (name, description,  owner_id, thumbnail, banner, banner_x, banner_y, visibility, min_age, theme, cover_pattern, created_at)
+VALUES ($1, $2, $3, $4, $5, COALESCE(sqlc.narg(banner_x)::smallint, 50), COALESCE(sqlc.narg(banner_y)::smallint, 50), $6, sqlc.arg(min_age)::smallint, sqlc.narg(theme)::theme_enum, sqlc.arg(cover_pattern), NOW())
 RETURNING *;
 
 -- -------------------------------
@@ -16,6 +16,9 @@ SET theme = CASE WHEN sqlc.arg(clear_theme)::bool THEN NULL
                  ELSE COALESCE(sqlc.narg(theme)::theme_enum, theme) END,
     cover_pattern = COALESCE(sqlc.narg(cover_pattern)::cover_pattern_enum, cover_pattern),
     thumbnail = COALESCE(sqlc.narg(thumbnail), thumbnail),
+    banner = COALESCE(sqlc.narg(banner), banner),
+    banner_x = COALESCE(sqlc.narg(banner_x)::smallint, banner_x),
+    banner_y = COALESCE(sqlc.narg(banner_y)::smallint, banner_y),
     name = COALESCE(sqlc.narg(name), name),
     description = COALESCE(sqlc.narg(description), description),
     updated_at = NOW()

@@ -108,6 +108,8 @@ type ComplexityRoot struct {
 
 	Channel struct {
 		BannerImageURL  func(childComplexity int) int
+		BannerX         func(childComplexity int) int
+		BannerY         func(childComplexity int) int
 		CanModerate     func(childComplexity int) int
 		Community       func(childComplexity int) int
 		CoverPattern    func(childComplexity int) int
@@ -710,6 +712,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Channel.BannerImageURL(childComplexity), true
+
+	case "Channel.bannerX":
+		if e.complexity.Channel.BannerX == nil {
+			break
+		}
+
+		return e.complexity.Channel.BannerX(childComplexity), true
+
+	case "Channel.bannerY":
+		if e.complexity.Channel.BannerY == nil {
+			break
+		}
+
+		return e.complexity.Channel.BannerY(childComplexity), true
 
 	case "Channel.canModerate":
 		if e.complexity.Channel.CanModerate == nil {
@@ -2878,6 +2894,8 @@ type Channel {
   name: String!
   description: String
   bannerImageUrl: String
+  bannerX: Int!
+  bannerY: Int!
   thumbnailUrl: String
   profileImageUrl: String
   createdAt: DateTime!

@@ -226,6 +226,8 @@ type Channel {
   name: String!
   description: String
   bannerImageUrl: String
+  bannerX: Int!
+  bannerY: Int!
   thumbnailUrl: String
   profileImageUrl: String
   createdAt: DateTime!

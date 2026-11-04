@@ -20,3 +20,12 @@ export function responsiveImage(src: string, width: number | undefined, fraction
     sizes: `(min-width: 56rem) ${fraction * 56}rem, ${fraction * 100}vw`,
   };
 }
+
+// For an image drawn up to the full window width, such as a cover.
+export function fullWidthImage(src: string) {
+  if (!isS3File(src)) return {};
+  return {
+    srcSet: variantWidths.map((w) => `${src}?w=${w}&fmt=webp ${w}w`).join(", "),
+    sizes: "100vw",
+  };
+}

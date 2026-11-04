@@ -1,9 +1,8 @@
-import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import type { PaletteId } from "@/themes/palettes";
-import uploadFile from "@/services/uploadFile";
+import { useFileUpload } from "./useFileUpload";
 import { t } from "@/i18n";
 
 export function LogoUpload({
@@ -20,23 +19,7 @@ export function LogoUpload({
   /** A server error about the logo. */
   error?: string;
 }) {
-  const input = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [failed, setFailed] = useState<string | null>(null);
-
-  const pick = async (file: File | undefined) => {
-    if (!file) return;
-    setUploading(true);
-    setFailed(null);
-    try {
-      onChange(await uploadFile(file));
-    } catch (err) {
-      setFailed(err instanceof Error ? err.message : t("common:upload.failed"));
-    } finally {
-      setUploading(false);
-      if (input.current) input.current.value = "";
-    }
-  };
+  const { input, uploading, failed, pick } = useFileUpload(onChange);
 
   const note = failed ?? error;
   return (

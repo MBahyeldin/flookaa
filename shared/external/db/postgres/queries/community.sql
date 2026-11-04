@@ -1,10 +1,11 @@
 -- The owner is the first active member.
 -- name: CreateCommunity :one
 WITH created AS (
-    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, visibility, owner_id, min_age, theme, cover_pattern)
+    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, banner_x, banner_y, visibility, owner_id, min_age, theme, cover_pattern)
     VALUES (
         sqlc.arg(name), sqlc.arg(slug), sqlc.arg(description), sqlc.arg(rules), sqlc.arg(thumbnail),
-        sqlc.arg(banner), sqlc.arg(visibility), sqlc.arg(owner_id), sqlc.arg(min_age)::smallint,
+        sqlc.arg(banner), COALESCE(sqlc.narg(banner_x)::smallint, 50), COALESCE(sqlc.narg(banner_y)::smallint, 50),
+        sqlc.arg(visibility), sqlc.arg(owner_id), sqlc.arg(min_age)::smallint,
         sqlc.arg(theme)::theme_enum, sqlc.arg(cover_pattern)::cover_pattern_enum
     )
     RETURNING id, owner_id
@@ -22,6 +23,8 @@ SET name = COALESCE(sqlc.narg(name), name),
     rules = COALESCE(sqlc.narg(rules), rules),
     thumbnail = COALESCE(sqlc.narg(thumbnail), thumbnail),
     banner = COALESCE(sqlc.narg(banner), banner),
+    banner_x = COALESCE(sqlc.narg(banner_x)::smallint, banner_x),
+    banner_y = COALESCE(sqlc.narg(banner_y)::smallint, banner_y),
     visibility = COALESCE(sqlc.narg(visibility)::community_visibility_enum, visibility),
     min_age = COALESCE(sqlc.narg(min_age)::smallint, min_age),
     theme = COALESCE(sqlc.narg(theme)::theme_enum, theme),
@@ -499,7 +502,7 @@ WHERE cc.community_id = sqlc.arg(community_id)
 -- For logged-out visitors, who have no age: public 13+ communities only, most live members first.
 -- name: ListShowcaseCommunities :many
 SELECT * FROM (
-    SELECT c.slug, c.name, c.thumbnail, c.theme, c.cover_pattern,
+    SELECT c.slug, c.name, c.thumbnail, c.banner, c.banner_x, c.banner_y, c.theme, c.cover_pattern,
         (SELECT COUNT(*) FROM community_members cm JOIN personas p ON p.id = cm.persona_id
          WHERE cm.community_id = c.id AND cm.status = 'active' AND cm.left_at IS NULL
            AND p.deleted_at IS NULL)::int AS members_count,

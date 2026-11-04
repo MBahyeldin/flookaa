@@ -24,7 +24,10 @@ CREATE TABLE channels (
     min_age SMALLINT NOT NULL CHECK (min_age IN (13, 16, 18, 21)),
     -- NULL: the channel takes its community's.
     theme theme_enum,
-    cover_pattern cover_pattern_enum NOT NULL DEFAULT 'horizon'
+    cover_pattern cover_pattern_enum NOT NULL DEFAULT 'horizon',
+    -- Focal point of the banner photo, in percent.
+    banner_x SMALLINT NOT NULL DEFAULT 50 CHECK (banner_x BETWEEN 0 AND 100),
+    banner_y SMALLINT NOT NULL DEFAULT 50 CHECK (banner_y BETWEEN 0 AND 100)
 );
 
 -- -------------------------------

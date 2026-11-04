@@ -2,6 +2,7 @@ package channels
 
 import (
 	"app/internal/auth"
+	"app/internal/logo"
 	"database/sql"
 	"errors"
 	"net/http"
@@ -19,6 +20,9 @@ type UpdateChannelRequest struct {
 	Theme        *string `json:"theme"`
 	CoverPattern *string `json:"cover_pattern"`
 	Thumbnail    *string `json:"thumbnail"`
+	Banner       *string `json:"banner"`
+	BannerX      *int    `json:"banner_x"`
+	BannerY      *int    `json:"banner_y"`
 	Name         *string `json:"name"`
 	Description  *string `json:"description"`
 }
@@ -78,8 +82,12 @@ func (h *Handler) UpdateChannel(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_cover_pattern"})
 		return
 	}
-	if code := checkLook(deref(req.Theme), deref(req.CoverPattern), deref(req.Thumbnail)); code != "" {
+	if code := checkLook(deref(req.Theme), deref(req.CoverPattern), deref(req.Thumbnail), deref(req.Banner)); code != "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": code})
+		return
+	}
+	if !logo.ValidPosition(req.BannerX) || !logo.ValidPosition(req.BannerY) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_cover_position"})
 		return
 	}
 
@@ -94,6 +102,11 @@ func (h *Handler) UpdateChannel(c *gin.Context) {
 	if req.Thumbnail != nil {
 		params.Thumbnail = sql.NullString{String: *req.Thumbnail, Valid: true}
 	}
+	if req.Banner != nil {
+		params.Banner = sql.NullString{String: *req.Banner, Valid: true}
+	}
+	params.BannerX = logo.NullPosition(req.BannerX)
+	params.BannerY = logo.NullPosition(req.BannerY)
 	if req.Name != nil {
 		params.Name = sql.NullString{String: *req.Name, Valid: true}
 	}
@@ -116,6 +129,9 @@ func (h *Handler) UpdateChannel(c *gin.Context) {
 		"own_theme":     ownTheme(updated.Theme),
 		"cover_pattern": updated.CoverPattern,
 		"thumbnail":     updated.Thumbnail,
+		"banner":        updated.Banner,
+		"banner_x":      updated.BannerX,
+		"banner_y":      updated.BannerY,
 		"name":          updated.Name,
 		"description":   updated.Description,
 	})

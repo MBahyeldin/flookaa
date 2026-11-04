@@ -19,6 +19,8 @@ export type Community = {
   rules: string;
   thumbnail: string;
   banner: string;
+  banner_x: number;
+  banner_y: number;
   visibility: "public" | "private";
   /** 13, 16, 18 or 21. */
   min_age: number;
@@ -111,6 +113,9 @@ export interface ShowcaseCommunity {
   slug: string;
   name: string;
   thumbnail: string;
+  banner: string;
+  banner_x: number;
+  banner_y: number;
   theme: PaletteId;
   cover_pattern: CoverPattern;
   members_count: number;

@@ -9,6 +9,8 @@ type Channel = {
   description: string;
   thumbnail: string;
   banner: string;
+  banner_x: number;
+  banner_y: number;
   owner_id: number;
   created_at: string;
   updated_at: string;

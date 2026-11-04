@@ -23,6 +23,9 @@ export type HeroChannel = {
   description?: string | null;
   thumbnailUrl?: string | null;
   coverPattern: CoverPattern;
+  bannerImageUrl?: string | null;
+  bannerX: number;
+  bannerY: number;
   isPrivate: boolean;
   isOwner: boolean;
   minAge: number;
@@ -85,7 +88,7 @@ export function ChannelHero({
 
   return (
     <Hero
-      cover={<Cover pattern={channel.coverPattern} />}
+      cover={<Cover pattern={channel.coverPattern} src={channel.bannerImageUrl} focus={{ x: channel.bannerX, y: channel.bannerY }} />}
       media={
         <>
           <Logo name={channel.name} src={channel.thumbnailUrl} size="lg" className="md:hidden" />

@@ -189,6 +189,8 @@
     "preview": "Preview",
     "theme": "Theme",
     "cover": "Cover",
+    "pattern": "Pattern",
+    "patternHint": "Shows when there's no photo.",
     "title": "Look",
     "communityTheme": "Community's",
     "saveFailed": "Couldn't save the look. Try again.",
@@ -250,6 +252,17 @@
     "replace": "Replace logo",
     "upload": "Upload logo",
     "hint": "Square image, PNG or JPG. Without one, the initials show."
+  },
+  "coverPhoto": {
+    "label": "Cover photo",
+    "upload": "Upload photo",
+    "replace": "Replace photo",
+    "uploading": "Uploading…",
+    "hint": "Wide image, PNG or JPG. Without one, the pattern shows.",
+    "positionHint": "Drag the photo, or use the arrow keys, to choose what stays in view.",
+    "positionLabel": "Cover photo position",
+    "drag": "Drag to reposition",
+    "onPhone": "On a phone"
   },
   "list": {
     "tryOtherInterests": "Try other interests, or start the first one.",

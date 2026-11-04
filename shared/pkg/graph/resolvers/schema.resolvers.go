@@ -522,6 +522,8 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		Name:           channel.Name,
 		Description:    &channel.Description,
 		BannerImageURL: &channel.Banner,
+		BannerX:        int32(channel.BannerX),
+		BannerY:        int32(channel.BannerY),
 		ThumbnailURL:   &channel.Thumbnail,
 		CreatedAt:      channel.CreatedAt.Time,
 		UpdatedAt:      channel.UpdatedAt.Time,

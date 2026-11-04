@@ -4,6 +4,8 @@ query GetChannel($id: Int64!) {
     name
     description
     bannerImageUrl
+    bannerX
+    bannerY
     thumbnailUrl
     createdAt
     posts {

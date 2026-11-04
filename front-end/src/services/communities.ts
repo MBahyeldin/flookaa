@@ -47,6 +47,9 @@ export type CreateCommunityInput = {
   theme: string;
   cover_pattern: string;
   thumbnail: string;
+  banner: string;
+  banner_x: number;
+  banner_y: number;
   interest_ids: number[];
 };
 

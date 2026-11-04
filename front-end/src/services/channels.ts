@@ -167,6 +167,9 @@ export type CreateChannelInput = {
   theme: string;
   cover_pattern: string;
   thumbnail: string;
+  banner: string;
+  banner_x: number;
+  banner_y: number;
   interest_ids: number[];
   community_id?: number;
 };
@@ -196,6 +199,10 @@ export type ChannelChanges = Partial<{
   theme: string;
   cover_pattern: string;
   thumbnail: string;
+  /** "" removes the photo. */
+  banner: string;
+  banner_x: number;
+  banner_y: number;
 }>;
 
 export async function updateChannel(channelId: string, changes: ChannelChanges): Promise<Result<ChannelChanges & { own_theme: string | null }>> {

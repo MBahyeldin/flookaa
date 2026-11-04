@@ -535,6 +535,64 @@ func (ec *executionContext) fieldContext_Channel_bannerImageUrl(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Channel_bannerX(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_bannerX,
+		func(ctx context.Context) (any, error) {
+			return obj.BannerX, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_bannerX(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Channel_bannerY(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_bannerY,
+		func(ctx context.Context) (any, error) {
+			return obj.BannerY, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_bannerY(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Channel_thumbnailUrl(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4123,6 +4181,10 @@ func (ec *executionContext) fieldContext_Query_getChannel(ctx context.Context, f
 				return ec.fieldContext_Channel_description(ctx, field)
 			case "bannerImageUrl":
 				return ec.fieldContext_Channel_bannerImageUrl(ctx, field)
+			case "bannerX":
+				return ec.fieldContext_Channel_bannerX(ctx, field)
+			case "bannerY":
+				return ec.fieldContext_Channel_bannerY(ctx, field)
 			case "thumbnailUrl":
 				return ec.fieldContext_Channel_thumbnailUrl(ctx, field)
 			case "profileImageUrl":
@@ -5113,6 +5175,16 @@ func (ec *executionContext) _Channel(ctx context.Context, sel ast.SelectionSet, 
 			out.Values[i] = ec._Channel_description(ctx, field, obj)
 		case "bannerImageUrl":
 			out.Values[i] = ec._Channel_bannerImageUrl(ctx, field, obj)
+		case "bannerX":
+			out.Values[i] = ec._Channel_bannerX(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "bannerY":
+			out.Values[i] = ec._Channel_bannerY(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "thumbnailUrl":
 			out.Values[i] = ec._Channel_thumbnailUrl(ctx, field, obj)
 		case "profileImageUrl":

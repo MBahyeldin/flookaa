@@ -19,6 +19,8 @@ type ChannelResponse struct {
 	Description    string              `json:"description"`
 	Thumbnail      string              `json:"thumbnail"`
 	Banner         string              `json:"banner"`
+	BannerX        int16               `json:"banner_x"`
+	BannerY        int16               `json:"banner_y"`
 	OwnerID        int64               `json:"owner_id"`
 	CreatedAt      string              `json:"created_at"`
 	UpdatedAt      string              `json:"updated_at"`
@@ -155,6 +157,8 @@ func (h *Handler) build(ctx context.Context, viewerID int64, items []channelItem
 			Description:    ch.Description,
 			Thumbnail:      ch.Thumbnail,
 			Banner:         ch.Banner,
+			BannerX:        ch.BannerX,
+			BannerY:        ch.BannerY,
 			OwnerID:        ch.OwnerID,
 			CreatedAt:      ch.CreatedAt.Time.String(),
 			UpdatedAt:      ch.UpdatedAt.Time.String(),

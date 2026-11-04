@@ -42,9 +42,9 @@ func (q *Queries) AddUserToChannel(ctx context.Context, arg AddUserToChannelPara
 }
 
 const createChannel = `-- name: CreateChannel :one
-INSERT INTO channels (name, description,  owner_id, thumbnail, banner, visibility, min_age, theme, cover_pattern, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7::smallint, $8::theme_enum, $9, NOW())
-RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at, min_age, theme, cover_pattern
+INSERT INTO channels (name, description,  owner_id, thumbnail, banner, banner_x, banner_y, visibility, min_age, theme, cover_pattern, created_at)
+VALUES ($1, $2, $3, $4, $5, COALESCE($7::smallint, 50), COALESCE($8::smallint, 50), $6, $9::smallint, $10::theme_enum, $11, NOW())
+RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at, min_age, theme, cover_pattern, banner_x, banner_y
 `
 
 type CreateChannelParams struct {
@@ -54,6 +54,8 @@ type CreateChannelParams struct {
 	Thumbnail    string
 	Banner       string
 	Visibility   ChannelVisibilityEnum
+	BannerX      sql.NullInt16
+	BannerY      sql.NullInt16
 	MinAge       int16
 	Theme        NullThemeEnum
 	CoverPattern CoverPatternEnum
@@ -70,6 +72,8 @@ func (q *Queries) CreateChannel(ctx context.Context, arg CreateChannelParams) (C
 		arg.Thumbnail,
 		arg.Banner,
 		arg.Visibility,
+		arg.BannerX,
+		arg.BannerY,
 		arg.MinAge,
 		arg.Theme,
 		arg.CoverPattern,
@@ -89,6 +93,8 @@ func (q *Queries) CreateChannel(ctx context.Context, arg CreateChannelParams) (C
 		&i.MinAge,
 		&i.Theme,
 		&i.CoverPattern,
+		&i.BannerX,
+		&i.BannerY,
 	)
 	return i, err
 }
@@ -150,7 +156,7 @@ func (q *Queries) FollowChannel(ctx context.Context, arg FollowChannelParams) (i
 
 const getAllChannels = `-- name: GetAllChannels :many
 SELECT 
-    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern,
+    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y,
     channel_theme(c.theme, c.id)::theme_enum AS effective_theme,
     (c.owner_id = $1) AS is_owner,
     EXISTS (
@@ -255,6 +261,8 @@ func (q *Queries) GetAllChannels(ctx context.Context, arg GetAllChannelsParams) 
 			&i.Channel.MinAge,
 			&i.Channel.Theme,
 			&i.Channel.CoverPattern,
+			&i.Channel.BannerX,
+			&i.Channel.BannerY,
 			&i.EffectiveTheme,
 			&i.IsOwner,
 			&i.IsMember,
@@ -278,7 +286,7 @@ func (q *Queries) GetAllChannels(ctx context.Context, arg GetAllChannelsParams) 
 
 const getChannel = `-- name: GetChannel :one
 SELECT 
-    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern,
+    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y,
     channel_theme(c.theme, c.id)::theme_enum AS effective_theme,
     (c.owner_id = $1) AS is_owner,
     EXISTS (
@@ -339,6 +347,8 @@ type GetChannelRow struct {
 	MinAge         int16
 	Theme          NullThemeEnum
 	CoverPattern   CoverPatternEnum
+	BannerX        int16
+	BannerY        int16
 	EffectiveTheme ThemeEnum
 	IsOwner        bool
 	IsMember       bool
@@ -368,6 +378,8 @@ func (q *Queries) GetChannel(ctx context.Context, arg GetChannelParams) (GetChan
 		&i.MinAge,
 		&i.Theme,
 		&i.CoverPattern,
+		&i.BannerX,
+		&i.BannerY,
 		&i.EffectiveTheme,
 		&i.IsOwner,
 		&i.IsMember,
@@ -459,7 +471,7 @@ func (q *Queries) GetChannelAccess(ctx context.Context, arg GetChannelAccessPara
 }
 
 const getChannelsForUser = `-- name: GetChannelsForUser :many
-SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern
+SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y
 FROM channel_members cm
 JOIN channels c ON cm.channel_id = c.id
 WHERE cm.persona_id = $1
@@ -492,6 +504,8 @@ func (q *Queries) GetChannelsForUser(ctx context.Context, personaID int64) ([]Ch
 			&i.MinAge,
 			&i.Theme,
 			&i.CoverPattern,
+			&i.BannerX,
+			&i.BannerY,
 		); err != nil {
 			return nil, err
 		}
@@ -507,7 +521,7 @@ func (q *Queries) GetChannelsForUser(ctx context.Context, personaID int64) ([]Ch
 }
 
 const getFollowedChannelsForUser = `-- name: GetFollowedChannelsForUser :many
-SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern
+SELECT c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y
 FROM channel_followers cf
 JOIN channels c ON cf.channel_id = c.id
 WHERE cf.persona_id = $1
@@ -540,6 +554,8 @@ func (q *Queries) GetFollowedChannelsForUser(ctx context.Context, personaID int6
 			&i.MinAge,
 			&i.Theme,
 			&i.CoverPattern,
+			&i.BannerX,
+			&i.BannerY,
 		); err != nil {
 			return nil, err
 		}
@@ -672,7 +688,7 @@ func (q *Queries) ListChannelSummaries(ctx context.Context, ids []int64) ([]List
 }
 
 const listChannels = `-- name: ListChannels :many
-SELECT id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at, min_age, theme, cover_pattern
+SELECT id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at, min_age, theme, cover_pattern, banner_x, banner_y
 FROM channels
 WHERE deleted_at IS NULL
 ORDER BY name
@@ -710,6 +726,8 @@ func (q *Queries) ListChannels(ctx context.Context, arg ListChannelsParams) ([]C
 			&i.MinAge,
 			&i.Theme,
 			&i.CoverPattern,
+			&i.BannerX,
+			&i.BannerY,
 		); err != nil {
 			return nil, err
 		}
@@ -1073,7 +1091,7 @@ func (q *Queries) ListPendingJoinRequests(ctx context.Context, channelID int64) 
 
 const listProfileChannels = `-- name: ListProfileChannels :many
 SELECT
-    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern,
+    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y,
     channel_theme(c.theme, c.id)::theme_enum AS effective_theme,
     (c.owner_id = $1::bigint) AS is_owner,
     EXISTS (
@@ -1181,6 +1199,8 @@ func (q *Queries) ListProfileChannels(ctx context.Context, arg ListProfileChanne
 			&i.Channel.MinAge,
 			&i.Channel.Theme,
 			&i.Channel.CoverPattern,
+			&i.Channel.BannerX,
+			&i.Channel.BannerY,
 			&i.EffectiveTheme,
 			&i.IsOwner,
 			&i.IsMember,
@@ -1307,7 +1327,7 @@ const removeChannel = `-- name: RemoveChannel :one
 UPDATE channels
 SET deleted_at = NOW()
 WHERE id = $1
-RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at, min_age, theme, cover_pattern
+RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at, min_age, theme, cover_pattern, banner_x, banner_y
 `
 
 // -------------------------------
@@ -1330,6 +1350,8 @@ func (q *Queries) RemoveChannel(ctx context.Context, id int64) (Channel, error) 
 		&i.MinAge,
 		&i.Theme,
 		&i.CoverPattern,
+		&i.BannerX,
+		&i.BannerY,
 	)
 	return i, err
 }
@@ -1429,7 +1451,7 @@ WITH viewer AS (
     WHERE cf.persona_id = $1::bigint AND cf.unfollowed_at IS NULL
 )
 SELECT
-    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern,
+    c.id, c.name, c.description, c.thumbnail, c.banner, c.owner_id, c.visibility, c.created_at, c.updated_at, c.deleted_at, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y,
     channel_theme(c.theme, c.id)::theme_enum AS effective_theme,
     m.members::int AS members_count,
     (
@@ -1522,6 +1544,8 @@ func (q *Queries) SuggestChannels(ctx context.Context, arg SuggestChannelsParams
 			&i.Channel.MinAge,
 			&i.Channel.Theme,
 			&i.Channel.CoverPattern,
+			&i.Channel.BannerX,
+			&i.Channel.BannerY,
 			&i.EffectiveTheme,
 			&i.MembersCount,
 			&i.FollowersCount,
@@ -1570,11 +1594,14 @@ SET theme = CASE WHEN $1::bool THEN NULL
                  ELSE COALESCE($2::theme_enum, theme) END,
     cover_pattern = COALESCE($3::cover_pattern_enum, cover_pattern),
     thumbnail = COALESCE($4, thumbnail),
-    name = COALESCE($5, name),
-    description = COALESCE($6, description),
+    banner = COALESCE($5, banner),
+    banner_x = COALESCE($6::smallint, banner_x),
+    banner_y = COALESCE($7::smallint, banner_y),
+    name = COALESCE($8, name),
+    description = COALESCE($9, description),
     updated_at = NOW()
-WHERE id = $7 AND deleted_at IS NULL
-RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at, min_age, theme, cover_pattern, channel_theme(theme, id)::theme_enum AS effective_theme
+WHERE id = $10 AND deleted_at IS NULL
+RETURNING id, name, description, thumbnail, banner, owner_id, visibility, created_at, updated_at, deleted_at, min_age, theme, cover_pattern, banner_x, banner_y, channel_theme(theme, id)::theme_enum AS effective_theme
 `
 
 type UpdateChannelParams struct {
@@ -1582,6 +1609,9 @@ type UpdateChannelParams struct {
 	Theme        NullThemeEnum
 	CoverPattern NullCoverPatternEnum
 	Thumbnail    sql.NullString
+	Banner       sql.NullString
+	BannerX      sql.NullInt16
+	BannerY      sql.NullInt16
 	Name         sql.NullString
 	Description  sql.NullString
 	ID           int64
@@ -1601,6 +1631,8 @@ type UpdateChannelRow struct {
 	MinAge         int16
 	Theme          NullThemeEnum
 	CoverPattern   CoverPatternEnum
+	BannerX        int16
+	BannerY        int16
 	EffectiveTheme ThemeEnum
 }
 
@@ -1614,6 +1646,9 @@ func (q *Queries) UpdateChannel(ctx context.Context, arg UpdateChannelParams) (U
 		arg.Theme,
 		arg.CoverPattern,
 		arg.Thumbnail,
+		arg.Banner,
+		arg.BannerX,
+		arg.BannerY,
 		arg.Name,
 		arg.Description,
 		arg.ID,
@@ -1633,6 +1668,8 @@ func (q *Queries) UpdateChannel(ctx context.Context, arg UpdateChannelParams) (U
 		&i.MinAge,
 		&i.Theme,
 		&i.CoverPattern,
+		&i.BannerX,
+		&i.BannerY,
 		&i.EffectiveTheme,
 	)
 	return i, err

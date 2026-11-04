@@ -81,7 +81,7 @@ export function CommunityHero({
 
   return (
     <Hero
-      cover={<Cover pattern={community.cover_pattern} />}
+      cover={<Cover pattern={community.cover_pattern} src={community.banner} focus={{ x: community.banner_x, y: community.banner_y }} />}
       media={
         <>
           <Logo name={community.name} src={community.thumbnail} size="lg" className="md:hidden" />
