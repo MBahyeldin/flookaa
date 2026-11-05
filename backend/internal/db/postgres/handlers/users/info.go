@@ -41,6 +41,8 @@ func (h *Handler) Info(c *gin.Context) {
 		"is_verified": userRow.IsVerified.Bool,
 		"thumbnail":   userRow.Thumbnail.String,
 		"is_admin":    isAdmin,
+		"language":    languageJSON(userRow.Language),
+		"gender":      genderJSON(userRow.Gender),
 		"onboarding":  h.state(ctx, userId, userRow.OnboardingStep, userRow.OnboardingCompleted),
 	})
 }

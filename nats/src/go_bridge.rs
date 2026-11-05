@@ -9,12 +9,15 @@ use tokio::{
     task::JoinHandle,
 };
 
-type Subscriptions = Arc<Mutex<HashMap<String, JoinHandle<()>>>>;
+// subscription id (the browser's uuid) -> subject -> task
+type Subscriptions = Arc<Mutex<HashMap<String, HashMap<String, JoinHandle<()>>>>>;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
 struct GoRequest {
     id: String,
+    #[serde(rename = "type")]
+    kind: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -59,6 +62,11 @@ pub async fn forward_to_go(
 
     let id = payload_parsed.id.clone();
 
+    if payload_parsed.kind.as_deref() == Some("UNSUBSCRIBE") {
+        unsubscribe_id(&id, subscriptions.clone()).await;
+        return;
+    }
+
     let client = Client::new();
     match client
         .post(&url)
@@ -94,9 +102,9 @@ pub async fn forward_to_go(
                                         )
                                         .await;
                                     }
+                                    // Go can still drop subjects in its answer.
                                     "unsubscribe" => {
-                                        let subjects_array: Vec<Subject> = go_resp.subjects;
-                                        unsubscribe_subject(subjects_array, subscriptions.clone())
+                                        unsubscribe_subjects(go_resp.subjects, subscriptions.clone())
                                             .await;
                                     }
                                     _ => {
@@ -146,11 +154,12 @@ async fn subscribe_subject(
     }
 
     for subject_owned in cloned_local_subjects {
-        // Avoid duplicate subscriptions
+        // Avoid duplicate subscriptions within the same subscription id
         if subscriptions
             .lock()
             .await
-            .contains_key(&subject_owned.subject)
+            .get(&id)
+            .is_some_and(|subjects| subjects.contains_key(&subject_owned.subject))
         {
             println!("Already subscribed to subject: {}", &subject_owned.subject);
             continue;
@@ -194,22 +203,33 @@ async fn subscribe_subject(
         subscriptions
             .lock()
             .await
+            .entry(id.clone())
+            .or_default()
             .insert(subject_owned.subject, handle);
     }
 }
 
-async fn unsubscribe_subject(subjects_array: Vec<Subject>, subscriptions: Subscriptions) {
-    for subject_owned in subjects_array {
-        println!("Unsubscribing from subject: {}", &subject_owned.subject);
+async fn unsubscribe_id(id: &str, subscriptions: Subscriptions) {
+    let Some(subjects) = subscriptions.lock().await.remove(id) else {
+        println!("No active subscription found for id {}", id);
+        return;
+    };
+    for (subject, handle) in subjects {
+        handle.abort(); // Stop the subscription task
+        println!("Unsubscribed from {} (id {})", subject, id);
+    }
+}
 
-        if let Some(handle) = subscriptions.lock().await.remove(&subject_owned.subject) {
-            handle.abort(); // Stop the subscription task
-            println!("Unsubscribed from {}", &subject_owned.subject);
-        } else {
-            println!(
-                "No active subscription found for {}",
-                &subject_owned.subject
-            );
+// Drops these subjects under every subscription id of the socket.
+async fn unsubscribe_subjects(subjects_array: Vec<Subject>, subscriptions: Subscriptions) {
+    let mut subscriptions = subscriptions.lock().await;
+    for subject in subjects_array {
+        for (id, subjects) in subscriptions.iter_mut() {
+            if let Some(handle) = subjects.remove(&subject.subject) {
+                handle.abort();
+                println!("Unsubscribed from {} (id {})", subject.subject, id);
+            }
         }
     }
+    subscriptions.retain(|_, subjects| !subjects.is_empty());
 }

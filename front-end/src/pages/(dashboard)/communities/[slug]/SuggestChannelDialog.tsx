@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Clock, Loader2, Lock, Plus } from "lucide-react";
+import { Clock, Hash, Lock, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { SkeletonList } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { cancelChannelRequest, requestChannelJoin } from "@/services/communities";
 import type { Community, ModeratedChannel } from "@/types/community";
+import { useTranslation } from "react-i18next";
+import { isolate } from "@/i18n";
 
-const errors: Record<string, string> = {
-  recently_rejected: "This community declined the channel recently. You can ask again 30 days after.",
-  channel_in_community: "This channel is already in a community.",
-  channel_request_pending: "This channel is already waiting on a community.",
-};
+const KNOWN_ERRORS = ["recently_rejected", "channel_in_community", "channel_request_pending"] as const;
 
 /** The channels the viewer moderates, each with where it stands; onChanged reloads them. */
 export default function SuggestChannelDialog({
@@ -29,6 +29,7 @@ export default function SuggestChannelDialog({
   onOpenChange: (open: boolean) => void;
   onChanged: () => void;
 }) {
+  const { t } = useTranslation(["communities", "common", "channels"]);
   const [busyId, setBusyId] = useState<number | null>(null);
 
   const run = async (channel: ModeratedChannel, cancel: boolean) => {
@@ -36,9 +37,10 @@ export default function SuggestChannelDialog({
     const r = cancel ? await cancelChannelRequest(community.id, channel.id) : await requestChannelJoin(community.id, channel.id);
     setBusyId(null);
     if (!r.ok) {
-      toast.error(errors[r.error] ?? "Couldn't update the request. Please try again.");
+      const known = KNOWN_ERRORS.find((code) => code === r.error);
+      toast.error(known ? t(`suggest.errors.${known}`) : t("common:requests.updateFailed"));
     } else {
-      toast.success(cancel ? "Request cancelled" : `${channel.name} was suggested. A manager will review it.`);
+      toast.success(cancel ? t("channels:manage.requestCancelled") : t("suggest.sent", { channel: channel.name }));
     }
     onChanged();
   };
@@ -48,22 +50,24 @@ export default function SuggestChannelDialog({
     if (channel.community_status === "none") {
       return (
         <Button size="sm" disabled={busyId === channel.id} onClick={() => run(channel, false)}>
-          Suggest
+          {t("suggest.action")}
         </Button>
       );
     }
     if (here && channel.community_status === "pending") {
       return (
         <Button size="sm" variant="secondary" disabled={busyId === channel.id} onClick={() => run(channel, true)}>
-          <Clock className="mr-1 h-4 w-4" />
-          Cancel request
+          <Clock className="me-1 h-4 w-4" />
+          {t("common:actions.cancelRequest")}
         </Button>
       );
     }
-    if (here) return <span className="text-xs text-muted-foreground">In this community</span>;
+    if (here) return <span className="text-xs text-muted-foreground">{t("suggest.inThis")}</span>;
     return (
       <span className="truncate text-xs text-muted-foreground">
-        {channel.community_status === "active" ? "In" : "Waiting on"} {channel.community?.name}
+        {channel.community_status === "active"
+          ? t("suggest.inOther", { community: isolate(channel.community?.name ?? "") })
+          : t("suggest.waitingOn", { community: isolate(channel.community?.name ?? "") })}
       </span>
     );
   };
@@ -72,19 +76,22 @@ export default function SuggestChannelDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Suggest a channel</DialogTitle>
-          <DialogDescription>
-            Pick a channel you moderate. {community.name}'s managers decide whether it joins. A channel can be in one community
-            at a time.
-          </DialogDescription>
+          <DialogTitle>{t("suggest.title")}</DialogTitle>
+          <DialogDescription>{t("suggest.lead", { community: isolate(community.name) })}</DialogDescription>
         </DialogHeader>
         {channels === null ? (
-          <div role="status" className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading…
-          </div>
+          <SkeletonList count={3} />
         ) : channels.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">You don't moderate any channels yet.</p>
+          <EmptyState
+            compact
+            icon={Hash}
+            title={t("suggest.none")}
+            action={
+              <Button asChild>
+                <Link to={`/channels/create?community=${community.id}`}>{t("channels:create.submit")}</Link>
+              </Button>
+            }
+          />
         ) : (
           <ul className="divide-y divide-border">
             {channels.map((channel) => (
@@ -95,7 +102,7 @@ export default function SuggestChannelDialog({
                 </Avatar>
                 <span className="flex min-w-0 flex-1 items-center gap-1 text-sm font-medium">
                   <span className="truncate">{channel.name}</span>
-                  {channel.visibility === "private" && <Lock className="h-3 w-3 shrink-0 text-muted-foreground" aria-label="Private" />}
+                  {channel.visibility === "private" && <Lock className="h-3 w-3 shrink-0 text-muted-foreground" aria-label={t("common:visibility.private")} />}
                 </span>
                 <div className="flex max-w-[45%] shrink-0 items-center">{status(channel)}</div>
               </li>
@@ -107,7 +114,7 @@ export default function SuggestChannelDialog({
           className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
         >
           <Plus className="h-4 w-4" />
-          Create a new channel for {community.name}
+          {t("suggest.createFor", { community: isolate(community.name) })}
         </Link>
       </DialogContent>
     </Dialog>

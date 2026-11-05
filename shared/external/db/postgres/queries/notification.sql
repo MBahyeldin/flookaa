@@ -96,7 +96,7 @@ RETURNING id, recipient_id;
 -- for the first page. Visibility is one rule per scope type; rows without a
 -- scope are personal and visible unless about a community the recipient is
 -- too young for. CHANNEL mirrors access.CanRead: old enough, and public or the
--- recipient is an active member.
+-- recipient is an active member. PERSONA (a wall) mirrors access.LoadWall.
 -- name: ListNotifications :many
 SELECT n.*
 FROM notifications n
@@ -128,6 +128,7 @@ WHERE n.recipient_id = sqlc.arg(recipient_id)::bigint
                 )
             )
       ))
+      OR (n.scope_type = 'PERSONA' AND persona_visible_to(n.scope_id, n.recipient_id))
   )
 ORDER BY n.updated_at DESC, n.id DESC
 LIMIT sqlc.arg(page_size)::int;
@@ -164,6 +165,7 @@ WHERE n.recipient_id = sqlc.arg(recipient_id)::bigint
                 )
             )
       ))
+      OR (n.scope_type = 'PERSONA' AND persona_visible_to(n.scope_id, n.recipient_id))
   );
 
 -- -------------------------------

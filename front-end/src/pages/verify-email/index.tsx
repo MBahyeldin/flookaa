@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { Mail } from "lucide-react";
 import { useAuth } from "@/Auth.context";
 import {
   InputOTP,
   InputOTPGroup,
-  InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
-import Header from "@/navbar/header";
+import AuthSplit from "@/pages/auth/AuthSplit";
+import { Trans, useTranslation } from "react-i18next";
+import { t } from "@/i18n";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import verifyEmail, {
   resendVerification,
@@ -27,28 +27,27 @@ function takeEmailFailedFlag() {
 
 function verifyErrorText(error: string, attemptsLeft?: number) {
   if (error === "invalid_code") {
-    return attemptsLeft
-      ? `That code is wrong. ${attemptsLeft} ${attemptsLeft === 1 ? "try" : "tries"} left.`
-      : "That code is wrong.";
+    return attemptsLeft ? t("auth:verify.wrongCodeLeft", { count: attemptsLeft }) : t("auth:verify.wrongCode");
   }
-  if (error === "code_expired") return "This code has expired. Request a new one.";
-  return "Something went wrong. Please try again.";
+  if (error === "code_expired") return t("auth:verify.expired");
+  return t("errors:generic");
 }
 
 function resendErrorText(error: string) {
-  if (error === "email_failed") return "We couldn't send the email. Try again shortly.";
+  if (error === "email_failed") return t("errors:email_failed");
   if (error === "resend_cooldown") return null;
-  return "Something went wrong. Please try again.";
+  return t("errors:generic");
 }
 
 export default function VerifyEmailPage() {
+  const { t } = useTranslation(["auth", "common"]);
   const { revalidateUser, handleLogOut } = useAuth();
   const { user } = useUserProfileStore();
   const [code, setCode] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(() =>
-    takeEmailFailedFlag() ? "We couldn't send your code. Press Resend to get one." : null,
+    takeEmailFailedFlag() ? t("verify.sendFailed") : null,
   );
   const [isResending, setIsResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
@@ -87,7 +86,7 @@ export default function VerifyEmailPage() {
       const result = await resendVerification();
       if (result.ok) {
         setCode("");
-        setNotice("We sent you a new code.");
+        setNotice(t("verify.resent"));
       } else if (result.error === "already_verified") {
         revalidateUser();
       } else {
@@ -102,74 +101,69 @@ export default function VerifyEmailPage() {
   };
 
   return (
-    <div className="min-h-screen flex justify-center px-4 pt-28 pb-16 welcome-bg-bottom bg-no-repeat bg-bottom bg-cover">
-      <Header onlyLogo={true} />
-      <div className="w-full max-w-sm">
-        <div className="rounded-2xl bg-background/80 backdrop-blur-md shadow-xl p-6 flex flex-col items-center gap-5 text-center">
-          <div className="bg-primary w-20 h-20 rounded-full flex items-center justify-center">
-            <Mail className="text-primary-foreground w-10 h-10" />
-          </div>
-          <div className="flex flex-col gap-1">
-            <h1 className="font-extrabold text-2xl tracking-tight text-foreground">
-              Verify Your Email
-            </h1>
-            <p className="text-muted-foreground">
-              We sent a 6-digit code to{" "}
-              <span className="font-medium text-foreground break-all">{user?.email}</span>
-            </p>
-          </div>
-
-          <InputOTP
-            maxLength={6}
-            value={code}
-            onChange={(val) => {
-              setCode(val);
-              setError(null);
-            }}
-            onComplete={submit}
-            disabled={isVerifying}
-          >
-            <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
-            </InputOTPGroup>
-            <InputOTPSeparator />
-            <InputOTPGroup>
-              <InputOTPSlot index={3} />
-              <InputOTPSlot index={4} />
-              <InputOTPSlot index={5} />
-            </InputOTPGroup>
-          </InputOTP>
-
-          {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
-          {!error && notice && <p className="text-sm text-muted-foreground">{notice}</p>}
-
-          <Button
-            className="w-full rounded-full"
-            disabled={code.length !== 6 || isVerifying}
-            onClick={() => submit(code)}
-          >
-            {isVerifying ? "Verifying…" : "Verify"}
-          </Button>
-
+    <AuthSplit
+      title={t("checkEmail")}
+      lead={
+        <Trans
+          t={t}
+          i18nKey="verify.lead"
+          values={{ email: user?.email }}
+          components={{ email: <span className="font-medium text-foreground break-all" /> }}
+        />
+      }
+    >
+      <div className="flex flex-col gap-2">
+        <InputOTP
+          maxLength={6}
+          value={code}
+          onChange={(val) => {
+            setCode(val);
+            setError(null);
+          }}
+          onComplete={submit}
+          disabled={isVerifying}
+        >
+          <InputOTPGroup aria-invalid={!!error || undefined}>
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <InputOTPSlot key={i} index={i} />
+            ))}
+          </InputOTPGroup>
+        </InputOTP>
+        {error ? (
+          <p className="text-sm text-destructive" role="alert">{error}</p>
+        ) : (
           <p className="text-sm text-muted-foreground">
-            Didn't receive an email?{" "}
-            <Button
-              variant="link"
-              className="h-auto p-0"
-              disabled={isResending || cooldown > 0}
-              onClick={resend}
-            >
-              {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend"}
-            </Button>
+            {notice ?? t("verify.hint")}
           </p>
-
-          <Button variant="ghost" size="sm" onClick={handleLogOut}>
-            Log out
-          </Button>
-        </div>
+        )}
       </div>
-    </div>
+
+      <Button
+        size="lg"
+        className="w-full"
+        disabled={code.length !== 6}
+        loading={isVerifying}
+        onClick={() => submit(code)}
+      >
+        {t("verify.submit")}
+      </Button>
+
+      <div className="flex flex-col items-start gap-2 text-sm">
+        <Button
+          variant="link"
+          className="h-auto p-0 font-medium"
+          disabled={isResending || cooldown > 0}
+          onClick={resend}
+        >
+          {cooldown > 0 ? t("verify.resendIn", { seconds: cooldown }) : t("verify.resend")}
+        </Button>
+        <p className="text-muted-foreground">
+          {t("verify.wrongEmail")}{" "}
+          <Button variant="link" className="h-auto p-0 text-muted-foreground underline" onClick={handleLogOut}>
+            {t("common:shell.logOut")}
+          </Button>
+        </p>
+      </div>
+    </AuthSplit>
   );
 }

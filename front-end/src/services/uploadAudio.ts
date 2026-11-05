@@ -1,3 +1,5 @@
+import { t } from "@/i18n";
+
 const S3_BUCKET_BASE_URL = import.meta.env.VITE_S3_BUCKET_BASE_URL || "";
 
 export default async function uploadAudio({
@@ -23,7 +25,7 @@ export default async function uploadAudio({
   multipart.append("mime_type", mimeType);
 
   if (blob.size === 0) {
-    throw new Error("Recording is empty — nothing was captured");
+    throw new Error(t("common:upload.emptyRecording"));
   }
 
   let response: Response;
@@ -35,7 +37,7 @@ export default async function uploadAudio({
     });
   } catch (err) {
     console.error("Audio upload request failed:", err);
-    throw new Error("Couldn’t reach the upload service");
+    throw new Error(t("common:upload.unreachable"));
   }
 
   /*
@@ -55,13 +57,13 @@ export default async function uploadAudio({
       /* non-JSON error body */
     }
     console.error(`Audio upload rejected: HTTP ${response.status}${detail}`);
-    throw new Error(`Upload failed (${response.status})${detail}`);
+    throw new Error(t("common:upload.failedStatus", { status: response.status }));
   }
 
   const data = await response.json().catch(() => null);
   if (!data?.file_path) {
     console.error("Audio upload succeeded but returned no file_path:", data);
-    throw new Error("Upload succeeded but no file path was returned");
+    throw new Error(t("common:upload.noUrl"));
   }
 
   return S3_BUCKET_BASE_URL + data.file_path;

@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/apiFetch";
+import type { Result } from "@/services/interests";
 import type { Channel, ChannelInterests, ChannelMember, JoinRequest } from "@/types/channel";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -8,11 +9,11 @@ if (!API_BASE_URL) {
 }
 
 export async function getChannels(
-  filter: { interest?: string; communityId?: number; limit?: number } = {},
+  filter: { interests?: string[]; communityId?: number; limit?: number } = {},
 ): Promise<{ channels: Channel[] } | null> {
   try {
     const params = new URLSearchParams();
-    if (filter.interest) params.set("interest", filter.interest);
+    for (const slug of filter.interests ?? []) params.append("interest", slug);
     if (filter.communityId) params.set("community_id", String(filter.communityId));
     if (filter.limit) params.set("limit", String(filter.limit));
     const query = params.size ? `?${params}` : "";
@@ -152,6 +153,69 @@ export async function setChannelMinAge(
     const body = await resp.json().catch(() => ({}));
     if (!resp.ok) return { ok: false, error: body.error ?? "request_failed" };
     return { ok: true, minAge: body.min_age };
+  } catch {
+    return { ok: false, error: "request_failed" };
+  }
+}
+
+export type CreateChannelInput = {
+  name: string;
+  description: string;
+  visibility: "public" | "private";
+  min_age: number;
+  /** "" = the community's. */
+  theme: string;
+  cover_pattern: string;
+  thumbnail: string;
+  banner: string;
+  banner_x: number;
+  banner_y: number;
+  interest_ids: number[];
+  community_id?: number;
+};
+
+export async function createChannel(
+  input: CreateChannelInput,
+): Promise<Result<{ channel: { ID: number }; community_status: "" | "active" | "pending" }>> {
+  try {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/channels/create`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    const body = await resp.json().catch(() => ({}));
+    if (!resp.ok) return { ok: false, error: body.error ?? "request_failed" };
+    return { ok: true, data: body };
+  } catch {
+    return { ok: false, error: "request_failed" };
+  }
+}
+
+export type ChannelChanges = Partial<{
+  name: string;
+  description: string;
+  /** "" = the community's. */
+  theme: string;
+  cover_pattern: string;
+  thumbnail: string;
+  /** "" removes the photo. */
+  banner: string;
+  banner_x: number;
+  banner_y: number;
+}>;
+
+export async function updateChannel(channelId: string, changes: ChannelChanges): Promise<Result<ChannelChanges & { own_theme: string | null }>> {
+  try {
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1/channels/${channelId}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(changes),
+    });
+    const body = await resp.json().catch(() => ({}));
+    if (!resp.ok) return { ok: false, error: body.error ?? "request_failed" };
+    return { ok: true, data: body };
   } catch {
     return { ok: false, error: "request_failed" };
   }

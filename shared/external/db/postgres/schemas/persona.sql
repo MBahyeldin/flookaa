@@ -5,7 +5,6 @@ CREATE TYPE persona_privacy_enum AS ENUM (
     'only_me'
 );
 
-CREATE TYPE persona_theme_enum AS ENUM ('tide', 'forest', 'ember', 'plum', 'rose', 'slate');
    
 
 CREATE TYPE persona_follow_status_enum AS ENUM (
@@ -39,7 +38,8 @@ CREATE TABLE personas (
     privacy persona_privacy_enum NOT NULL DEFAULT 'public',
     is_default BOOLEAN DEFAULT false,
     show_on_profile BOOLEAN NOT NULL DEFAULT false,
-    theme persona_theme_enum NOT NULL DEFAULT 'tide',
+    theme theme_enum NOT NULL DEFAULT 'tide',
+    cover_pattern cover_pattern_enum NOT NULL DEFAULT 'waves',
 
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
@@ -60,7 +60,8 @@ CREATE UNIQUE INDEX personas_invite_token_key ON personas (invite_token) WHERE i
 
 CREATE TABLE interest_groups (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
+    name_en VARCHAR(100) NOT NULL,
+    name_ar VARCHAR(100),
     slug VARCHAR(50) NOT NULL,
     sort_order INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
@@ -68,11 +69,13 @@ CREATE TABLE interest_groups (
     CONSTRAINT interest_groups_slug_key UNIQUE (slug)
 );
 
-CREATE UNIQUE INDEX interest_groups_name_lower_key ON interest_groups (lower(name));
+CREATE UNIQUE INDEX interest_groups_name_en_lower_key ON interest_groups (lower(name_en));
+CREATE UNIQUE INDEX interest_groups_name_ar_key ON interest_groups (name_ar) WHERE name_ar IS NOT NULL;
 
 CREATE TABLE interests (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
+    name_en VARCHAR(100) NOT NULL,
+    name_ar VARCHAR(100),
     slug VARCHAR(50) NOT NULL UNIQUE,
     emoji VARCHAR(32) NOT NULL,
     sort_order INT NOT NULL DEFAULT 0,
@@ -82,7 +85,8 @@ CREATE TABLE interests (
     group_id BIGINT REFERENCES interest_groups(id)
 );
 
-CREATE UNIQUE INDEX interests_name_lower_key ON interests (lower(name));
+CREATE UNIQUE INDEX interests_name_en_lower_key ON interests (lower(name_en));
+CREATE UNIQUE INDEX interests_name_ar_key ON interests (name_ar) WHERE name_ar IS NOT NULL;
 CREATE INDEX interests_group_id_idx ON interests (group_id);
 
 CREATE TABLE persona_interests (
@@ -159,3 +163,40 @@ CREATE TABLE persona_follow_invitations (
 
 CREATE INDEX persona_follow_invitations_invitee
     ON persona_follow_invitations (invitee_persona_id) WHERE status = 'pending';
+
+-- Whether a viewer sees the real persona; missing or deleted personas never are.
+CREATE FUNCTION persona_visible_to(p_target BIGINT, p_viewer BIGINT) RETURNS boolean
+LANGUAGE sql STABLE AS $$
+    SELECT COALESCE((
+        SELECT
+            t.privacy = 'public'
+            OR t.user_id = (SELECT v.user_id FROM personas v WHERE v.id = p_viewer)
+            OR (t.privacy = 'private' AND EXISTS (
+                SELECT 1
+                FROM persona_followers pf
+                WHERE pf.persona_id = t.id
+                  AND pf.follower_persona_id = p_viewer
+                  AND pf.status = 'active'
+                  AND pf.unfollowed_at IS NULL
+            ))
+            -- A pending invitation shows the inviter to the invitee.
+            OR (t.privacy = 'private' AND EXISTS (
+                SELECT 1
+                FROM persona_follow_invitations i
+                WHERE i.persona_id = t.id
+                  AND i.invitee_persona_id = p_viewer
+                  AND i.status = 'pending'
+            ))
+            -- Following someone (or asking to) shows you to them.
+            OR EXISTS (
+                SELECT 1
+                FROM persona_followers pf
+                WHERE pf.persona_id = p_viewer
+                  AND pf.follower_persona_id = t.id
+                  AND pf.status IN ('pending', 'active')
+                  AND pf.unfollowed_at IS NULL
+            )
+        FROM personas t
+        WHERE t.id = p_target AND t.deleted_at IS NULL
+    ), false)
+$$;

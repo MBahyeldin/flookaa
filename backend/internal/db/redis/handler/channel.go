@@ -28,20 +28,17 @@ func (h *Handler) channel(c *gin.Context, wsMessage WsMessage, personaId int64) 
 	}
 
 	// Subscribing needs read access; private channels answer 404 to non-members.
-	// Unsubscribing is always allowed.
-	if wsMessage.Type == WsMessageTypeSubscribe {
-		channelAccess, err := access.LoadChannel(c.Request.Context(), h.q, payload.OwnerID, personaId)
-		if err == nil {
-			err = channelAccess.Read()
-		}
-		if errors.Is(err, access.ErrChannelNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
+	channelAccess, err := access.LoadChannel(c.Request.Context(), h.q, payload.OwnerID, personaId)
+	if err == nil {
+		err = channelAccess.Read()
+	}
+	if errors.Is(err, access.ErrChannelNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	// A channel's realtime feed is its content (posts, comments, likes) plus
@@ -53,14 +50,5 @@ func (h *Handler) channel(c *gin.Context, wsMessage WsMessage, personaId int64) 
 		subjects = append(subjects, subject.New(&stream, owner, payload.Event, payload.EventAction).GetSubjectWithOffsets(0))
 	}
 
-	switch wsMessage.Type {
-	case WsMessageTypeSubscribe:
-		c.JSON(http.StatusOK, gin.H{"action": "subscribe", "subjects": &subjects, "durable": false})
-
-	case WsMessageTypeUnsubscribe:
-		c.JSON(http.StatusOK, gin.H{"action": "unsubscribe", "subjects": &subjects, "durable": false})
-
-	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid action"})
-	}
+	c.JSON(http.StatusOK, gin.H{"action": "subscribe", "subjects": &subjects, "durable": false})
 }

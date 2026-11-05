@@ -1,15 +1,14 @@
 import type { FormGroup } from "@/types/FormFields";
-import { MIN_AGE_ERROR } from "@/lib/minAge";
-import signupFormFieldsGroup from "@/lib/formFields/signup";
-import profileFieldsGroups from "@/lib/formFields/profile";
+import { perLanguage, t } from "@/i18n";
+import { passwordRulesError } from "@/lib/password";
+import signupFormFieldsGroups, { forgotPasswordGroups, resetPasswordGroups } from "@/lib/formFields/signup";
 import loginFormFieldsGroups from "@/lib/formFields/login";
-import channelFormFieldsGroups from "@/lib/formFields/channel";
-import communityFormFieldsGroups from "@/lib/formFields/community";
-import personaFormFieldsGroups, { personaSettingsFormGroups } from "@/lib/formFields/persona";
-import type { Persona } from "@/types/persona";
 
-// An API error code shown on a field instead of under the form.
-type ServerFieldError = { field: string; message: string };
+// An API error code shown on a field instead of under the form; `also` fields are outlined without a message.
+type ServerFieldError = { field: string; message: string; also?: string[] };
+
+// Marks a field invalid without a message of its own.
+export const MARK_ONLY = "\u0000mark";
 
 export class Form {
   id: string;
@@ -22,108 +21,20 @@ export class Form {
   method: string;
   serverErrors: Record<string, ServerFieldError>;
 
-  static signup = new Form({
-    id: "signup_form",
-    name: "Sign Up Form",
-    title: "Create Your Account",
-    description: "Form for user sign up",
-    submitText: "Signup",
-    groups: signupFormFieldsGroup,
-    relativeApiPath: "/api/v1/auth/register",
-    method: "POST",
-  });
-
-  static profile = new Form({
-    id: "profile_form",
-    name: "Profile Form",
-    title: "Update Your Profile",
-    description: "Form to update user profile information",
-    submitText: "Save Changes",
-    groups: profileFieldsGroups,
-    relativeApiPath: "/api/v1/users/profile",
-    method: "PATCH",
-    serverErrors: {
-      invalid_date_of_birth: { field: "date_of_birth", message: "Enter a date between 1900 and today" },
-      invalid_gender: { field: "gender", message: "Choose one" },
-    },
-  });
-
-  static login = new Form({
-    id: "login_form",
-    name: "Log In Form",
-    title: "Welcome Back",
-    description: "Enter your email below to login to your account.",
-    submitText: "Log In",
-    groups: loginFormFieldsGroups,
-    relativeApiPath: "/api/v1/auth/login",
-    method: "POST",
-  });
-
-  static channel = new Form({
-    id: "channel_form",
-    name: "Channel Form",
-    title: "Create Your Channel",
-    description: "Form for creating a new channel",
-    submitText: "Create Channel",
-    groups: channelFormFieldsGroups,
-    relativeApiPath: "/api/v1/channels/create",
-    method: "POST",
-    serverErrors: {
-      invalid_interests: { field: "interest_ids", message: "Pick 1 to 5 interests." },
-      invalid_interest: { field: "interest_ids", message: "One of these interests is no longer offered." },
-      invalid_min_age: { field: "min_age", message: MIN_AGE_ERROR },
-    },
-  });
-
-  static persona = new Form({
-    id: "persona_form",
-    name: "Persona Form",
-    title: "Create Your Persona",
-    description: "Form for creating a new persona",
-    submitText: "Create Persona",
-    groups: personaFormFieldsGroups,
-    relativeApiPath: "/api/v1/persona/create",
-    method: "POST",
-  });
-
-  static community(communityId?: number, canOwn = true) {
-    return new Form({
-      id: "community_form",
-      name: "Community Form",
-      title: communityId ? "Edit community" : "Create a community",
-      description: "A community groups channels about the same topics.",
-      submitText: communityId ? "Save changes" : "Create community",
-      groups: communityFormFieldsGroups(canOwn),
-      relativeApiPath: communityId ? `/api/v1/communities/${communityId}` : "/api/v1/communities/create",
-      method: communityId ? "PATCH" : "POST",
-      serverErrors: {
-        invalid_name: { field: "name", message: "Enter a name of at most 100 characters." },
-        invalid_rules: { field: "rules", message: "Use at most 5000 characters." },
-        invalid_slug: { field: "slug", message: "Use 3–50 lowercase letters, digits or single hyphens." },
-        slug_taken: { field: "slug", message: "Another community already uses this link." },
-        invalid_interests: { field: "interest_ids", message: "Pick 1 to 5 interests." },
-        invalid_interest: { field: "interest_ids", message: "One of these interests is no longer offered." },
-        invalid_min_age: { field: "min_age", message: MIN_AGE_ERROR },
-      },
-    });
+  static get signup() {
+    return signupForm();
   }
 
-  static personaSettings(persona: Persona) {
-    return new Form({
-      id: "persona_settings_form",
-      name: "Persona Settings Form",
-      title: "Persona settings",
-      description: "Form for editing one of your personas",
-      submitText: "Save changes",
-      groups: personaSettingsFormGroups(persona),
-      relativeApiPath: `/api/v1/persona/update/${persona.id}`,
-      method: "POST",
-      serverErrors: {
-        invalid_slug: { field: "slug", message: "Use 3–50 lowercase letters, digits or single hyphens." },
-        slug_taken: { field: "slug", message: "Another of your personas already uses this slug." },
-        invalid_theme: { field: "theme", message: "Pick one of the palettes." },
-      },
-    });
+  static get forgotPassword() {
+    return forgotPasswordForm();
+  }
+
+  static get resetPassword() {
+    return resetPasswordForm();
+  }
+
+  static get login() {
+    return loginForm();
   }
 
   constructor({
@@ -167,7 +78,7 @@ export class Form {
         // required field check
         const value = values[field.id];
         if (field.isRequired && (!value || (Array.isArray(value) && value.length === 0))) {
-          errors[field.id] = "This field is required";
+          errors[field.id] = t("common:form.required");
         }
 
         const customValidation = field.validate?.(values[field.id], values);
@@ -179,3 +90,76 @@ export class Form {
     return errors;
   }
 }
+
+const signupForm = perLanguage(
+  () =>
+    new Form({
+      id: "signup_form",
+      name: "Sign Up Form",
+      title: t("auth:signup.title"),
+      description: "",
+      submitText: t("auth:signup.submit"),
+      groups: signupFormFieldsGroups(),
+      relativeApiPath: "/api/v1/auth/register",
+      method: "POST",
+      serverErrors: {
+        weak_password: { field: "password", message: passwordRulesError() },
+        email_taken: { field: "email_address", message: t("auth:signup.emailTaken") },
+      },
+    }),
+);
+
+const forgotPasswordForm = perLanguage(
+  () =>
+    new Form({
+      id: "forgot_password_form",
+      name: "Forgot Password Form",
+      title: t("auth:forgot.title"),
+      description: "",
+      submitText: t("auth:forgot.submit"),
+      groups: forgotPasswordGroups(),
+      relativeApiPath: "/api/v1/auth/password/forgot",
+      method: "POST",
+      serverErrors: {
+        invalid_email: { field: "email_address", message: t("errors:invalid_email") },
+      },
+    }),
+);
+
+const resetPasswordForm = perLanguage(
+  () =>
+    new Form({
+      id: "reset_password_form",
+      name: "Reset Password Form",
+      title: t("auth:reset.title"),
+      description: "",
+      submitText: t("auth:reset.submit"),
+      groups: resetPasswordGroups(),
+      relativeApiPath: "/api/v1/auth/password/reset",
+      method: "POST",
+      serverErrors: {
+        weak_password: { field: "password", message: passwordRulesError() },
+      },
+    }),
+);
+
+const loginForm = perLanguage(
+  () =>
+    new Form({
+      id: "login_form",
+      name: "Log In Form",
+      title: t("auth:login.title"),
+      description: "",
+      submitText: t("auth:login.submit"),
+      groups: loginFormFieldsGroups(),
+      relativeApiPath: "/api/v1/auth/login",
+      method: "POST",
+      serverErrors: {
+        "Invalid email or password": { field: "password", message: t("auth:login.wrongPassword"), also: ["email_address"] },
+        "you can't login with password, please use OAuth login": {
+          field: "password",
+          message: t("auth:login.googleOnly"),
+        },
+      },
+    }),
+);

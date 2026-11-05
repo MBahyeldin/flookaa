@@ -2,7 +2,7 @@ package verification
 
 import "crypto/rand"
 
-func generateRandomCode() string {
+func GenerateCode() string {
 	// return a randomly generated verification code 6 digits long
 	randBytes := make([]byte, 6)
 	_, err := rand.Read(randBytes)

@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import type { ToolbarStyleSchemaType } from "@portabletext/toolbar";
 import { useStyleSelector } from "@portabletext/toolbar";
 import {
@@ -25,11 +26,11 @@ export function StyleButton(props: {
           className="w-full"
           /* Named explicitly: this control is block-scoped (it restyles the
              whole paragraph), unlike the span-scoped decorators beside it. */
-          aria-label="Paragraph style"
-          title="Paragraph style — applies to the whole line"
+          aria-label={t("editor:paragraphStyle")}
+          title={t("editor:paragraphStyleHint")}
           disabled={styleSelector.snapshot.matches("disabled")}
         >
-          <SelectValue placeholder="Paragraph" />
+          <SelectValue placeholder={t("editor:paragraph")} />
         </SelectTrigger>
         <SelectContent>
           {props.schemaTypes.map((style) => (

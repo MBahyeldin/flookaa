@@ -1,35 +1,37 @@
 -- name: ListActiveInterests :many
-SELECT i.id, i.name, i.slug, i.emoji, g.id AS group_id, g.name AS group_name, g.slug AS group_slug
+SELECT i.id, i.name_en, i.name_ar, i.slug, i.emoji, g.id AS group_id, g.name_en AS group_name_en, g.name_ar AS group_name_ar, g.slug AS group_slug
 FROM interests i
 JOIN interest_groups g ON g.id = i.group_id
 WHERE i.retired_at IS NULL
-ORDER BY g.sort_order, g.name, i.sort_order, i.name;
+ORDER BY g.sort_order, g.name_en, i.sort_order, i.name_en;
 
 -- name: ListAllInterests :many
-SELECT id, name, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired
+SELECT id, name_en, name_ar, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired
 FROM interests
-ORDER BY (retired_at IS NOT NULL), sort_order, name;
+ORDER BY (retired_at IS NOT NULL), sort_order, name_en;
 
 -- name: GetInterest :one
-SELECT id, name, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired
+SELECT id, name_en, name_ar, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired
 FROM interests
 WHERE id = $1;
 
 -- name: CreateInterest :one
-INSERT INTO interests (name, slug, emoji, group_id, sort_order)
+INSERT INTO interests (name_en, name_ar, slug, emoji, group_id, sort_order)
 VALUES (
-    sqlc.arg(name),
+    sqlc.arg(name_en),
+    sqlc.narg(name_ar),
     sqlc.arg(slug),
     sqlc.arg(emoji),
     sqlc.arg(group_id)::bigint,
     (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM interests)
 )
-RETURNING id, name, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired;
+RETURNING id, name_en, name_ar, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired;
 
 -- Moving to another group puts the interest last.
 -- name: UpdateInterest :one
 UPDATE interests
-SET name = sqlc.arg(name)::text,
+SET name_en = sqlc.arg(name_en)::text,
+    name_ar = sqlc.narg(name_ar),
     slug = sqlc.arg(slug)::text,
     emoji = sqlc.arg(emoji)::text,
     sort_order = CASE
@@ -40,7 +42,7 @@ SET name = sqlc.arg(name)::text,
     group_id = sqlc.arg(group_id)::bigint,
     updated_at = now()
 WHERE id = sqlc.arg(id)::bigint
-RETURNING id, name, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired;
+RETURNING id, name_en, name_ar, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired;
 
 -- name: SetInterestOrders :exec
 UPDATE interests i
@@ -54,34 +56,36 @@ UPDATE interests
 SET retired_at = CASE WHEN sqlc.arg(retired)::boolean THEN COALESCE(retired_at, now()) END,
     updated_at = now()
 WHERE id = sqlc.arg(id)
-RETURNING id, name, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired;
+RETURNING id, name_en, name_ar, slug, emoji, group_id, sort_order, (retired_at IS NOT NULL)::boolean AS retired;
 
 -- name: ListInterestGroups :many
-SELECT id, name, slug
+SELECT id, name_en, name_ar, slug
 FROM interest_groups
-ORDER BY sort_order, name;
+ORDER BY sort_order, name_en;
 
 -- name: GetInterestGroup :one
-SELECT id, name, slug
+SELECT id, name_en, name_ar, slug
 FROM interest_groups
 WHERE id = $1;
 
 -- name: CreateInterestGroup :one
-INSERT INTO interest_groups (name, slug, sort_order)
+INSERT INTO interest_groups (name_en, name_ar, slug, sort_order)
 VALUES (
-    sqlc.arg(name),
+    sqlc.arg(name_en),
+    sqlc.narg(name_ar),
     sqlc.arg(slug),
     (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM interest_groups)
 )
-RETURNING id, name, slug;
+RETURNING id, name_en, name_ar, slug;
 
 -- name: UpdateInterestGroup :one
 UPDATE interest_groups
-SET name = sqlc.arg(name),
+SET name_en = sqlc.arg(name_en),
+    name_ar = sqlc.narg(name_ar),
     slug = sqlc.arg(slug),
     updated_at = now()
 WHERE id = sqlc.arg(id)
-RETURNING id, name, slug;
+RETURNING id, name_en, name_ar, slug;
 
 -- name: SetInterestGroupOrders :exec
 UPDATE interest_groups g
@@ -95,9 +99,10 @@ SELECT EXISTS (SELECT 1 FROM interest_groups WHERE id = $1)::boolean AS exists;
 
 -- Seeding skips a group whose name or slug already exists.
 -- name: SeedInterestGroup :exec
-INSERT INTO interest_groups (name, slug, sort_order)
+INSERT INTO interest_groups (name_en, name_ar, slug, sort_order)
 VALUES (
-    sqlc.arg(name),
+    sqlc.arg(name_en),
+    sqlc.arg(name_ar),
     sqlc.arg(slug),
     (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM interest_groups)
 )
@@ -105,9 +110,10 @@ ON CONFLICT DO NOTHING;
 
 -- Seeding skips an interest whose name or slug already exists.
 -- name: SeedInterest :exec
-INSERT INTO interests (name, slug, emoji, group_id, sort_order)
+INSERT INTO interests (name_en, name_ar, slug, emoji, group_id, sort_order)
 SELECT
-    sqlc.arg(name),
+    sqlc.arg(name_en),
+    sqlc.arg(name_ar),
     sqlc.arg(slug),
     sqlc.arg(emoji),
     g.id,
@@ -126,6 +132,19 @@ WHERE i.slug = sqlc.arg(slug)
   AND i.group_id IS NULL
   AND g.slug = sqlc.arg(group_slug);
 
+-- Gives an existing interest its seeded Arabic name, only if it has none.
+-- name: FillInterestNameAr :exec
+UPDATE interests
+SET name_ar = sqlc.arg(name_ar),
+    updated_at = now()
+WHERE slug = sqlc.arg(slug) AND name_ar IS NULL;
+
+-- name: FillInterestGroupNameAr :exec
+UPDATE interest_groups
+SET name_ar = sqlc.arg(name_ar),
+    updated_at = now()
+WHERE slug = sqlc.arg(slug) AND name_ar IS NULL;
+
 -- Within a group, by popularity among personas of users with the viewer's gender (everyone if unset).
 -- name: RankedActiveInterests :many
 WITH viewer AS (
@@ -138,15 +157,15 @@ WITH viewer AS (
     WHERE (SELECT gender FROM viewer) IS NULL OR u.gender = (SELECT gender FROM viewer)
     GROUP BY pi.interest_id
 )
-SELECT i.id, i.name, i.slug, i.emoji, g.id AS group_id, g.name AS group_name, g.slug AS group_slug
+SELECT i.id, i.name_en, i.name_ar, i.slug, i.emoji, g.id AS group_id, g.name_en AS group_name_en, g.name_ar AS group_name_ar, g.slug AS group_slug
 FROM interests i
 JOIN interest_groups g ON g.id = i.group_id
 LEFT JOIN popularity pop ON pop.interest_id = i.id
 WHERE i.retired_at IS NULL
-ORDER BY g.sort_order, g.name, COALESCE(pop.n, 0) DESC, i.sort_order, i.name;
+ORDER BY g.sort_order, g.name_en, COALESCE(pop.n, 0) DESC, i.sort_order, i.name_en;
 
 -- name: ListPersonaInterests :many
-SELECT i.id, i.name, i.slug, i.emoji, (i.retired_at IS NOT NULL)::boolean AS retired
+SELECT i.id, i.name_en, i.name_ar, i.slug, i.emoji, (i.retired_at IS NOT NULL)::boolean AS retired
 FROM persona_interests pi
 JOIN interests i ON i.id = pi.interest_id
 WHERE pi.persona_id = $1
@@ -181,7 +200,7 @@ SELECT EXISTS (
 )::boolean AS done;
 
 -- name: ListChannelInterests :many
-SELECT ci.channel_id, i.id, i.name, i.slug, i.emoji
+SELECT ci.channel_id, i.id, i.name_en, i.name_ar, i.slug, i.emoji
 FROM channel_interests ci
 JOIN interests i ON i.id = ci.interest_id
 WHERE ci.channel_id = ANY(sqlc.arg(channel_ids)::bigint[])

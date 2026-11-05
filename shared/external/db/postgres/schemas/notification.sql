@@ -22,7 +22,7 @@ CREATE TYPE notification_kind_enum AS ENUM (
 
 CREATE TYPE notification_subject_enum AS ENUM ('POST', 'COMMENT', 'CHANNEL', 'PERSONA', 'COMMUNITY');
 
-CREATE TYPE notification_scope_enum AS ENUM ('CHANNEL');
+CREATE TYPE notification_scope_enum AS ENUM ('CHANNEL', 'PERSONA');
 
 CREATE TABLE notifications (
     id BIGSERIAL PRIMARY KEY,

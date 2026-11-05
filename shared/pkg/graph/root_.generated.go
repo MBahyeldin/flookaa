@@ -100,6 +100,7 @@ type ComplexityRoot struct {
 		Description func(childComplexity int) int
 		Icon        func(childComplexity int) int
 		Key         func(childComplexity int) int
+		Tag         func(childComplexity int) int
 		Title       func(childComplexity int) int
 		Tone        func(childComplexity int) int
 		Type        func(childComplexity int) int
@@ -107,20 +108,28 @@ type ComplexityRoot struct {
 
 	Channel struct {
 		BannerImageURL  func(childComplexity int) int
+		BannerX         func(childComplexity int) int
+		BannerY         func(childComplexity int) int
 		CanModerate     func(childComplexity int) int
 		Community       func(childComplexity int) int
+		CoverPattern    func(childComplexity int) int
 		CreatedAt       func(childComplexity int) int
 		Description     func(childComplexity int) int
 		FollowersCount  func(childComplexity int) int
 		ID              func(childComplexity int) int
 		IsFollower      func(childComplexity int) int
 		IsMember        func(childComplexity int) int
+		IsOwner         func(childComplexity int) int
+		IsPending       func(childComplexity int) int
+		IsPrivate       func(childComplexity int) int
 		MembersCount    func(childComplexity int) int
 		MinAge          func(childComplexity int) int
 		Name            func(childComplexity int) int
+		OwnTheme        func(childComplexity int) int
 		Owner           func(childComplexity int) int
 		Posts           func(childComplexity int) int
 		ProfileImageURL func(childComplexity int) int
+		Theme           func(childComplexity int) int
 		ThumbnailURL    func(childComplexity int) int
 		TotalPosts      func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
@@ -171,6 +180,20 @@ type ComplexityRoot struct {
 		Key       func(childComplexity int) int
 		Label     func(childComplexity int) int
 		Type      func(childComplexity int) int
+	}
+
+	FeedChannel struct {
+		CanModerate func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Theme       func(childComplexity int) int
+		Thumbnail   func(childComplexity int) int
+	}
+
+	FeedPage struct {
+		Channels   func(childComplexity int) int
+		NextCursor func(childComplexity int) int
+		Posts      func(childComplexity int) int
 	}
 
 	GalleryBlock struct {
@@ -230,6 +253,8 @@ type ComplexityRoot struct {
 		CreatePost    func(childComplexity int, input models.PostInput) int
 		DeleteComment func(childComplexity int, id string) int
 		DeletePost    func(childComplexity int, id string) int
+		SavePost      func(childComplexity int, id string) int
+		UnsavePost    func(childComplexity int, id string) int
 	}
 
 	Owner struct {
@@ -248,6 +273,7 @@ type ComplexityRoot struct {
 	PersonalizedMeta struct {
 		ACL             func(childComplexity int) int
 		LikedByPersona  func(childComplexity int) int
+		SavedByPersona  func(childComplexity int) int
 		SharedByPersona func(childComplexity int) int
 		ViewedByPersona func(childComplexity int) int
 	}
@@ -295,9 +321,13 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		GetChannel  func(childComplexity int, id int64) int
-		GetComments func(childComplexity int, parentID string, limit *int32, offset *int32) int
-		GetPosts    func(childComplexity int, owner models.OwnerInput, ids []string, limit *int32, offset *int32) int
+		GetChannel       func(childComplexity int, id int64) int
+		GetComments      func(childComplexity int, parentID string, limit *int32, offset *int32) int
+		GetCommunityFeed func(childComplexity int, communityID int64, after *string, limit *int32) int
+		GetDiscover      func(childComplexity int, interests []string, all *bool, after *string, limit *int32) int
+		GetFeed          func(childComplexity int, after *string, limit *int32) int
+		GetPosts         func(childComplexity int, owner models.OwnerInput, ids []string, limit *int32, offset *int32) int
+		GetSaved         func(childComplexity int, after *string, limit *int32) int
 	}
 
 	QuoteBlock struct {
@@ -306,6 +336,18 @@ type ComplexityRoot struct {
 		Role func(childComplexity int) int
 		Text func(childComplexity int) int
 		Type func(childComplexity int) int
+	}
+
+	SavedPage struct {
+		Channels   func(childComplexity int) int
+		Items      func(childComplexity int) int
+		NextCursor func(childComplexity int) int
+	}
+
+	SavedPost struct {
+		Post    func(childComplexity int) int
+		PostID  func(childComplexity int) int
+		SavedAt func(childComplexity int) int
 	}
 
 	Span struct {
@@ -636,6 +678,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.CalloutBlock.Key(childComplexity), true
 
+	case "CalloutBlock.tag":
+		if e.complexity.CalloutBlock.Tag == nil {
+			break
+		}
+
+		return e.complexity.CalloutBlock.Tag(childComplexity), true
+
 	case "CalloutBlock.title":
 		if e.complexity.CalloutBlock.Title == nil {
 			break
@@ -664,6 +713,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Channel.BannerImageURL(childComplexity), true
 
+	case "Channel.bannerX":
+		if e.complexity.Channel.BannerX == nil {
+			break
+		}
+
+		return e.complexity.Channel.BannerX(childComplexity), true
+
+	case "Channel.bannerY":
+		if e.complexity.Channel.BannerY == nil {
+			break
+		}
+
+		return e.complexity.Channel.BannerY(childComplexity), true
+
 	case "Channel.canModerate":
 		if e.complexity.Channel.CanModerate == nil {
 			break
@@ -677,6 +740,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Channel.Community(childComplexity), true
+
+	case "Channel.coverPattern":
+		if e.complexity.Channel.CoverPattern == nil {
+			break
+		}
+
+		return e.complexity.Channel.CoverPattern(childComplexity), true
 
 	case "Channel.createdAt":
 		if e.complexity.Channel.CreatedAt == nil {
@@ -720,6 +790,27 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Channel.IsMember(childComplexity), true
 
+	case "Channel.isOwner":
+		if e.complexity.Channel.IsOwner == nil {
+			break
+		}
+
+		return e.complexity.Channel.IsOwner(childComplexity), true
+
+	case "Channel.isPending":
+		if e.complexity.Channel.IsPending == nil {
+			break
+		}
+
+		return e.complexity.Channel.IsPending(childComplexity), true
+
+	case "Channel.isPrivate":
+		if e.complexity.Channel.IsPrivate == nil {
+			break
+		}
+
+		return e.complexity.Channel.IsPrivate(childComplexity), true
+
 	case "Channel.membersCount":
 		if e.complexity.Channel.MembersCount == nil {
 			break
@@ -741,6 +832,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Channel.Name(childComplexity), true
 
+	case "Channel.ownTheme":
+		if e.complexity.Channel.OwnTheme == nil {
+			break
+		}
+
+		return e.complexity.Channel.OwnTheme(childComplexity), true
+
 	case "Channel.owner":
 		if e.complexity.Channel.Owner == nil {
 			break
@@ -761,6 +859,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Channel.ProfileImageURL(childComplexity), true
+
+	case "Channel.theme":
+		if e.complexity.Channel.Theme == nil {
+			break
+		}
+
+		return e.complexity.Channel.Theme(childComplexity), true
 
 	case "Channel.thumbnailUrl":
 		if e.complexity.Channel.ThumbnailURL == nil {
@@ -1006,6 +1111,62 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.CountdownBlock.Type(childComplexity), true
+
+	case "FeedChannel.canModerate":
+		if e.complexity.FeedChannel.CanModerate == nil {
+			break
+		}
+
+		return e.complexity.FeedChannel.CanModerate(childComplexity), true
+
+	case "FeedChannel.id":
+		if e.complexity.FeedChannel.ID == nil {
+			break
+		}
+
+		return e.complexity.FeedChannel.ID(childComplexity), true
+
+	case "FeedChannel.name":
+		if e.complexity.FeedChannel.Name == nil {
+			break
+		}
+
+		return e.complexity.FeedChannel.Name(childComplexity), true
+
+	case "FeedChannel.theme":
+		if e.complexity.FeedChannel.Theme == nil {
+			break
+		}
+
+		return e.complexity.FeedChannel.Theme(childComplexity), true
+
+	case "FeedChannel.thumbnail":
+		if e.complexity.FeedChannel.Thumbnail == nil {
+			break
+		}
+
+		return e.complexity.FeedChannel.Thumbnail(childComplexity), true
+
+	case "FeedPage.channels":
+		if e.complexity.FeedPage.Channels == nil {
+			break
+		}
+
+		return e.complexity.FeedPage.Channels(childComplexity), true
+
+	case "FeedPage.nextCursor":
+		if e.complexity.FeedPage.NextCursor == nil {
+			break
+		}
+
+		return e.complexity.FeedPage.NextCursor(childComplexity), true
+
+	case "FeedPage.posts":
+		if e.complexity.FeedPage.Posts == nil {
+			break
+		}
+
+		return e.complexity.FeedPage.Posts(childComplexity), true
 
 	case "GalleryBlock.items":
 		if e.complexity.GalleryBlock.Items == nil {
@@ -1277,6 +1438,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.DeletePost(childComplexity, args["id"].(string)), true
 
+	case "Mutation.savePost":
+		if e.complexity.Mutation.SavePost == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_savePost_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SavePost(childComplexity, args["id"].(string)), true
+
+	case "Mutation.unsavePost":
+		if e.complexity.Mutation.UnsavePost == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_unsavePost_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UnsavePost(childComplexity, args["id"].(string)), true
+
 	case "Owner.id":
 		if e.complexity.Owner.ID == nil {
 			break
@@ -1339,6 +1524,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PersonalizedMeta.LikedByPersona(childComplexity), true
+
+	case "PersonalizedMeta.savedByPersona":
+		if e.complexity.PersonalizedMeta.SavedByPersona == nil {
+			break
+		}
+
+		return e.complexity.PersonalizedMeta.SavedByPersona(childComplexity), true
 
 	case "PersonalizedMeta.sharedByPersona":
 		if e.complexity.PersonalizedMeta.SharedByPersona == nil {
@@ -1609,6 +1801,42 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.GetComments(childComplexity, args["parentId"].(string), args["limit"].(*int32), args["offset"].(*int32)), true
 
+	case "Query.getCommunityFeed":
+		if e.complexity.Query.GetCommunityFeed == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getCommunityFeed_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetCommunityFeed(childComplexity, args["communityId"].(int64), args["after"].(*string), args["limit"].(*int32)), true
+
+	case "Query.getDiscover":
+		if e.complexity.Query.GetDiscover == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getDiscover_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetDiscover(childComplexity, args["interests"].([]string), args["all"].(*bool), args["after"].(*string), args["limit"].(*int32)), true
+
+	case "Query.getFeed":
+		if e.complexity.Query.GetFeed == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getFeed_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetFeed(childComplexity, args["after"].(*string), args["limit"].(*int32)), true
+
 	case "Query.getPosts":
 		if e.complexity.Query.GetPosts == nil {
 			break
@@ -1620,6 +1848,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.GetPosts(childComplexity, args["owner"].(models.OwnerInput), args["ids"].([]string), args["limit"].(*int32), args["offset"].(*int32)), true
+
+	case "Query.getSaved":
+		if e.complexity.Query.GetSaved == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getSaved_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetSaved(childComplexity, args["after"].(*string), args["limit"].(*int32)), true
 
 	case "QuoteBlock._key":
 		if e.complexity.QuoteBlock.Key == nil {
@@ -1655,6 +1895,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QuoteBlock.Type(childComplexity), true
+
+	case "SavedPage.channels":
+		if e.complexity.SavedPage.Channels == nil {
+			break
+		}
+
+		return e.complexity.SavedPage.Channels(childComplexity), true
+
+	case "SavedPage.items":
+		if e.complexity.SavedPage.Items == nil {
+			break
+		}
+
+		return e.complexity.SavedPage.Items(childComplexity), true
+
+	case "SavedPage.nextCursor":
+		if e.complexity.SavedPage.NextCursor == nil {
+			break
+		}
+
+		return e.complexity.SavedPage.NextCursor(childComplexity), true
+
+	case "SavedPost.post":
+		if e.complexity.SavedPost.Post == nil {
+			break
+		}
+
+		return e.complexity.SavedPost.Post(childComplexity), true
+
+	case "SavedPost.postId":
+		if e.complexity.SavedPost.PostID == nil {
+			break
+		}
+
+		return e.complexity.SavedPost.PostID(childComplexity), true
+
+	case "SavedPost.savedAt":
+		if e.complexity.SavedPost.SavedAt == nil {
+			break
+		}
+
+		return e.complexity.SavedPost.SavedAt(childComplexity), true
 
 	case "Span._key":
 		if e.complexity.Span.Key == nil {
@@ -2090,6 +2372,7 @@ type CalloutBlock implements Block {
   _key: ID!
   tone: CalloutTone
   icon: CalloutIcon
+  tag: String
   title: String
   description: String!
 }
@@ -2268,6 +2551,7 @@ input CalloutBlockInput {
   _key: ID!
   tone: CalloutTone
   icon: CalloutIcon
+  tag: String
   title: String
   description: String!
 }
@@ -2412,6 +2696,23 @@ enum OwnerType {
   PAGE
 }
 
+# Palette ids, as in data-theme.
+enum Theme {
+  tide
+  forest
+  ember
+  plum
+  rose
+  slate
+}
+
+enum CoverPattern {
+  horizon
+  waves
+  hills
+  stripes
+}
+
 type Media {
   type: MediaType!
   url: String!
@@ -2434,6 +2735,7 @@ type Meta {
 # will be fetched separately based on the current persona context
 type PersonalizedMeta {
   likedByPersona: Boolean!
+  savedByPersona: Boolean!
   sharedByPersona: Boolean!
   viewedByPersona: Boolean!
   acl: ACL!
@@ -2575,6 +2877,10 @@ type Mutation {
   deletePost(id: ObjectId!): Boolean!
 
   deleteComment(id: ObjectId!): Boolean!
+
+  savePost(id: ObjectId!): Boolean!
+
+  unsavePost(id: ObjectId!): Boolean!
 }
 
 # Inputs
@@ -2588,6 +2894,8 @@ type Channel {
   name: String!
   description: String
   bannerImageUrl: String
+  bannerX: Int!
+  bannerY: Int!
   thumbnailUrl: String
   profileImageUrl: String
   createdAt: DateTime!
@@ -2599,9 +2907,42 @@ type Channel {
   followersCount: Int
   isMember: Boolean!
   isFollower: Boolean!
+  isPending: Boolean!
+  isOwner: Boolean!
+  isPrivate: Boolean!
   canModerate: Boolean!
   community: CommunityRef
   minAge: Int!
+  theme: Theme!
+  ownTheme: Theme
+  coverPattern: CoverPattern!
+}
+
+type FeedChannel {
+  id: Int64!
+  name: String!
+  theme: Theme!
+  thumbnail: String!
+  canModerate: Boolean!
+}
+
+type FeedPage {
+  posts: [Post!]!
+  channels: [FeedChannel!]!
+  nextCursor: String
+}
+
+type SavedPost {
+  postId: ObjectId!
+  savedAt: DateTime!
+  # null: deleted, or the persona can no longer read it
+  post: Post
+}
+
+type SavedPage {
+  items: [SavedPost!]!
+  channels: [FeedChannel!]!
+  nextCursor: String
 }
 
 type CommunityRef {
@@ -2626,6 +2967,11 @@ type Query {
   ): [Comment!]!
 
   getChannel(id: Int64!): Channel
+
+  getFeed(after: String, limit: Int): FeedPage!
+  getDiscover(interests: [String!], all: Boolean, after: String, limit: Int): FeedPage!
+  getCommunityFeed(communityId: Int64!, after: String, limit: Int): FeedPage!
+  getSaved(after: String, limit: Int): SavedPage!
 }
 
 `, BuiltIn: false},

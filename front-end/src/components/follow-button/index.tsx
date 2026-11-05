@@ -4,15 +4,16 @@ import { Button } from "@/components/ui/button";
 import { setPersonaFollowing } from "@/services/persona";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import type { FollowStatus } from "@/types/persona";
-
-const LABELS = { active: "Following", pending: "Requested" } as const;
+import { useTranslation } from "react-i18next";
+import { errorMessage } from "@/lib/errors";
 
 export function FollowButton({
   personaId,
   name,
   status,
   requiresApproval = false,
-  followLabel = "Follow",
+  followLabel,
+  size = "sm",
   onChange,
 }: {
   personaId: number;
@@ -20,8 +21,10 @@ export function FollowButton({
   status: FollowStatus;
   requiresApproval?: boolean;
   followLabel?: string;
+  size?: "sm" | "default";
   onChange: (status: FollowStatus) => void;
 }) {
+  const { t } = useTranslation(["personas", "common"]);
   const [busy, setBusy] = useState(false);
   const viewerPrivacy = useUserProfileStore((s) => s.persona?.privacy);
 
@@ -31,7 +34,7 @@ export function FollowButton({
     if (
       status === "active" &&
       requiresApproval &&
-      !confirm(`Unfollow ${name}? ${name} is private, so you'll lose access and have to request again.`)
+      !confirm(t("follow.unfollowPrivateConfirm", { name }))
     ) {
       return;
     }
@@ -40,7 +43,7 @@ export function FollowButton({
       follow &&
       viewerPrivacy &&
       viewerPrivacy !== "public" &&
-      !confirm(name ? `Follow ${name}? ${name} will see who you are.` : "Follow this persona? It will see who you are.")
+      !confirm(name ? t("follow.revealConfirmNamed", { name }) : t("follow.revealConfirm"))
     ) {
       return;
     }
@@ -48,7 +51,7 @@ export function FollowButton({
     const result = await setPersonaFollowing(personaId, follow);
     setBusy(false);
     if (result instanceof Error) {
-      toast.error(result.message);
+      toast.error(errorMessage(result.message));
       return;
     }
     onChange(result);
@@ -56,12 +59,12 @@ export function FollowButton({
 
   return (
     <Button
-      size="sm"
+      size={size}
       variant={status ? "secondary" : "default"}
-      disabled={busy}
+      loading={busy}
       onClick={handleClick}
     >
-      {status ? LABELS[status] : followLabel}
+      {status === "active" ? t("common:actions.following") : status === "pending" ? t("common:actions.requested") : (followLabel ?? t("common:actions.follow"))}
     </Button>
   );
 }

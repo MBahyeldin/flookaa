@@ -14,6 +14,7 @@ import type {
   LockedPersona,
   PersonaProfile,
 } from "@/types/persona";
+import { useTranslation } from "react-i18next";
 
 type Fetched = PersonaProfile | LockedPersona | "not_found" | null;
 
@@ -32,6 +33,7 @@ export function PersonaCard({
   profilePath: string;
   onNavigate: () => void;
 }) {
+  const { t } = useTranslation("personas");
   const viewerId = useUserProfileStore((s) => s.persona?.id);
   const [fetched, setFetched] = useState<Fetched | "loading">("loading");
 
@@ -87,9 +89,9 @@ export function PersonaCard({
           <GeneratedAvatarFallback name={displayName} />
         </Avatar>
         <div className="min-w-0">
-          <p className="truncate font-medium">{displayName}</p>
+          <p dir="auto" className="truncate text-match-parent font-medium">{displayName}</p>
           {full && (
-            <p className="truncate text-xs text-muted-foreground">
+            <p dir="ltr" className="truncate text-match-parent text-xs text-muted-foreground">
               @{full.slug}
             </p>
           )}
@@ -121,14 +123,14 @@ export function PersonaCard({
             personaId={personaId}
             status={locked.follow_status ?? null}
             requiresApproval
-            followLabel="Request to follow"
+            followLabel={t("follow.request")}
             onChange={setStatus}
           />
         )}
         {full && (
           <Button asChild size="sm" variant="outline">
             <Link to={profilePath} onClick={onNavigate}>
-              View profile
+              {t("viewProfile")}
             </Link>
           </Button>
         )}

@@ -1,5 +1,5 @@
-import zod from "zod";
 import type { OnboardingState } from "@/types/onboarding";
+import type { Gender, Language } from "@/i18n";
 
 export type Info = {
   id: string;
@@ -10,6 +10,8 @@ export type Info = {
   permissions: string[];
   thumbnail?: string;
   is_admin?: boolean;
+  language: Language | null;
+  gender: Gender | null;
   onboarding: OnboardingState;
 };
 
@@ -22,11 +24,3 @@ export type AuthContextType = {
   hasPermission: (permission: string) => boolean;
   handleLogOut: () => Promise<void>;
 };
-
-export const createUserSchema = zod.object({
-  email_address: zod.string().email("Invalid email").nonempty("Required"),
-  password: zod.string().min(6, "Minimum 6 characters").nonempty("Required"),
-  first_name: zod.string().min(2, "Minimum 2 characters").nonempty("Required"),
-  last_name: zod.string().min(2, "Minimum 2 characters").nonempty("Required"),
-  thumbnail: zod.string().url("Invalid URL").optional(),
-});

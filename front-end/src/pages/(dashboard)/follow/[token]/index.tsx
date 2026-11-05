@@ -1,3 +1,5 @@
+import { errorMessage } from "@/lib/errors";
+import { t } from "@/i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Link2Off } from "lucide-react";
@@ -57,7 +59,7 @@ export default function FollowInvitePage() {
     if (
       viewerPrivacy &&
       viewerPrivacy !== "public" &&
-      !confirm("Follow this persona? It will see who you are.")
+      !confirm(t("personas:follow.revealConfirm"))
     ) {
       return;
     }
@@ -65,7 +67,7 @@ export default function FollowInvitePage() {
     const result = await requestViaInvite(token);
     setBusy(false);
     if (result instanceof Error) {
-      toast.error(result.message);
+      toast.error(errorMessage(result.message));
       return;
     }
     load(true);
@@ -80,24 +82,24 @@ export default function FollowInvitePage() {
       {state.status === "not_found" && (
         <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
           <Link2Off className="h-10 w-10" />
-          <p className="text-lg font-medium text-foreground">This link is no longer valid</p>
-          <p className="text-sm">Ask for a new one.</p>
+          <p className="text-lg font-medium text-foreground">{t("personas:followLink.invalid")}</p>
+          <p className="text-sm">{t("personas:followLink.askNew")}</p>
         </div>
       )}
 
       {state.status === "unauthenticated" && (
         <LockedPersonaCard>
           <Button asChild>
-            <Link to={`/login?next=${next}`}>Log in to request to follow</Link>
+            <Link to={`/login?next=${next}`}>{t("personas:followLink.logIn")}</Link>
           </Button>
         </LockedPersonaCard>
       )}
 
       {state.status === "error" && (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <p className="text-sm text-muted-foreground">Couldn't load this link.</p>
+          <p className="text-sm text-muted-foreground">{t("personas:followLink.loadFailed")}</p>
           <Button variant="outline" onClick={() => load()}>
-            Retry
+            {t("common:actions.retry")}
           </Button>
         </div>
       )}
@@ -106,11 +108,11 @@ export default function FollowInvitePage() {
         <LockedPersonaCard>
           {state.follow_status ? (
             <Button size="sm" variant="secondary" disabled>
-              Requested
+              {t("common:actions.requested")}
             </Button>
           ) : (
             <Button size="sm" disabled={busy} onClick={request}>
-              Request to follow
+              {t("personas:follow.request")}
             </Button>
           )}
         </LockedPersonaCard>

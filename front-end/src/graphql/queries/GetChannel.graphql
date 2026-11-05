@@ -4,6 +4,8 @@ query GetChannel($id: Int64!) {
     name
     description
     bannerImageUrl
+    bannerX
+    bannerY
     thumbnailUrl
     createdAt
     posts {
@@ -15,9 +17,13 @@ query GetChannel($id: Int64!) {
       username
       fullName
       profileImageUrl
+      anonymous
     }
     isMember
     isFollower
+    isPending
+    isOwner
+    isPrivate
     canModerate
     community {
       id
@@ -27,6 +33,9 @@ query GetChannel($id: Int64!) {
     membersCount
     followersCount
     minAge
+    theme
+    ownTheme
+    coverPattern
   }
 }
 

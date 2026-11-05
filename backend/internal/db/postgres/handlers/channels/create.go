@@ -3,6 +3,7 @@ package channels
 import (
 	"app/internal/auth"
 	"app/internal/db/postgres/handlers/communities"
+	"app/internal/logo"
 	"context"
 	"database/sql"
 	"errors"
@@ -10,6 +11,7 @@ import (
 	"shared/external/db/nats"
 	"shared/pkg/access"
 	"shared/pkg/db"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,11 +21,16 @@ type CreateChannelRequest struct {
 	Description string `json:"description"`
 	Thumbnail   string `json:"thumbnail"`
 	Banner      string `json:"banner"`
+	BannerX     *int   `json:"banner_x"`
+	BannerY     *int   `json:"banner_y"`
 	// public: readable by every persona; private: members only, joins need approval.
 	Visibility  string  `json:"visibility" binding:"required,oneof=public private"`
 	InterestIDs []int64 `json:"interest_ids"`
 	CommunityID int64   `json:"community_id"`
 	MinAge      *int16  `json:"min_age"`
+	// Empty: the community's theme.
+	Theme        string `json:"theme"`
+	CoverPattern string `json:"cover_pattern"`
 }
 
 type CreateParams struct {
@@ -31,10 +38,17 @@ type CreateParams struct {
 	Description string
 	Thumbnail   string
 	Banner      string
-	Visibility  db.ChannelVisibilityEnum
-	OwnerID     int64
-	MinAge      int16
-	InterestIDs []int64
+	// Unset: the centre.
+	BannerX    sql.NullInt16
+	BannerY    sql.NullInt16
+	Visibility db.ChannelVisibilityEnum
+	OwnerID    int64
+	MinAge     int16
+	// Empty: the community's theme.
+	Theme db.ThemeEnum
+	// Empty: horizon.
+	CoverPattern db.CoverPatternEnum
+	InterestIDs  []int64
 	// 0: standalone.
 	CommunityID int64
 	// A pending request to CommunityID instead of being in it.
@@ -51,14 +65,22 @@ func Create(ctx context.Context, pg *sql.DB, queries *db.Queries, p CreateParams
 	defer tx.Rollback()
 	q := queries.WithTx(tx)
 
+	cover := p.CoverPattern
+	if cover == "" {
+		cover = db.CoverPatternEnumHorizon
+	}
 	channel, err := q.CreateChannel(ctx, db.CreateChannelParams{
-		Name:        p.Name,
-		Description: p.Description,
-		Thumbnail:   p.Thumbnail,
-		Banner:      p.Banner,
-		OwnerID:     p.OwnerID,
-		Visibility:  p.Visibility,
-		MinAge:      p.MinAge,
+		Theme:        db.NullThemeEnum{ThemeEnum: p.Theme, Valid: p.Theme != ""},
+		CoverPattern: cover,
+		Name:         p.Name,
+		Description:  p.Description,
+		Thumbnail:    p.Thumbnail,
+		Banner:       p.Banner,
+		BannerX:      p.BannerX,
+		BannerY:      p.BannerY,
+		OwnerID:      p.OwnerID,
+		Visibility:   p.Visibility,
+		MinAge:       p.MinAge,
 	})
 	if err != nil {
 		return db.Channel{}, err
@@ -126,6 +148,24 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 		return
 	}
 
+	req.Name = strings.TrimSpace(req.Name)
+	req.Description = strings.TrimSpace(req.Description)
+	if !validChannelName(req.Name) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_name"})
+		return
+	}
+	if !validChannelDescription(req.Description) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_description"})
+		return
+	}
+	if code := h.checkLook(req.Theme, req.CoverPattern, req.Thumbnail, req.Banner); code != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": code})
+		return
+	}
+	if !logo.ValidPosition(req.BannerX) || !logo.ValidPosition(req.BannerY) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_cover_position"})
+		return
+	}
 	if req.MinAge == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_min_age"})
 		return
@@ -158,9 +198,13 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 		Description:      req.Description,
 		Thumbnail:        req.Thumbnail,
 		Banner:           req.Banner,
+		BannerX:          logo.NullPosition(req.BannerX),
+		BannerY:          logo.NullPosition(req.BannerY),
 		Visibility:       db.ChannelVisibilityEnum(req.Visibility),
 		OwnerID:          personaId,
 		MinAge:           *req.MinAge,
+		Theme:            db.ThemeEnum(req.Theme),
+		CoverPattern:     db.CoverPatternEnum(req.CoverPattern),
 		InterestIDs:      req.InterestIDs,
 		CommunityID:      req.CommunityID,
 		RequestCommunity: request,
@@ -179,4 +223,19 @@ func (h *Handler) CreateChannel(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"channel": channel, "community_status": communityStatus})
+}
+
+// Empty theme and cover pattern are allowed: inherit and the default.
+func (h *Handler) checkLook(theme, coverPattern, thumbnail, banner string) string {
+	switch {
+	case theme != "" && !db.ThemeEnum(theme).Valid():
+		return "invalid_theme"
+	case coverPattern != "" && !db.CoverPatternEnum(coverPattern).Valid():
+		return "invalid_cover_pattern"
+	case !logo.Valid(h.s3BaseURL, thumbnail):
+		return "invalid_logo"
+	case !logo.Valid(h.s3BaseURL, banner):
+		return "invalid_cover"
+	}
+	return ""
 }

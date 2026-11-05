@@ -678,6 +678,8 @@ func (ec *executionContext) fieldContext_Blocks_callout(_ context.Context, field
 				return ec.fieldContext_CalloutBlock_tone(ctx, field)
 			case "icon":
 				return ec.fieldContext_CalloutBlock_icon(ctx, field)
+			case "tag":
+				return ec.fieldContext_CalloutBlock_tag(ctx, field)
 			case "title":
 				return ec.fieldContext_CalloutBlock_title(ctx, field)
 			case "description":
@@ -1209,6 +1211,35 @@ func (ec *executionContext) fieldContext_CalloutBlock_icon(_ context.Context, fi
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type CalloutIcon does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalloutBlock_tag(ctx context.Context, field graphql.CollectedField, obj *models.CalloutBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalloutBlock_tag,
+		func(ctx context.Context) (any, error) {
+			return obj.Tag, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalloutBlock_tag(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalloutBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3737,7 +3768,7 @@ func (ec *executionContext) unmarshalInputCalloutBlockInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"_type", "_key", "tone", "icon", "title", "description"}
+	fieldsInOrder := [...]string{"_type", "_key", "tone", "icon", "tag", "title", "description"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -3772,6 +3803,13 @@ func (ec *executionContext) unmarshalInputCalloutBlockInput(ctx context.Context,
 				return it, err
 			}
 			it.Icon = data
+		case "tag":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tag = data
 		case "title":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -4996,6 +5034,8 @@ func (ec *executionContext) _CalloutBlock(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._CalloutBlock_tone(ctx, field, obj)
 		case "icon":
 			out.Values[i] = ec._CalloutBlock_icon(ctx, field, obj)
+		case "tag":
+			out.Values[i] = ec._CalloutBlock_tag(ctx, field, obj)
 		case "title":
 			out.Values[i] = ec._CalloutBlock_title(ctx, field, obj)
 		case "description":

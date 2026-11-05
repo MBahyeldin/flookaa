@@ -21,13 +21,12 @@ func (h *Handler) community(c *gin.Context, wsMessage WsMessage, personaId int64
 		return
 	}
 
-	// Unsubscribing also loads it, so a manager's request subjects are dropped too.
 	community, err := access.LoadCommunity(c.Request.Context(), h.q, ownerID, personaId)
-	if errors.Is(err, access.ErrCommunityNotFound) && wsMessage.Type == WsMessageTypeSubscribe {
+	if errors.Is(err, access.ErrCommunityNotFound) {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
-	if err != nil && !errors.Is(err, access.ErrCommunityNotFound) {
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -50,14 +49,5 @@ func (h *Handler) community(c *gin.Context, wsMessage WsMessage, personaId int64
 		}
 	}
 
-	switch wsMessage.Type {
-	case WsMessageTypeSubscribe:
-		c.JSON(http.StatusOK, gin.H{"action": "subscribe", "subjects": &subjects, "durable": false})
-
-	case WsMessageTypeUnsubscribe:
-		c.JSON(http.StatusOK, gin.H{"action": "unsubscribe", "subjects": &subjects, "durable": false})
-
-	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid action"})
-	}
+	c.JSON(http.StatusOK, gin.H{"action": "subscribe", "subjects": &subjects, "durable": false})
 }

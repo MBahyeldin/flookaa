@@ -1,4 +1,6 @@
 import type { Interest } from "./interest";
+import type { PaletteId } from "@/themes/palettes";
+import type { CoverPattern } from "./cover";
 
 export type CommunityOwner = {
   id: number;
@@ -17,15 +19,20 @@ export type Community = {
   rules: string;
   thumbnail: string;
   banner: string;
+  banner_x: number;
+  banner_y: number;
   visibility: "public" | "private";
   /** 13, 16, 18 or 21. */
   min_age: number;
+  theme: PaletteId;
+  cover_pattern: CoverPattern;
   /** Null when the owner persona is gone. */
   owner: CommunityOwner | null;
   interests: Interest[];
   channels_count: number;
   members_count: number;
   followers_count: number;
+  created_at: string;
   /** The viewer's own; rejected only while the 7-day cooldown runs. */
   membership_status: "none" | "pending" | "active" | "rejected";
   /** Only when rejected: when the viewer may ask again. */
@@ -38,6 +45,18 @@ export type Community = {
   /** Only on a single community: the viewer owns it (and can't leave). */
   is_owner?: boolean;
   is_moderator?: boolean;
+};
+
+/** A community the persona owns, is an active member of, or follows (the create-channel picker). */
+export type MyCommunity = {
+  id: number;
+  name: string;
+  slug: string;
+  thumbnail: string;
+  theme: PaletteId;
+  members_count: number;
+  /** A channel created into it goes straight in; otherwise it's a request. */
+  can_manage: boolean;
 };
 
 /** Another persona as the viewer sees it; anonymous ones have only first_name. */
@@ -62,6 +81,9 @@ export type CommunityChannelRequest = {
   description: string;
   thumbnail: string;
   visibility: "public" | "private";
+  theme: PaletteId;
+  /** As the viewer sees the persona; null when it's gone. */
+  requested_by: CommunityPersona | null;
   requested_at: string;
 };
 
@@ -78,7 +100,7 @@ export type ModeratedChannel = {
 /** A channel's community row, for its moderators. */
 export type ChannelCommunityState = {
   status: "none" | "pending" | "active" | "rejected";
-  community: CommunityRef | null;
+  community: (CommunityRef & { theme: PaletteId; thumbnail: string }) | null;
   /** Only when rejected: when the same community may be asked again. */
   rejected_until?: string;
 };
@@ -86,3 +108,16 @@ export type ChannelCommunityState = {
 export const MAX_COMMUNITY_INTERESTS = 5;
 
 export const MAX_COMMUNITY_RULES = 5000;
+
+export interface ShowcaseCommunity {
+  slug: string;
+  name: string;
+  thumbnail: string;
+  banner: string;
+  banner_x: number;
+  banner_y: number;
+  theme: PaletteId;
+  cover_pattern: CoverPattern;
+  members_count: number;
+  channels_count: number;
+}

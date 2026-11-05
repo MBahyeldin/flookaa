@@ -21,21 +21,17 @@ import (
 const maxCommunityInterests = 5
 
 type Handler struct {
-	pg   *sql.DB
-	q    *db.Queries
-	nats *nats.NatsHelper
+	pg        *sql.DB
+	q         *db.Queries
+	nats      *nats.NatsHelper
+	s3BaseURL string
 }
 
-func NewHandler(pg *sql.DB, q *db.Queries, nats *nats.NatsHelper) *Handler {
-	return &Handler{pg: pg, q: q, nats: nats}
+func NewHandler(pg *sql.DB, q *db.Queries, nats *nats.NatsHelper, s3BaseURL string) *Handler {
+	return &Handler{pg: pg, q: q, nats: nats, s3BaseURL: s3BaseURL}
 }
 
-type InterestTag struct {
-	ID    int64  `json:"id"`
-	Name  string `json:"name"`
-	Slug  string `json:"slug"`
-	Emoji string `json:"emoji"`
-}
+type InterestTag = interests.Interest
 
 type Owner struct {
 	ID        int64  `json:"id"`
@@ -46,20 +42,25 @@ type Owner struct {
 }
 
 type Community struct {
-	ID             int64         `json:"id"`
-	Name           string        `json:"name"`
-	Slug           string        `json:"slug"`
-	Description    string        `json:"description"`
-	Rules          string        `json:"rules"`
-	Thumbnail      string        `json:"thumbnail"`
-	Banner         string        `json:"banner"`
-	Visibility     string        `json:"visibility"`
-	MinAge         int16         `json:"min_age"`
-	Owner          *Owner        `json:"owner"`
-	Interests      []InterestTag `json:"interests"`
-	ChannelsCount  int32         `json:"channels_count"`
-	MembersCount   int32         `json:"members_count"`
-	FollowersCount int32         `json:"followers_count"`
+	ID             int64               `json:"id"`
+	Name           string              `json:"name"`
+	Slug           string              `json:"slug"`
+	Description    string              `json:"description"`
+	Rules          string              `json:"rules"`
+	Thumbnail      string              `json:"thumbnail"`
+	Banner         string              `json:"banner"`
+	BannerX        int16               `json:"banner_x"`
+	BannerY        int16               `json:"banner_y"`
+	Visibility     string              `json:"visibility"`
+	MinAge         int16               `json:"min_age"`
+	Theme          db.ThemeEnum        `json:"theme"`
+	CoverPattern   db.CoverPatternEnum `json:"cover_pattern"`
+	Owner          *Owner              `json:"owner"`
+	Interests      []InterestTag       `json:"interests"`
+	ChannelsCount  int32               `json:"channels_count"`
+	MembersCount   int32               `json:"members_count"`
+	FollowersCount int32               `json:"followers_count"`
+	CreatedAt      string              `json:"created_at"`
 	// The viewer's own: none, pending, active, or rejected while the cooldown runs.
 	MembershipStatus string `json:"membership_status"`
 	RejectedUntil    string `json:"rejected_until,omitempty"`
@@ -153,7 +154,7 @@ func (h *Handler) build(ctx context.Context, viewerID int64, rows []row) ([]Comm
 		return nil, err
 	}
 	for _, t := range interestRows {
-		tags[t.CommunityID] = append(tags[t.CommunityID], InterestTag{ID: t.ID, Name: t.Name, Slug: t.Slug, Emoji: t.Emoji})
+		tags[t.CommunityID] = append(tags[t.CommunityID], InterestTag{ID: t.ID, Names: interests.NewNames(t.NameEn, t.NameAr), Slug: t.Slug, Emoji: t.Emoji})
 	}
 
 	stats := make(map[int64]db.ListCommunityStatsRow, len(ids))
@@ -191,13 +192,18 @@ func (h *Handler) build(ctx context.Context, viewerID int64, rows []row) ([]Comm
 			Rules:            r.Rules,
 			Thumbnail:        r.Thumbnail,
 			Banner:           r.Banner,
+			BannerX:          r.BannerX,
+			BannerY:          r.BannerY,
 			Visibility:       string(r.Visibility),
 			MinAge:           r.MinAge,
+			Theme:            r.Theme,
+			CoverPattern:     r.CoverPattern,
 			Owner:            owners[r.OwnerID],
 			Interests:        tagList,
 			ChannelsCount:    r.ChannelsCount,
 			MembersCount:     stats[r.ID].MembersCount,
 			FollowersCount:   stats[r.ID].FollowersCount,
+			CreatedAt:        r.CreatedAt.UTC().Format(time.RFC3339),
 			MembershipStatus: access.MembershipStatus(stats[r.ID].ViewerStatus, stats[r.ID].ViewerResolvedAt),
 			Following:        stats[r.ID].ViewerFollowing,
 		}

@@ -55,7 +55,7 @@ func (q *Queries) AdvanceOnboarding(ctx context.Context, arg AdvanceOnboardingPa
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (first_name, last_name, email_address, hashed_password, oauth_provider, thumbnail, is_verified, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-RETURNING id, uuid, first_name, last_name, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider, onboarding_completed, onboarding_step, date_of_birth, gender
+RETURNING id, uuid, first_name, last_name, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider, onboarding_completed, onboarding_step, date_of_birth, gender, language
 `
 
 type CreateUserParams struct {
@@ -104,13 +104,14 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.OnboardingStep,
 		&i.DateOfBirth,
 		&i.Gender,
+		&i.Language,
 	)
 	return i, err
 }
 
 const getUserBasicInfo = `-- name: GetUserBasicInfo :one
 SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbnail, u.created_at, u.updated_at,
-       u.onboarding_step, u.onboarding_completed
+       u.onboarding_step, u.onboarding_completed, u.language, u.gender
 FROM users u
 WHERE u.id = $1
   AND u.deleted_at IS NULL
@@ -127,6 +128,8 @@ type GetUserBasicInfoRow struct {
 	UpdatedAt           time.Time
 	OnboardingStep      int32
 	OnboardingCompleted bool
+	Language            NullLanguageEnum
+	Gender              NullGenderEnum
 }
 
 // -------------------------------
@@ -146,12 +149,14 @@ func (q *Queries) GetUserBasicInfo(ctx context.Context, id int64) (GetUserBasicI
 		&i.UpdatedAt,
 		&i.OnboardingStep,
 		&i.OnboardingCompleted,
+		&i.Language,
+		&i.Gender,
 	)
 	return i, err
 }
 
 const getUserByEmailAddress = `-- name: GetUserByEmailAddress :one
-SELECT id, uuid, first_name, last_name, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider, onboarding_completed, onboarding_step, date_of_birth, gender FROM users WHERE email_address = $1 AND deleted_at IS NULL LIMIT 1
+SELECT id, uuid, first_name, last_name, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider, onboarding_completed, onboarding_step, date_of_birth, gender, language FROM users WHERE email_address = $1 AND deleted_at IS NULL LIMIT 1
 `
 
 // -------------------------------
@@ -182,6 +187,7 @@ func (q *Queries) GetUserByEmailAddress(ctx context.Context, emailAddress string
 		&i.OnboardingStep,
 		&i.DateOfBirth,
 		&i.Gender,
+		&i.Language,
 	)
 	return i, err
 }
@@ -213,7 +219,7 @@ func (q *Queries) GetUserHashedPasswordByEmail(ctx context.Context, emailAddress
 }
 
 const getUserProfile = `-- name: GetUserProfile :one
-SELECT u.id, u.uuid, u.first_name, u.last_name, u.email_address, u.created_at, u.updated_at, u.deleted_at, u.hashed_password, u.thumbnail, u.is_verified, u.postal_code, u.other_platforms_accounts, u.country_id, u.state_id, u.city_id, u.oauth_provider, u.onboarding_completed, u.onboarding_step, u.date_of_birth, u.gender
+SELECT u.id, u.uuid, u.first_name, u.last_name, u.email_address, u.created_at, u.updated_at, u.deleted_at, u.hashed_password, u.thumbnail, u.is_verified, u.postal_code, u.other_platforms_accounts, u.country_id, u.state_id, u.city_id, u.oauth_provider, u.onboarding_completed, u.onboarding_step, u.date_of_birth, u.gender, u.language
 FROM users u
 WHERE u.id = $1
   AND u.deleted_at IS NULL
@@ -247,6 +253,7 @@ func (q *Queries) GetUserProfile(ctx context.Context, id int64) (User, error) {
 		&i.OnboardingStep,
 		&i.DateOfBirth,
 		&i.Gender,
+		&i.Language,
 	)
 	return i, err
 }
@@ -256,7 +263,7 @@ UPDATE users
 SET hashed_password = $1,
     updated_at = NOW()
 WHERE id = $2
-RETURNING id, uuid, first_name, last_name, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider, onboarding_completed, onboarding_step, date_of_birth, gender
+RETURNING id, uuid, first_name, last_name, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider, onboarding_completed, onboarding_step, date_of_birth, gender, language
 `
 
 type ResetUserPasswordParams struct {
@@ -292,6 +299,7 @@ func (q *Queries) ResetUserPassword(ctx context.Context, arg ResetUserPasswordPa
 		&i.OnboardingStep,
 		&i.DateOfBirth,
 		&i.Gender,
+		&i.Language,
 	)
 	return i, err
 }
@@ -328,7 +336,7 @@ func (q *Queries) ResolveUserByID(ctx context.Context, id int64) (ResolveUserByI
 }
 
 const searchUsersByName = `-- name: SearchUsersByName :many
-SELECT id, uuid, first_name, last_name, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider, onboarding_completed, onboarding_step, date_of_birth, gender
+SELECT id, uuid, first_name, last_name, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider, onboarding_completed, onboarding_step, date_of_birth, gender, language
 FROM users
 WHERE (first_name ILIKE '%' || $1 || '%'
        OR last_name ILIKE '%' || $1 || '%')
@@ -377,6 +385,7 @@ func (q *Queries) SearchUsersByName(ctx context.Context, arg SearchUsersByNamePa
 			&i.OnboardingStep,
 			&i.DateOfBirth,
 			&i.Gender,
+			&i.Language,
 		); err != nil {
 			return nil, err
 		}
@@ -389,6 +398,34 @@ func (q *Queries) SearchUsersByName(ctx context.Context, arg SearchUsersByNamePa
 		return nil, err
 	}
 	return items, nil
+}
+
+const setUserLanguage = `-- name: SetUserLanguage :exec
+UPDATE users SET language = $2, updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL
+`
+
+type SetUserLanguageParams struct {
+	ID       int64
+	Language NullLanguageEnum
+}
+
+func (q *Queries) SetUserLanguage(ctx context.Context, arg SetUserLanguageParams) error {
+	_, err := q.db.ExecContext(ctx, setUserLanguage, arg.ID, arg.Language)
+	return err
+}
+
+const setUserLanguageIfUnset = `-- name: SetUserLanguageIfUnset :exec
+UPDATE users SET language = $2 WHERE id = $1 AND language IS NULL AND deleted_at IS NULL
+`
+
+type SetUserLanguageIfUnsetParams struct {
+	ID       int64
+	Language NullLanguageEnum
+}
+
+func (q *Queries) SetUserLanguageIfUnset(ctx context.Context, arg SetUserLanguageIfUnsetParams) error {
+	_, err := q.db.ExecContext(ctx, setUserLanguageIfUnset, arg.ID, arg.Language)
+	return err
 }
 
 const updateUser = `-- name: UpdateUser :one
@@ -521,7 +558,7 @@ UPDATE users
 SET is_verified = TRUE,
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, uuid, first_name, last_name, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider, onboarding_completed, onboarding_step, date_of_birth, gender
+RETURNING id, uuid, first_name, last_name, email_address, created_at, updated_at, deleted_at, hashed_password, thumbnail, is_verified, postal_code, other_platforms_accounts, country_id, state_id, city_id, oauth_provider, onboarding_completed, onboarding_step, date_of_birth, gender, language
 `
 
 // -------------------------------
@@ -552,6 +589,7 @@ func (q *Queries) VerifyUserEmail(ctx context.Context, id int64) (User, error) {
 		&i.OnboardingStep,
 		&i.DateOfBirth,
 		&i.Gender,
+		&i.Language,
 	)
 	return i, err
 }

@@ -1,14 +1,15 @@
 import { useState, type ReactNode } from "react";
-import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { OnboardingAction } from "@/types/onboarding";
 import { useOnboardingStep } from "./context";
+import { useTranslation } from "react-i18next";
+import { t } from "@/i18n";
 
 function errorText(error: string) {
-  if (error === "step_incomplete") return "Finish this step to continue.";
+  if (error === "step_incomplete") return t("onboarding:stepIncomplete");
   // Another tab moved on: the new state is already in place.
   if (error === "step_mismatch" || error === "onboarding_completed") return null;
-  return "Something went wrong. Please try again.";
+  return t("errors:generic");
 }
 
 /**
@@ -19,7 +20,7 @@ export default function OnboardingFooter({
   left,
   onContinue,
   continueDisabled = false,
-  continueLabel = "Continue",
+  continueLabel,
   onMoved,
   hideSkip = false,
 }: {
@@ -30,6 +31,7 @@ export default function OnboardingFooter({
   onMoved?: (action: OnboardingAction) => void;
   hideSkip?: boolean;
 }) {
+  const { t } = useTranslation(["onboarding", "common"]);
   const { step, index, move } = useOnboardingStep();
   const [busy, setBusy] = useState<OnboardingAction | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,28 +51,26 @@ export default function OnboardingFooter({
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      {error && <p role="alert" className="text-sm text-destructive text-right">{error}</p>}
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <div className="w-full sm:w-auto sm:flex-1 min-w-0 text-sm font-medium text-foreground truncate">{left}</div>
+    <div className="flex flex-col gap-2 border-t pt-4">
+      {error && <p role="alert" className="text-sm text-destructive text-end">{error}</p>}
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{left}</div>
         {index > 0 && (
-          <Button variant="ghost" borderRadius="full" disabled={busy !== null} onClick={() => run("back")}>
-            Back
+          <Button variant="ghost" disabled={busy !== null} onClick={() => run("back")}>
+            {t("common:actions.back")}
           </Button>
         )}
         {step.skippable && !hideSkip && (
-          <Button variant="outline" borderRadius="full" disabled={busy !== null} onClick={() => run("skip")}>
-            Skip now
+          <Button variant="outline" disabled={busy !== null} onClick={() => run("skip")}>
+            {t("skipNow")}
           </Button>
         )}
         <Button
-          borderRadius="full"
-          size="lg"
+          loading={busy === "next"}
           disabled={continueDisabled || busy !== null}
           onClick={() => run("next")}
         >
-          {busy === "next" ? "Saving…" : continueLabel}
-          <ArrowRight />
+          {continueLabel ?? t("common:actions.continue")}
         </Button>
       </div>
     </div>

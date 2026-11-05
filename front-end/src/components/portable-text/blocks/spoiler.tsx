@@ -1,21 +1,26 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { PortableText } from "@portabletext/react";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon, SparklesIcon } from "lucide-react";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
 import { FormField } from "@/models/Forms/FormField";
-import { cn } from "@/lib/utils";
 import displayBlockComponents from "../displayBlocks";
+import { perLanguage, t } from "@/i18n";
+import { maxChars, oneLine, plainText, required } from "./validation";
 import { defineBlock } from "./defineBlock";
 
 const MAX_BLOCKS = 20;
 const MAX_LABEL = 120;
 
+const stripes = {
+  backgroundImage:
+    "repeating-linear-gradient(135deg, transparent 0 28px, color-mix(in srgb, var(--primary) 8%, transparent) 28px 56px)",
+};
+
 // v1 content is plain paragraphs only, mirroring plainParagraph in spoiler.go.
 const paragraphSchema = z
   .object({
     _type: z.literal("block"),
-    _key: z.string().min(1, "is required"),
+    _key: z.string().min(1, required),
     style: z.literal("normal"),
     listItem: z.unknown().optional(),
     level: z.unknown().optional(),
@@ -35,18 +40,18 @@ const paragraphSchema = z
       block.level == null &&
       !block.markDefs?.length &&
       block.children.every((span) => !span.marks?.length),
-    "must be plain text"
+    plainText
   );
 
 const spoilerSchema = z.object({
   label: z
     .string()
-    .refine((label) => label.length <= MAX_LABEL, `must be at most ${MAX_LABEL} characters`)
-    .refine((label) => !/[\r\n]/.test(label), "must be one line")
+    .refine((label) => label.length <= MAX_LABEL, maxChars(MAX_LABEL))
+    .refine((label) => !/[\r\n]/.test(label), oneLine)
     .optional(),
   content: z
     .array(paragraphSchema)
-    .min(1, "is required")
+    .min(1, required)
     .max(MAX_BLOCKS)
     .refine(
       (content) => new Set(content.map((block) => block._key)).size === content.length,
@@ -54,7 +59,7 @@ const spoilerSchema = z.object({
     )
     .refine(
       (content) => content.some((block) => block.children.some((span) => span.text.trim() !== "")),
-      "is required"
+      required
     ),
 });
 
@@ -74,25 +79,25 @@ function paragraphs(text: string): SpoilerValue["content"] {
     }));
 }
 
-const spoilerFormFields: FormField[] = [
+const spoilerFormFields = perLanguage((): FormField[] => [
   new FormField({
     id: "label",
     name: "label",
-    label: "Label",
+    label: t("blocks:spoiler.fields.label"),
     type: "string",
     interfaceType: "text",
-    placeholder: "What's hidden? e.g. Finale spoilers",
+    placeholder: t("blocks:spoiler.fields.whatSHiddenEG"),
   }),
   new FormField({
     id: "content",
     name: "content",
-    label: "Content",
+    label: t("blocks:spoiler.fields.content"),
     type: "string",
     interfaceType: "textarea",
-    placeholder: "The hidden part",
+    placeholder: t("blocks:spoiler.fields.theHiddenPart"),
     isRequired: true,
   }),
-];
+]);
 
 function SpoilerView({ value }: { value: SpoilerValue }) {
   const [revealed, setRevealed] = useState(false);
@@ -113,27 +118,30 @@ function SpoilerView({ value }: { value: SpoilerValue }) {
   };
 
   return (
-    <div
-      className="rounded-md border border-border bg-card text-card-foreground"
-      onClick={revealed ? undefined : () => toggle(true)}
-    >
+    <div>
       {revealed ? (
-        <div className="flex min-h-11 items-center gap-2 px-4 py-2">
-          <EyeIcon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-          <span dir="auto" className="min-w-0 font-semibold break-words">
-            {label ?? "Spoiler"}
-          </span>
-          <Button
+        <div className="rounded-2xl bg-secondary px-5 py-4 text-secondary-foreground">
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
             aria-expanded
             aria-controls={contentId}
-            className="ms-auto max-md:min-h-11"
+            aria-label={label ? t("blocks:spoiler.hideNamed", { label }) : t("blocks:spoiler.hide")}
+            className="-mx-1 flex min-h-8 max-w-full items-center gap-2 rounded-md px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring max-md:min-h-11"
             onClick={() => toggle(false)}
           >
-            Hide
-          </Button>
+            <EyeIcon aria-hidden className="size-4 shrink-0" />
+            <span dir="auto" className="min-w-0 truncate font-medium">
+              {label ?? t("blocks:spoiler.title")}
+            </span>
+          </button>
+          <div
+            id={contentId}
+            ref={contentRef}
+            tabIndex={-1}
+            className="mt-2 space-y-4 break-words focus:outline-none"
+          >
+            <PortableText value={value.content} components={displayBlockComponents} />
+          </div>
         </div>
       ) : (
         <button
@@ -141,40 +149,43 @@ function SpoilerView({ value }: { value: SpoilerValue }) {
           type="button"
           aria-expanded={false}
           aria-controls={contentId}
-          aria-label={label ? `Show spoiler: ${label}` : "Show spoiler"}
-          className="flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-md px-4 py-2 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+          aria-label={label ? t("blocks:spoiler.showNamed", { label }) : t("blocks:spoiler.show")}
+          onClick={() => toggle(true)}
+          style={stripes}
+          className="flex min-h-36 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl bg-accent px-5 py-6 text-center text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <EyeOffIcon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-          <span dir="auto" className="min-w-0 font-semibold break-words">
-            {label ?? "Spoiler"}
+          <span aria-hidden className="flex size-10 items-center justify-center rounded-full bg-card text-primary">
+            <EyeOffIcon className="size-5" />
           </span>
-          <span className="ms-auto shrink-0 text-sm text-muted-foreground">Tap to reveal</span>
+          <span dir="auto" className="max-w-full font-semibold break-words">
+            {label ?? t("blocks:spoiler.title")}
+          </span>
+          <span
+            aria-hidden
+            className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background"
+          >
+            <SparklesIcon className="size-3.5" />
+            {t("blocks:spoiler.tap")}
+          </span>
         </button>
       )}
-      <div
-        id={contentId}
-        ref={contentRef}
-        tabIndex={-1}
-        aria-hidden={!revealed}
-        inert={!revealed}
-        className={cn(
-          "space-y-4 px-4 pb-3 break-words transition-[filter] duration-300 focus:outline-none motion-reduce:transition-none",
-          !revealed && "cursor-pointer blur-md select-none"
-        )}
-      >
-        <PortableText value={value.content} components={displayBlockComponents} />
-      </div>
     </div>
   );
 }
 
 export const spoiler = defineBlock<SpoilerValue>({
   name: "spoiler",
-  title: "Spoiler",
-  description: "Content hidden until the reader taps it.",
+  get title() {
+    return t("blocks:spoiler.title");
+  },
+  get description() {
+    return t("blocks:spoiler.description");
+  },
   icon: EyeOffIcon,
   category: "layout",
-  fields: spoilerFormFields,
+  get fields() {
+    return spoilerFormFields();
+  },
   defaultValues: {},
   schema: spoilerSchema,
   View: SpoilerView,

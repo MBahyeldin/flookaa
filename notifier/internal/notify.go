@@ -30,6 +30,11 @@ func channelScope(channelID int64) *scope {
 	return &scope{typ: db.NotificationScopeEnumCHANNEL, id: channelID}
 }
 
+// wallScope is the scope of content on a persona's wall.
+func wallScope(personaID int64) *scope {
+	return &scope{typ: db.NotificationScopeEnumPERSONA, id: personaID}
+}
+
 // notification is one row to create or bring back to the top. Its subject
 // type comes from the kind's spec in shared/pkg/notifications.
 type notification struct {

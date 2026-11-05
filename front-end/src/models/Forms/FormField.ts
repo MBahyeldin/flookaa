@@ -12,6 +12,8 @@ export class FormField {
   public isRequired?: boolean;
   public options?: Record<string, unknown>[];
   public width?: string;
+  public autoComplete?: string;
+  public passwordRules?: boolean;
   public height?: string;
   public icon?: React.ReactNode;
   public value?: string;
@@ -54,6 +56,8 @@ export class FormField {
     validate = () => null,
     visibleWhen,
     hint,
+    autoComplete,
+    passwordRules,
     serialize,
     dimensions,
     duration,
@@ -83,6 +87,8 @@ export class FormField {
     ) => string | null;
     visibleWhen?: (values: Record<string, unknown>) => boolean;
     hint?: (value: string) => string | null;
+    autoComplete?: string;
+    passwordRules?: boolean;
     serialize?: (value: unknown) => unknown;
     dimensions?: { width: string; height: string };
     duration?: string;
@@ -109,6 +115,8 @@ export class FormField {
     this.validate = validate;
     this.visibleWhen = visibleWhen;
     this.hint = hint;
+    this.autoComplete = autoComplete;
+    this.passwordRules = passwordRules;
     this.serialize = serialize;
     this.dimensions = dimensions;
     this.duration = duration;

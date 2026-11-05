@@ -18,7 +18,9 @@ import (
 	"app/internal/oauthproviders"
 	"app/internal/onboarding"
 	"app/util/email"
+	"app/util/emailchange"
 	"app/util/image"
+	"app/util/passwordreset"
 	"app/util/verification"
 	"context"
 	"fmt"
@@ -105,14 +107,17 @@ func StartServer(cfg config.Server) error {
 		signer,
 		email.NewSender(email.Config(cfg.SMTP)),
 		verification.NewService(pg, q),
+		emailchange.NewService(pg, q),
+		passwordreset.NewService(pg, q),
+		cfg.AppBaseURL,
 		stores.Persona,
 		followersHandler,
 		onboardingFlow,
 	)
 	restHandlers := v1.Handlers{
 		Users:         usersHandler,
-		Channels:      channels.NewHandler(pg, q, natsHelper),
-		Communities:   communities.NewHandler(pg, q, natsHelper),
+		Channels:      channels.NewHandler(pg, q, natsHelper, cfg.S3BaseURL),
+		Communities:   communities.NewHandler(pg, q, natsHelper, cfg.S3BaseURL),
 		Followers:     followersHandler,
 		Geo:           geo.NewHandler(q),
 		Interests:     interests.NewHandler(q),
@@ -127,11 +132,12 @@ func StartServer(cfg config.Server) error {
 		),
 	}
 	resolver := &resolvers.Resolver{
-		Queries: q,
-		Objects: objects,
-		NATS:    natsHelper,
-		Content: stores.Content,
-		Persona: stores.Persona,
+		Queries:   q,
+		Objects:   objects,
+		NATS:      natsHelper,
+		Content:   stores.Content,
+		Persona:   stores.Persona,
+		S3BaseURL: cfg.S3BaseURL,
 	}
 
 	sig := make(chan os.Signal, 1)

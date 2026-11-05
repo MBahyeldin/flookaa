@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { isError } from "remeda";
 
@@ -9,10 +10,10 @@ export function ErrorScreen(props: {
   return (
     <div className="flex-1 bg-destructive/10 border border-destructive text-destructive flex flex-col gap-2 p-2">
       <div className="font-medium">
-        The <code className="font-bold">{props.area}</code> crashed!
+        {t("editor:crashed", { area: props.area })}
       </div>
       <div className="font-mono text-sm">
-        {getErrorMessage(props.error, "Unknown error")}
+        {getErrorMessage(props.error, t("editor:unknownError"))}
       </div>
       <Button
         variant="destructive"
@@ -20,7 +21,7 @@ export function ErrorScreen(props: {
         size="sm"
         onClick={props.dismiss}
       >
-        Try again
+        {t("common:actions.tryAgain")}
       </Button>
     </div>
   );

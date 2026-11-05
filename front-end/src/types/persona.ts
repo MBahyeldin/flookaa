@@ -1,4 +1,5 @@
 import type { PaletteId } from "@/themes/palettes";
+import type { CoverPattern } from "@/types/cover";
 export type Persona = {
     id: string;
     userId: string;
@@ -18,6 +19,7 @@ export type Persona = {
     show_on_profile: boolean;
     is_default?: boolean;
     theme: PaletteId;
+    cover_pattern?: CoverPattern;
 
     joined_channels: Array<{
         id: string;
@@ -35,6 +37,9 @@ export type PublicPersona = {
     bio?: string;
     /** The viewer's follow; a rejected request reads as pending. */
     follow_status?: FollowStatus;
+    /** On connected personas: the persona name and followers. */
+    name?: string;
+    followers_count?: number;
 }
 
 export type FollowStatus = "active" | "pending" | null;
@@ -50,6 +55,9 @@ export type PersonaProfile = PublicPersona & {
     /** This persona invited you to follow it. */
     invited_you: boolean;
     can_invite: boolean;
+    privacy: "public" | "private" | "only_me";
+    theme: PaletteId;
+    cover_pattern: CoverPattern;
 }
 
 export type InviteStatus = "pending" | null;
@@ -58,6 +66,7 @@ export type InviteStatus = "pending" | null;
 export type LockedPersona = {
     id: number;
     locked: true;
+    anonymous_name: string;
     follow_status: FollowStatus;
 }
 

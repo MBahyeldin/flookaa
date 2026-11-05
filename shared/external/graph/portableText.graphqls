@@ -160,6 +160,7 @@ type CalloutBlock implements Block {
   _key: ID!
   tone: CalloutTone
   icon: CalloutIcon
+  tag: String
   title: String
   description: String!
 }
@@ -338,6 +339,7 @@ input CalloutBlockInput {
   _key: ID!
   tone: CalloutTone
   icon: CalloutIcon
+  tag: String
   title: String
   description: String!
 }

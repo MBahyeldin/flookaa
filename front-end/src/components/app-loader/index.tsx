@@ -2,8 +2,10 @@
 
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 export default function AppLoader() {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
       <motion.div
@@ -21,7 +23,7 @@ export default function AppLoader() {
           animate={{ opacity: [0.3, 1, 0.3] }}
           transition={{ duration: 1.5, repeat: Infinity }}
         >
-          Loading...
+          {t("states.loading")}
         </motion.span>
       </motion.div>
     </div>

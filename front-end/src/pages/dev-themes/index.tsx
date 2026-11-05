@@ -3,11 +3,92 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Chip } from "@/components/ui/chip";
+import { FormField } from "@/components/ui/form-field";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Logo } from "@/components/ui/logo";
+import { SectionHeader } from "@/components/ui/section-header";
+import { SectionNav, SectionNavList, SectionNavTab } from "@/components/ui/section-nav";
+import { SkeletonPost, SkeletonRow, Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { Compass, Lock, Plus } from "lucide-react";
 import PostContent from "@/components/portable-text/PostContent";
-import { PALETTES, type PaletteId } from "@/themes/palettes";
+import { blocks } from "@/components/portable-text/blocks";
+import { Post } from "@/components/post-card";
+import { ComposerBar } from "@/pages/(dashboard)/channels/[id]/ComposerBar";
+import type { Post as PostData } from "@/generated/graphql";
+import { PALETTES, paletteLabel, type PaletteId } from "@/themes/palettes";
 
-const GRADIENT_FROM = "var(--primary-gradient-from)";
-const GRADIENT_TO = "var(--primary-gradient-to)";
+function Components() {
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <Button>Primary</Button>
+        <Button variant="secondary">Secondary</Button>
+        <Button variant="outline">Outline</Button>
+        <Button variant="ghost">Ghost</Button>
+        <Button variant="destructive">Delete</Button>
+        <Button loading>Saving…</Button>
+        <Button disabled>Disabled</Button>
+        <Button size="icon" variant="outline" aria-label="Add">
+          <Plus />
+        </Button>
+        <Button size="icon-sm" variant="ghost" aria-label="Add">
+          <Plus />
+        </Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Chip emoji="⚽">Sports</Chip>
+        <Chip emoji="⚽" selected>Sports</Chip>
+        <Chip kind="filter" onClick={() => {}}>All</Chip>
+        <Chip kind="filter" selected onClick={() => {}}>Music</Chip>
+        <Badge variant="secondary"><Lock />Private</Badge>
+        <Badge variant="secondary">18+</Badge>
+        <Badge variant="count">2</Badge>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <FormField label="Channel name" helper="Shown on the channel hero.">
+          <Input defaultValue="Sunday League" />
+        </FormField>
+        <FormField label="Channel name" error="That name is taken.">
+          <Input defaultValue="Sunday League" />
+        </FormField>
+      </div>
+      <div className="flex flex-wrap items-end gap-2">
+        {(["xs", "sm", "md", "lg", "xl"] as const).map((size) => (
+          <Avatar key={size} size={size}>
+            <AvatarFallback>MS</AvatarFallback>
+          </Avatar>
+        ))}
+        {(["sm", "md", "lg", "xl"] as const).map((size) => (
+          <Logo key={size} size={size} name="Tech Builders" />
+        ))}
+      </div>
+      <SectionHeader overline="Channels" title="In this community" seeAllTo="/dev/themes" />
+      <SectionNav defaultValue="posts">
+        <SectionNavList className="px-0">
+          <SectionNavTab value="posts">Posts</SectionNavTab>
+          <SectionNavTab value="about">About</SectionNavTab>
+          <SectionNavTab value="people">People</SectionNavTab>
+        </SectionNavList>
+      </SectionNav>
+      <Skeleton className="h-3 w-50" />
+      <SkeletonPost />
+      <SkeletonRow />
+      <EmptyState
+        icon={Compass}
+        title="Your feed is quiet"
+        body="Join a few channels and their posts will show up here."
+        action={<Button>Discover channels</Button>}
+      />
+      <ErrorState title="Couldn't load posts" onRetry={() => {}} />
+      <div className="rounded-lg border bg-card">
+        <EmptyState compact icon={Compass} title="No pending requests" />
+      </div>
+    </div>
+  );
+}
 
 const PAIRS: [label: string, fg: string, bg: string, bar: number][] = [
   ["foreground / background", "var(--foreground)", "var(--background)", 4.5],
@@ -16,12 +97,16 @@ const PAIRS: [label: string, fg: string, bg: string, bar: number][] = [
   ["muted-fg / background", "var(--muted-foreground)", "var(--background)", 4.5],
   ["muted-fg / card", "var(--muted-foreground)", "var(--card)", 4.5],
   ["muted-fg / muted", "var(--muted-foreground)", "var(--muted)", 4.5],
-  ["primary-fg / gradient from", "var(--primary-foreground)", GRADIENT_FROM, 4.5],
-  ["primary-fg / gradient to", "var(--primary-foreground)", GRADIENT_TO, 4.5],
+  ["foreground / surface-sunken", "var(--foreground)", "var(--surface-sunken)", 4.5],
+  ["muted-fg / surface-sunken", "var(--muted-foreground)", "var(--surface-sunken)", 4.5],
+  ["primary-fg / primary", "var(--primary-foreground)", "var(--primary)", 4.5],
   ["secondary-fg / secondary", "var(--secondary-foreground)", "var(--secondary)", 4.5],
   ["accent-fg / accent", "var(--accent-foreground)", "var(--accent)", 4.5],
   ["primary / background", "var(--primary)", "var(--background)", 4.5],
   ["primary / card", "var(--primary)", "var(--card)", 4.5],
+  ["primary / muted", "var(--primary)", "var(--muted)", 4.5],
+  ["primary / surface-sunken", "var(--primary)", "var(--surface-sunken)", 4.5],
+  ["success / muted", "var(--success)", "var(--muted)", 4.5],
   ["success / background", "var(--success)", "var(--background)", 4.5],
   ["success / card", "var(--success)", "var(--card)", 4.5],
   ["warning / background", "var(--warning)", "var(--background)", 4.5],
@@ -32,6 +117,8 @@ const PAIRS: [label: string, fg: string, bg: string, bar: number][] = [
   ["warning-fg / warning", "var(--warning-foreground)", "var(--warning)", 4.5],
   ["destructive-fg / destructive", "var(--destructive-foreground)", "var(--destructive)", 4.5],
   ["ring / card", "var(--ring)", "var(--card)", 3],
+  ["background / foreground", "var(--background)", "var(--foreground)", 4.5],
+  ["primary / accent", "var(--primary)", "var(--accent)", 4.5],
 ];
 
 const SAMPLE_POST = JSON.stringify({
@@ -49,6 +136,47 @@ const SAMPLE_POST = JSON.stringify({
     },
   ],
 });
+
+const paragraph = (key: string, text: string) => ({
+  block: { _type: "block", _key: key, style: "normal", markDefs: [], children: [{ _type: "span", _key: `${key}s`, text, marks: [] }] },
+});
+
+const example = (name: string, key: string) => {
+  const value = blocks.find((block) => block.name === name)!.examples[0];
+  const content = name === "spoiler" ? { content: value.content.map((block: unknown) => ({ block })) } : {};
+  return { [name]: { _type: name, _key: key, ...value, ...content } };
+};
+
+const SAMPLE_PREVIEW = {
+  _id: "sample",
+  authorId: 0,
+  author: { fullName: "Lina H.", profileImageUrl: null, anonymous: false },
+  createdAt: new Date(Date.now() - 3 * 3600_000).toISOString(),
+  rawContent: {
+    blocks: [
+      paragraph("p1", "Saturday's hike is on! We meet at the trailhead café at 8, walk the ridge loop, and come back for a long lunch. Everything you need is below."),
+      example("image", "img"),
+      paragraph("p2", "Here's the view from last time. The clock is ticking:"),
+      example("countdown", "cd"),
+      example("checklist", "cl"),
+      example("voiceNote", "vn"),
+      example("steps", "st"),
+      example("spoiler", "sp"),
+      example("quote", "qt"),
+    ],
+  },
+  meta: { likesCount: 24, commentsCount: 8 },
+  personalizedMeta: { likedByPersona: false },
+} as unknown as PostData;
+
+function PreviewSamples() {
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Post post={SAMPLE_PREVIEW} version="spine" channel={{ id: 0, name: "Weekend Hikers", theme: "forest" }} onOpen={() => {}} />
+      <Post post={SAMPLE_PREVIEW} version="canvas" channel={{ id: 0, name: "Weekend Hikers", theme: "forest" }} onOpen={() => {}} />
+    </div>
+  );
+}
 
 const canvas = typeof document === "undefined" ? null : document.createElement("canvas");
 
@@ -158,7 +286,13 @@ function Swatch({ id, label, dark }: { id: PaletteId; label: string; dark: boole
               <span className="rounded bg-destructive px-2 py-1 text-destructive-foreground">destructive</span>
               <span className="rounded bg-accent px-2 py-1 text-accent-foreground">accent</span>
             </div>
+            <div className="flex gap-2 text-xs">
+              <span className="rounded border bg-surface-sunken px-2 py-1">surface-sunken</span>
+              <span className="rounded bg-hero-overlay px-2 py-1 text-white">hero-overlay</span>
+              <span className="rounded border bg-card px-2 py-1 shadow-sm">shadow-sm</span>
+            </div>
             <Input placeholder="Input" />
+            <Components />
           </CardContent>
         </Card>
         <ContrastTable rows={rows} />
@@ -176,10 +310,14 @@ export default function DevThemesPage() {
           Every palette in light and dark. Light swatches are only accurate while the app itself is in light mode.
         </p>
       </div>
+      <div className="max-w-[728px]">
+        <ComposerBar channelName="Sunday League" />
+      </div>
+      <PreviewSamples />
       <div className="grid gap-4 md:grid-cols-2">
-        {PALETTES.flatMap(({ id, label }) => [
-          <Swatch key={`${id}-light`} id={id} label={label} dark={false} />,
-          <Swatch key={`${id}-dark`} id={id} label={label} dark />,
+        {PALETTES.flatMap(({ id }) => [
+          <Swatch key={`${id}-light`} id={id} label={paletteLabel(id)} dark={false} />,
+          <Swatch key={`${id}-dark`} id={id} label={paletteLabel(id)} dark />,
         ])}
       </div>
     </div>

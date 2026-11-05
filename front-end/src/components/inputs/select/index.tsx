@@ -1,6 +1,7 @@
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { t } from "@/i18n";
 import type { FormFieldProps } from "@/types/FormFields";
 import { useState } from "react";
 
@@ -37,7 +38,7 @@ export default function SelectInput({
         onValueChange={onChange}
       >
         <SelectTrigger className="w-full mt-2">
-          <SelectValue placeholder={field.placeholder || "Select an option"} />
+          <SelectValue placeholder={field.placeholder || t("common:form.selectOption")} />
         </SelectTrigger>
         <SelectContent>
           {field.options?.map((option, index) => (

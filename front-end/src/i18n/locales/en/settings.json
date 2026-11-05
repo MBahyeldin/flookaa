@@ -1,0 +1,65 @@
+{
+  "title": "Settings",
+  "lead": "Your account. Each persona has its own settings under Personas.",
+  "loadFailed": "Couldn't load your settings",
+  "loading": "Loading settings",
+  "profile": {
+    "title": "Profile",
+    "lead": "Only you see your date of birth and gender. Your age decides which channels and communities you can see.",
+    "saveFailed": "Couldn't save your profile. Please try again.",
+    "saved": "Profile saved",
+    "firstNameMissing": "Enter your first name",
+    "lastNameMissing": "Enter your last name"
+  },
+  "dob": {
+    "label": "Date of birth",
+    "helper": "Used only for age limits. Never shown on a persona.",
+    "invalid": "Enter a valid date",
+    "range": "Enter a date between 1900 and today"
+  },
+  "gender": {
+    "label": "Gender",
+    "male": "Male",
+    "female": "Female",
+    "choose": "Choose one"
+  },
+  "location": {
+    "pickAgain": "Choose the state and city again.",
+    "country": "Country",
+    "chooseCountry": "Choose a country",
+    "state": "State / province",
+    "chooseState": "Choose a state",
+    "city": "City",
+    "chooseCity": "Choose a city"
+  },
+  "email": {
+    "title": "Email",
+    "verified": "Verified",
+    "changeHint": "To change it, we send a code to the new address first.",
+    "managedByGoogle": "Managed by Google. It changes with your Google account.",
+    "change": "Change email",
+    "cooldown": "Wait {{seconds}}s before asking for another code.",
+    "codeExpired": "This code has expired. Send a new one.",
+    "takenMeanwhile": "Another account took this email meanwhile.",
+    "changed": "Your email was changed.",
+    "checkNew": "Check your new email",
+    "dialogLead": "We'll send a code to the new address. Your email changes once you enter it.",
+    "codeSent": "We sent a 6-digit code to <email>{{email}}</email>. It works for 1 hour.",
+    "newEmail": "New email",
+    "didntGetIt": "Didn't get it?",
+    "resendIn": "Resend in {{seconds}}s",
+    "resend": "Resend",
+    "sendCode": "Send code"
+  },
+  "appearance": {
+    "title": "Appearance",
+    "lead": "Light or dark, on this device. Applies at once.",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "language": {
+    "title": "Language",
+    "lead": "The language of menus and buttons. Applies at once, on every device.",
+    "saveFailed": "Couldn't change the language. Please try again."
+  }
+}

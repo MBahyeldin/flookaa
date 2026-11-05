@@ -130,10 +130,12 @@ func (q *Queries) CountAllowedCommunityInterests(ctx context.Context, arg CountA
 
 const createCommunity = `-- name: CreateCommunity :one
 WITH created AS (
-    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, visibility, owner_id, min_age)
+    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, banner_x, banner_y, visibility, owner_id, min_age, theme, cover_pattern)
     VALUES (
         $1, $2, $3, $4, $5,
-        $6, $7, $8, $9::smallint
+        $6, COALESCE($7::smallint, 50), COALESCE($8::smallint, 50),
+        $9, $10, $11::smallint,
+        $12::theme_enum, $13::cover_pattern_enum
     )
     RETURNING id, owner_id
 ), owner_member AS (
@@ -144,15 +146,19 @@ SELECT id FROM created
 `
 
 type CreateCommunityParams struct {
-	Name        string
-	Slug        string
-	Description string
-	Rules       string
-	Thumbnail   string
-	Banner      string
-	Visibility  CommunityVisibilityEnum
-	OwnerID     int64
-	MinAge      int16
+	Name         string
+	Slug         string
+	Description  string
+	Rules        string
+	Thumbnail    string
+	Banner       string
+	BannerX      sql.NullInt16
+	BannerY      sql.NullInt16
+	Visibility   CommunityVisibilityEnum
+	OwnerID      int64
+	MinAge       int16
+	Theme        ThemeEnum
+	CoverPattern CoverPatternEnum
 }
 
 // The owner is the first active member.
@@ -164,9 +170,13 @@ func (q *Queries) CreateCommunity(ctx context.Context, arg CreateCommunityParams
 		arg.Rules,
 		arg.Thumbnail,
 		arg.Banner,
+		arg.BannerX,
+		arg.BannerY,
 		arg.Visibility,
 		arg.OwnerID,
 		arg.MinAge,
+		arg.Theme,
+		arg.CoverPattern,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -251,7 +261,7 @@ func (q *Queries) FollowCommunity(ctx context.Context, arg FollowCommunityParams
 }
 
 const getChannelCommunityState = `-- name: GetChannelCommunityState :one
-SELECT cc.community_id, c.name, c.slug, cc.status, cc.resolved_at
+SELECT cc.community_id, c.name, c.slug, c.theme, c.thumbnail, cc.status, cc.resolved_at
 FROM community_channels cc
 JOIN communities c ON c.id = cc.community_id AND c.deleted_at IS NULL
 WHERE cc.channel_id = $1
@@ -267,6 +277,8 @@ type GetChannelCommunityStateRow struct {
 	CommunityID int64
 	Name        string
 	Slug        string
+	Theme       ThemeEnum
+	Thumbnail   string
 	Status      CommunityChannelStatusEnum
 	ResolvedAt  sql.NullTime
 }
@@ -279,6 +291,8 @@ func (q *Queries) GetChannelCommunityState(ctx context.Context, channelID int64)
 		&i.CommunityID,
 		&i.Name,
 		&i.Slug,
+		&i.Theme,
+		&i.Thumbnail,
 		&i.Status,
 		&i.ResolvedAt,
 	)
@@ -363,7 +377,7 @@ func (q *Queries) GetCommunityAccess(ctx context.Context, arg GetCommunityAccess
 }
 
 const getCommunityByID = `-- name: GetCommunityByID :one
-SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age,
+SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
      WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
        AND ch.deleted_at IS NULL)::int AS channels_count
@@ -393,13 +407,17 @@ func (q *Queries) GetCommunityByID(ctx context.Context, id int64) (GetCommunityB
 		&i.Community.DeletedAt,
 		&i.Community.Rules,
 		&i.Community.MinAge,
+		&i.Community.Theme,
+		&i.Community.CoverPattern,
+		&i.Community.BannerX,
+		&i.Community.BannerY,
 		&i.ChannelsCount,
 	)
 	return i, err
 }
 
 const getCommunityBySlug = `-- name: GetCommunityBySlug :one
-SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age,
+SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
      WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
        AND ch.deleted_at IS NULL)::int AS channels_count
@@ -429,6 +447,10 @@ func (q *Queries) GetCommunityBySlug(ctx context.Context, slug string) (GetCommu
 		&i.Community.DeletedAt,
 		&i.Community.Rules,
 		&i.Community.MinAge,
+		&i.Community.Theme,
+		&i.Community.CoverPattern,
+		&i.Community.BannerX,
+		&i.Community.BannerY,
 		&i.ChannelsCount,
 	)
 	return i, err
@@ -615,28 +637,28 @@ func (q *Queries) ListChannelCommunities(ctx context.Context, arg ListChannelCom
 }
 
 const listCommunities = `-- name: ListCommunities :many
-SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age,
+SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
      WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
        AND ch.deleted_at IS NULL)::int AS channels_count
 FROM communities c
 WHERE c.deleted_at IS NULL
   AND persona_meets_min_age($1::bigint, c.min_age)
-  AND ($2::text IS NULL OR EXISTS (
+  AND (coalesce(cardinality($2::text[]), 0) = 0 OR EXISTS (
       SELECT 1
       FROM community_interests ci
       JOIN interests i ON i.id = ci.interest_id
-      WHERE ci.community_id = c.id AND i.slug = $2::text
+      WHERE ci.community_id = c.id AND i.slug = ANY($2::text[])
   ))
 ORDER BY c.created_at DESC, c.id DESC
 LIMIT $4 OFFSET $3
 `
 
 type ListCommunitiesParams struct {
-	ViewerID     int64
-	InterestSlug sql.NullString
-	Off          int64
-	Lim          int64
+	ViewerID      int64
+	InterestSlugs []string
+	Off           int64
+	Lim           int64
 }
 
 type ListCommunitiesRow struct {
@@ -647,7 +669,7 @@ type ListCommunitiesRow struct {
 func (q *Queries) ListCommunities(ctx context.Context, arg ListCommunitiesParams) ([]ListCommunitiesRow, error) {
 	rows, err := q.db.QueryContext(ctx, listCommunities,
 		arg.ViewerID,
-		arg.InterestSlug,
+		pq.Array(arg.InterestSlugs),
 		arg.Off,
 		arg.Lim,
 	)
@@ -672,6 +694,10 @@ func (q *Queries) ListCommunities(ctx context.Context, arg ListCommunitiesParams
 			&i.Community.DeletedAt,
 			&i.Community.Rules,
 			&i.Community.MinAge,
+			&i.Community.Theme,
+			&i.Community.CoverPattern,
+			&i.Community.BannerX,
+			&i.Community.BannerY,
 			&i.ChannelsCount,
 		); err != nil {
 			return nil, err
@@ -694,6 +720,8 @@ SELECT
     ch.description,
     ch.thumbnail,
     ch.visibility,
+    channel_theme(ch.theme, ch.id)::theme_enum AS theme,
+    cc.requested_by,
     cc.created_at AS requested_at
 FROM community_channels cc
 JOIN channels ch ON ch.id = cc.channel_id AND ch.deleted_at IS NULL
@@ -708,6 +736,8 @@ type ListCommunityChannelRequestsRow struct {
 	Description string
 	Thumbnail   string
 	Visibility  ChannelVisibilityEnum
+	Theme       ThemeEnum
+	RequestedBy sql.NullInt64
 	RequestedAt time.Time
 }
 
@@ -726,6 +756,8 @@ func (q *Queries) ListCommunityChannelRequests(ctx context.Context, communityID 
 			&i.Description,
 			&i.Thumbnail,
 			&i.Visibility,
+			&i.Theme,
+			&i.RequestedBy,
 			&i.RequestedAt,
 		); err != nil {
 			return nil, err
@@ -741,8 +773,41 @@ func (q *Queries) ListCommunityChannelRequests(ctx context.Context, communityID 
 	return items, nil
 }
 
+const listCommunityInheritingChannelIDs = `-- name: ListCommunityInheritingChannelIDs :many
+SELECT ch.id
+FROM community_channels cc
+JOIN channels ch ON ch.id = cc.channel_id
+WHERE cc.community_id = $1
+  AND cc.status = 'active' AND cc.removed_at IS NULL
+  AND ch.deleted_at IS NULL AND ch.theme IS NULL
+`
+
+// Channels whose theme follows the community's.
+func (q *Queries) ListCommunityInheritingChannelIDs(ctx context.Context, communityID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listCommunityInheritingChannelIDs, communityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCommunityInterests = `-- name: ListCommunityInterests :many
-SELECT ci.community_id, i.id, i.name, i.slug, i.emoji
+SELECT ci.community_id, i.id, i.name_en, i.name_ar, i.slug, i.emoji
 FROM community_interests ci
 JOIN interests i ON i.id = ci.interest_id
 WHERE ci.community_id = ANY($1::bigint[])
@@ -752,7 +817,8 @@ ORDER BY ci.community_id, ci.created_at, i.id
 type ListCommunityInterestsRow struct {
 	CommunityID int64
 	ID          int64
-	Name        string
+	NameEn      string
+	NameAr      sql.NullString
 	Slug        string
 	Emoji       string
 }
@@ -769,7 +835,8 @@ func (q *Queries) ListCommunityInterests(ctx context.Context, communityIds []int
 		if err := rows.Scan(
 			&i.CommunityID,
 			&i.ID,
-			&i.Name,
+			&i.NameEn,
+			&i.NameAr,
 			&i.Slug,
 			&i.Emoji,
 		); err != nil {
@@ -1029,6 +1096,7 @@ SELECT
     ch.id,
     ch.name,
     ch.thumbnail,
+    channel_theme(ch.theme, ch.id)::theme_enum AS effective_theme,
     ch.visibility,
     COALESCE(lc.community_id, 0)::bigint AS community_id,
     COALESCE(lc.name, '')::text AS community_name,
@@ -1063,6 +1131,7 @@ type ListModeratedChannelsRow struct {
 	ID              int64
 	Name            string
 	Thumbnail       string
+	EffectiveTheme  ThemeEnum
 	Visibility      ChannelVisibilityEnum
 	CommunityID     int64
 	CommunityName   string
@@ -1084,11 +1153,150 @@ func (q *Queries) ListModeratedChannels(ctx context.Context, personaID int64) ([
 			&i.ID,
 			&i.Name,
 			&i.Thumbnail,
+			&i.EffectiveTheme,
 			&i.Visibility,
 			&i.CommunityID,
 			&i.CommunityName,
 			&i.CommunitySlug,
 			&i.CommunityStatus,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPersonaCommunities = `-- name: ListPersonaCommunities :many
+SELECT id, name, slug, thumbnail, theme, members_count, can_manage FROM (
+    SELECT c.id, c.name, c.slug, c.thumbnail, c.theme,
+        (SELECT COUNT(*) FROM community_members cm JOIN personas p ON p.id = cm.persona_id
+         WHERE cm.community_id = c.id AND cm.status = 'active' AND cm.left_at IS NULL
+           AND p.deleted_at IS NULL)::int AS members_count,
+        (c.owner_id = $1::bigint OR (m.persona_id IS NOT NULL AND EXISTS (
+            SELECT 1
+            FROM community_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.community_id = c.id
+              AND cr.persona_id = $1::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name = 'moderator'
+        )))::boolean AS can_manage
+    FROM communities c
+    LEFT JOIN community_members m
+        ON m.community_id = c.id AND m.persona_id = $1::bigint
+       AND m.status = 'active' AND m.left_at IS NULL
+    WHERE c.deleted_at IS NULL
+      AND persona_meets_min_age($1::bigint, c.min_age)
+      AND (c.owner_id = $1::bigint OR m.persona_id IS NOT NULL OR EXISTS (
+          SELECT 1 FROM community_followers f
+          WHERE f.community_id = c.id AND f.persona_id = $1::bigint AND f.unfollowed_at IS NULL
+      ))
+) s
+ORDER BY s.can_manage DESC, lower(s.name), s.id
+`
+
+type ListPersonaCommunitiesRow struct {
+	ID           int64
+	Name         string
+	Slug         string
+	Thumbnail    string
+	Theme        ThemeEnum
+	MembersCount int32
+	CanManage    bool
+}
+
+// The create-channel picker: communities the persona owns, is an active member of, or follows.
+func (q *Queries) ListPersonaCommunities(ctx context.Context, personaID int64) ([]ListPersonaCommunitiesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPersonaCommunities, personaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPersonaCommunitiesRow
+	for rows.Next() {
+		var i ListPersonaCommunitiesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.Thumbnail,
+			&i.Theme,
+			&i.MembersCount,
+			&i.CanManage,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listShowcaseCommunities = `-- name: ListShowcaseCommunities :many
+SELECT slug, name, thumbnail, banner, banner_x, banner_y, theme, cover_pattern, members_count, channels_count, id FROM (
+    SELECT c.slug, c.name, c.thumbnail, c.banner, c.banner_x, c.banner_y, c.theme, c.cover_pattern,
+        (SELECT COUNT(*) FROM community_members cm JOIN personas p ON p.id = cm.persona_id
+         WHERE cm.community_id = c.id AND cm.status = 'active' AND cm.left_at IS NULL
+           AND p.deleted_at IS NULL)::int AS members_count,
+        (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
+         WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
+           AND ch.deleted_at IS NULL)::int AS channels_count,
+        c.id
+    FROM communities c
+    WHERE c.deleted_at IS NULL AND c.visibility = 'public' AND c.min_age = 13
+) s
+ORDER BY s.members_count DESC, s.id
+LIMIT $1
+`
+
+type ListShowcaseCommunitiesRow struct {
+	Slug          string
+	Name          string
+	Thumbnail     string
+	Banner        string
+	BannerX       int16
+	BannerY       int16
+	Theme         ThemeEnum
+	CoverPattern  CoverPatternEnum
+	MembersCount  int32
+	ChannelsCount int32
+	ID            int64
+}
+
+// For logged-out visitors, who have no age: public 13+ communities only, most live members first.
+func (q *Queries) ListShowcaseCommunities(ctx context.Context, lim int64) ([]ListShowcaseCommunitiesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listShowcaseCommunities, lim)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListShowcaseCommunitiesRow
+	for rows.Next() {
+		var i ListShowcaseCommunitiesRow
+		if err := rows.Scan(
+			&i.Slug,
+			&i.Name,
+			&i.Thumbnail,
+			&i.Banner,
+			&i.BannerX,
+			&i.BannerY,
+			&i.Theme,
+			&i.CoverPattern,
+			&i.MembersCount,
+			&i.ChannelsCount,
+			&i.ID,
 		); err != nil {
 			return nil, err
 		}
@@ -1281,7 +1489,7 @@ WITH viewer AS (
     JOIN users u ON u.id = p.user_id
     WHERE p.id = $1::bigint
 )
-SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age,
+SELECT c.id, c.name, c.slug, c.description, c.thumbnail, c.banner, c.visibility, c.owner_id, c.created_at, c.updated_at, c.deleted_at, c.rules, c.min_age, c.theme, c.cover_pattern, c.banner_x, c.banner_y,
     (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
      WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
        AND ch.deleted_at IS NULL)::int AS channels_count
@@ -1356,6 +1564,10 @@ func (q *Queries) SuggestCommunities(ctx context.Context, arg SuggestCommunities
 			&i.Community.DeletedAt,
 			&i.Community.Rules,
 			&i.Community.MinAge,
+			&i.Community.Theme,
+			&i.Community.CoverPattern,
+			&i.Community.BannerX,
+			&i.Community.BannerY,
 			&i.ChannelsCount,
 		); err != nil {
 			return nil, err
@@ -1399,23 +1611,31 @@ SET name = COALESCE($1, name),
     rules = COALESCE($4, rules),
     thumbnail = COALESCE($5, thumbnail),
     banner = COALESCE($6, banner),
-    visibility = COALESCE($7::community_visibility_enum, visibility),
-    min_age = COALESCE($8::smallint, min_age),
+    banner_x = COALESCE($7::smallint, banner_x),
+    banner_y = COALESCE($8::smallint, banner_y),
+    visibility = COALESCE($9::community_visibility_enum, visibility),
+    min_age = COALESCE($10::smallint, min_age),
+    theme = COALESCE($11::theme_enum, theme),
+    cover_pattern = COALESCE($12::cover_pattern_enum, cover_pattern),
     updated_at = now()
-WHERE id = $9 AND deleted_at IS NULL
-RETURNING id, name, slug, description, thumbnail, banner, visibility, owner_id, created_at, updated_at, deleted_at, rules, min_age
+WHERE id = $13 AND deleted_at IS NULL
+RETURNING id, name, slug, description, thumbnail, banner, visibility, owner_id, created_at, updated_at, deleted_at, rules, min_age, theme, cover_pattern, banner_x, banner_y
 `
 
 type UpdateCommunityParams struct {
-	Name        sql.NullString
-	Slug        sql.NullString
-	Description sql.NullString
-	Rules       sql.NullString
-	Thumbnail   sql.NullString
-	Banner      sql.NullString
-	Visibility  NullCommunityVisibilityEnum
-	MinAge      sql.NullInt16
-	ID          int64
+	Name         sql.NullString
+	Slug         sql.NullString
+	Description  sql.NullString
+	Rules        sql.NullString
+	Thumbnail    sql.NullString
+	Banner       sql.NullString
+	BannerX      sql.NullInt16
+	BannerY      sql.NullInt16
+	Visibility   NullCommunityVisibilityEnum
+	MinAge       sql.NullInt16
+	Theme        NullThemeEnum
+	CoverPattern NullCoverPatternEnum
+	ID           int64
 }
 
 func (q *Queries) UpdateCommunity(ctx context.Context, arg UpdateCommunityParams) (Community, error) {
@@ -1426,8 +1646,12 @@ func (q *Queries) UpdateCommunity(ctx context.Context, arg UpdateCommunityParams
 		arg.Rules,
 		arg.Thumbnail,
 		arg.Banner,
+		arg.BannerX,
+		arg.BannerY,
 		arg.Visibility,
 		arg.MinAge,
+		arg.Theme,
+		arg.CoverPattern,
 		arg.ID,
 	)
 	var i Community
@@ -1445,6 +1669,10 @@ func (q *Queries) UpdateCommunity(ctx context.Context, arg UpdateCommunityParams
 		&i.DeletedAt,
 		&i.Rules,
 		&i.MinAge,
+		&i.Theme,
+		&i.CoverPattern,
+		&i.BannerX,
+		&i.BannerY,
 	)
 	return i, err
 }

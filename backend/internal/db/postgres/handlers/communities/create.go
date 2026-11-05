@@ -2,6 +2,7 @@ package communities
 
 import (
 	"app/internal/auth"
+	"app/internal/logo"
 	"app/internal/slug"
 	"net/http"
 	"shared/external/db/postgres"
@@ -19,9 +20,14 @@ type CreateCommunityRequest struct {
 	Rules       string  `json:"rules"`
 	Thumbnail   string  `json:"thumbnail"`
 	Banner      string  `json:"banner"`
+	BannerX     *int    `json:"banner_x"`
+	BannerY     *int    `json:"banner_y"`
 	Visibility  string  `json:"visibility"`
 	InterestIDs []int64 `json:"interest_ids"`
 	MinAge      *int16  `json:"min_age"`
+	// Empty: tide and horizon.
+	Theme        string `json:"theme"`
+	CoverPattern string `json:"cover_pattern"`
 }
 
 const slugConstraint = "communities_slug_key"
@@ -39,6 +45,21 @@ func validRules(rules string) bool {
 	return len([]rune(rules)) <= 5000
 }
 
+// lookError checks the fields a request sets; nil ones are left as they are.
+func (h *Handler) lookError(theme, coverPattern, thumbnail, banner *string) string {
+	switch {
+	case theme != nil && !db.ThemeEnum(*theme).Valid():
+		return "invalid_theme"
+	case coverPattern != nil && !db.CoverPatternEnum(*coverPattern).Valid():
+		return "invalid_cover_pattern"
+	case thumbnail != nil && !logo.Valid(h.s3BaseURL, *thumbnail):
+		return "invalid_logo"
+	case banner != nil && !logo.Valid(h.s3BaseURL, *banner):
+		return "invalid_cover"
+	}
+	return ""
+}
+
 func (h *Handler) CreateCommunity(c *gin.Context) {
 	personaID, ok := auth.PersonaID(c)
 	if !ok {
@@ -54,6 +75,20 @@ func (h *Handler) CreateCommunity(c *gin.Context) {
 	req.Rules = strings.TrimSpace(req.Rules)
 	if req.Visibility == "" {
 		req.Visibility = string(db.CommunityVisibilityEnumPublic)
+	}
+	if req.Theme == "" {
+		req.Theme = string(db.ThemeEnumTide)
+	}
+	if req.CoverPattern == "" {
+		req.CoverPattern = string(db.CoverPatternEnumHorizon)
+	}
+	if code := h.lookError(&req.Theme, &req.CoverPattern, &req.Thumbnail, &req.Banner); code != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": code})
+		return
+	}
+	if !logo.ValidPosition(req.BannerX) || !logo.ValidPosition(req.BannerY) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_cover_position"})
+		return
 	}
 	switch {
 	case !validName(req.Name):
@@ -99,15 +134,19 @@ func (h *Handler) CreateCommunity(c *gin.Context) {
 	q := h.q.WithTx(tx)
 
 	communityID, err := q.CreateCommunity(ctx, db.CreateCommunityParams{
-		Name:        req.Name,
-		Slug:        req.Slug,
-		Description: req.Description,
-		Rules:       req.Rules,
-		Thumbnail:   req.Thumbnail,
-		Banner:      req.Banner,
-		Visibility:  db.CommunityVisibilityEnum(req.Visibility),
-		OwnerID:     personaID,
-		MinAge:      *req.MinAge,
+		Name:         req.Name,
+		Slug:         req.Slug,
+		Description:  req.Description,
+		Rules:        req.Rules,
+		Thumbnail:    req.Thumbnail,
+		Banner:       req.Banner,
+		BannerX:      logo.NullPosition(req.BannerX),
+		BannerY:      logo.NullPosition(req.BannerY),
+		Visibility:   db.CommunityVisibilityEnum(req.Visibility),
+		OwnerID:      personaID,
+		MinAge:       *req.MinAge,
+		Theme:        db.ThemeEnum(req.Theme),
+		CoverPattern: db.CoverPatternEnum(req.CoverPattern),
 	})
 	if postgres.IsUniqueViolation(err, slugConstraint) {
 		c.JSON(http.StatusConflict, gin.H{"error": "slug_taken"})

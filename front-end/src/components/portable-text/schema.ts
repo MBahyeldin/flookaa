@@ -41,7 +41,7 @@ export const playgroundSchemaDefinition = (
       {
         title: "Link",
         name: "link",
-        fields: [{ name: "href", title: "HREF", type: "string" }],
+        fields: [{ name: "href", title: "URL", type: "string" }],
       },
     ],
     lists: [

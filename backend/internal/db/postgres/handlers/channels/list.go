@@ -14,24 +14,29 @@ import (
 )
 
 type ChannelResponse struct {
-	ID             int64         `json:"id"`
-	Name           string        `json:"name"`
-	Description    string        `json:"description"`
-	Thumbnail      string        `json:"thumbnail"`
-	Banner         string        `json:"banner"`
-	OwnerID        int64         `json:"owner_id"`
-	CreatedAt      string        `json:"created_at"`
-	UpdatedAt      string        `json:"updated_at"`
-	IsOwner        bool          `json:"is_owner"`
-	IsMember       bool          `json:"is_member"`
-	IsPending      bool          `json:"is_pending"`
-	Visibility     string        `json:"visibility"`
-	IsFollower     bool          `json:"is_follower"`
-	MembersCount   int32         `json:"members_count"`
-	FollowersCount int32         `json:"followers_count"`
-	Interests      []InterestTag `json:"interests"`
-	Community      *CommunityRef `json:"community"`
-	MinAge         int16         `json:"min_age"`
+	ID             int64               `json:"id"`
+	Name           string              `json:"name"`
+	Description    string              `json:"description"`
+	Thumbnail      string              `json:"thumbnail"`
+	Banner         string              `json:"banner"`
+	BannerX        int16               `json:"banner_x"`
+	BannerY        int16               `json:"banner_y"`
+	OwnerID        int64               `json:"owner_id"`
+	CreatedAt      string              `json:"created_at"`
+	UpdatedAt      string              `json:"updated_at"`
+	IsOwner        bool                `json:"is_owner"`
+	IsMember       bool                `json:"is_member"`
+	IsPending      bool                `json:"is_pending"`
+	Visibility     string              `json:"visibility"`
+	IsFollower     bool                `json:"is_follower"`
+	MembersCount   int32               `json:"members_count"`
+	FollowersCount int32               `json:"followers_count"`
+	Interests      []InterestTag       `json:"interests"`
+	Community      *CommunityRef       `json:"community"`
+	MinAge         int16               `json:"min_age"`
+	Theme          db.ThemeEnum        `json:"theme"`
+	OwnTheme       *db.ThemeEnum       `json:"own_theme"`
+	CoverPattern   db.CoverPatternEnum `json:"cover_pattern"`
 }
 
 type CommunityRef struct {
@@ -86,11 +91,11 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 	}
 
 	channels, err := q.GetAllChannels(ctx, db.GetAllChannelsParams{
-		Limit:        limit,
-		Offset:       offset,
-		OwnerID:      personaId,
-		InterestSlug: sql.NullString{String: c.Query("interest"), Valid: c.Query("interest") != ""},
-		CommunityID:  communityID,
+		Limit:         limit,
+		Offset:        offset,
+		OwnerID:       personaId,
+		InterestSlugs: c.QueryArray("interest"),
+		CommunityID:   communityID,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -101,6 +106,7 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 	for i, ch := range channels {
 		items[i] = channelItem{
 			Channel:        ch.Channel,
+			EffectiveTheme: ch.EffectiveTheme,
 			IsOwner:        ch.IsOwner,
 			IsMember:       ch.IsMember,
 			IsPending:      ch.IsPending,
@@ -120,6 +126,7 @@ func (h *Handler) GetAllChannels(c *gin.Context) {
 
 type channelItem struct {
 	db.Channel
+	EffectiveTheme db.ThemeEnum
 	IsOwner        bool
 	IsMember       bool
 	IsPending      bool
@@ -150,6 +157,8 @@ func (h *Handler) build(ctx context.Context, viewerID int64, items []channelItem
 			Description:    ch.Description,
 			Thumbnail:      ch.Thumbnail,
 			Banner:         ch.Banner,
+			BannerX:        ch.BannerX,
+			BannerY:        ch.BannerY,
 			OwnerID:        ch.OwnerID,
 			CreatedAt:      ch.CreatedAt.Time.String(),
 			UpdatedAt:      ch.UpdatedAt.Time.String(),
@@ -163,6 +172,9 @@ func (h *Handler) build(ctx context.Context, viewerID int64, items []channelItem
 			Interests:      tags[ch.ID],
 			Community:      communities[ch.ID],
 			MinAge:         ch.MinAge,
+			Theme:          ch.EffectiveTheme,
+			OwnTheme:       ownTheme(ch.Theme),
+			CoverPattern:   ch.CoverPattern,
 		}
 	}
 	return out, nil

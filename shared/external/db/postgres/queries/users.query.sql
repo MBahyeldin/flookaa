@@ -103,7 +103,7 @@ WHERE u.id = $1
 -- -------------------------------
 -- name: GetUserBasicInfo :one
 SELECT u.id, u.first_name, u.last_name, u.email_address, u.is_verified, u.thumbnail, u.created_at, u.updated_at,
-       u.onboarding_step, u.onboarding_completed
+       u.onboarding_step, u.onboarding_completed, u.language, u.gender
 FROM users u
 WHERE u.id = $1
   AND u.deleted_at IS NULL;
@@ -138,3 +138,9 @@ RETURNING onboarding_step, onboarding_completed;
 SELECT (date_of_birth IS NOT NULL AND gender IS NOT NULL)::boolean AS done
 FROM users
 WHERE id = $1;
+
+-- name: SetUserLanguage :exec
+UPDATE users SET language = $2, updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL;
+
+-- name: SetUserLanguageIfUnset :exec
+UPDATE users SET language = $2 WHERE id = $1 AND language IS NULL AND deleted_at IS NULL;

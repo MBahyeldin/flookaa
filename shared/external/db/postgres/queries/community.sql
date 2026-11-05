@@ -1,10 +1,12 @@
 -- The owner is the first active member.
 -- name: CreateCommunity :one
 WITH created AS (
-    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, visibility, owner_id, min_age)
+    INSERT INTO communities (name, slug, description, rules, thumbnail, banner, banner_x, banner_y, visibility, owner_id, min_age, theme, cover_pattern)
     VALUES (
         sqlc.arg(name), sqlc.arg(slug), sqlc.arg(description), sqlc.arg(rules), sqlc.arg(thumbnail),
-        sqlc.arg(banner), sqlc.arg(visibility), sqlc.arg(owner_id), sqlc.arg(min_age)::smallint
+        sqlc.arg(banner), COALESCE(sqlc.narg(banner_x)::smallint, 50), COALESCE(sqlc.narg(banner_y)::smallint, 50),
+        sqlc.arg(visibility), sqlc.arg(owner_id), sqlc.arg(min_age)::smallint,
+        sqlc.arg(theme)::theme_enum, sqlc.arg(cover_pattern)::cover_pattern_enum
     )
     RETURNING id, owner_id
 ), owner_member AS (
@@ -21,8 +23,12 @@ SET name = COALESCE(sqlc.narg(name), name),
     rules = COALESCE(sqlc.narg(rules), rules),
     thumbnail = COALESCE(sqlc.narg(thumbnail), thumbnail),
     banner = COALESCE(sqlc.narg(banner), banner),
+    banner_x = COALESCE(sqlc.narg(banner_x)::smallint, banner_x),
+    banner_y = COALESCE(sqlc.narg(banner_y)::smallint, banner_y),
     visibility = COALESCE(sqlc.narg(visibility)::community_visibility_enum, visibility),
     min_age = COALESCE(sqlc.narg(min_age)::smallint, min_age),
+    theme = COALESCE(sqlc.narg(theme)::theme_enum, theme),
+    cover_pattern = COALESCE(sqlc.narg(cover_pattern)::cover_pattern_enum, cover_pattern),
     updated_at = now()
 WHERE id = sqlc.arg(id) AND deleted_at IS NULL
 RETURNING *;
@@ -91,11 +97,11 @@ SELECT sqlc.embed(c),
 FROM communities c
 WHERE c.deleted_at IS NULL
   AND persona_meets_min_age(sqlc.arg(viewer_id)::bigint, c.min_age)
-  AND (sqlc.narg(interest_slug)::text IS NULL OR EXISTS (
+  AND (coalesce(cardinality(sqlc.arg(interest_slugs)::text[]), 0) = 0 OR EXISTS (
       SELECT 1
       FROM community_interests ci
       JOIN interests i ON i.id = ci.interest_id
-      WHERE ci.community_id = c.id AND i.slug = sqlc.narg(interest_slug)::text
+      WHERE ci.community_id = c.id AND i.slug = ANY(sqlc.arg(interest_slugs)::text[])
   ))
 ORDER BY c.created_at DESC, c.id DESC
 LIMIT sqlc.arg(lim) OFFSET sqlc.arg(off);
@@ -148,7 +154,7 @@ ORDER BY o.overlap DESC, m.members DESC, m.same_gender DESC, c.id DESC
 LIMIT sqlc.arg(lim) OFFSET sqlc.arg(off);
 
 -- name: ListCommunityInterests :many
-SELECT ci.community_id, i.id, i.name, i.slug, i.emoji
+SELECT ci.community_id, i.id, i.name_en, i.name_ar, i.slug, i.emoji
 FROM community_interests ci
 JOIN interests i ON i.id = ci.interest_id
 WHERE ci.community_id = ANY(sqlc.arg(community_ids)::bigint[])
@@ -367,7 +373,7 @@ WHERE cc.channel_id = sqlc.arg(channel_id)
 
 -- For the channel's manage sheet: its live row, else its latest rejection inside the cooldown.
 -- name: GetChannelCommunityState :one
-SELECT cc.community_id, c.name, c.slug, cc.status, cc.resolved_at
+SELECT cc.community_id, c.name, c.slug, c.theme, c.thumbnail, cc.status, cc.resolved_at
 FROM community_channels cc
 JOIN communities c ON c.id = cc.community_id AND c.deleted_at IS NULL
 WHERE cc.channel_id = sqlc.arg(channel_id)
@@ -416,6 +422,8 @@ SELECT
     ch.description,
     ch.thumbnail,
     ch.visibility,
+    channel_theme(ch.theme, ch.id)::theme_enum AS theme,
+    cc.requested_by,
     cc.created_at AS requested_at
 FROM community_channels cc
 JOIN channels ch ON ch.id = cc.channel_id AND ch.deleted_at IS NULL
@@ -429,6 +437,7 @@ SELECT
     ch.id,
     ch.name,
     ch.thumbnail,
+    channel_theme(ch.theme, ch.id)::theme_enum AS effective_theme,
     ch.visibility,
     COALESCE(lc.community_id, 0)::bigint AS community_id,
     COALESCE(lc.name, '')::text AS community_name,
@@ -480,3 +489,58 @@ SELECT (EXISTS (
     WHERE p.user_id = $1 AND p.is_default AND p.deleted_at IS NULL
       AND cf.unfollowed_at IS NULL
 ))::boolean AS done;
+
+-- Channels whose theme follows the community's.
+-- name: ListCommunityInheritingChannelIDs :many
+SELECT ch.id
+FROM community_channels cc
+JOIN channels ch ON ch.id = cc.channel_id
+WHERE cc.community_id = sqlc.arg(community_id)
+  AND cc.status = 'active' AND cc.removed_at IS NULL
+  AND ch.deleted_at IS NULL AND ch.theme IS NULL;
+
+-- For logged-out visitors, who have no age: public 13+ communities only, most live members first.
+-- name: ListShowcaseCommunities :many
+SELECT * FROM (
+    SELECT c.slug, c.name, c.thumbnail, c.banner, c.banner_x, c.banner_y, c.theme, c.cover_pattern,
+        (SELECT COUNT(*) FROM community_members cm JOIN personas p ON p.id = cm.persona_id
+         WHERE cm.community_id = c.id AND cm.status = 'active' AND cm.left_at IS NULL
+           AND p.deleted_at IS NULL)::int AS members_count,
+        (SELECT COUNT(*) FROM community_channels cc JOIN channels ch ON ch.id = cc.channel_id
+         WHERE cc.community_id = c.id AND cc.status = 'active' AND cc.removed_at IS NULL
+           AND ch.deleted_at IS NULL)::int AS channels_count,
+        c.id
+    FROM communities c
+    WHERE c.deleted_at IS NULL AND c.visibility = 'public' AND c.min_age = 13
+) s
+ORDER BY s.members_count DESC, s.id
+LIMIT sqlc.arg(lim);
+
+-- The create-channel picker: communities the persona owns, is an active member of, or follows.
+-- name: ListPersonaCommunities :many
+SELECT * FROM (
+    SELECT c.id, c.name, c.slug, c.thumbnail, c.theme,
+        (SELECT COUNT(*) FROM community_members cm JOIN personas p ON p.id = cm.persona_id
+         WHERE cm.community_id = c.id AND cm.status = 'active' AND cm.left_at IS NULL
+           AND p.deleted_at IS NULL)::int AS members_count,
+        (c.owner_id = sqlc.arg(persona_id)::bigint OR (m.persona_id IS NOT NULL AND EXISTS (
+            SELECT 1
+            FROM community_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.community_id = c.id
+              AND cr.persona_id = sqlc.arg(persona_id)::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name = 'moderator'
+        )))::boolean AS can_manage
+    FROM communities c
+    LEFT JOIN community_members m
+        ON m.community_id = c.id AND m.persona_id = sqlc.arg(persona_id)::bigint
+       AND m.status = 'active' AND m.left_at IS NULL
+    WHERE c.deleted_at IS NULL
+      AND persona_meets_min_age(sqlc.arg(persona_id)::bigint, c.min_age)
+      AND (c.owner_id = sqlc.arg(persona_id)::bigint OR m.persona_id IS NOT NULL OR EXISTS (
+          SELECT 1 FROM community_followers f
+          WHERE f.community_id = c.id AND f.persona_id = sqlc.arg(persona_id)::bigint AND f.unfollowed_at IS NULL
+      ))
+) s
+ORDER BY s.can_manage DESC, lower(s.name), s.id;

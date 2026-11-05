@@ -16,9 +16,8 @@ import (
 type WsMessageType string
 
 const (
-	WsMessageTypePing        WsMessageType = "PING"
-	WsMessageTypeSubscribe   WsMessageType = "SUBSCRIBE"
-	WsMessageTypeUnsubscribe WsMessageType = "UNSUBSCRIBE"
+	WsMessageTypePing      WsMessageType = "PING"
+	WsMessageTypeSubscribe WsMessageType = "SUBSCRIBE"
 )
 
 type WsMessage struct {
@@ -30,10 +29,14 @@ type WsMessage struct {
 type OwnerType string
 
 const (
-	OwnerTypeChannel   OwnerType = "CHANNEL"
-	OwnerTypePersona   OwnerType = "PERSONA"
-	OwnerTypeCommunity OwnerType = "COMMUNITY"
-	OwnerTypeDefault   OwnerType = "DEFAULT"
+	OwnerTypeChannel       OwnerType = "CHANNEL"
+	OwnerTypePersona       OwnerType = "PERSONA"
+	OwnerTypeCommunity     OwnerType = "COMMUNITY"
+	OwnerTypeDefault       OwnerType = "DEFAULT"
+	OwnerTypeFeed          OwnerType = "FEED"
+	OwnerTypeDiscover      OwnerType = "DISCOVER"
+	OwnerTypeProfile       OwnerType = "PROFILE"
+	OwnerTypeCommunityFeed OwnerType = "COMMUNITY_FEED"
 )
 
 type Payload struct {
@@ -41,6 +44,8 @@ type Payload struct {
 	EventAction string    `json:"event_action"`
 	Owner       OwnerType `json:"owner"`
 	OwnerID     int64     `json:"owner_id"`
+	Interests   []string  `json:"interests"`
+	All         bool      `json:"all"`
 }
 
 type Handler struct {
@@ -69,6 +74,11 @@ func (h *Handler) Control(c *gin.Context) {
 		return
 	}
 
+	if bodyData.Type != WsMessageTypeSubscribe {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid action"})
+		return
+	}
+
 	personaId := strconv.FormatInt(personaIdInt64, 10)
 
 	switch bodyData.Payload.Owner {
@@ -83,6 +93,18 @@ func (h *Handler) Control(c *gin.Context) {
 
 	case OwnerTypeCommunity:
 		h.community(c, bodyData, personaIdInt64)
+
+	case OwnerTypeFeed:
+		h.feed(c, bodyData, personaIdInt64)
+
+	case OwnerTypeDiscover:
+		h.discover(c, bodyData, personaIdInt64)
+
+	case OwnerTypeProfile:
+		h.profile(c, bodyData, personaIdInt64)
+
+	case OwnerTypeCommunityFeed:
+		h.communityFeed(c, bodyData, personaIdInt64)
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid owner type %s", bodyData.Payload.Owner)})
 		return

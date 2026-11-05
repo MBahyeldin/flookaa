@@ -2,7 +2,17 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import type { Post, Comment, Owner } from "@/generated/graphql";
 
-type OwnerRef = Pick<Owner, "id" | "type">;
+// The feed, Discover and a community's latest posts show posts of many channels, so they aren't content owners.
+export type ListOwner = { id: string; type: "FEED" | "DISCOVER" | "COMMUNITY_FEED" | "SAVED" };
+type PageOwner = Owner | ListOwner;
+type OwnerRef = Pick<Owner, "id" | "type"> | ListOwner;
+
+const isListOwner = (owner: PageOwner): owner is ListOwner =>
+  owner.type === "FEED" || owner.type === "DISCOVER" || owner.type === "COMMUNITY_FEED" || owner.type === "SAVED";
+
+/** The page's owner as a GraphQL owner, or null on the feed and Discover. */
+export const contentOwner = (owner: PageOwner | null): Owner | null =>
+  owner && !isListOwner(owner) ? owner : null;
 
 const sameOwner = (a: OwnerRef | null, b: OwnerRef | null) =>
   !!a && !!b && a.type === b.type && String(a.id) === String(b.id);
@@ -12,7 +22,7 @@ const sameOwner = (a: OwnerRef | null, b: OwnerRef | null) =>
  * identified by `owner`. Everything here is dropped when the owner changes.
  */
 const emptyPageState = () => ({
-  owner: null as Owner | null,
+  owner: null as PageOwner | null,
   posts: {} as Record<string, Post>,
   comments: {} as Record<string, Comment>,
   commentsByPost: {} as Record<string, string[]>,
@@ -22,8 +32,8 @@ const emptyPageState = () => ({
 });
 
 export interface AppState {
-  owner: Owner | null;
-  setOwner: (owner: Owner) => void;
+  owner: PageOwner | null;
+  setOwner: (owner: PageOwner) => void;
   resetPage: () => void;
 
   posts: Record<string, Post>;
@@ -41,6 +51,7 @@ export interface AppState {
   addCommentsToComment: (commentId: string, comments: Comment[]) => void;
 
   addOrRemoveLike: (targetType: "POST" | "COMMENT", targetId: string, inc: number) => void;
+  setPostSaved: (postId: string, saved: boolean) => void;
 
   canModerate: boolean;
   setCanModerate: (canModerate: boolean) => void;
@@ -139,6 +150,12 @@ export const useAppStore = create(
             comment.meta.likesCount = (comment.meta.likesCount ?? 0) + inc;
           }
         }
+      }),
+
+    setPostSaved: (postId, saved) =>
+      set((s) => {
+        const post = s.posts[postId];
+        if (post) post.personalizedMeta.savedByPersona = saved;
       }),
 
     setCanModerate: (canModerate) =>

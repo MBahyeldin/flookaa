@@ -2,8 +2,11 @@ import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import Signup from "../pages/sign-up";
 import Login from "../pages/login";
+import ForgotPasswordPage from "../pages/forgot-password";
+import ResetPasswordPage from "../pages/reset-password";
 import HomePage from "../pages/home";
 import ChannelPage from "@/pages/(dashboard)/channels/[id]";
+import PostPage from "@/pages/(dashboard)/channels/[id]/posts/[postId]";
 import DashboardSettingsProfile from "@/pages/(dashboard)/settings/profile";
 import AdminInterestsPage from "@/pages/(dashboard)/admin/interests";
 import ChannelsPage from "@/pages/(dashboard)/channels";
@@ -13,10 +16,14 @@ import CreateCommunityPage from "@/pages/(dashboard)/communities/create";
 import CommunityPage from "@/pages/(dashboard)/communities/[slug]";
 import PersonaManagerPage from "@/pages/(dashboard)/persona-manager";
 import PersonaSettingsPage from "@/pages/(dashboard)/persona-manager/[id]";
+import DiscoverPage from "@/pages/(dashboard)/discover";
+import SavedPage from "@/pages/(dashboard)/saved";
 import NotificationsPage from "@/pages/(dashboard)/notifications";
 import PersonaProfilePage from "@/pages/(dashboard)/personas/[id]";
+import WallPostPage from "@/pages/(dashboard)/personas/[id]/posts/[postId]";
 import FollowInvitePage from "@/pages/(dashboard)/follow/[token]";
 import BlocksGalleryPage from "@/pages/(dashboard)/blocks";
+import NotFound from "@/components/not-found";
 
 const DevThemesPage = import.meta.env.DEV ? lazy(() => import("@/pages/dev-themes")) : () => null;
 const DevOnboardingPage = import.meta.env.DEV ? lazy(() => import("@/pages/dev-onboarding")) : () => null;
@@ -26,6 +33,9 @@ export default function AppRouter() {
     <Routes>
       <Route path="/" element={<HomePage />} />
 
+
+      <Route path="/discover" element={<DiscoverPage />} />
+      <Route path="/saved" element={<SavedPage />} />
 
       <Route path="/communities">
         <Route index element={<CommunitiesPage />} />
@@ -37,6 +47,7 @@ export default function AppRouter() {
         {<Route index element={<ChannelsPage />} />}
         <Route path="create" element={<CreateChannelPage />} />
         <Route path=":id" element={<ChannelPage />} />
+        <Route path=":id/posts/:postId" element={<PostPage />} />
       </Route>
 
       <Route path="/settings">
@@ -45,6 +56,8 @@ export default function AppRouter() {
 
       <Route path="/sign-up" element={<Signup />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       <Route path="/persona-manager" element={<PersonaManagerPage />} />
       <Route path="/persona-manager/:id" element={<PersonaSettingsPage />} />
@@ -55,11 +68,14 @@ export default function AppRouter() {
       <Route path="/blocks" element={<BlocksGalleryPage />} />
 
       <Route path="/personas/:id" element={<PersonaProfilePage />} />
+      <Route path="/personas/:id/posts/:postId" element={<WallPostPage />} />
 
       <Route path="/follow/:token" element={<FollowInvitePage />} />
 
       {import.meta.env.DEV && <Route path="/dev/themes" element={<Suspense><DevThemesPage /></Suspense>} />}
       {import.meta.env.DEV && <Route path="/dev/onboarding" element={<Suspense><DevOnboardingPage /></Suspense>} />}
+
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

@@ -1,24 +1,40 @@
-"use client";
-
-import { useMemo, useRef, useState } from "react";
+import { graphqlErrorMessage } from "@/lib/errors";
+import { isolate, t } from "@/i18n";
+import { useMemo, useRef, useState, type ReactNode } from "react";
+import { Globe, User2, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User2, Loader2 } from "lucide-react";
-import { useCreatePostMutation } from "@/generated/graphql";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { SectionNav, SectionNavList, SectionNavTab } from "@/components/ui/section-nav";
+import { useMutation } from "@apollo/client/react";
+import { CreatePostDocument } from "@/generated/graphql";
 import { type PortableTextObject, type PortableTextSpan, type PortableTextTextBlock } from "@portabletext/editor";
 import { useActorRef } from "@xstate/react";
 import { playgroundMachine } from "../portable-text/toolbar/machine";
 import { editorIdGenerator } from "../portable-text/editor-id-generator";
 import PortableText from "../portable-text";
 import PostContent, { parsePostContent } from "../portable-text/PostContent";
-import { validateBlocks } from "../portable-text/validateBlocks";
-import { PostHeader } from "../post-card/PostHeader";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { validateBlocks, type InvalidBlock } from "../portable-text/validateBlocks";
+import { InvalidBlocksContext } from "../portable-text/invalidBlocks";
+import { BlockShortcuts } from "../portable-text/toolbar/block-shortcuts";
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import { toast } from "sonner";
 import normalizeBlocks from "@/utils/normalizeBlocks";
-import { useAppStore } from "@/stores/AppStore";
+import { personaInitials } from "@/lib/personaInitials";
+import { contentOwner, useAppStore } from "@/stores/AppStore";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import {
   portableTextIsEmpty,
@@ -26,11 +42,13 @@ import {
 } from "@/utils/portableTextContent";
 
 const MAX_POST_LENGTH = 4*1024;
+const SHOW_COUNT_FROM = Math.floor(MAX_POST_LENGTH * 0.9);
 
 type Mode = "write" | "preview";
+type Blocks = PortableTextTextBlock<PortableTextSpan | PortableTextObject>[];
 
 // The same envelope the server stores, so the preview reads it back like the feed.
-function draftContent(blocks: PortableTextTextBlock<PortableTextSpan | PortableTextObject>[]) {
+function draftContent(blocks: Blocks) {
   try {
     const rawContent = JSON.stringify({ blocks: normalizeBlocks(blocks) });
     return { rawContent, error: null, invalid: validateBlocks(parsePostContent(rawContent)) };
@@ -39,22 +57,41 @@ function draftContent(blocks: PortableTextTextBlock<PortableTextSpan | PortableT
   }
 }
 
+function invalidMessages(invalid: InvalidBlock[]): Map<string, string> {
+  const messages = new Map<string, string>();
+  for (const item of invalid) {
+    if (!item.key) continue;
+    const issue = (item.issues[0] ?? t("editor:needsFixing")).replace(/\.$/, "");
+    messages.set(item.key, t("editor:invalidBlock", { block: item.block.title, issue }));
+  }
+  return messages;
+}
 
-export function PostCreator() {
-  const [blocks, setBlocks] = useState<PortableTextTextBlock<PortableTextSpan | PortableTextObject>[]>([]);
+export function PostCreator(props: {
+  // "New post in <channelName>", or `title` when given.
+  channelName: string;
+  title?: string;
+  // A full-screen sheet on phones, a card in place elsewhere.
+  layout?: "card" | "sheet";
+  // Opens that block's insert form as the composer opens.
+  initialBlock?: string;
+  onCancel: () => void;
+  onPosted: () => void;
+}) {
+  const layout = props.layout ?? "card";
+  const [blocks, setBlocks] = useState<Blocks>([]);
   const { persona } = useUserProfileStore();
-  const [createPost] = useCreatePostMutation();
-  const [syncPortableTextEditor, setSyncPortableTextEditor] =
-    useState<boolean>(false);
+  const [createPost] = useMutation(CreatePostDocument);
   const [isPosting, setIsPosting] = useState(false);
   const [mode, setMode] = useState<Mode>("write");
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const isPostingRef = useRef(false);
   const playgroundRef = useActorRef(playgroundMachine, {
     input: {
       editorIdGenerator: editorIdGenerator(),
     },
   });
-  const owner = useAppStore((state) => state.owner);
+  const owner = useAppStore((state) => contentOwner(state.owner));
 
   /* Counts characters across the blocks' spans, not the number of blocks —
      an emptied editor still contains one block with a zero-length span. */
@@ -62,8 +99,16 @@ export function PostCreator() {
   const isEmpty = portableTextIsEmpty(blocks);
   const isOverLimit = charCount > MAX_POST_LENGTH;
   const draft = useMemo(() => draftContent(blocks), [blocks]);
+  const invalid = useMemo(() => invalidMessages(draft.invalid), [draft.invalid]);
   const invalidCount = draft.invalid.length + (draft.error ? 1 : 0);
   const canSubmit = !isEmpty && !isOverLimit && invalidCount === 0;
+  const displayName = persona ? `${persona.first_name} ${persona.last_name}` : "";
+
+  const requestCancel = () => {
+    if (isPosting) return;
+    if (isEmpty) props.onCancel();
+    else setConfirmDiscard(true);
+  };
 
   const handleSubmit = async () => {
     if (!persona || !canSubmit) return;
@@ -80,14 +125,12 @@ export function PostCreator() {
         return;
       }
 
-      const normalizedBlocks = normalizeBlocks(blocks);
-
       await createPost({
         variables: {
           authorId: persona.id!,
           owner: owner,
           content: {
-            blocks: normalizedBlocks,
+            blocks: normalizeBlocks(blocks),
           },
           tags: [],
           privacy: "PUBLIC",
@@ -95,16 +138,13 @@ export function PostCreator() {
           deniedPersonaIds: [],
         },
       });
-      setBlocks(() => []);
-      setSyncPortableTextEditor(!syncPortableTextEditor);
+      setBlocks([]);
       setMode("write");
+      props.onPosted();
     } catch (error) {
-      // Without this the draft was cleared even when the mutation failed.
       console.error("Failed to publish post:", error);
       toast.error(
-        CombinedGraphQLErrors.is(error)
-          ? error.errors[0]?.message || "Couldn’t publish the post."
-          : "Couldn’t publish the post. Check your connection."
+        graphqlErrorMessage(CombinedGraphQLErrors.is(error) ? error : null, t("posts:composer.publishFailed"), t("posts:composer.publishOffline"))
       );
     } finally {
       isPostingRef.current = false;
@@ -112,117 +152,174 @@ export function PostCreator() {
     }
   };
 
+  const sheet = layout === "sheet";
 
-  return (
-    <Card className="p-4 mb-6 bg-card border-border">
-      {/*
-        The avatar used to sit beside the editor, which cost the editor its
-        avatar-width column. It's now a header line of its own, so the editor
-        spans the card's full width.
-      */}
-      <div className="min-w-0 space-y-3">
-        <div className="flex min-w-0 items-center gap-2">
-          {mode === "write" && (
-            <>
-              <Avatar className="h-9 w-9 shrink-0">
-                <AvatarImage src={persona?.thumbnail} />
-                <AvatarFallback className="bg-muted text-muted-foreground">
-                  <User2 className="h-5 w-5" />
-                </AvatarFallback>
-              </Avatar>
-              <span className="truncate text-sm font-medium">
-                {persona?.first_name} {persona?.last_name}
-              </span>
-            </>
+  const postButton = (
+    <Button
+      size={sheet ? "sm" : "default"}
+      onClick={handleSubmit}
+      disabled={!canSubmit}
+      loading={isPosting}
+    >
+      {isPosting ? t("posts:composer.posting") : t("posts:composer.post")}
+    </Button>
+  );
+
+  const counter =
+    charCount > SHOW_COUNT_FROM ? (
+      <span
+        className={`text-xs ${isOverLimit ? "text-destructive" : "text-muted-foreground"}`}
+        aria-live="polite"
+      >
+        {charCount}/{MAX_POST_LENGTH}
+      </span>
+    ) : null;
+
+  const visibility = (
+    <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+      <Globe aria-hidden className="size-3.5 shrink-0" />
+      {t("posts:composer.visibility")}
+    </span>
+  );
+
+  const header = (
+    <div className="flex min-w-0 items-center gap-2">
+      <Avatar className="size-8 shrink-0">
+        <AvatarImage src={persona?.thumbnail} />
+        <AvatarFallback className="bg-accent text-xs text-primary">
+          {persona ? personaInitials(persona) : <User2 className="size-4" />}
+        </AvatarFallback>
+      </Avatar>
+      <span className="min-w-0 flex-1 truncate text-sm font-medium">{t("posts:composer.postingAs", { name: isolate(displayName) })}</span>
+    </div>
+  );
+
+  const tabs =
+    !isEmpty || mode === "preview" ? (
+      <SectionNav value={mode} onValueChange={(value) => setMode(value as Mode)}>
+        <SectionNavList className="static px-4">
+          <SectionNavTab value="write">{t("posts:composer.write")}</SectionNavTab>
+          <SectionNavTab value="preview">{t("common:look.preview")}</SectionNavTab>
+        </SectionNavList>
+      </SectionNav>
+    ) : null;
+
+  const body = (
+    <>
+      {/* Hidden rather than unmounted, so the editor keeps selection and undo. */}
+      <div className={mode !== "write" ? "hidden" : sheet ? "flex min-h-0 flex-1 flex-col" : undefined}>
+        <InvalidBlocksContext.Provider value={invalid}>
+          <PortableText
+            playgroundRef={playgroundRef}
+            value={blocks}
+            setValue={setBlocks}
+            autoFocus={!props.initialBlock}
+            fill={sheet}
+            footer={
+              <>
+                {sheet && visibility}
+                <BlockShortcuts initialBlock={props.initialBlock} />
+              </>
+            }
+          />
+        </InvalidBlocksContext.Provider>
+      </div>
+
+      {mode === "preview" && (
+        <div className={sheet ? "min-h-0 flex-1 overflow-y-auto" : undefined}>
+          {draft.error ? (
+            <p role="alert" className="text-sm text-destructive">
+              {draft.error}
+            </p>
+          ) : isEmpty ? (
+            <p className="text-sm text-muted-foreground">{t("posts:composer.nothingToPreview")}</p>
+          ) : (
+            <PostContent rawContent={draft.rawContent} showInvalid />
           )}
-          <Tabs
-            value={mode}
-            onValueChange={(value) => setMode(value as Mode)}
-            className="ml-auto shrink-0"
-          >
-            <TabsList>
-              <TabsTrigger value="write">Write</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
-          </Tabs>
         </div>
+      )}
+    </>
+  );
 
-        <div className="min-w-0">
-          {/* Hidden rather than unmounted, so the editor keeps selection and undo. */}
-          <div hidden={mode !== "write"}>
-            <PortableText
-              playgroundRef={playgroundRef}
-              value={blocks}
-              setValue={setBlocks}
-            />
+  const discardDialog = (
+    <Dialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>
+      <DialogContent showCloseButton={false} className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{t("posts:composer.discardTitle")}</DialogTitle>
+          <DialogDescription>{t("posts:composer.discardBody")}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setConfirmDiscard(false)}>
+            {t("posts:composer.keepWriting")}
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              setConfirmDiscard(false);
+              props.onCancel();
+            }}
+          >
+            {t("posts:composer.discard")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  let frame: ReactNode;
+  if (sheet) {
+    frame = (
+      <Sheet open onOpenChange={(open) => !open && requestCancel()}>
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          className="h-dvh gap-0 rounded-none border-t-0 bg-card p-0"
+        >
+          <div className="flex items-center gap-2 border-b border-border px-2 py-2">
+            <Button variant="ghost" size="icon" className="size-11" aria-label={t("common:actions.close")} onClick={requestCancel}>
+              <XIcon className="size-5" />
+            </Button>
+            <SheetTitle className="min-w-0 flex-1 truncate text-center text-sm font-medium">
+              {props.title ?? t("posts:composer.newPostIn", { channel: isolate(props.channelName) })}
+            </SheetTitle>
+            <SheetDescription className="sr-only">{t("posts:composer.writeAs", { name: isolate(displayName) })}</SheetDescription>
+            {postButton}
           </div>
-
-          {mode === "preview" && persona && (
-            <div>
-              <PostHeader
-                authorId={persona.id}
-                author={{
-                  fullName: `${persona.first_name} ${persona.last_name}`,
-                  username: `${persona.first_name} ${persona.last_name}`,
-                  profileImageUrl: persona.thumbnail,
-                  anonymous: false,
-                }}
-                createdAt={new Date().toISOString()}
-              />
-              {draft.error ? (
-                <p role="alert" className="text-sm text-destructive">
-                  {draft.error}
-                </p>
-              ) : isEmpty ? (
-                <p className="text-sm text-muted-foreground">Nothing to preview yet.</p>
-              ) : (
-                <PostContent rawContent={draft.rawContent} showInvalid />
-              )}
-            </div>
-          )}
-
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 pt-3 border-border">
-            {invalidCount > 0 && (
-              <button
-                type="button"
-                onClick={() => setMode("preview")}
-                className="text-sm text-destructive underline-offset-4 hover:underline"
-              >
-                {invalidCount === 1
-                  ? "1 block needs fixing"
-                  : `${invalidCount} blocks need fixing`}
-                {mode === "write" && " — see Preview"}
-              </button>
-            )}
-            {/* ml-auto keeps the counter + Post on the right. */}
-            <div className="ml-auto flex items-center gap-2">
-              <span
-                className={`text-sm ${
-                  isOverLimit ? "text-destructive" : "text-muted-foreground"
-                }`}
-                aria-live="polite"
-              >
-                {charCount}/{MAX_POST_LENGTH}
-              </span>
-              <Button
-                onClick={handleSubmit}
-                disabled={!canSubmit || isPosting}
-                aria-busy={isPosting}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                {isPosting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    Posting…
-                  </>
-                ) : (
-                  "Post"
-                )}
-              </Button>
-            </div>
+          <div className="flex min-h-0 flex-1 flex-col gap-3.5 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            {header}
+            {tabs}
+            {body}
+            {counter && <div className="flex justify-end">{counter}</div>}
+            {draft.error && <p role="alert" className="text-xs text-destructive">{draft.error}</p>}
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  } else {
+    frame = (
+      <div className="flex min-w-0 flex-col gap-3.5 rounded-lg border border-primary bg-card p-5">
+        {header}
+        {tabs}
+        {body}
+        {draft.error && <p role="alert" className="text-xs text-destructive">{draft.error}</p>}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          {visibility}
+          <div className="ms-auto flex items-center gap-2">
+            {counter}
+            <Button variant="outline" onClick={requestCancel} disabled={isPosting}>
+              {t("common:actions.cancel")}
+            </Button>
+            {postButton}
           </div>
         </div>
       </div>
-    </Card>
+    );
+  }
+
+  return (
+    <>
+      {frame}
+      {discardDialog}
+    </>
   );
 }

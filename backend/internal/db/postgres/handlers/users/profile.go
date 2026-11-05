@@ -36,6 +36,7 @@ func (h *Handler) GetProfile(c *gin.Context) {
 		"name":          user.FirstName + " " + user.LastName,
 		"email_address": user.EmailAddress,
 		"is_verified":   user.IsVerified.Bool,
+		"has_password":  user.HashedPassword.Valid && user.HashedPassword.String != "",
 		"thumbnail":     user.Thumbnail.String,
 		"first_name":    user.FirstName,
 		"last_name":     user.LastName,
@@ -82,13 +83,18 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch current user data"})
 		return
 	}
+	// The address only changes through /users/email/change and its code.
+	if input.EmailAddress != "" && input.EmailAddress != currentUser.EmailAddress {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "email_change_requires_verification"})
+		return
+	}
 
 	updatedUser, err := q.UpdateUser(ctx, db.UpdateUserParams{
 		ID:             userId,
 		FirstName:      getStringOrDefault(input.FirstName, currentUser.FirstName),
 		LastName:       getStringOrDefault(input.LastName, currentUser.LastName),
-		EmailAddress:   getStringOrDefault(input.EmailAddress, currentUser.EmailAddress),
-		HashedPassword: sql.NullString{String: input.HashedPassword, Valid: input.HashedPassword != ""},
+		EmailAddress:   currentUser.EmailAddress,
+		HashedPassword: sql.NullString{},
 		Thumbnail:      sql.NullString{String: input.Thumbnail, Valid: input.Thumbnail != ""},
 		CityID:         parseNullableInt64(input.CityID),
 		CountryID:      parseNullableInt64(input.CountryID),

@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
  
 import {
   EditorProvider,
@@ -20,19 +21,17 @@ import {
   type RenderStyleFunction,
 } from "@portabletext/editor";
 import { Loader } from "lucide-react";
-import { useContext, useEffect, useState, type JSX } from "react";
+import { useContext, useEffect, useState, type JSX, type ReactNode } from "react";
 import "./editor.css";
 import { OneLinePlugin } from "@portabletext/plugin-one-line";
 
 import { type EditorActorRef } from "./toolbar/machine";
-import {
-  EditorFeatureFlagsContext,
-  PlaygroundFeatureFlagsContext,
-} from "./toolbar/feature-flags";
+import { EditorFeatureFlagsContext } from "./toolbar/feature-flags";
 import { ErrorBoundary } from "./toolbar/error-boundary";
 import { ErrorScreen } from "./toolbar/error-screen";
 import { LinkAnnotationSchema, playgroundSchemaDefinition } from "./schema";
-import { PortableTextToolbar } from "./toolbar/portable-text-toolbar";
+import { BlockObjectTools, SelectionToolbar } from "./toolbar/selection-toolbar";
+import { InvalidBlocksContext } from "./invalidBlocks";
 import { EmojiPickerPlugin } from "./toolbar/plugin-emoji";
 import { SlashMenuPlugin } from "./toolbar/plugin.slash-menu";
 import { CodeEditorPlugin } from "./toolbar/plugin.code-editor";
@@ -59,6 +58,11 @@ export default function Editor(props: {
   editorRef: EditorActorRef;
   rangeDecorations: RangeDecoration[];
   setValue: (blocks: PortableTextTextBlock<PortableTextSpan | PortableTextObject>[]) => void;
+  // Rendered inside the editor's context, under the editable.
+  footer?: ReactNode;
+  // Grow to the parent's height instead of the content's.
+  fill?: boolean;
+  autoFocus?: boolean;
 }) {
   const value = useSelector(props.editorRef, (s) => s?.context?.value);
   const keyGenerator = useSelector(
@@ -67,7 +71,6 @@ export default function Editor(props: {
   );
   const [loading, setLoading] = useState(false);
   const [readOnly, setReadOnly] = useState(false);
-  const playgroundFeatureFlags = useContext(PlaygroundFeatureFlagsContext);
   const featureFlags = useSelector(
     props.editorRef,
     (s) => s?.context?.featureFlags
@@ -90,7 +93,7 @@ export default function Editor(props: {
   return (
     <div
       data-testid={props.editorRef.id}
-      className={editorClassName}
+      className={`${editorClassName} ${props.fill ? "min-h-0 flex-1 grid-rows-[minmax(0,1fr)]" : ""}`}
     >
       <ErrorBoundary
         fallbackProps={{ area: "PortableTextEditor" }}
@@ -139,18 +142,10 @@ export default function Editor(props: {
               }
             }}
           />
-          {/*
-            One bordered surface for toolbar + editable, instead of the toolbar
-            carrying its own full border with rounded-top corners while sitting
-            gap-4 away from an editable with rounded-bottom corners. The two
-            were clearly meant to join up; the gap and the toolbar's closed
-            bottom edge were what made the seam look unfinished.
-          */}
-          {/* No `container` here: that Tailwind utility applies a breakpoint
-              max-width plus auto margins, which inset the editor ~18px inside
-              its card instead of letting it fill the available width. */}
-          <div className="flex w-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-background">
-            {playgroundFeatureFlags.toolbar ? <PortableTextToolbar /> : null}
+          <div className={`flex w-full min-w-0 flex-col gap-2 ${props.fill ? "h-full min-h-0" : ""}`}>
+            {props.autoFocus ? <FocusOnMount /> : null}
+            <SelectionToolbar />
+            <BlockObjectTools />
 
             {featureFlags.emojiPickerPlugin ? <EmojiPickerPlugin /> : null}
             {featureFlags.codeEditorPlugin ? <CodeEditorPlugin /> : null}
@@ -169,7 +164,7 @@ export default function Editor(props: {
             ) : null}
             {featureFlags.oneLinePlugin ? <OneLinePlugin /> : null}
             {featureFlags.slashMenuPlugin ? <SlashMenuPlugin /> : null}
-            <div className="flex gap-2 items-center">
+            <div className={`flex gap-2 items-start ${props.fill ? "min-h-0 flex-1" : ""}`}>
               <ErrorBoundary
                 fallbackProps={{ area: "PortableTextEditable" }}
                 fallback={ErrorScreen}
@@ -180,11 +175,10 @@ export default function Editor(props: {
                     // The "Type something" placeholder is a rendered node, not
                     // an accessible name — without this the editor announces as
                     // an unlabeled textbox.
-                    aria-label="Post content"
-                    /* The parent owns the border and radius now, so no
-                       rounded-b-md here and no negative margins bleeding out
-                       past it. */
-                    className={`outline-none data-[read-only=true]:opacity-50 px-3 py-2 h-75 overflow-auto flex-1 ${
+                    aria-label={t("editor:postContent")}
+                    className={`outline-none data-[read-only=true]:opacity-50 py-1 overflow-auto flex-1 ${
+                      props.fill ? "h-full" : "min-h-30 max-h-[60vh]"
+                    } ${
                       featureFlags.dragHandles ? "ps-5" : ""
                     }`}
                     rangeDecorations={props.rangeDecorations}
@@ -199,11 +193,20 @@ export default function Editor(props: {
               </ErrorBoundary>
               {loading ? <Loader /> : null}
             </div>
+            {props.footer}
           </div>
         </EditorProvider>
       </ErrorBoundary>
     </div>
   );
+}
+
+function FocusOnMount() {
+  const editor = useEditor();
+  useEffect(() => {
+    editor.send({ type: "focus" });
+  }, [editor]);
+  return null;
 }
 
 function EditorEventListener(props: {
@@ -253,7 +256,7 @@ function EditorEventListener(props: {
 
 const renderAnnotation: RenderAnnotationFunction = (props: any) => {
   if (LinkAnnotationSchema.safeParse(props).success) {
-    return <span className="text-foreground underline">{props.children}</span>;
+    return <span className="text-primary underline underline-offset-2">{props.children}</span>;
   }
 
   return props.children;
@@ -268,25 +271,32 @@ const RenderBlock = (props: BlockRenderProps) => {
   );
 
   const children = props.children;
+  const invalid = useContext(InvalidBlocksContext).get(props.value._key);
 
   const block = blockByName(props.schemaType.name);
   if (block) {
-    if (block.Editor) {
-      return (
-        <block.Editor
-          value={props.value}
-          selected={props.selected}
-          focused={props.focused}
-        />
-      );
-    }
-    return (
+    const content = block.Editor ? (
+      <block.Editor
+        value={props.value}
+        selected={props.selected}
+        focused={props.focused}
+      />
+    ) : (
       <div
         className={`rounded-md border-2 ${
           props.selected ? "border-primary" : "border-transparent"
         }`}
       >
         <block.View value={props.value} />
+      </div>
+    );
+    if (!invalid) return content;
+    return (
+      <div className="flex flex-col gap-1.5 rounded-lg border border-destructive p-2">
+        {content}
+        <p contentEditable={false} className="px-1 text-xs text-destructive">
+          {invalid}
+        </p>
       </div>
     );
   }
@@ -298,7 +308,7 @@ const RenderBlock = (props: BlockRenderProps) => {
         <div
           contentEditable={false}
           draggable={!readOnly}
-          className={`absolute top-0 -left-3 bottom-0 w-1.5 bg-muted rounded cursor-grab`}
+          className={`absolute top-0 -start-3 bottom-0 w-1.5 bg-muted rounded cursor-grab`}
         >
           <span />
         </div>
@@ -321,7 +331,7 @@ const renderListItem: RenderListItemFunction = (props: any) => {
 };
 
 const renderPlaceholder: RenderPlaceholderFunction = () => (
-  <span className="text-foreground px-2">Type something</span>
+  <span className="text-muted-foreground">{t("editor:placeholder")}</span>
 );
 
 const renderStyle: RenderStyleFunction = (props: any) => {
@@ -334,7 +344,14 @@ const decoratorMap: Map<
 > = new Map([
   ["strong", (props) => <strong>{props.children}</strong>],
   ["em", (props) => <em>{props.children}</em>],
-  ["code", (props) => <code>{props.children}</code>],
+  [
+    "code",
+    (props) => (
+      <code className="rounded-sm bg-muted px-1 py-0.5 font-mono text-[0.9em]">
+        {props.children}
+      </code>
+    ),
+  ],
   [
     "underline",
     (props) => (
@@ -353,37 +370,24 @@ const decoratorMap: Map<
   ["superscript", (props) => <sup>{props.children}</sup>],
 ]);
 
+// An empty dir="auto" block resolves to ltr, so it inherits the UI direction until it has text.
+const textDir = (props: BlockStyleRenderProps) =>
+  props.block.children.some((c) => "text" in c && typeof c.text === "string" && c.text.trim() !== "") ? "auto" : undefined;
+
 const styleMap: Map<string, (props: BlockStyleRenderProps) => JSX.Element> =
   new Map([
-    ["normal", (props) => <p className="my-1">{props.children}</p>],
-    [
-      "h1",
-      (props) => <h1 className="my-1 font-bold text-5xl">{props.children}</h1>,
-    ],
-    [
-      "h2",
-      (props) => <h2 className="my-1 font-bold text-4xl">{props.children}</h2>,
-    ],
-    [
-      "h3",
-      (props) => <h3 className="my-1 font-bold text-3xl">{props.children}</h3>,
-    ],
-    [
-      "h4",
-      (props) => <h4 className="my-1 font-bold text-2xl">{props.children}</h4>,
-    ],
-    [
-      "h5",
-      (props) => <h5 className="my-1 font-bold text-xl">{props.children}</h5>,
-    ],
-    [
-      "h6",
-      (props) => <h6 className="my-1 font-bold text-lg">{props.children}</h6>,
-    ],
+    ["normal", (props) => <p dir={textDir(props)} className="my-1">{props.children}</p>],
+    // Same sizes as displayBlocks, so the draft looks like the post.
+    ["h1", (props) => <h3 dir={textDir(props)} className="mt-4 mb-2 text-2xl font-bold">{props.children}</h3>],
+    ["h2", (props) => <h4 dir={textDir(props)} className="mt-4 mb-2 text-xl font-semibold">{props.children}</h4>],
+    ["h3", (props) => <h5 dir={textDir(props)} className="mt-3 mb-2 text-lg font-semibold">{props.children}</h5>],
+    ["h4", (props) => <h4 dir={textDir(props)} className="my-1">{props.children}</h4>],
+    ["h5", (props) => <h5 dir={textDir(props)} className="my-1">{props.children}</h5>],
+    ["h6", (props) => <h6 dir={textDir(props)} className="my-1">{props.children}</h6>],
     [
       "blockquote",
       (props) => (
-        <blockquote className="my-1 ps-2 py-1 border-muted border-s-4">
+        <blockquote dir={textDir(props)} className="my-3 border-s-2 border-border ps-4 italic text-muted-foreground">
           {props.children}
         </blockquote>
       ),

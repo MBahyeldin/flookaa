@@ -8,10 +8,13 @@ import (
 )
 
 func AddCommunitiesRoutes(r *gin.RouterGroup, communities *communities.Handler) {
+	r.GET("/showcase", communities.Showcase)
+
 	group := r.Group("/communities", auth.RequirePersona())
 	{
 		group.GET("/", communities.ListCommunities)
 		group.POST("/create", communities.CreateCommunity)
+		group.GET("/mine", communities.MyCommunities)
 		group.GET("/by-slug/:slug", communities.GetCommunityBySlug)
 		group.GET("/:community_id", communities.GetCommunity)
 		group.PATCH("/:community_id", communities.UpdateCommunity)

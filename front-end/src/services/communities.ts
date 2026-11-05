@@ -6,14 +6,20 @@ import type {
   CommunityJoinRequest,
   CommunityMember,
   ModeratedChannel,
+  MyCommunity,
+  ShowcaseCommunity,
 } from "@/types/community";
 import type { Result } from "@/services/interests";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-async function call<T>(path: string, method = "GET", base = "/communities"): Promise<Result<T>> {
+async function call<T>(path: string, method = "GET", base = "/communities", payload?: unknown): Promise<Result<T>> {
   try {
-    const resp = await apiFetch(`${API_BASE_URL}/api/v1${base}${path}`, { method, credentials: "include" });
+    const resp = await apiFetch(`${API_BASE_URL}/api/v1${base}${path}`, {
+      method,
+      credentials: "include",
+      ...(payload !== undefined && { headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    });
     const body = await resp.json().catch(() => ({}));
     if (!resp.ok) return { ok: false, error: body.error ?? "request_failed" };
     return { ok: true, data: body as T };
@@ -22,13 +28,43 @@ async function call<T>(path: string, method = "GET", base = "/communities"): Pro
   }
 }
 
-export const listCommunities = (interest?: string) =>
-  call<{ communities: Community[] }>(`/${interest ? `?interest=${encodeURIComponent(interest)}` : ""}`);
+export const getShowcase = () => call<{ communities: ShowcaseCommunity[] }>("/showcase", "GET", "");
+
+export const listCommunities = (interests: string[] = []) => {
+  const params = new URLSearchParams(interests.map((slug) => ["interest", slug]));
+  return call<{ communities: Community[] }>(`/${params.size ? `?${params}` : ""}`);
+};
+
+export const listMyCommunities = () => call<{ communities: MyCommunity[] }>("/mine");
+
+export type CreateCommunityInput = {
+  name: string;
+  slug: string;
+  description: string;
+  rules: string;
+  visibility: "public" | "private";
+  min_age: number;
+  theme: string;
+  cover_pattern: string;
+  thumbnail: string;
+  banner: string;
+  banner_x: number;
+  banner_y: number;
+  interest_ids: number[];
+};
+
+export const createCommunity = (input: CreateCommunityInput) =>
+  call<{ community: Community }>("/create", "POST", "/communities", input);
 
 export const getCommunityBySlug = (slug: string) =>
   call<{ community: Community }>(`/by-slug/${encodeURIComponent(slug)}`);
 
 export const getCommunity = (id: number) => call<{ community: Community }>(`/${id}`);
+
+export type CommunityChanges = Partial<Omit<CreateCommunityInput, "interest_ids"> & { interest_ids: number[] }>;
+
+export const updateCommunity = (id: number, changes: CommunityChanges) =>
+  call<{ community: Community }>(`/${id}`, "PATCH", "/communities", changes);
 
 export const joinCommunity = (id: number) => call<{ status: "active" | "pending" }>(`/${id}/join`, "POST");
 

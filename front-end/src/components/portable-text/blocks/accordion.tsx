@@ -1,7 +1,9 @@
 import { useId, useRef, type SyntheticEvent } from "react";
-import { ChevronDownIcon, ChevronsUpDownIcon } from "lucide-react";
+import { ChevronsUpDownIcon, ChevronUpIcon, PlusIcon } from "lucide-react";
 import { z } from "zod";
 import { FormField } from "@/models/Forms/FormField";
+import { perLanguage, t } from "@/i18n";
+import { maxChars, minItems, oneLine, required } from "./validation";
 import { defineBlock } from "./defineBlock";
 
 const MAX_SECTIONS = 20;
@@ -10,22 +12,22 @@ const MAX_TITLE = 120;
 const accordionSchema = z.object({
   title: z
     .string()
-    .refine((title) => title.length <= MAX_TITLE, `must be at most ${MAX_TITLE} characters`)
-    .refine((title) => !/[\r\n]/.test(title), "must be one line")
+    .refine((title) => title.length <= MAX_TITLE, maxChars(MAX_TITLE))
+    .refine((title) => !/[\r\n]/.test(title), oneLine)
     .optional(),
   items: z
     .array(
       z.object({
-        _key: z.string().min(1, "is required"),
+        _key: z.string().min(1, required),
         title: z
           .string()
-          .refine((title) => title.trim() !== "", "is required")
-          .refine((title) => title.length <= MAX_TITLE, `must be at most ${MAX_TITLE} characters`)
-          .refine((title) => !/[\r\n]/.test(title), "must be one line"),
-        text: z.string().refine((text) => text.trim() !== "", "is required"),
+          .refine((title) => title.trim() !== "", required)
+          .refine((title) => title.length <= MAX_TITLE, maxChars(MAX_TITLE))
+          .refine((title) => !/[\r\n]/.test(title), oneLine),
+        text: z.string().refine((text) => text.trim() !== "", required),
       })
     )
-    .min(1, "at least one section is required")
+    .min(1, minItems(1))
     .max(MAX_SECTIONS)
     .refine(
       (items) => new Set(items.map((item) => item._key)).size === items.length,
@@ -37,39 +39,39 @@ const accordionSchema = z.object({
 
 type AccordionValue = z.infer<typeof accordionSchema>;
 
-const accordionFormFields: FormField[] = [
+const accordionFormFields = perLanguage((): FormField[] => [
   new FormField({
     id: "title",
     name: "title",
-    label: "Title",
+    label: t("blocks:accordion.fields.title"),
     type: "string",
     interfaceType: "text",
-    placeholder: "Frequently asked questions",
+    placeholder: t("blocks:accordion.fields.frequentlyAskedQuestions"),
   }),
   new FormField({
     id: "items",
     name: "items",
-    label: "Sections",
+    label: t("blocks:accordion.fields.sections"),
     type: "array",
     interfaceType: "list",
-    itemLabel: "Section",
-    addLabel: "Add section",
+    itemLabel: t("blocks:accordion.fields.section"),
+    addLabel: t("blocks:accordion.fields.addSection"),
     minItems: 1,
     maxItems: MAX_SECTIONS,
     itemFields: [
       new FormField({
         id: "title",
         name: "title",
-        label: "Title",
+        label: t("blocks:accordion.fields.title"),
         type: "string",
         interfaceType: "text",
-        placeholder: "Question or heading",
+        placeholder: t("blocks:accordion.fields.questionOrHeading"),
         isRequired: true,
       }),
       new FormField({
         id: "text",
         name: "text",
-        label: "Content",
+        label: t("blocks:accordion.fields.content"),
         type: "string",
         interfaceType: "textarea",
         isRequired: true,
@@ -79,20 +81,20 @@ const accordionFormFields: FormField[] = [
   new FormField({
     id: "allowMultiple",
     name: "allowMultiple",
-    label: "Allow several open",
+    label: t("blocks:accordion.fields.allowSeveralOpen"),
     type: "boolean",
     interfaceType: "switch",
   }),
   new FormField({
     id: "defaultFirstOpen",
     name: "defaultFirstOpen",
-    label: "Open the first section",
+    label: t("blocks:accordion.fields.openTheFirstSection"),
     type: "boolean",
     interfaceType: "switch",
   }),
-];
+]);
 
-function AccordionView({ value }: { value: AccordionValue }) {
+function AccordionView({ value, compact = false }: { value: AccordionValue; compact?: boolean }) {
   const listRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const allowMultiple = value.allowMultiple ?? true;
@@ -106,9 +108,9 @@ function AccordionView({ value }: { value: AccordionValue }) {
   };
 
   return (
-    <div>
+    <div className="rounded-2xl border bg-card p-2 text-card-foreground">
       {value.title ? (
-        <p id={titleId} dir="auto" className="mb-2 mx-auto w-fit text-lg font-semibold break-words text-foreground">
+        <p id={titleId} dir="auto" className="px-3 pt-3 pb-2 font-semibold break-words">
           {value.title}
         </p>
       ) : null}
@@ -116,25 +118,28 @@ function AccordionView({ value }: { value: AccordionValue }) {
         ref={listRef}
         role={value.title ? "group" : undefined}
         aria-labelledby={value.title ? titleId : undefined}
-        className="divide-y divide-border overflow-hidden rounded-md border border-border bg-card text-card-foreground"
+        className="space-y-1"
       >
         {value.items.map((item, index) => (
           <details
             key={item._key}
-            className="group"
-            open={index === 0 && value.defaultFirstOpen === true}
+            className="group rounded-xl open:bg-accent open:text-accent-foreground"
+            open={index === 0 && value.defaultFirstOpen === true && !compact}
             onToggle={onToggle}
           >
-            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 px-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 rounded-xl px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
               <span dir="auto" className="min-w-0 font-semibold break-words">
                 {item.title}
               </span>
-              <ChevronDownIcon
+              <span
                 aria-hidden
-                className="ms-auto size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
-              />
+                className="ms-auto flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-primary group-open:border-transparent group-open:bg-primary group-open:text-primary-foreground"
+              >
+                <PlusIcon className="size-4 group-open:hidden" />
+                <ChevronUpIcon className="hidden size-4 group-open:block" />
+              </span>
             </summary>
-            <p dir="auto" className="px-4 pb-3 text-muted-foreground whitespace-pre-wrap break-words">
+            <p dir="auto" className="px-3 pb-4 whitespace-pre-wrap break-words">
               {item.text}
             </p>
           </details>
@@ -146,14 +151,21 @@ function AccordionView({ value }: { value: AccordionValue }) {
 
 export const accordion = defineBlock<AccordionValue>({
   name: "accordion",
-  title: "Accordion",
-  description: "Sections that open on tap.",
+  get title() {
+    return t("blocks:accordion.title");
+  },
+  get description() {
+    return t("blocks:accordion.description");
+  },
   icon: ChevronsUpDownIcon,
   category: "layout",
-  fields: accordionFormFields,
+  get fields() {
+    return accordionFormFields();
+  },
   defaultValues: { allowMultiple: true, defaultFirstOpen: false },
   schema: accordionSchema,
   View: AccordionView,
+  summary: (value) => t("blocks:accordion.summary", { count: value.items.length }),
   examples: [
     {
       title: "Frequently asked questions",

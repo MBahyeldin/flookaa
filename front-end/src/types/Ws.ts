@@ -40,6 +40,8 @@ type EventType =
   | "channel_request"
   // A channel's community row changed (STREAM_CHANNEL_EVENTS); no payload, refetch.
   | "community"
+  // This persona saved or unsaved a post (default subscription); payload is SavedPayload.
+  | "saved"
   | "*";
 type EventActionType = "create" | "update" | "delete" | "*";
 type EventOwnerType = "CHANNEL" | "USER" | "PERSONA" | "COMMUNITY";
@@ -65,6 +67,26 @@ type SubscribeDefaultPayload = {
   owner: "DEFAULT";
 };
 
+type SubscribeFeedPayload = {
+  owner: "FEED";
+};
+
+type SubscribeDiscoverPayload = {
+  owner: "DISCOVER";
+  interests: string[];
+  all: boolean;
+};
+
+type SubscribeProfilePayload = {
+  owner: "PROFILE";
+  owner_id: number;
+};
+
+type SubscribeCommunityFeedPayload = {
+  owner: "COMMUNITY_FEED";
+  owner_id: number;
+};
+
 type Event = {
   name: EventType;
   action: EventActionType;
@@ -80,9 +102,11 @@ type Event = {
   timestamp: number;
 };
 
+type SavedPayload = { post_id: string };
+
 type WsEventMessage = {
   event: Event;
-  payload: Comment | PostEventPayload | ChannelEventPayload | NotificationPayload;
+  payload: Comment | PostEventPayload | ChannelEventPayload | NotificationPayload | SavedPayload;
 };
 
 /**
@@ -121,12 +145,17 @@ type PostEventPayload = {
 };
 
 export type {
+  SavedPayload,
   WsMessage,
   WsMessageType,
   SubscribeChannelPayload,
   SubscribeDefaultPayload,
   SubscribePersonaPayload,
   SubscribeCommunityPayload,
+  SubscribeFeedPayload,
+  SubscribeDiscoverPayload,
+  SubscribeProfilePayload,
+  SubscribeCommunityFeedPayload,
   Event,
   EventType,
   EventActionType,

@@ -31,6 +31,12 @@ type ScopeResponse struct {
 	ID   int64  `json:"id"`
 }
 
+type WallResponse struct {
+	ID        int64  `json:"id"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+}
+
 type NotificationResponse struct {
 	ID      int64           `json:"id"`
 	Kind    string          `json:"kind"`
@@ -44,9 +50,12 @@ type NotificationResponse struct {
 	Channel *ChannelResponse `json:"channel"`
 	// Community is the subject of community kinds, looked up like Channel.
 	Community *CommunityResponse `json:"community"`
-	Data      json.RawMessage    `json:"data,omitempty"`
-	Read      bool               `json:"read"`
-	UpdatedAt string             `json:"updated_at"`
+	// Wall is the persona whose wall a PERSONA-scoped notification is on,
+	// resolved like the actors. Null otherwise or when not visible.
+	Wall      *WallResponse   `json:"wall"`
+	Data      json.RawMessage `json:"data,omitempty"`
+	Read      bool            `json:"read"`
+	UpdatedAt string          `json:"updated_at"`
 }
 
 // ListNotifications returns a page of the persona's notifications, newest
@@ -123,6 +132,9 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 		}
 		if row.ScopeType.Valid {
 			n.Scope = &ScopeResponse{Type: string(row.ScopeType.NotificationScopeEnum), ID: row.ScopeID.Int64}
+			if row.ScopeType.NotificationScopeEnum == db.NotificationScopeEnumPERSONA {
+				actorIDs[row.ScopeID.Int64] = struct{}{}
+			}
 		}
 		if row.Data.Valid {
 			n.Data = row.Data.RawMessage
@@ -173,9 +185,15 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 		return
 	}
 	for i := range notifications {
-		var chID, coID int64
+		var chID, coID, wallID int64
 		if ch := notifications[i].Channel; ch != nil {
 			chID = ch.ID
+		}
+		if sc := notifications[i].Scope; sc != nil && sc.Type == string(db.NotificationScopeEnumPERSONA) {
+			wallID = sc.ID
+			if wall := actors[wallID]; wall != nil && wall.visible {
+				notifications[i].Wall = &WallResponse{ID: wall.ID, FirstName: wall.FirstName, LastName: wall.LastName}
+			}
 		}
 		if co := notifications[i].Community; co != nil {
 			coID = co.ID
@@ -184,7 +202,7 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 		if a := notifications[i].LatestActor; a != nil {
 			notifications[i].LatestActor = nil
 			if resolved := actors[a.ID]; resolved != nil {
-				notifications[i].LatestActor = resolved.view(chID, coID)
+				notifications[i].LatestActor = resolved.view(chID, coID, wallID)
 			}
 		}
 		if ch := notifications[i].Channel; ch != nil {

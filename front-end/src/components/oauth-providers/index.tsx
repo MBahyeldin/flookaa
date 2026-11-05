@@ -1,5 +1,6 @@
 import { Button } from "../ui/button";
 import continueWithGoogle from "@/services/loginWithGoogle";
+import { t } from "@/i18n";
 
 function GoogleIcon() {
   return (
@@ -25,7 +26,7 @@ function GoogleIcon() {
 }
 
 const providers = [
-  { id: "google", label: "Continue with Google", icon: <GoogleIcon />, start: continueWithGoogle },
+  { id: "google", label: () => t("auth:continueWithGoogle"), icon: <GoogleIcon />, start: continueWithGoogle },
 ];
 
 export default function OAuthProviders({
@@ -41,13 +42,13 @@ export default function OAuthProviders({
         <Button
           key={p.id}
           size="lg"
-          borderRadius="full"
+          variant="outline"
           className="w-full"
           type="button"
           onClick={() => p.start(state, next)}
         >
           {p.icon}
-          {p.label}
+          {p.label()}
         </Button>
       ))}
     </div>

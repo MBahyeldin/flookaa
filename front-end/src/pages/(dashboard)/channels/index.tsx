@@ -2,102 +2,97 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Search, Plus } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Plus, Hash } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { getChannels } from "@/services/channels";
 import InterestFilter from "@/components/interests/InterestFilter";
+import { interestNamesLabel, useInterestParams } from "@/components/interests/useInterestParams";
 import type { Channel } from "@/types/channel";
-import { Input } from "@/components/ui/input";
-import { ChannelCard } from "./ChannelCard";
+import { ChannelTile } from "@/components/tile/ChannelTile";
 import { useIsUserLoggedIn } from "@/stores/UserProfileStore";
+import { SkeletonList } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { useTranslation } from "react-i18next";
 
 export default function ChannelsPage() {
+  const { t } = useTranslation(["channels", "common"]);
   const nagivate = useNavigate();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const isUserLoggedIn = useIsUserLoggedIn();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const interest = searchParams.get("interest") ?? "";
+  const { interests, setInterests } = useInterestParams();
+  const interestsKey = interests.join(",");
+  const [interestNames, setInterestNames] = useState<string[]>([]);
 
   if (!isUserLoggedIn) {
     nagivate("/");
   }
 
-  const selectInterest = (slug: string) =>
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        if (slug) next.set("interest", slug);
-        else next.delete("interest");
-        return next;
-      },
-      { replace: true },
-    );
-
   useEffect(() => {
-    const fetchChannels = async () => {
-      setLoading(true);
-      try {
-        const response = await getChannels({ interest: interest || undefined });
-
-        if (response) {
-          setChannels(response.channels ?? []);
-        }
-      } catch (error) {
-        console.error("Error fetching channels:", error);
-      } finally {
-        setLoading(false);
-      }
+    let alive = true;
+    setLoading(true);
+    getChannels({ interests: interestsKey ? interestsKey.split(",") : [] }).then((response) => {
+      if (!alive) return;
+      setFailed(!response);
+      setChannels(response?.channels ?? []);
+      setLoading(false);
+    });
+    return () => {
+      alive = false;
     };
-
-    fetchChannels();
-  }, [interest]);
+  }, [interestsKey, attempt]);
 
   return (
-    <div className="min-h-screen">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <div className="flex items-center space-x-2 mb-4">
-            <TrendingUp className="h-6 w-6 text-primary" />
-            <h1 className="text-3xl">Explore Channels</h1>
-            <Link to="/channels/create" className="ml-auto">
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Channel
-              </Button>
-            </Link>
-          </div>
-          <p className="text-muted-foreground text-lg">
-            Discover and join communities that match your interests
-          </p>
-        </div>
-
-        {/* Search and Filters */}
-        <div className="mb-8 space-y-4">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search channels..." className="pl-10 py-6" />
-          </div>
-
-          <InterestFilter value={interest} onChange={selectInterest} />
-        </div>
-
-        {/* Channels Grid */}
-        {loading ? (
-          <p className="py-16 text-center text-muted-foreground">Loading channels...</p>
-        ) : channels.length === 0 ? (
-          <p className="py-16 text-center text-muted-foreground">
-            {interest ? "No channels with this interest yet." : "No channels yet."}
-          </p>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {channels.map((channel) => (
-              <ChannelCard key={channel.id} channel={channel} />
-            ))}
-          </div>
-        )}
+    <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-8 flex flex-col items-start gap-3">
+        <h1>{t("list.title")}</h1>
+        <p className="text-muted-foreground">{t("list.lead")}</p>
+        <Button asChild>
+          <Link to="/channels/create">
+            <Plus />
+            {t("create.submit")}
+          </Link>
+        </Button>
       </div>
+
+      <div className="mb-6">
+        <InterestFilter value={interests} onChange={setInterests} onSelectedNames={setInterestNames} />
+      </div>
+
+      {loading ? (
+        <SkeletonList count={6} variant="post" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" />
+      ) : failed ? (
+        <ErrorState title={t("list.loadFailed")} onRetry={() => setAttempt((n) => n + 1)} />
+      ) : channels.length === 0 ? (
+        interests.length > 0 ? (
+          <EmptyState
+            icon={Hash}
+            title={interestNames.length ? t("list.noneFor", { names: interestNamesLabel(interestNames) }) : t("list.noneWithInterests")}
+            body={t("common:list.tryOtherInterests")}
+            action={<Button onClick={() => setInterests([])}>{t("common:actions.showAll")}</Button>}
+          />
+        ) : (
+          <EmptyState
+            icon={Hash}
+            title={t("list.empty")}
+            body={t("common:list.startFirst")}
+            action={
+              <Button asChild>
+                <Link to="/channels/create">{t("create.submit")}</Link>
+              </Button>
+            }
+          />
+        )
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {channels.map((channel) => (
+            <ChannelTile key={channel.id} channel={channel} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

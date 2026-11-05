@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import {
   useEditor,
   useEditorSelector,
@@ -48,7 +49,7 @@ function parseSlash(key: string | null): Slash | null {
   return { blockKey, spanKey, text, query: text.slice(1) };
 }
 
-function caretRect(): DOMRect | null {
+export function caretRect(): DOMRect | null {
   const selection = window.getSelection();
   if (!selection?.rangeCount) return null;
   const rect = selection.getRangeAt(0).getBoundingClientRect();
@@ -177,7 +178,7 @@ export function SlashMenuPlugin() {
         >
           <ObjectForm
             key={formBlock.name}
-            submitLabel="Insert"
+            submitLabel={t("editor:insert")}
             fields={formBlock.fields}
             defaultValues={toFormValue(formBlock, formBlock.defaultValues)}
             onSubmit={({ value }) => {

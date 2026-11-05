@@ -28,7 +28,7 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 	if err != nil {
 		return nil, fmt.Errorf("unauthenticated: %w", err)
 	}
-	if err := r.authorizeOwner(ctx, &models.Owner{ID: input.Owner.ID, Type: input.Owner.Type}, personaId, true); err != nil {
+	if err := r.authorizeOwner(ctx, &models.Owner{ID: input.Owner.ID, Type: input.Owner.Type}, personaId, accessPost); err != nil {
 		return nil, err
 	}
 	content, rawContent, err := portabletext.ParseContent(*input.Content)
@@ -68,21 +68,16 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input models.PostInpu
 		"created_at": object.CreatedAt,
 	}
 
-	var ownerType db.OwnerEnum
-	switch input.Owner.Type {
-	case models.OwnerTypePersona:
-		ownerType = db.OwnerEnumPERSONA
-	case models.OwnerTypeChannel:
-		ownerType = db.OwnerEnumCHANNEL
-	default:
-		ownerType = db.OwnerEnumPERSONA
+	ownerType, targetType := db.OwnerEnumCHANNEL, db.EventTargetTypeEnumCHANNEL
+	if input.Owner.Type == models.OwnerTypePersona {
+		ownerType, targetType = db.OwnerEnumPERSONA, db.EventTargetTypeEnumPERSONA
 	}
 
 	event := db.CreateEventParams{
 		Name:       db.EventEnumPost,
 		Action:     db.EventActionEnumCreate,
 		TargetID:   fmt.Sprintf("%d", input.Owner.ID),
-		TargetType: db.EventTargetTypeEnumCHANNEL,
+		TargetType: targetType,
 		Owner:      ownerType,
 		OwnerID:    int64(input.Owner.ID),
 		ActorID:    int64(personaId),
@@ -130,11 +125,15 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 	if err != nil {
 		return nil, err
 	}
-	if err := r.authorizeOwner(ctx, parent.Owner, personaId, true); err != nil {
+	if err := r.authorizeOwner(ctx, parent.Owner, personaId, accessReact); err != nil {
 		return nil, err
 	}
 	owner := parent.Owner
-	rawContent, err := json.Marshal(input.Content)
+	content, err := r.parseSimpleInput(*input.Content)
+	if err != nil {
+		return nil, err
+	}
+	rawContent, err := json.Marshal(content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal content: %w", err)
 	}
@@ -159,7 +158,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 		return nil, fmt.Errorf("failed to insert object: %w", insertError)
 	}
 
-	authors, err := r.resolvePersonas(ctx, personaId, owner.ID, []int64{personaId})
+	authors, err := r.resolvePersonas(ctx, personaId, owner, []int64{personaId})
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve author: %w", err)
 	}
@@ -254,7 +253,7 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 	if err != nil {
 		return false, err
 	}
-	if err := r.authorizeOwner(ctx, target.Owner, personaId, true); err != nil {
+	if err := r.authorizeOwner(ctx, target.Owner, personaId, accessReact); err != nil {
 		return false, err
 	}
 	owner := target.Owner
@@ -355,13 +354,37 @@ func (r *mutationResolver) DeleteComment(ctx context.Context, id string) (bool, 
 	return true, nil
 }
 
+// SavePost is the resolver for the savePost field.
+func (r *mutationResolver) SavePost(ctx context.Context, id string) (bool, error) {
+	personaId, err := getPersonaIdFromContext(ctx)
+	if err != nil || personaId == 0 {
+		return false, fmt.Errorf("unauthenticated: %w", err)
+	}
+	if err := r.savePost(ctx, personaId, id); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// UnsavePost is the resolver for the unsavePost field.
+func (r *mutationResolver) UnsavePost(ctx context.Context, id string) (bool, error) {
+	personaId, err := getPersonaIdFromContext(ctx)
+	if err != nil || personaId == 0 {
+		return false, fmt.Errorf("unauthenticated: %w", err)
+	}
+	if err := r.unsavePost(ctx, personaId, id); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // GetPosts is the resolver for the getPosts field.
 func (r *queryResolver) GetPosts(ctx context.Context, owner models.OwnerInput, ids []string, limit *int32, offset *int32) ([]*models.Post, error) {
 	personaId, err := getPersonaIdFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unauthenticated: %w", err)
 	}
-	if err := r.authorizeOwner(ctx, &models.Owner{ID: owner.ID, Type: owner.Type}, personaId, false); err != nil {
+	if err := r.authorizeOwner(ctx, &models.Owner{ID: owner.ID, Type: owner.Type}, personaId, accessRead); err != nil {
 		return nil, err
 	}
 	posts, err := getPosts(ctx, models.Owner{
@@ -384,10 +407,10 @@ func (r *queryResolver) GetComments(ctx context.Context, parentID string, limit 
 	if err != nil {
 		return nil, err
 	}
-	if err := r.authorizeOwner(ctx, parent.Owner, personaId, false); err != nil {
+	if err := r.authorizeOwner(ctx, parent.Owner, personaId, accessRead); err != nil {
 		return nil, err
 	}
-	comments, err := getComments(ctx, parentID, parent.Owner.ID, r, *limit, *offset)
+	comments, err := getComments(ctx, parentID, parent.Owner, r, *limit, *offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get comments: %w", err)
 	}
@@ -436,7 +459,7 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		channel = channelResult
 
 		// Owner lookup + cache
-		owners, err := r.resolvePersonas(ctx, personaId, id, []int64{channel.OwnerID})
+		owners, err := r.resolvePersonas(ctx, personaId, &models.Owner{ID: id, Type: models.OwnerTypeChannel}, []int64{channel.OwnerID})
 		if err != nil {
 			channelErr = err
 			return
@@ -492,11 +515,19 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		posts = []*models.Post{}
 	}
 
+	var ownTheme *models.Theme
+	if channel.Theme.Valid {
+		t := models.Theme(channel.Theme.ThemeEnum)
+		ownTheme = &t
+	}
+
 	return &models.Channel{
 		ID:             channel.ID,
 		Name:           channel.Name,
 		Description:    &channel.Description,
 		BannerImageURL: &channel.Banner,
+		BannerX:        int32(channel.BannerX),
+		BannerY:        int32(channel.BannerY),
 		ThumbnailURL:   &channel.Thumbnail,
 		CreatedAt:      channel.CreatedAt.Time,
 		UpdatedAt:      channel.UpdatedAt.Time,
@@ -505,12 +536,54 @@ func (r *queryResolver) GetChannel(ctx context.Context, id int64) (*models.Chann
 		Owner:          &ownerPersona,
 		IsMember:       channel.IsMember,
 		IsFollower:     channel.IsFollower,
+		IsPending:      channel.IsPending,
+		IsOwner:        channel.IsOwner,
+		IsPrivate:      channel.Visibility == db.ChannelVisibilityEnumPrivate,
 		MembersCount:   &channel.MembersCount,
 		FollowersCount: &channel.FollowersCount,
 		CanModerate:    channelAccess.CanModerate,
 		Community:      community,
 		MinAge:         int32(channel.MinAge),
+		Theme:          models.Theme(channel.EffectiveTheme),
+		OwnTheme:       ownTheme,
+		CoverPattern:   models.CoverPattern(channel.CoverPattern),
 	}, nil
+}
+
+// GetFeed is the resolver for the getFeed field.
+func (r *queryResolver) GetFeed(ctx context.Context, after *string, limit *int32) (*models.FeedPage, error) {
+	personaId, err := getPersonaIdFromContext(ctx)
+	if err != nil || personaId == 0 {
+		return nil, fmt.Errorf("unauthenticated: %w", err)
+	}
+	return r.feed(ctx, personaId, after, limit)
+}
+
+// GetDiscover is the resolver for the getDiscover field.
+func (r *queryResolver) GetDiscover(ctx context.Context, interests []string, all *bool, after *string, limit *int32) (*models.FeedPage, error) {
+	personaId, err := getPersonaIdFromContext(ctx)
+	if err != nil || personaId == 0 {
+		return nil, fmt.Errorf("unauthenticated: %w", err)
+	}
+	return r.discover(ctx, personaId, interests, all, after, limit)
+}
+
+// GetCommunityFeed is the resolver for the getCommunityFeed field.
+func (r *queryResolver) GetCommunityFeed(ctx context.Context, communityID int64, after *string, limit *int32) (*models.FeedPage, error) {
+	personaId, err := getPersonaIdFromContext(ctx)
+	if err != nil || personaId == 0 {
+		return nil, fmt.Errorf("unauthenticated: %w", err)
+	}
+	return r.communityFeed(ctx, personaId, communityID, after, limit)
+}
+
+// GetSaved is the resolver for the getSaved field.
+func (r *queryResolver) GetSaved(ctx context.Context, after *string, limit *int32) (*models.SavedPage, error) {
+	personaId, err := getPersonaIdFromContext(ctx)
+	if err != nil || personaId == 0 {
+		return nil, fmt.Errorf("unauthenticated: %w", err)
+	}
+	return r.saved(ctx, personaId, after, limit)
 }
 
 // Mutation returns graph.MutationResolver implementation.

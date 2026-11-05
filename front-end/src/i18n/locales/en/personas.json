@@ -1,0 +1,174 @@
+{
+  "select": {
+    "title": "Choose a persona",
+    "lead": "You post, join and follow as the persona you pick. Switch any time from the sidebar.",
+    "newPersona": "New persona",
+    "emptyTitle": "No personas yet",
+    "emptyBody": "Log in again to get your default persona.",
+    "continueAs": "Continue as {{name}}"
+  },
+  "types": {
+    "professional": "Professional",
+    "gaming": "Gaming",
+    "creative": "Creative",
+    "business": "Business",
+    "social": "Social",
+    "other": "Other"
+  },
+  "privacy": {
+    "public": {
+      "label": "Public",
+      "note": "Everyone sees this persona and can follow it at once."
+    },
+    "private": {
+      "label": "Private",
+      "note": "Others see an anonymous name until you approve them as followers."
+    },
+    "only_me": {
+      "label": "Only me",
+      "note": "Only you see it. Nobody can follow it."
+    },
+    "hintLeavesProfile": "It will no longer show on your profile.",
+    "hintLeavesPrivate": "Your follow-request link stops working and your pending invitations are cancelled. Your followers stay.",
+    "whoCanSee": "Who can see this persona",
+    "showOnProfile": "Show on my profile",
+    "showOnProfileNote": "Your linked personas list each other, with this persona's label, for anyone who visits them."
+  },
+  "manager": {
+    "title": "Personas",
+    "lead": "Each persona is a facet of you, with its own name, theme and followers. People follow a persona, not you.",
+    "emptyBody": "A persona is how you show up in channels and communities.",
+    "manageNamed": "Manage {{name}}",
+    "manage": "Manage",
+    "back": "Back to personas",
+    "notFoundTitle": "Persona not found",
+    "notFoundBody": "It doesn't exist, or it isn't one of yours."
+  },
+  "viewProfile": "View profile",
+  "settings": {
+    "labelOnlyYou": "Only you see this label",
+    "basics": {
+      "title": "Basics",
+      "lead": "How this persona shows up to others."
+    },
+    "look": {
+      "title": "Look",
+      "lead": "Your profile's colours and cover. The preview changes as you pick."
+    },
+    "privacy": {
+      "title": "Privacy",
+      "lead": "Privacy decides what others see of this persona, not what it can do."
+    },
+    "interests": {
+      "title": "Interests",
+      "lead": "Only you see this persona's interests. They shape your suggestions."
+    },
+    "followers": {
+      "title": "Followers",
+      "requestsWaiting_one": "{{n}} request waiting",
+      "requestsWaiting_other": "{{n}} requests waiting",
+      "loadFailed": "Couldn't load the counts.",
+      "none": "No followers yet."
+    },
+    "saveFailed": "Couldn't save the persona. Please try again.",
+    "saved": "Persona saved"
+  },
+  "slug": {
+    "help": "3–50 lowercase letters, digits or single hyphens.",
+    "taken": "Another of your personas already uses this handle."
+  },
+  "photo": {
+    "uploading": "Uploading photo",
+    "upload": "Upload photo",
+    "hint": "Without a photo, your initials show."
+  },
+  "fields": {
+    "label": "Label",
+    "labelHelper": "Only you see this. It tells your personas apart.",
+    "labelMissing": "Enter a label",
+    "firstNameMissing": "Enter a first name",
+    "lastNameMissing": "Enter a last name",
+    "handle": "Handle",
+    "handlePlaceholder": "@quiet-otter",
+    "bio": "Bio",
+    "bioPlaceholder": "Tell others about this persona…"
+  },
+  "followLink": {
+    "resetConfirm": "Reset the link? The old link will stop working.",
+    "reset": "Reset",
+    "resetDone": "New link created",
+    "title": "Follow-request link",
+    "loadFailed": "Couldn't load the link.",
+    "hint": "Anyone with the link can ask to follow. Reset stops the old link working.",
+    "dialogLead": "Anyone with this link can ask to follow you. You approve each request.",
+    "resetLink": "Reset link",
+    "invalid": "This link is no longer valid",
+    "askNew": "Ask for a new one.",
+    "logIn": "Log in to request to follow"
+  },
+  "wizard": {
+    "changeAnyTime": "You can change this any time.",
+    "basicsLead": "How this persona looks to others.",
+    "type": "Persona type",
+    "ownType": "Your own type",
+    "ownTypePlaceholder": "sporty, funny, family…",
+    "typeOnlyYou": "Only you see the type.",
+    "bioOptional": "Bio (optional)",
+    "createFailed": "Couldn't create the persona. Please try again.",
+    "interestsFailed": "The persona was created, but its interests weren't saved. Please try again.",
+    "created": "Persona created",
+    "defaultTitle": "Your default persona",
+    "editTitle": "Edit persona",
+    "interestsLead": "Pick at least one. They shape what this persona is shown.",
+    "save": "Save persona"
+  },
+  "follow": {
+    "unfollowPrivateConfirm": "Unfollow {{name}}? {{name}} is private, so you'll lose access and have to request again.",
+    "revealConfirmNamed": "Follow {{name}}? {{name}} will see who you are.",
+    "revealConfirm": "Follow this persona? It will see who you are.",
+    "request": "Request to follow"
+  },
+  "invite": {
+    "cancelConfirmNamed": "Cancel your invitation to {{name}}?",
+    "cancelConfirm": "Cancel your invitation to this persona?",
+    "nowFollowsNamed": "{{name}} now follows you",
+    "nowFollows": "This persona now follows you",
+    "invited": "Invited",
+    "invite": "Invite to follow",
+    "bannerTitle": "{{name}} invited you to follow",
+    "bannerBody": "Accept to follow them. They already see who you are."
+  },
+  "row": {
+    "theme": "{{theme}} theme",
+    "default": "Default"
+  },
+  "locked": {
+    "title": "This persona is private",
+    "body": "Follow it to see its profile."
+  },
+  "profile": {
+    "following": "{{n}} following",
+    "shareFollowLink": "Share follow link",
+    "lockedTagline": "This persona is private.",
+    "lockedFacts": "Request to follow to see their profile and posts.",
+    "channelsOwnEmpty": "You haven't joined any channels",
+    "channelsOwnEmptyBody": "Channels you join show up here.",
+    "browseChannels": "Browse channels",
+    "channelsEmpty": "No channels to show",
+    "channelsEmptyBody": "Not in any channels you can see.",
+    "notFoundBody": "It doesn't exist, or it isn't visible to you.",
+    "loadFailed": "Couldn't load this persona",
+    "privateTitle": "Private persona",
+    "privateBody": "They see your persona when you ask to follow. Once they approve, the full profile appears here.",
+    "connected": "Connected",
+    "loading": "Loading persona"
+  },
+  "followers": {
+    "removeConfirm": "Remove {{name}}? They won't be told.",
+    "lead": "Approve follow requests, and remove followers.",
+    "loadFailed": "Couldn't load followers",
+    "requestsTab": "Requests ({{n}})",
+    "followersTab": "Followers ({{n}})",
+    "since": "Following since {{date}}"
+  }
+}

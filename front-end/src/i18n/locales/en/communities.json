@@ -1,0 +1,173 @@
+{
+  "errors": {
+    "joinFailed": "Couldn't join. Please try again.",
+    "leaveFailed": "Couldn't leave. Please try again.",
+    "cancelFailed": "Couldn't cancel the request. Please try again.",
+    "unfollowFailed": "Couldn't unfollow. Please try again.",
+    "followFailed": "Couldn't follow. Please try again."
+  },
+  "askAgainOn": "Ask again on {{date}}",
+  "rules": {
+    "dialogTitle": "{{name}} rules",
+    "readBeforeRequest": "Please read them before you ask to join.",
+    "readBeforeJoin": "Please read them before you join.",
+    "agreeAndRequest": "Agree and request",
+    "agreeAndJoin": "Agree and join",
+    "title": "Rules",
+    "lead": "Optional. Shown before anyone joins.",
+    "helper": "One rule per line. {{n}} / {{max}}",
+    "placeholder": "Be kind.\nStay on topic.",
+    "tooLong": "Use at most {{max}} characters.",
+    "showFewer": "Show fewer",
+    "showAll_one": "Show all {{count}} rule",
+    "showAll_other": "Show all {{count}} rules",
+    "saved": "Rules saved",
+    "manageLead": "Shown before anyone joins."
+  },
+  "picker": {
+    "goesIn": "goes straight in",
+    "request": "request",
+    "loadFailed": "Couldn't load your communities",
+    "emptyTitle": "You're not in any community yet",
+    "emptyBody": "Join or follow one to add channels to it.",
+    "noMatch": "No community matches “{{query}}”",
+    "youManage": "You manage",
+    "yours": "Your communities",
+    "searchPlaceholder": "Search your communities",
+    "use": "Use this community",
+    "title": "Choose a community",
+    "lead": "It goes straight into one you manage. Any other one gets a request its managers review.",
+    "requestLead": "Its managers review the request before the channel shows in the community."
+  },
+  "browse": "Browse communities",
+  "create": {
+    "nameMissing": "Give the community a name.",
+    "invalidSlug": "Use 3–50 lowercase letters, digits or single hyphens.",
+    "slugTaken": "Another community already uses this link.",
+    "failed": "Couldn't create the community. Try again.",
+    "title": "Create a community",
+    "lead": "A community groups channels about the same topics. You can add channels once it exists.",
+    "submit": "Create community",
+    "previewName": "Your community",
+    "basicsLead": "Name it, give it a link and say what it is about.",
+    "lookLead": "Logo, colours and cover. Its channels use these colours unless they pick their own.",
+    "audienceLead": "Who sees inside it, and how old they must be.",
+    "privateBody": "Only members see its channels and people. Joining needs a manager's approval.",
+    "interestsLead": "Pick 1 to 5. People find the community by them."
+  },
+  "fields": {
+    "name": "Community name",
+    "namePlaceholder": "City Sports",
+    "link": "Link",
+    "linkPlaceholder": "city-sports",
+    "descriptionPlaceholder": "What brings people here"
+  },
+  "list": {
+    "title": "Communities",
+    "lead": "Groups of channels around one place or passion. Join to take part, follow to keep up.",
+    "loadFailed": "Couldn't load communities",
+    "noneFor": "No communities for {{names}} yet",
+    "noneWithInterests": "No communities with these interests yet",
+    "empty": "No communities yet"
+  },
+  "requests": {
+    "askedBy": "Asked by <persona>{{name}}</persona>"
+  },
+  "about": {
+    "private": "Private · members see inside; joining takes a request"
+  },
+  "hero": {
+    "declined": "Request declined",
+    "join": "Join community"
+  },
+  "suggest": {
+    "title": "Suggest a channel",
+    "errors": {
+      "recently_rejected": "This community declined the channel recently. You can ask again 30 days after.",
+      "channel_in_community": "This channel is already in a community.",
+      "channel_request_pending": "This channel is already waiting on a community."
+    },
+    "sent": "{{channel}} was suggested. A manager will review it.",
+    "action": "Suggest",
+    "inThis": "In this community",
+    "inOther": "In {{community}}",
+    "waitingOn": "Waiting on {{community}}",
+    "lead": "Pick a channel you moderate. {{community}}'s managers decide whether it joins. A channel can be in one community at a time.",
+    "none": "You don't moderate any channels yet",
+    "createFor": "Create a new channel for {{community}}"
+  },
+  "channelsList": {
+    "removeConfirm": "Remove {{channel}} from {{community}}?",
+    "removeFailed": "Couldn't remove the channel. Please try again.",
+    "removed": "{{channel}} was removed from the community",
+    "title": "In this community",
+    "seeAll_one": "See all {{count}}",
+    "seeAll_other": "See all {{count}}",
+    "empty": "No channels in this community yet",
+    "removeAction": "Remove from community"
+  },
+  "cancelRequestConfirm": "Cancel your request to join?",
+  "loadFailed": "Couldn't load this community",
+  "declinedUntil": "Your request was declined. You can ask again on {{date}}.",
+  "declined": "Your request was declined.",
+  "notices": {
+    "requests_one": "{{count}} request to join",
+    "requests_other": "{{count}} requests to join",
+    "channels_one": "{{count}} channel wants to join",
+    "channels_other": "{{count}} channels want to join"
+  },
+  "requestWaiting": "Your request is waiting for approval.",
+  "joinToSeeChannels": "Join to see this community's channels.",
+  "loading": "Loading community",
+  "members": {
+    "membersOnly": "Only members can see who's in this community.",
+    "approved": "{{name}} joined the community",
+    "channelAdded": "{{name}} was added",
+    "channelRejected": "{{name}} was rejected",
+    "removeBody": "They leave the community and lose any moderator role. They can ask to join again.",
+    "channelRequestsFailed": "Couldn't load channel requests",
+    "noChannelRequests": "No channels waiting to join",
+    "channelRequests": "Channel requests"
+  },
+  "moderators": {
+    "stepDownConfirm": "Step down as a moderator?",
+    "stepDownBody": "You stay a member. Only the owner can appoint you again.",
+    "stepDown": "Step down",
+    "removeConfirm": "Remove {{name}} as a moderator?",
+    "removeBody": "They stay a member.",
+    "remove": "Remove moderator",
+    "failed": "Couldn't change the moderator role. Try again.",
+    "appointed": "{{name}} is now a moderator",
+    "steppedDown": "You stepped down as a moderator",
+    "removed": "{{name}} is no longer a moderator",
+    "make": "Make moderator",
+    "stepDownAction": "Step down as moderator"
+  },
+  "audience": {
+    "privateEndsFollows_one": "Going private ends {{n}} follow. Members stay.",
+    "privateEndsFollows_other": "Going private ends {{n}} follows. Members stay.",
+    "privateHides": "Going private hides the members and channels list from everyone outside.",
+    "publicAdmits_one": "Going public admits {{n}} pending request at once.",
+    "publicAdmits_other": "Going public admits {{n}} pending requests at once.",
+    "publicOpens": "Going public lets anyone see inside and join at once.",
+    "makePrivateConfirm": "Make {{name}} private?",
+    "makePublicConfirm": "Make {{name}} public?",
+    "makePrivate": "Make private",
+    "makePublic": "Make public",
+    "saved": "Audience saved",
+    "privateBody": "Only members see inside. Joining needs a manager's approval.",
+    "ownerOnly": "Only the owner can change this."
+  },
+  "info": {
+    "saved": "Community info saved",
+    "lead": "Its name, link and what it's about.",
+    "linkHelper": "{{link}} · Old links stop working."
+  },
+  "latest": {
+    "overline": "Latest",
+    "title": "Latest from its channels",
+    "empty": "No posts in its channels yet",
+    "loadFailed": "Couldn't load the latest posts",
+    "showMore": "Show more"
+  }
+}

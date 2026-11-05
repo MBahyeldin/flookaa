@@ -1,6 +1,6 @@
 import { useAuth } from "@/Auth.context";
 import VisitorPage from "./visitor";
-import DashboardPage from "../(dashboard)";
+import FeedPage from "../(dashboard)/feed";
 
 export default function HomePage() {
   const { isAuthenticated } = useAuth();
@@ -9,5 +9,5 @@ export default function HomePage() {
     return <VisitorPage />;
   }
 
-  return <DashboardPage />;
+  return <FeedPage />;
 }

@@ -3,7 +3,7 @@ import { Avatar, AvatarImage } from "../ui/avatar";
 import { GeneratedAvatarFallback } from "@/components/generated-avatar";
 import { PersonaLink } from "@/components/persona-link";
 import type { Persona } from "@/generated/graphql";
-import formatDate, { formatRelativeDate } from "@/utils/formateDate";
+import { formatDate, formatRelativeDate } from "@/lib/format";
 
 export function PostHeader({
   authorId,
@@ -18,7 +18,7 @@ export function PostHeader({
 }) {
   return (
     <div className="flex items-start justify-between mb-4">
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center gap-3">
         <PersonaLink
           personaId={authorId}
           anonymous={author?.anonymous ?? true}

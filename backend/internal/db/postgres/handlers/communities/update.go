@@ -2,6 +2,7 @@ package communities
 
 import (
 	"app/internal/auth"
+	"app/internal/logo"
 	"database/sql"
 	"net/http"
 	"shared/external/db/nats"
@@ -15,15 +16,19 @@ import (
 
 // Absent fields are left as they are.
 type UpdateCommunityRequest struct {
-	Name        *string  `json:"name"`
-	Slug        *string  `json:"slug"`
-	Description *string  `json:"description"`
-	Rules       *string  `json:"rules"`
-	Thumbnail   *string  `json:"thumbnail"`
-	Banner      *string  `json:"banner"`
-	Visibility  *string  `json:"visibility"`
-	InterestIDs *[]int64 `json:"interest_ids"`
-	MinAge      *int16   `json:"min_age"`
+	Name         *string  `json:"name"`
+	Slug         *string  `json:"slug"`
+	Description  *string  `json:"description"`
+	Rules        *string  `json:"rules"`
+	Thumbnail    *string  `json:"thumbnail"`
+	Banner       *string  `json:"banner"`
+	BannerX      *int     `json:"banner_x"`
+	BannerY      *int     `json:"banner_y"`
+	Visibility   *string  `json:"visibility"`
+	InterestIDs  *[]int64 `json:"interest_ids"`
+	MinAge       *int16   `json:"min_age"`
+	Theme        *string  `json:"theme"`
+	CoverPattern *string  `json:"cover_pattern"`
 }
 
 func optional(s *string) sql.NullString {
@@ -38,6 +43,20 @@ func optionalMinAge(v *int16) sql.NullInt16 {
 		return sql.NullInt16{}
 	}
 	return sql.NullInt16{Int16: *v, Valid: true}
+}
+
+func optionalTheme(v *string) db.NullThemeEnum {
+	if v == nil {
+		return db.NullThemeEnum{}
+	}
+	return db.NullThemeEnum{ThemeEnum: db.ThemeEnum(*v), Valid: true}
+}
+
+func optionalCoverPattern(v *string) db.NullCoverPatternEnum {
+	if v == nil {
+		return db.NullCoverPatternEnum{}
+	}
+	return db.NullCoverPatternEnum{CoverPatternEnum: db.CoverPatternEnum(*v), Valid: true}
 }
 
 func (h *Handler) UpdateCommunity(c *gin.Context) {
@@ -89,6 +108,14 @@ func (h *Handler) UpdateCommunity(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_visibility"})
 		return
 	}
+	if code := h.lookError(req.Theme, req.CoverPattern, req.Thumbnail, req.Banner); code != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": code})
+		return
+	}
+	if !logo.ValidPosition(req.BannerX) || !logo.ValidPosition(req.BannerY) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_cover_position"})
+		return
+	}
 
 	ctx := c.Request.Context()
 	if req.MinAge != nil {
@@ -123,15 +150,19 @@ func (h *Handler) UpdateCommunity(c *gin.Context) {
 		visibility = db.NullCommunityVisibilityEnum{CommunityVisibilityEnum: db.CommunityVisibilityEnum(*req.Visibility), Valid: true}
 	}
 	_, err = q.UpdateCommunity(ctx, db.UpdateCommunityParams{
-		ID:          communityID,
-		Name:        optional(req.Name),
-		Slug:        optional(req.Slug),
-		Description: optional(req.Description),
-		Rules:       optional(req.Rules),
-		Thumbnail:   optional(req.Thumbnail),
-		Banner:      optional(req.Banner),
-		Visibility:  visibility,
-		MinAge:      optionalMinAge(req.MinAge),
+		ID:           communityID,
+		Name:         optional(req.Name),
+		Slug:         optional(req.Slug),
+		Description:  optional(req.Description),
+		Rules:        optional(req.Rules),
+		Thumbnail:    optional(req.Thumbnail),
+		Banner:       optional(req.Banner),
+		BannerX:      logo.NullPosition(req.BannerX),
+		BannerY:      logo.NullPosition(req.BannerY),
+		Visibility:   visibility,
+		MinAge:       optionalMinAge(req.MinAge),
+		Theme:        optionalTheme(req.Theme),
+		CoverPattern: optionalCoverPattern(req.CoverPattern),
 	})
 	if postgres.IsUniqueViolation(err, slugConstraint) {
 		c.JSON(http.StatusConflict, gin.H{"error": "slug_taken"})
@@ -143,6 +174,13 @@ func (h *Handler) UpdateCommunity(c *gin.Context) {
 	}
 	if req.InterestIDs != nil {
 		if err := q.ReplaceCommunityInterests(ctx, db.ReplaceCommunityInterestsParams{CommunityID: communityID, Ids: *req.InterestIDs}); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+	var inheriting []int64
+	if req.Theme != nil {
+		if inheriting, err = q.ListCommunityInheritingChannelIDs(ctx, communityID); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -164,6 +202,9 @@ func (h *Handler) UpdateCommunity(c *gin.Context) {
 		return
 	}
 	Publish(ctx, h.nats, communityID, personaID, nats.EventCommunityInfo)
+	for _, id := range inheriting {
+		publishChannelUpdate(ctx, h.nats, id, personaID, nats.EventChannelInfo)
+	}
 	for _, id := range unfollowed {
 		h.publishMembership(ctx, communityID, personaID, nats.EventFollower, db.EventActionEnumDelete, id, nats.ReasonRemoved)
 	}

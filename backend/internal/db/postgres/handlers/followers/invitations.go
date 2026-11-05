@@ -118,7 +118,7 @@ func (h *Handler) Uninvite(c *gin.Context) {
 
 func (h *Handler) AcceptInvitation(c *gin.Context) {
 	ctx := c.Request.Context()
-	inviteeID, inviterID, ok := inviterParams(c)
+	inviteeID, inviterID, ok := h.inviterParams(c)
 	if !ok {
 		return
 	}
@@ -138,7 +138,7 @@ func (h *Handler) AcceptInvitation(c *gin.Context) {
 // RejectInvitation tells the inviter nothing; it can't invite again for 30 days.
 func (h *Handler) RejectInvitation(c *gin.Context) {
 	ctx := c.Request.Context()
-	inviteeID, inviterID, ok := inviterParams(c)
+	inviteeID, inviterID, ok := h.inviterParams(c)
 	if !ok {
 		return
 	}
@@ -188,8 +188,8 @@ func (h *Handler) accept(ctx context.Context, inviterID, inviteeID int64) error 
 	return nil
 }
 
-func inviterParams(c *gin.Context) (inviteeID, inviterID int64, ok bool) {
-	inviteeID, ok = requireSelf(c)
+func (h *Handler) inviterParams(c *gin.Context) (inviteeID, inviterID int64, ok bool) {
+	inviteeID, ok = h.requireSelf(c)
 	if !ok {
 		return 0, 0, false
 	}

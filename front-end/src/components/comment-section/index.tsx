@@ -1,32 +1,39 @@
 import CommentItem from "./item"
 import CommentInput from "./input";
 import { Button } from "../ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, MessageCircle, RefreshCw } from "lucide-react";
+import { SkeletonList } from "../ui/skeleton";
+import { EmptyState } from "../ui/empty-state";
+import { ErrorState } from "../ui/error-state";
 import useNewlyAdded from "@/hooks/useNewlyAdded";
-import { useGetCommentsLazyQuery, type Comment, type GetCommentsQuery, type GetCommentsQueryVariables } from "@/generated/graphql";
+import { useLazyQuery } from "@apollo/client/react";
+import { GetCommentsDocument, type Comment, type GetCommentsQuery, type GetCommentsQueryVariables } from "@/generated/graphql";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/AppStore";
 import useCustomInfiniteQuery from "@/hooks/useCustomInfinteQuery";
-import { useEffect, useState } from "react";
-
-
+import { useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function CommentSection({
     className,
-    showComments,
     parentId,
     totalCount,
+    composer,
 }: {
     className?: string;
     parentId: string;
-    showComments: boolean;
     totalCount: number;
+    /** Replaces the comment box, e.g. a join prompt for a reader who can't comment. */
+    composer?: ReactNode;
 }) {
+    const { t } = useTranslation(["posts", "common"]);
     const [showLoadMoreComments, setShowLoadMoreComments] = useState(false);
-    const { loadMore, isLoading, result } = useCustomInfiniteQuery<GetCommentsQuery, GetCommentsQueryVariables, Comment[]>({
-        queryFn: useGetCommentsLazyQuery()[0],
+    const [loaded, setLoaded] = useState(false);
+    const { loadMore, isLoading, error, result } = useCustomInfiniteQuery<GetCommentsQuery, GetCommentsQueryVariables, Comment[]>({
+        queryFn: useLazyQuery(GetCommentsDocument)[0],
         storeSelector: (state) => state.commentsByPost[parentId] || [],
         updateStoreWithData: (data) => {
+            setLoaded(true);
             if (!data?.getComments) return;
             const addCommentsToPost = useAppStore.getState().addCommentsToPost;
             addCommentsToPost(parentId, data.getComments);
@@ -50,57 +57,70 @@ export default function CommentSection({
     });
 
     useEffect(() => {
-        if (!showComments) return;
         loadMore();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showComments]);
+    }, []);
 
     // Comments that arrived after this thread was first rendered — these get
     // the entrance animation and are scrolled into view.
     const newCommentIds = useNewlyAdded(result.map((comment) => comment._id));
 
-    if (!showComments) {
-        return null;
-    }
-
     return (
+        <section aria-labelledby="comments" className={cn("flex flex-col gap-5", className)}>
+            <h2 id="comments" className="scroll-mt-24 text-h4 font-medium">
+                {t("comments.count", { count: totalCount })}
+            </h2>
 
-        <div className={cn("mt-6 pt-4 border-t space-y-4", className)}>
-            {/* Add Comment */}
-            <CommentInput parentId={parentId} level={1} />
+            {composer ?? <CommentInput parentId={parentId} level={1} />}
 
-            {/* Comments List */}
-            <div className="space-y-4">
+            <div className="flex flex-col gap-5">
                 {result.map((comment) => (
                     <CommentItem
                         key={comment._id}
                         commentId={comment._id}
                         level={2}
+                        depth={1}
                         isNew={newCommentIds.has(comment._id)}
                     />
                 ))}
-                {/* Same inline spinner idiom as the nested reply loader */}
-                {isLoading && (
+                {result.length === 0 && isLoading && <SkeletonList count={3} />}
+                {result.length === 0 && error && !isLoading && (
+                    <ErrorState
+                        icon={RefreshCw}
+                        title={t("comments.loadFailed")}
+                        onRetry={loadMore}
+                    />
+                )}
+                {result.length === 0 && loaded && !error && !isLoading && (
+                    <EmptyState
+                        icon={MessageCircle}
+                        title={t("comments.emptyTitle")}
+                        body={t("comments.emptyBody")}
+                    />
+                )}
+                {result.length > 0 && isLoading && (
                     <div
                         role="status"
                         className="flex items-center justify-center gap-2 text-sm text-muted-foreground"
                     >
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>
-                            {result.length ? "Loading more comments…" : "Loading comments…"}
-                        </span>
+                        <span>{t("comments.loadingMore")}</span>
                     </div>
                 )}
-                {showLoadMoreComments && !isLoading && (
-                    <div className="flex justify-center">
-                        {/* Uses the shared outline Button so it matches
-                            "Load More Posts" on the channel page. */}
+                {result.length > 0 && error && !isLoading && (
+                    <div role="alert" className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
+                        {t("comments.loadMoreFailed")}
                         <Button variant="outline" size="sm" onClick={loadMore}>
-                            Load more comments
+                            {t("common:actions.tryAgain")}
                         </Button>
                     </div>
                 )}
+                {showLoadMoreComments && !isLoading && !error && (
+                    <Button variant="outline" className="w-full" onClick={loadMore}>
+                        {t("comments.loadMore")}
+                    </Button>
+                )}
             </div>
-        </div>
+        </section>
     )
 }

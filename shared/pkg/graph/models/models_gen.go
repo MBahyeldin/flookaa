@@ -143,6 +143,7 @@ type CalloutBlock struct {
 	Key         string       `json:"_key"`
 	Tone        *CalloutTone `json:"tone,omitempty"`
 	Icon        *CalloutIcon `json:"icon,omitempty"`
+	Tag         *string      `json:"tag,omitempty"`
 	Title       *string      `json:"title,omitempty"`
 	Description string       `json:"description"`
 }
@@ -156,6 +157,7 @@ type CalloutBlockInput struct {
 	Key         string       `json:"_key"`
 	Tone        *CalloutTone `json:"tone,omitempty"`
 	Icon        *CalloutIcon `json:"icon,omitempty"`
+	Tag         *string      `json:"tag,omitempty"`
 	Title       *string      `json:"title,omitempty"`
 	Description string       `json:"description"`
 }
@@ -165,6 +167,8 @@ type Channel struct {
 	Name            string        `json:"name"`
 	Description     *string       `json:"description,omitempty"`
 	BannerImageURL  *string       `json:"bannerImageUrl,omitempty"`
+	BannerX         int32         `json:"bannerX"`
+	BannerY         int32         `json:"bannerY"`
 	ThumbnailURL    *string       `json:"thumbnailUrl,omitempty"`
 	ProfileImageURL *string       `json:"profileImageUrl,omitempty"`
 	CreatedAt       time.Time     `json:"createdAt"`
@@ -176,9 +180,15 @@ type Channel struct {
 	FollowersCount  *int32        `json:"followersCount,omitempty"`
 	IsMember        bool          `json:"isMember"`
 	IsFollower      bool          `json:"isFollower"`
+	IsPending       bool          `json:"isPending"`
+	IsOwner         bool          `json:"isOwner"`
+	IsPrivate       bool          `json:"isPrivate"`
 	CanModerate     bool          `json:"canModerate"`
 	Community       *CommunityRef `json:"community,omitempty"`
 	MinAge          int32         `json:"minAge"`
+	Theme           Theme         `json:"theme"`
+	OwnTheme        *Theme        `json:"ownTheme,omitempty"`
+	CoverPattern    CoverPattern  `json:"coverPattern"`
 }
 
 type ChecklistBlock struct {
@@ -267,6 +277,20 @@ type CountdownBlockInput struct {
 	EndsAt    time.Time `json:"endsAt"`
 	Label     *string   `json:"label,omitempty"`
 	EndedText *string   `json:"endedText,omitempty"`
+}
+
+type FeedChannel struct {
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	Theme       Theme  `json:"theme"`
+	Thumbnail   string `json:"thumbnail"`
+	CanModerate bool   `json:"canModerate"`
+}
+
+type FeedPage struct {
+	Posts      []*Post        `json:"posts"`
+	Channels   []*FeedChannel `json:"channels"`
+	NextCursor *string        `json:"nextCursor,omitempty"`
 }
 
 type GalleryBlock struct {
@@ -409,6 +433,7 @@ type Persona struct {
 
 type PersonalizedMeta struct {
 	LikedByPersona  bool `json:"likedByPersona"`
+	SavedByPersona  bool `json:"savedByPersona"`
 	SharedByPersona bool `json:"sharedByPersona"`
 	ViewedByPersona bool `json:"viewedByPersona"`
 	ACL             *ACL `json:"acl"`
@@ -492,6 +517,18 @@ type QuoteBlockInput struct {
 	Text string    `json:"text"`
 	Name *string   `json:"name,omitempty"`
 	Role *string   `json:"role,omitempty"`
+}
+
+type SavedPage struct {
+	Items      []*SavedPost   `json:"items"`
+	Channels   []*FeedChannel `json:"channels"`
+	NextCursor *string        `json:"nextCursor,omitempty"`
+}
+
+type SavedPost struct {
+	PostID  string    `json:"postId"`
+	SavedAt time.Time `json:"savedAt"`
+	Post    *Post     `json:"post,omitempty"`
 }
 
 type SimpleInput struct {
@@ -839,6 +876,65 @@ func (e *CalloutTone) UnmarshalJSON(b []byte) error {
 }
 
 func (e CalloutTone) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type CoverPattern string
+
+const (
+	CoverPatternHorizon CoverPattern = "horizon"
+	CoverPatternWaves   CoverPattern = "waves"
+	CoverPatternHills   CoverPattern = "hills"
+	CoverPatternStripes CoverPattern = "stripes"
+)
+
+var AllCoverPattern = []CoverPattern{
+	CoverPatternHorizon,
+	CoverPatternWaves,
+	CoverPatternHills,
+	CoverPatternStripes,
+}
+
+func (e CoverPattern) IsValid() bool {
+	switch e {
+	case CoverPatternHorizon, CoverPatternWaves, CoverPatternHills, CoverPatternStripes:
+		return true
+	}
+	return false
+}
+
+func (e CoverPattern) String() string {
+	return string(e)
+}
+
+func (e *CoverPattern) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = CoverPattern(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid CoverPattern", str)
+	}
+	return nil
+}
+
+func (e CoverPattern) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *CoverPattern) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e CoverPattern) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
@@ -1526,6 +1622,69 @@ func (e *StyleType) UnmarshalJSON(b []byte) error {
 }
 
 func (e StyleType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type Theme string
+
+const (
+	ThemeTide   Theme = "tide"
+	ThemeForest Theme = "forest"
+	ThemeEmber  Theme = "ember"
+	ThemePlum   Theme = "plum"
+	ThemeRose   Theme = "rose"
+	ThemeSlate  Theme = "slate"
+)
+
+var AllTheme = []Theme{
+	ThemeTide,
+	ThemeForest,
+	ThemeEmber,
+	ThemePlum,
+	ThemeRose,
+	ThemeSlate,
+}
+
+func (e Theme) IsValid() bool {
+	switch e {
+	case ThemeTide, ThemeForest, ThemeEmber, ThemePlum, ThemeRose, ThemeSlate:
+		return true
+	}
+	return false
+}
+
+func (e Theme) String() string {
+	return string(e)
+}
+
+func (e *Theme) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Theme(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Theme", str)
+	}
+	return nil
+}
+
+func (e Theme) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *Theme) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e Theme) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

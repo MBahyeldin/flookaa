@@ -1,5 +1,7 @@
 import type { CommunityRef } from "./community";
 import type { Interest } from "./interest";
+import type { PaletteId } from "@/themes/palettes";
+import type { CoverPattern } from "./cover";
 
 type Channel = {
   id: string;
@@ -7,6 +9,8 @@ type Channel = {
   description: string;
   thumbnail: string;
   banner: string;
+  banner_x: number;
+  banner_y: number;
   owner_id: number;
   created_at: string;
   updated_at: string;
@@ -22,6 +26,11 @@ type Channel = {
   community: CommunityRef | null;
   /** 13, 16, 18 or 21. */
   min_age: number;
+  /** Resolved: its own, else its community's, else tide. */
+  theme: PaletteId;
+  /** Stored; null inherits. */
+  own_theme: PaletteId | null;
+  cover_pattern: CoverPattern;
 };
 
 type ChannelInterests = { interests: Interest[]; can_edit: boolean };

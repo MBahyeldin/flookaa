@@ -3,6 +3,8 @@ import { CheckIcon, ListChecksIcon } from "lucide-react";
 import { z } from "zod";
 import { FormField } from "@/models/Forms/FormField";
 import { cn } from "@/lib/utils";
+import { perLanguage, t } from "@/i18n";
+import { maxChars, minItems, oneLine, required } from "./validation";
 import { defineBlock } from "./defineBlock";
 
 const MAX_ITEMS = 50;
@@ -11,22 +13,22 @@ const MAX_TEXT = 120;
 const checklistSchema = z.object({
   title: z
     .string()
-    .refine((title) => title.length <= MAX_TEXT, `must be at most ${MAX_TEXT} characters`)
-    .refine((title) => !/[\r\n]/.test(title), "must be one line")
+    .refine((title) => title.length <= MAX_TEXT, maxChars(MAX_TEXT))
+    .refine((title) => !/[\r\n]/.test(title), oneLine)
     .optional(),
   items: z
     .array(
       z.object({
-        _key: z.string().min(1, "is required"),
+        _key: z.string().min(1, required),
         text: z
           .string()
-          .refine((text) => text.trim() !== "", "is required")
-          .refine((text) => text.length <= MAX_TEXT, `must be at most ${MAX_TEXT} characters`)
-          .refine((text) => !/[\r\n]/.test(text), "must be one line"),
+          .refine((text) => text.trim() !== "", required)
+          .refine((text) => text.length <= MAX_TEXT, maxChars(MAX_TEXT))
+          .refine((text) => !/[\r\n]/.test(text), oneLine),
         checked: z.boolean(),
       })
     )
-    .min(1, "at least one item is required")
+    .min(1, minItems(1))
     .max(MAX_ITEMS)
     .refine(
       (items) => new Set(items.map((item) => item._key)).size === items.length,
@@ -36,74 +38,87 @@ const checklistSchema = z.object({
 
 type ChecklistValue = z.infer<typeof checklistSchema>;
 
-const checklistFormFields: FormField[] = [
+const checklistFormFields = perLanguage((): FormField[] => [
   new FormField({
     id: "title",
     name: "title",
-    label: "Title",
+    label: t("blocks:checklist.fields.title"),
     type: "string",
     interfaceType: "text",
-    placeholder: "Packing list",
+    placeholder: t("blocks:checklist.fields.packingList"),
   }),
   new FormField({
     id: "items",
     name: "items",
-    label: "Items",
+    label: t("blocks:checklist.fields.items"),
     type: "array",
     interfaceType: "list",
-    itemLabel: "Item",
-    addLabel: "Add item",
+    itemLabel: t("blocks:checklist.fields.item"),
+    addLabel: t("blocks:checklist.fields.addItem"),
     minItems: 1,
     maxItems: MAX_ITEMS,
     itemFields: [
       new FormField({
         id: "text",
         name: "text",
-        label: "Text",
+        label: t("blocks:checklist.fields.text"),
         type: "string",
         interfaceType: "text",
-        placeholder: "Something to do",
+        placeholder: t("blocks:checklist.fields.somethingToDo"),
         isRequired: true,
       }),
       new FormField({
         id: "checked",
         name: "checked",
-        label: "Done",
+        label: t("blocks:checklist.fields.done"),
         type: "boolean",
         interfaceType: "switch",
       }),
     ],
   }),
-];
+]);
 
 function ChecklistView({ value }: { value: ChecklistValue }) {
   const titleId = useId();
   const done = value.items.filter((item) => item.checked).length;
+  const total = value.items.length;
   return (
-    <div>
-      {value.title ? (
-        <p id={titleId} dir="auto" className="text-lg font-semibold break-words text-foreground">
-          {value.title}
-        </p>
-      ) : null}
-      <p className="mb-2 text-sm text-muted-foreground">
-        {done} of {value.items.length} done
-      </p>
-      <ul className="space-y-2 text-foreground" aria-labelledby={value.title ? titleId : undefined}>
+    <div className="rounded-2xl border bg-card p-5 text-card-foreground md:p-6">
+      <div className="flex items-center gap-3">
+        {value.title ? (
+          <p id={titleId} dir="auto" className="min-w-0 font-semibold break-words">
+            {value.title}
+          </p>
+        ) : null}
+        <span className="ms-auto shrink-0 rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-primary tabular-nums">
+          {t("blocks:checklist.progress", { done, total })}
+        </span>
+      </div>
+      <div
+        role="progressbar"
+        aria-label={t("blocks:checklist.fields.done")}
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-valuenow={done}
+        className="mt-3 h-2 overflow-hidden rounded-full bg-secondary"
+      >
+        <div className="h-full rounded-full bg-primary" style={{ width: `${(done / total) * 100}%` }} />
+      </div>
+      <ul className="mt-4 space-y-3" aria-labelledby={value.title ? titleId : undefined}>
         {value.items.map((item) => (
           <li key={item._key} className="flex items-start gap-3">
             <span
               aria-hidden
               className={cn(
-                "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded",
-                item.checked ? "bg-primary text-primary-foreground" : "border border-border"
+                "flex size-6 shrink-0 items-center justify-center rounded-md",
+                item.checked ? "bg-primary text-primary-foreground" : "border border-border bg-background"
               )}
             >
-              {item.checked ? <CheckIcon className="size-3.5" strokeWidth={3} /> : null}
+              {item.checked ? <CheckIcon className="size-4" strokeWidth={3} /> : null}
             </span>
             <span
               dir="auto"
-              className={cn("min-w-0 break-words", item.checked && "text-muted-foreground line-through")}
+              className={cn("min-w-0 pt-0.5 break-words", item.checked && "text-muted-foreground line-through")}
             >
               <span className="sr-only">{item.checked ? "Done: " : "Not done: "}</span>
               {item.text}
@@ -117,14 +132,22 @@ function ChecklistView({ value }: { value: ChecklistValue }) {
 
 export const checklist = defineBlock<ChecklistValue>({
   name: "checklist",
-  title: "Checklist",
-  description: "A list of items you tick off.",
+  get title() {
+    return t("blocks:checklist.title");
+  },
+  get description() {
+    return t("blocks:checklist.description");
+  },
   icon: ListChecksIcon,
   category: "layout",
-  fields: checklistFormFields,
+  get fields() {
+    return checklistFormFields();
+  },
   defaultValues: {},
   schema: checklistSchema,
   View: ChecklistView,
+  summary: (value) =>
+    t("blocks:checklist.summary", { done: value.items.filter((item) => item.checked).length, total: value.items.length }),
   fromForm: (form) => ({
     ...form,
     items: (Array.isArray(form.items) ? form.items : []).map((item) => ({

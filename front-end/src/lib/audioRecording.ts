@@ -1,3 +1,5 @@
+import { t } from "@/i18n";
+
 export type AudioRecordingFormat = {
   mimeType: string;
   fileExtension: string;
@@ -21,17 +23,15 @@ export function audioRecordingFormat(): AudioRecordingFormat {
   // getUserMedia is missing outside a secure context (plain http on a LAN address).
   if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
     return unsupported(
-      window.isSecureContext
-        ? "This browser can’t access the microphone."
-        : "Voice notes need a secure (HTTPS) connection."
+      window.isSecureContext ? t("common:voice.noMicrophoneAccess") : t("common:voice.needsHttps")
     );
   }
   if (typeof MediaRecorder === "undefined") {
-    return unsupported("This browser can’t record audio.");
+    return unsupported(t("common:voice.cantRecord"));
   }
   const supported = candidates.find((candidate) => MediaRecorder.isTypeSupported?.(candidate.type));
   if (!supported) {
-    return unsupported("This browser doesn’t support any audio format we can upload.");
+    return unsupported(t("common:voice.noFormat"));
   }
   return { mimeType: supported.type, fileExtension: supported.ext, unsupportedReason: "" };
 }

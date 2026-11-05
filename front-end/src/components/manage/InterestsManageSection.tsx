@@ -1,0 +1,63 @@
+import { useEffect, useState } from "react";
+import InterestPicker from "@/components/interests/InterestPicker";
+import { useInterestGroups } from "@/components/create-form/useInterestGroups";
+import { FieldError } from "@/components/create-form/fields";
+import { SettingsSection } from "@/components/settings/SettingsSection";
+import { ErrorState } from "@/components/ui/error-state";
+import { SkeletonList } from "@/components/ui/skeleton";
+import type { Interest } from "@/types/interest";
+import { t } from "@/i18n";
+import { errorMessage } from "@/lib/errors";
+
+const MAX = 5;
+
+/** onSave answers an error code or null. */
+export function InterestsManageSection({
+  lead,
+  current,
+  onSave,
+}: {
+  lead: string;
+  current: Interest[];
+  onSave: (ids: number[]) => Promise<string | null>;
+}) {
+  const interests = useInterestGroups();
+  const [value, setValue] = useState<number[]>(() => current.map((i) => i.id));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string>();
+
+  useEffect(() => setValue(current.map((i) => i.id)), [current]);
+
+  const groups = interests.groups;
+  const active = new Set(Array.isArray(groups) ? groups.flatMap((g) => g.interests.map((i) => i.id)) : []);
+  const retired = current.filter((i) => !active.has(i.id));
+  const dirty = value.length !== current.length || value.some((id) => !current.some((i) => i.id === id));
+
+  const save = async () => {
+    setSaving(true);
+    setError(undefined);
+    const code = await onSave(value);
+    setSaving(false);
+    if (code === "invalid_interests" || code === "invalid_interest") setError(errorMessage(code));
+  };
+
+  return (
+    <SettingsSection
+      id="interests"
+      title={t("common:interests.label")}
+      lead={lead}
+      dirty={dirty}
+      canSave={value.length > 0}
+      saving={saving}
+      onSave={save}
+      note={value.length === 0 ? t("common:interests.pickOne") : t("common:interests.count", { n: value.length, max: MAX })}
+    >
+      {groups === null && <SkeletonList count={2} />}
+      {groups === "error" && <ErrorState compact title={t("common:interests.loadFailed")} onRetry={interests.retry} />}
+      {Array.isArray(groups) && (
+        <InterestPicker groups={groups} retired={retired} value={value} onChange={setValue} max={MAX} />
+      )}
+      <FieldError>{error}</FieldError>
+    </SettingsSection>
+  );
+}

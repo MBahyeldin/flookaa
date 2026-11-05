@@ -28,6 +28,23 @@ enum OwnerType {
   PAGE
 }
 
+# Palette ids, as in data-theme.
+enum Theme {
+  tide
+  forest
+  ember
+  plum
+  rose
+  slate
+}
+
+enum CoverPattern {
+  horizon
+  waves
+  hills
+  stripes
+}
+
 type Media {
   type: MediaType!
   url: String!
@@ -50,6 +67,7 @@ type Meta {
 # will be fetched separately based on the current persona context
 type PersonalizedMeta {
   likedByPersona: Boolean!
+  savedByPersona: Boolean!
   sharedByPersona: Boolean!
   viewedByPersona: Boolean!
   acl: ACL!
@@ -191,6 +209,10 @@ type Mutation {
   deletePost(id: ObjectId!): Boolean!
 
   deleteComment(id: ObjectId!): Boolean!
+
+  savePost(id: ObjectId!): Boolean!
+
+  unsavePost(id: ObjectId!): Boolean!
 }
 
 # Inputs
@@ -204,6 +226,8 @@ type Channel {
   name: String!
   description: String
   bannerImageUrl: String
+  bannerX: Int!
+  bannerY: Int!
   thumbnailUrl: String
   profileImageUrl: String
   createdAt: DateTime!
@@ -215,9 +239,42 @@ type Channel {
   followersCount: Int
   isMember: Boolean!
   isFollower: Boolean!
+  isPending: Boolean!
+  isOwner: Boolean!
+  isPrivate: Boolean!
   canModerate: Boolean!
   community: CommunityRef
   minAge: Int!
+  theme: Theme!
+  ownTheme: Theme
+  coverPattern: CoverPattern!
+}
+
+type FeedChannel {
+  id: Int64!
+  name: String!
+  theme: Theme!
+  thumbnail: String!
+  canModerate: Boolean!
+}
+
+type FeedPage {
+  posts: [Post!]!
+  channels: [FeedChannel!]!
+  nextCursor: String
+}
+
+type SavedPost {
+  postId: ObjectId!
+  savedAt: DateTime!
+  # null: deleted, or the persona can no longer read it
+  post: Post
+}
+
+type SavedPage {
+  items: [SavedPost!]!
+  channels: [FeedChannel!]!
+  nextCursor: String
 }
 
 type CommunityRef {
@@ -242,5 +299,10 @@ type Query {
   ): [Comment!]!
 
   getChannel(id: Int64!): Channel
+
+  getFeed(after: String, limit: Int): FeedPage!
+  getDiscover(interests: [String!], all: Boolean, after: String, limit: Int): FeedPage!
+  getCommunityFeed(communityId: Int64!, after: String, limit: Int): FeedPage!
+  getSaved(after: String, limit: Int): SavedPage!
 }
 

@@ -30,3 +30,11 @@ type FollowEventPayload struct {
 // It carries no payload, so viewers who may see the counts but not the
 // followers can subscribe to it (see /control owner PERSONA).
 const EventFollowCounts db.EventEnum = "follow_counts"
+
+// saved.{create|delete}: this persona saved or unsaved a post. Only its own
+// default subscription carries it, for its other tabs and devices.
+const EventSaved db.EventEnum = "saved"
+
+type SavedPayload struct {
+	PostID string `json:"post_id"`
+}

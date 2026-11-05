@@ -2,8 +2,10 @@
 
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 export default function SectionLoader() {
+  const { t } = useTranslation();
   return (
     <div className="z-50 flex items-center justify-center bg-background p-10 rounded-lg h-96">
       <motion.div
@@ -21,7 +23,7 @@ export default function SectionLoader() {
           animate={{ opacity: [0.3, 1, 0.3] }}
           transition={{ duration: 1.5, repeat: Infinity }}
         >
-          Loading...
+          {t("states.loading")}
         </motion.span>
       </motion.div>
     </div>

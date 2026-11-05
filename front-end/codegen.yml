@@ -5,12 +5,12 @@ generates:
     plugins:
       - "typescript"
       - "typescript-operations"
-      - "typescript-react-apollo"
+      - "typed-document-node"
     config:
       enumsAsTypes: true
+      useTypeImports: true
+      documentNodeImport: "@apollo/client#TypedDocumentNode"
       scalars:
         ID: string
         UUID: string
         DateTime: string
-      withHooks: true
-      apolloReactHooksImportFrom: "@apollo/client/react" # ✅ correct

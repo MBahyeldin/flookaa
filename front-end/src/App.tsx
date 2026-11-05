@@ -10,7 +10,12 @@ import useWakeLock from "./hooks/useWakeLock";
 import { useEffect } from "react";
 import { DialogProvider } from "./Dialog.context";
 import { useLoading } from "./Loading.context";
+import { useTranslation } from "react-i18next";
+import { DirectionProvider } from "@radix-ui/react-direction";
+import { direction } from "./i18n";
+
 function App() {
+  const { i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { isFetchUserLoading } = useLoading();
 
@@ -29,22 +34,25 @@ function App() {
   }
 
   return (
-    <DialogProvider>
-      <Tooltip>
-        <>
-          { isAuthenticated ? (
-            <DashboardLayout>
-              <AppRouter />
-            </DashboardLayout>
-          ) : (
-            <DefaultLayout>
-              <AppRouter />
-            </DefaultLayout>
-          )}
-          <Toaster />
-        </>
-      </Tooltip>
-    </DialogProvider>
+    // Remounting on a language change re-renders strings built outside React too.
+    <DirectionProvider dir={direction()} key={i18n.language}>
+      <DialogProvider>
+        <Tooltip>
+          <>
+            { isAuthenticated ? (
+              <DashboardLayout>
+                <AppRouter />
+              </DashboardLayout>
+            ) : (
+              <DefaultLayout>
+                <AppRouter />
+              </DefaultLayout>
+            )}
+            <Toaster />
+          </>
+        </Tooltip>
+      </DialogProvider>
+    </DirectionProvider>
   );
 }
 

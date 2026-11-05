@@ -24,11 +24,17 @@ type MutationResolver interface {
 	CreateLike(ctx context.Context, input models.LikeInput) (bool, error)
 	DeletePost(ctx context.Context, id string) (bool, error)
 	DeleteComment(ctx context.Context, id string) (bool, error)
+	SavePost(ctx context.Context, id string) (bool, error)
+	UnsavePost(ctx context.Context, id string) (bool, error)
 }
 type QueryResolver interface {
 	GetPosts(ctx context.Context, owner models.OwnerInput, ids []string, limit *int32, offset *int32) ([]*models.Post, error)
 	GetComments(ctx context.Context, parentID string, limit *int32, offset *int32) ([]*models.Comment, error)
 	GetChannel(ctx context.Context, id int64) (*models.Channel, error)
+	GetFeed(ctx context.Context, after *string, limit *int32) (*models.FeedPage, error)
+	GetDiscover(ctx context.Context, interests []string, all *bool, after *string, limit *int32) (*models.FeedPage, error)
+	GetCommunityFeed(ctx context.Context, communityID int64, after *string, limit *int32) (*models.FeedPage, error)
+	GetSaved(ctx context.Context, after *string, limit *int32) (*models.SavedPage, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -90,6 +96,28 @@ func (ec *executionContext) field_Mutation_deletePost_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_savePost_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNObjectId2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_unsavePost_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNObjectId2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -133,6 +161,69 @@ func (ec *executionContext) field_Query_getComments_args(ctx context.Context, ra
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_getCommunityFeed_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "communityId", ec.unmarshalNInt642int64)
+	if err != nil {
+		return nil, err
+	}
+	args["communityId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getDiscover_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "interests", ec.unmarshalOString2ᚕstringᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["interests"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "all", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["all"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getFeed_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_getPosts_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -156,6 +247,22 @@ func (ec *executionContext) field_Query_getPosts_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["offset"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getSaved_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg1
 	return args, nil
 }
 
@@ -423,6 +530,64 @@ func (ec *executionContext) fieldContext_Channel_bannerImageUrl(_ context.Contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Channel_bannerX(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_bannerX,
+		func(ctx context.Context) (any, error) {
+			return obj.BannerX, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_bannerX(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Channel_bannerY(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_bannerY,
+		func(ctx context.Context) (any, error) {
+			return obj.BannerY, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_bannerY(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -795,6 +960,93 @@ func (ec *executionContext) fieldContext_Channel_isFollower(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _Channel_isPending(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_isPending,
+		func(ctx context.Context) (any, error) {
+			return obj.IsPending, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_isPending(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Channel_isOwner(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_isOwner,
+		func(ctx context.Context) (any, error) {
+			return obj.IsOwner, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_isOwner(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Channel_isPrivate(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_isPrivate,
+		func(ctx context.Context) (any, error) {
+			return obj.IsPrivate, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_isPrivate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Channel_canModerate(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -885,6 +1137,93 @@ func (ec *executionContext) fieldContext_Channel_minAge(_ context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Channel_theme(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_theme,
+		func(ctx context.Context) (any, error) {
+			return obj.Theme, nil
+		},
+		nil,
+		ec.marshalNTheme2sharedᚋpkgᚋgraphᚋmodelsᚐTheme,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_theme(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Theme does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Channel_ownTheme(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_ownTheme,
+		func(ctx context.Context) (any, error) {
+			return obj.OwnTheme, nil
+		},
+		nil,
+		ec.marshalOTheme2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐTheme,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_ownTheme(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Theme does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Channel_coverPattern(ctx context.Context, field graphql.CollectedField, obj *models.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_coverPattern,
+		func(ctx context.Context) (any, error) {
+			return obj.CoverPattern, nil
+		},
+		nil,
+		ec.marshalNCoverPattern2sharedᚋpkgᚋgraphᚋmodelsᚐCoverPattern,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_coverPattern(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CoverPattern does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1406,6 +1745,8 @@ func (ec *executionContext) fieldContext_Comment_personalizedMeta(_ context.Cont
 			switch field.Name {
 			case "likedByPersona":
 				return ec.fieldContext_PersonalizedMeta_likedByPersona(ctx, field)
+			case "savedByPersona":
+				return ec.fieldContext_PersonalizedMeta_savedByPersona(ctx, field)
 			case "sharedByPersona":
 				return ec.fieldContext_PersonalizedMeta_sharedByPersona(ctx, field)
 			case "viewedByPersona":
@@ -1496,6 +1837,286 @@ func (ec *executionContext) _CommunityRef_slug(ctx context.Context, field graphq
 func (ec *executionContext) fieldContext_CommunityRef_slug(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "CommunityRef",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FeedChannel_id(ctx context.Context, field graphql.CollectedField, obj *models.FeedChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FeedChannel_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FeedChannel_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FeedChannel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FeedChannel_name(ctx context.Context, field graphql.CollectedField, obj *models.FeedChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FeedChannel_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FeedChannel_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FeedChannel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FeedChannel_theme(ctx context.Context, field graphql.CollectedField, obj *models.FeedChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FeedChannel_theme,
+		func(ctx context.Context) (any, error) {
+			return obj.Theme, nil
+		},
+		nil,
+		ec.marshalNTheme2sharedᚋpkgᚋgraphᚋmodelsᚐTheme,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FeedChannel_theme(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FeedChannel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Theme does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FeedChannel_thumbnail(ctx context.Context, field graphql.CollectedField, obj *models.FeedChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FeedChannel_thumbnail,
+		func(ctx context.Context) (any, error) {
+			return obj.Thumbnail, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FeedChannel_thumbnail(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FeedChannel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FeedChannel_canModerate(ctx context.Context, field graphql.CollectedField, obj *models.FeedChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FeedChannel_canModerate,
+		func(ctx context.Context) (any, error) {
+			return obj.CanModerate, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FeedChannel_canModerate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FeedChannel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FeedPage_posts(ctx context.Context, field graphql.CollectedField, obj *models.FeedPage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FeedPage_posts,
+		func(ctx context.Context) (any, error) {
+			return obj.Posts, nil
+		},
+		nil,
+		ec.marshalNPost2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐPostᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FeedPage_posts(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FeedPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_id":
+				return ec.fieldContext_Post__id(ctx, field)
+			case "type":
+				return ec.fieldContext_Post_type(ctx, field)
+			case "authorId":
+				return ec.fieldContext_Post_authorId(ctx, field)
+			case "author":
+				return ec.fieldContext_Post_author(ctx, field)
+			case "owner":
+				return ec.fieldContext_Post_owner(ctx, field)
+			case "content":
+				return ec.fieldContext_Post_content(ctx, field)
+			case "rawContent":
+				return ec.fieldContext_Post_rawContent(ctx, field)
+			case "tags":
+				return ec.fieldContext_Post_tags(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Post_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Post_updatedAt(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_Post_deletedAt(ctx, field)
+			case "edited":
+				return ec.fieldContext_Post_edited(ctx, field)
+			case "privacy":
+				return ec.fieldContext_Post_privacy(ctx, field)
+			case "deniedPersonaIds":
+				return ec.fieldContext_Post_deniedPersonaIds(ctx, field)
+			case "allowedPersonaIds":
+				return ec.fieldContext_Post_allowedPersonaIds(ctx, field)
+			case "meta":
+				return ec.fieldContext_Post_meta(ctx, field)
+			case "personalizedMeta":
+				return ec.fieldContext_Post_personalizedMeta(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FeedPage_channels(ctx context.Context, field graphql.CollectedField, obj *models.FeedPage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FeedPage_channels,
+		func(ctx context.Context) (any, error) {
+			return obj.Channels, nil
+		},
+		nil,
+		ec.marshalNFeedChannel2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐFeedChannelᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FeedPage_channels(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FeedPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_FeedChannel_id(ctx, field)
+			case "name":
+				return ec.fieldContext_FeedChannel_name(ctx, field)
+			case "theme":
+				return ec.fieldContext_FeedChannel_theme(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_FeedChannel_thumbnail(ctx, field)
+			case "canModerate":
+				return ec.fieldContext_FeedChannel_canModerate(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FeedChannel", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FeedPage_nextCursor(ctx context.Context, field graphql.CollectedField, obj *models.FeedPage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FeedPage_nextCursor,
+		func(ctx context.Context) (any, error) {
+			return obj.NextCursor, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FeedPage_nextCursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FeedPage",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -1949,6 +2570,88 @@ func (ec *executionContext) fieldContext_Mutation_deleteComment(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_savePost(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_savePost,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().SavePost(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_savePost(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_savePost_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_unsavePost(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_unsavePost,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UnsavePost(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_unsavePost(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_unsavePost_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Owner_type(ctx context.Context, field graphql.CollectedField, obj *models.Owner) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2169,6 +2872,35 @@ func (ec *executionContext) _PersonalizedMeta_likedByPersona(ctx context.Context
 }
 
 func (ec *executionContext) fieldContext_PersonalizedMeta_likedByPersona(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PersonalizedMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PersonalizedMeta_savedByPersona(ctx context.Context, field graphql.CollectedField, obj *models.PersonalizedMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PersonalizedMeta_savedByPersona,
+		func(ctx context.Context) (any, error) {
+			return obj.SavedByPersona, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PersonalizedMeta_savedByPersona(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PersonalizedMeta",
 		Field:      field,
@@ -2802,6 +3534,8 @@ func (ec *executionContext) fieldContext_Post_personalizedMeta(_ context.Context
 			switch field.Name {
 			case "likedByPersona":
 				return ec.fieldContext_PersonalizedMeta_likedByPersona(ctx, field)
+			case "savedByPersona":
+				return ec.fieldContext_PersonalizedMeta_savedByPersona(ctx, field)
 			case "sharedByPersona":
 				return ec.fieldContext_PersonalizedMeta_sharedByPersona(ctx, field)
 			case "viewedByPersona":
@@ -3447,6 +4181,10 @@ func (ec *executionContext) fieldContext_Query_getChannel(ctx context.Context, f
 				return ec.fieldContext_Channel_description(ctx, field)
 			case "bannerImageUrl":
 				return ec.fieldContext_Channel_bannerImageUrl(ctx, field)
+			case "bannerX":
+				return ec.fieldContext_Channel_bannerX(ctx, field)
+			case "bannerY":
+				return ec.fieldContext_Channel_bannerY(ctx, field)
 			case "thumbnailUrl":
 				return ec.fieldContext_Channel_thumbnailUrl(ctx, field)
 			case "profileImageUrl":
@@ -3469,12 +4207,24 @@ func (ec *executionContext) fieldContext_Query_getChannel(ctx context.Context, f
 				return ec.fieldContext_Channel_isMember(ctx, field)
 			case "isFollower":
 				return ec.fieldContext_Channel_isFollower(ctx, field)
+			case "isPending":
+				return ec.fieldContext_Channel_isPending(ctx, field)
+			case "isOwner":
+				return ec.fieldContext_Channel_isOwner(ctx, field)
+			case "isPrivate":
+				return ec.fieldContext_Channel_isPrivate(ctx, field)
 			case "canModerate":
 				return ec.fieldContext_Channel_canModerate(ctx, field)
 			case "community":
 				return ec.fieldContext_Channel_community(ctx, field)
 			case "minAge":
 				return ec.fieldContext_Channel_minAge(ctx, field)
+			case "theme":
+				return ec.fieldContext_Channel_theme(ctx, field)
+			case "ownTheme":
+				return ec.fieldContext_Channel_ownTheme(ctx, field)
+			case "coverPattern":
+				return ec.fieldContext_Channel_coverPattern(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Channel", field.Name)
 		},
@@ -3487,6 +4237,202 @@ func (ec *executionContext) fieldContext_Query_getChannel(ctx context.Context, f
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_getChannel_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getFeed(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_getFeed,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().GetFeed(ctx, fc.Args["after"].(*string), fc.Args["limit"].(*int32))
+		},
+		nil,
+		ec.marshalNFeedPage2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐFeedPage,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_getFeed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "posts":
+				return ec.fieldContext_FeedPage_posts(ctx, field)
+			case "channels":
+				return ec.fieldContext_FeedPage_channels(ctx, field)
+			case "nextCursor":
+				return ec.fieldContext_FeedPage_nextCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FeedPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getFeed_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getDiscover(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_getDiscover,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().GetDiscover(ctx, fc.Args["interests"].([]string), fc.Args["all"].(*bool), fc.Args["after"].(*string), fc.Args["limit"].(*int32))
+		},
+		nil,
+		ec.marshalNFeedPage2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐFeedPage,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_getDiscover(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "posts":
+				return ec.fieldContext_FeedPage_posts(ctx, field)
+			case "channels":
+				return ec.fieldContext_FeedPage_channels(ctx, field)
+			case "nextCursor":
+				return ec.fieldContext_FeedPage_nextCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FeedPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getDiscover_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getCommunityFeed(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_getCommunityFeed,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().GetCommunityFeed(ctx, fc.Args["communityId"].(int64), fc.Args["after"].(*string), fc.Args["limit"].(*int32))
+		},
+		nil,
+		ec.marshalNFeedPage2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐFeedPage,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_getCommunityFeed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "posts":
+				return ec.fieldContext_FeedPage_posts(ctx, field)
+			case "channels":
+				return ec.fieldContext_FeedPage_channels(ctx, field)
+			case "nextCursor":
+				return ec.fieldContext_FeedPage_nextCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FeedPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getCommunityFeed_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getSaved(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_getSaved,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().GetSaved(ctx, fc.Args["after"].(*string), fc.Args["limit"].(*int32))
+		},
+		nil,
+		ec.marshalNSavedPage2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐSavedPage,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_getSaved(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "items":
+				return ec.fieldContext_SavedPage_items(ctx, field)
+			case "channels":
+				return ec.fieldContext_SavedPage_channels(ctx, field)
+			case "nextCursor":
+				return ec.fieldContext_SavedPage_nextCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SavedPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getSaved_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3596,6 +4542,236 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SavedPage_items(ctx context.Context, field graphql.CollectedField, obj *models.SavedPage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SavedPage_items,
+		func(ctx context.Context) (any, error) {
+			return obj.Items, nil
+		},
+		nil,
+		ec.marshalNSavedPost2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐSavedPostᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SavedPage_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SavedPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "postId":
+				return ec.fieldContext_SavedPost_postId(ctx, field)
+			case "savedAt":
+				return ec.fieldContext_SavedPost_savedAt(ctx, field)
+			case "post":
+				return ec.fieldContext_SavedPost_post(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SavedPost", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SavedPage_channels(ctx context.Context, field graphql.CollectedField, obj *models.SavedPage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SavedPage_channels,
+		func(ctx context.Context) (any, error) {
+			return obj.Channels, nil
+		},
+		nil,
+		ec.marshalNFeedChannel2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐFeedChannelᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SavedPage_channels(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SavedPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_FeedChannel_id(ctx, field)
+			case "name":
+				return ec.fieldContext_FeedChannel_name(ctx, field)
+			case "theme":
+				return ec.fieldContext_FeedChannel_theme(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_FeedChannel_thumbnail(ctx, field)
+			case "canModerate":
+				return ec.fieldContext_FeedChannel_canModerate(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FeedChannel", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SavedPage_nextCursor(ctx context.Context, field graphql.CollectedField, obj *models.SavedPage) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SavedPage_nextCursor,
+		func(ctx context.Context) (any, error) {
+			return obj.NextCursor, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SavedPage_nextCursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SavedPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SavedPost_postId(ctx context.Context, field graphql.CollectedField, obj *models.SavedPost) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SavedPost_postId,
+		func(ctx context.Context) (any, error) {
+			return obj.PostID, nil
+		},
+		nil,
+		ec.marshalNObjectId2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SavedPost_postId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SavedPost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ObjectId does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SavedPost_savedAt(ctx context.Context, field graphql.CollectedField, obj *models.SavedPost) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SavedPost_savedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.SavedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SavedPost_savedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SavedPost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SavedPost_post(ctx context.Context, field graphql.CollectedField, obj *models.SavedPost) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SavedPost_post,
+		func(ctx context.Context) (any, error) {
+			return obj.Post, nil
+		},
+		nil,
+		ec.marshalOPost2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐPost,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SavedPost_post(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SavedPost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_id":
+				return ec.fieldContext_Post__id(ctx, field)
+			case "type":
+				return ec.fieldContext_Post_type(ctx, field)
+			case "authorId":
+				return ec.fieldContext_Post_authorId(ctx, field)
+			case "author":
+				return ec.fieldContext_Post_author(ctx, field)
+			case "owner":
+				return ec.fieldContext_Post_owner(ctx, field)
+			case "content":
+				return ec.fieldContext_Post_content(ctx, field)
+			case "rawContent":
+				return ec.fieldContext_Post_rawContent(ctx, field)
+			case "tags":
+				return ec.fieldContext_Post_tags(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Post_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Post_updatedAt(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_Post_deletedAt(ctx, field)
+			case "edited":
+				return ec.fieldContext_Post_edited(ctx, field)
+			case "privacy":
+				return ec.fieldContext_Post_privacy(ctx, field)
+			case "deniedPersonaIds":
+				return ec.fieldContext_Post_deniedPersonaIds(ctx, field)
+			case "allowedPersonaIds":
+				return ec.fieldContext_Post_allowedPersonaIds(ctx, field)
+			case "meta":
+				return ec.fieldContext_Post_meta(ctx, field)
+			case "personalizedMeta":
+				return ec.fieldContext_Post_personalizedMeta(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
 		},
 	}
 	return fc, nil
@@ -3999,6 +5175,16 @@ func (ec *executionContext) _Channel(ctx context.Context, sel ast.SelectionSet, 
 			out.Values[i] = ec._Channel_description(ctx, field, obj)
 		case "bannerImageUrl":
 			out.Values[i] = ec._Channel_bannerImageUrl(ctx, field, obj)
+		case "bannerX":
+			out.Values[i] = ec._Channel_bannerX(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "bannerY":
+			out.Values[i] = ec._Channel_bannerY(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "thumbnailUrl":
 			out.Values[i] = ec._Channel_thumbnailUrl(ctx, field, obj)
 		case "profileImageUrl":
@@ -4042,6 +5228,21 @@ func (ec *executionContext) _Channel(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "isPending":
+			out.Values[i] = ec._Channel_isPending(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "isOwner":
+			out.Values[i] = ec._Channel_isOwner(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "isPrivate":
+			out.Values[i] = ec._Channel_isPrivate(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "canModerate":
 			out.Values[i] = ec._Channel_canModerate(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -4051,6 +5252,18 @@ func (ec *executionContext) _Channel(ctx context.Context, sel ast.SelectionSet, 
 			out.Values[i] = ec._Channel_community(ctx, field, obj)
 		case "minAge":
 			out.Values[i] = ec._Channel_minAge(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "theme":
+			out.Values[i] = ec._Channel_theme(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ownTheme":
+			out.Values[i] = ec._Channel_ownTheme(ctx, field, obj)
+		case "coverPattern":
+			out.Values[i] = ec._Channel_coverPattern(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4239,6 +5452,111 @@ func (ec *executionContext) _CommunityRef(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var feedChannelImplementors = []string{"FeedChannel"}
+
+func (ec *executionContext) _FeedChannel(ctx context.Context, sel ast.SelectionSet, obj *models.FeedChannel) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, feedChannelImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FeedChannel")
+		case "id":
+			out.Values[i] = ec._FeedChannel_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._FeedChannel_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "theme":
+			out.Values[i] = ec._FeedChannel_theme(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "thumbnail":
+			out.Values[i] = ec._FeedChannel_thumbnail(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "canModerate":
+			out.Values[i] = ec._FeedChannel_canModerate(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var feedPageImplementors = []string{"FeedPage"}
+
+func (ec *executionContext) _FeedPage(ctx context.Context, sel ast.SelectionSet, obj *models.FeedPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, feedPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FeedPage")
+		case "posts":
+			out.Values[i] = ec._FeedPage_posts(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "channels":
+			out.Values[i] = ec._FeedPage_channels(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "nextCursor":
+			out.Values[i] = ec._FeedPage_nextCursor(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mediaImplementors = []string{"Media"}
 
 func (ec *executionContext) _Media(ctx context.Context, sel ast.SelectionSet, obj *models.Media) graphql.Marshaler {
@@ -4388,6 +5706,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "savePost":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_savePost(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unsavePost":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_unsavePost(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4524,6 +5856,11 @@ func (ec *executionContext) _PersonalizedMeta(ctx context.Context, sel ast.Selec
 			out.Values[i] = graphql.MarshalString("PersonalizedMeta")
 		case "likedByPersona":
 			out.Values[i] = ec._PersonalizedMeta_likedByPersona(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "savedByPersona":
+			out.Values[i] = ec._PersonalizedMeta_savedByPersona(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4851,6 +6188,94 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getFeed":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getFeed(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getDiscover":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getDiscover(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getCommunityFeed":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getCommunityFeed(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getSaved":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getSaved(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -4859,6 +6284,98 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var savedPageImplementors = []string{"SavedPage"}
+
+func (ec *executionContext) _SavedPage(ctx context.Context, sel ast.SelectionSet, obj *models.SavedPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, savedPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SavedPage")
+		case "items":
+			out.Values[i] = ec._SavedPage_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "channels":
+			out.Values[i] = ec._SavedPage_channels(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "nextCursor":
+			out.Values[i] = ec._SavedPage_nextCursor(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var savedPostImplementors = []string{"SavedPost"}
+
+func (ec *executionContext) _SavedPost(ctx context.Context, sel ast.SelectionSet, obj *models.SavedPost) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, savedPostImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SavedPost")
+		case "postId":
+			out.Values[i] = ec._SavedPost_postId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "savedAt":
+			out.Values[i] = ec._SavedPost_savedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "post":
+			out.Values[i] = ec._SavedPost_post(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4955,6 +6472,16 @@ func (ec *executionContext) unmarshalNCommentInput2sharedᚋpkgᚋgraphᚋmodels
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNCoverPattern2sharedᚋpkgᚋgraphᚋmodelsᚐCoverPattern(ctx context.Context, v any) (models.CoverPattern, error) {
+	var res models.CoverPattern
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCoverPattern2sharedᚋpkgᚋgraphᚋmodelsᚐCoverPattern(ctx context.Context, sel ast.SelectionSet, v models.CoverPattern) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNDateTime2timeᚐTime(ctx context.Context, v any) (time.Time, error) {
 	res, err := graphql.UnmarshalTime(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4969,6 +6496,74 @@ func (ec *executionContext) marshalNDateTime2timeᚐTime(ctx context.Context, se
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNFeedChannel2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐFeedChannelᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.FeedChannel) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNFeedChannel2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐFeedChannel(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNFeedChannel2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐFeedChannel(ctx context.Context, sel ast.SelectionSet, v *models.FeedChannel) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FeedChannel(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNFeedPage2sharedᚋpkgᚋgraphᚋmodelsᚐFeedPage(ctx context.Context, sel ast.SelectionSet, v models.FeedPage) graphql.Marshaler {
+	return ec._FeedPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNFeedPage2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐFeedPage(ctx context.Context, sel ast.SelectionSet, v *models.FeedPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FeedPage(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNInt322int32(ctx context.Context, v any) (int32, error) {
@@ -5233,6 +6828,74 @@ func (ec *executionContext) marshalNPrivacy2sharedᚋpkgᚋgraphᚋmodelsᚐPriv
 	return v
 }
 
+func (ec *executionContext) marshalNSavedPage2sharedᚋpkgᚋgraphᚋmodelsᚐSavedPage(ctx context.Context, sel ast.SelectionSet, v models.SavedPage) graphql.Marshaler {
+	return ec._SavedPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSavedPage2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐSavedPage(ctx context.Context, sel ast.SelectionSet, v *models.SavedPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SavedPage(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSavedPost2ᚕᚖsharedᚋpkgᚋgraphᚋmodelsᚐSavedPostᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.SavedPost) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNSavedPost2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐSavedPost(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSavedPost2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐSavedPost(ctx context.Context, sel ast.SelectionSet, v *models.SavedPost) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SavedPost(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNSimpleInput2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐSimpleInput(ctx context.Context, v any) (*models.SimpleInput, error) {
 	res, err := ec.unmarshalInputSimpleInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -5245,6 +6908,16 @@ func (ec *executionContext) unmarshalNSimpleInputType2sharedᚋpkgᚋgraphᚋmod
 }
 
 func (ec *executionContext) marshalNSimpleInputType2sharedᚋpkgᚋgraphᚋmodelsᚐSimpleInputType(ctx context.Context, sel ast.SelectionSet, v models.SimpleInputType) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNTheme2sharedᚋpkgᚋgraphᚋmodelsᚐTheme(ctx context.Context, v any) (models.Theme, error) {
+	var res models.Theme
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTheme2sharedᚋpkgᚋgraphᚋmodelsᚐTheme(ctx context.Context, sel ast.SelectionSet, v models.Theme) graphql.Marshaler {
 	return v
 }
 
@@ -5393,6 +7066,29 @@ func (ec *executionContext) marshalOOwner2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐOwn
 		return graphql.Null
 	}
 	return ec._Owner(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOPost2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐPost(ctx context.Context, sel ast.SelectionSet, v *models.Post) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Post(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOTheme2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐTheme(ctx context.Context, v any) (*models.Theme, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(models.Theme)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTheme2ᚖsharedᚋpkgᚋgraphᚋmodelsᚐTheme(ctx context.Context, sel ast.SelectionSet, v *models.Theme) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 // endregion ***************************** type.gotpl *****************************

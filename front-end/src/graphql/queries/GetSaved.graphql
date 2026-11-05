@@ -1,0 +1,19 @@
+query GetSaved($after: String, $limit: Int) {
+  getSaved(after: $after, limit: $limit) {
+    items {
+      postId
+      savedAt
+      post {
+        ...PostFields
+      }
+    }
+    channels {
+      id
+      name
+      theme
+      thumbnail
+      canModerate
+    }
+    nextCursor
+  }
+}

@@ -17,6 +17,9 @@ func AddAuthRoutes(r *gin.RouterGroup, users *users.Handler, google *oauthprovid
 		authGroup.POST("/login", users.Login)
 		authGroup.POST("/logout", handleLogOut)
 		authGroup.GET("/google", google.HandleGoogleOAuth)
+		authGroup.POST("/password/forgot", users.ForgotPassword)
+		authGroup.POST("/password/reset/check", users.CheckPasswordReset)
+		authGroup.POST("/password/reset", users.ResetPassword)
 	}
 
 	oAuthGroup := authGroup.Group("/oauth2callback")

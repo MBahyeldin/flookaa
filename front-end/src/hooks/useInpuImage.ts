@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import uploadFile from "@/services/uploadFile";
 import type { FormFieldProps } from "@/types/FormFields";
 import { useState } from "react";
@@ -66,7 +67,7 @@ export default function useInputImage({
       // Show what actually went wrong — "please try again" is useless advice
       // when the cause is a file that will always be too large.
       toast.error(
-        error instanceof Error ? error.message : "Failed to upload image."
+        error instanceof Error ? error.message : t("common:upload.failed")
       );
     } finally {
       setIsUploading(false);

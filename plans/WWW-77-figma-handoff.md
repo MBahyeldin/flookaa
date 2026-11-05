@@ -25,10 +25,25 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 
 - 2026-10-21 (QA revision 5): overlap pass. Canvas footer row `44:904` (Read more + Reactions in flow), callout stickers moved into each tone's `Text`, carousel cards spaced, Interest Filter chips row `44:8347` (spacer `16:512` removed), text overflows fixed on Discover, Personas, Visitor home and Onboarding 5 (mobile/tablet), mobile post reactions rows `23:2390` / `27:2323`, collapsed sidebar spacer `11:218`.
 
+- 2026-10-22 (WWW-118 §1 auth states): component `Code Input` (`65:1343`, State Empty/Filled/Error/Disabled) in section `65:1286` on Components. Public & Onboarding: Log in · Error `66:1119`, · Loading `66:1165`, · From a link `66:1221`, Mobile · Error `66:1239`; Sign up · Error `66:1276`, · Loading `66:1327`, Mobile · Error `66:1378`; Verify email `66:1420` / `66:1480` / `66:1540`, · Wrong code `66:1591`, · Expired `66:1651`. Profile & Personas: Select persona `66:8960` / `66:9131`. Mobile Personas rows (`24:1230`) now wrap instead of clipping.
+- 2026-10-22 (WWW-118 §2 comments): icons `Icon/trash-2` `69:504`, `Icon/send` `69:508`. Patterns: `Comment` is now a set `70:602` (Level 1/2 × State Default/Liked; props Name, Time, Body, Reply to, Likes, Show reply-to, Show menu; the old `16:327` is Level=1 Default, existing instances kept their text), `Reply Box` `71:427` (Empty/Typing), `Thread Toggle` `71:536` (Collapsed/Expanded/Loading). Channel & Community: Post · Comment thread `72:3753` / `72:4225` / `72:4619`, Comment states board `72:9983`. User decision: deleting a comment removes its replies too (today's behaviour); no removed-comment placeholder.
+- 2026-10-22 (WWW-118 §3 persona surfaces): Patterns: `Person Row` `76:436` (Request/Follower/Connected; props Name, Handle), `Persona Card` `76:506` (Full/Locked/Anonymous), `Banner` `76:507` (Title, Body), `Persona Switcher` `76:527`. Profile & Personas: Followers sheet · Requests `78:1476`, · Followers `78:1682`, Mobile `78:1909`; Profile · Invited you `78:2044`; Profile · Connected `78:2200`; Follow link · Request `79:2985`, · Pending `79:3116`, · Invalid `79:3252`, Mobile `79:3394`; Personas · Switcher open `79:3457`. Channel & Community: Post · Persona card `79:11537` (desktop popover) / `79:11841` (mobile sheet, Locked).
+- 2026-10-22 (WWW-118 §4–5): Components: `Dialog` `83:214` (Tone Default/Destructive; Title, Body); `Sidebar` (`11:232`) gained Collapse/Expand toggles (`panel-left`). Patterns: `Block Menu` `83:11913` (registry order). Feed & Discovery: Channels `84:2183` / `84:2540` / `84:2827`, Communities `84:3010` / `84:3363` / `84:3650`, Channels · Loading `84:3833`, · Empty filter `84:4023`, · Error `84:4176`, Feed · Sidebar collapsed `84:4335`. Channel & Community: Channel · Composer writing `86:16057`, Composer states `87:7783` (Preview `87:7844`, invalid block `87:7956`), Mobile · Insert block `86:16681`, Community · Rules dialog `86:16808` / `86:16857`, Channel · Leave confirm `86:16903`, Channel · Sidebar collapsed `86:16926`, Post · Sidebar collapsed `86:17076`. Public & Onboarding: Not found `84:14476`, · Logged out `84:14575`, Mobile `84:14616`. Blocks & Posts: Blocks gallery `86:15583` / `87:17364`.
+- 2026-10-27 (WWW-96 notifications): Components: section `Notifications` `104:189` with `Notification Row` `104:266` (State Unread/Read/Hover × Lead Actor/Entity; prop `Kind icon`) and `Notification Popover` `108:448` (State List `108:201` / All read `108:284` / Loading `108:365` / Empty `108:391` / Error `108:420`). New page `Notifications & Settings` `109:6`: Notifications `109:7` / `109:17880` / `109:18049`, popover open `109:18370` / `109:18381` / `109:18392`, Desktop · Loading `109:19747`, · Empty `109:19885`, · Error `109:20015`, · Load more failed `109:20142`, Every kind `111:2522`, Deep Tide Dark `111:20143`, Forest `111:20175`.
+- 2026-10-27 (WWW-97 settings): Components: section `Settings` `119:330` with `Switch` `119:335` (On/Off), `Segmented Control` `119:346` (Selected First/Second; Option 1, Option 2), `Radio Card` `119:368` (Default/Selected; Title, Body, Icon), `Theme Swatch` `119:381` (Default/Selected; Name; set the instance's Theme mode), `Cover Option` `119:398` (Default/Selected; Name; nested Cover Pattern), `Checklist Rule` `119:413` (Unmet/Met/Failed; Label). Page `Notifications & Settings`: Account `122:3144` / `122:3405` / `122:3617`; Persona (content in Forest) `123:3492` / `123:4053` / `123:4483`, · Deep Tide Dark `126:5538`, · Ember `126:5842`; Account settings · States `124:4305`; Persona settings · States `125:4418`; Change email dialog · Steps `126:4705`, open over the page `126:4822` (desktop) / `126:4915` (mobile); Settings · Loading `126:5232`, · Error `126:5384`. The followers sheet stays the WWW-118 frames (`78:1476`, `78:1682`, `78:1909`).
+- 2026-10-28 (WWW-98 create forms): Patterns: `Community Option` `130:17001` (State Default `130:16985` / Selected `130:16993`; props `Name#130:0`, `Meta#130:3`). Channel & Community: Create channel `129:13714` / `130:14421` / `130:14656`; Create community `130:8378` / `130:14894` / `130:15116`; Create forms · States `130:16282`; Create channel · Community picker `131:9470` (desktop dialog) / `131:9641` (mobile sheet); Community picker · States `131:9804` (Loading, Empty, No results); Create channel · Standalone, Ember picked `131:10334`; · Deep Tide Dark `131:10741`.
+- 2026-10-29 (WWW-99 manage + members sheets): Patterns: `Person Row` gains `Type=Member` `136:19501` (role `Tag` + `⋯`; prop `Show role#136:2`); `Channel Request Row` `136:19531` (props `Name#136:12`, `Meta#136:13`). Channel & Community: Channel · Manage `136:19539` (desktop) / `138:15694` (mobile) / · Deep Tide Dark `138:15986`; Community · Manage `136:20382` / `138:16849`; Channel · Members `137:11655`, · Requests `137:14152`; Community · Members · Row menu `137:11863` / `138:15861` (mobile); Community · Members · Channel requests `137:14747`; Manage & members · States `138:13726` (empty/loading/error, Community card None/Pending/Rejected, field errors, visibility warnings, saving, toast, six confirm dialogs, Ember look).
+
+- 2026-10-29 (WWW-100 admin interests): Components: icons `arrow-up` `145:10114`, `arrow-down` `145:10118`, `archive` `145:10123`, `rotate-ccw` `145:10127`; `Sidebar` (`11:232`) gains an Admin entry (`shield-check`, `145:5966` expanded / `145:5975` collapsed) behind `Show admin#145:0` (default off, so earlier frames are unchanged). Patterns: `Interest Row` `147:560` (State Active `147:502` / Ungrouped `147:525` / Retired `147:538`; the `Chip` is exposed; move buttons sit in fixed slots so hidden ends keep their place). New page `Admin` `148:6`: Interests `148:7` (desktop) / `150:522` (mobile); Interest dialog · States `151:805`, Group dialog · States `151:1214`; Desktop · Edit interest `151:1416`, · Menus `151:1533`, · Busy `151:2102`, · Action failed `151:2632`, · Deep Tide Dark `151:2822`, · Not an admin `151:5635`, · Empty `151:5727`, · Loading `151:5938`, · Error `151:6144`, · Sidebar collapsed `151:6359`; Mobile · Add interest (sheet) `152:4105`, · Row menu (Move up/down, Edit, Retire) `152:4242`, · Sidebar sheet `152:4456`, · Empty `153:5053`, · Loading `153:5200`, · Error `153:5341`, · Action failed `153:5477`, · Busy `153:5602`.
+- 2026-11-03 (WWW-79 community latest posts): Community `20:1038` / `20:1517` / `20:1903` gain a `Latest band` (`154:15118` / `155:15411` / `155:15659`) between the channel grid and About: Section Header ("Latest", "Latest from its channels", no link), a column of `Post` Spine instances in their channels' palettes (Slate, Ember; 640 wide, Fill on mobile) and an Outline `Show more` button. The frames' Section Navs were replaced by fresh four-tab instances (Channels, Latest, About, People: `154:15105` / `155:15398` / `155:15646`), since the old ones held three tabs. Everything on Channel & Community below the Community row moved down 2200 px.
+- 2026-11-03 (WWW-101 saved posts + comment attachments): Components: icons `bookmark-filled` `159:4522`, `send` `160:356`, `square` `160:359`, `trash-2` `160:366`, `loader-circle` `160:369`; `Save Button` set `159:4538` (Style Labelled/Icon × State Unsaved/Saved: `159:4524`, `159:4528`, `159:4532`, `159:4535`); `Toast` gains an action (`Action#159:0`, `Show action#159:1`, default off); `Sidebar` gains a Saved entry after Discover (`159:4648` expanded / `159:4656` collapsed) behind `Show saved#159:2` (default off). Patterns: `Post` set `36:748` carries an exposed `Save` (Spine header before ⋯ `159:11136`, Canvas footer `Actions` `159:11139`, Strip footer `159:11143`); `Masonry Tile` footers end with `Save` (`159:18139` / `159:18143`); `Comment` set `70:602` gains `Show body#159:5`, `Show image#159:10`, `Show voice#159:15`; `Voice Pill` `159:20194` (`Duration#159:20`); `Comment Composer` `161:916` (Idle `161:710`, Typing `161:727`, Image uploading `161:737`, Image ready `161:757`, Recording `161:779`, Recording near limit `161:790`, Voice processing `161:801`, Voice ready `161:816`, Mic unavailable `161:871`, Upload failed `161:883`, Sending `161:907`); `Saved Unavailable Row` `162:4975`. Feed & Discovery: Desktop / Saved `162:4989`, Tablet `162:5445`, Mobile `162:5867`, · Empty `162:6246`, · Loading `162:6361`, · Error `162:6497`, Mobile · Empty `162:6622`, · Deep Tide Dark `162:6656`, Mobile · Sidebar sheet `162:6668`. Channel & Community: Post · Save & comment attachments · States `163:16109`; Desktop / Post · Saved, voice and image comments `163:17068`; Tablet / Post · Image comment `163:17399`; Mobile / Post · Recording `163:17664`.
+- 2026-11-04 (WWW-92 cover photo): Patterns: `Cover` gains `Pattern=Photo` `165:17724` (image fill, a generated placeholder, so `Hero` shows a photo by setting its nested Cover to Photo); `Cover Photo Field` `166:843` (State Empty/Uploading/Failed/Ready/Dragging × Breakpoint Desktop/Mobile; Ready `166:695` / `166:788`, Dragging `166:729` / `166:820`). Channel & Community: `Cover photo · Hero and rules` `167:17554`; Manage · Look with a photo: Desktop `167:17705`, Mobile `167:18492`. Create channel and community frames (`129:13714`, `130:14421`, `130:14656`, `130:8378`, `130:14894`, `130:15116`, `131:10334`, `131:10741`) gain `Cover Photo Field` (State=Empty) above the pattern picker, now labelled Pattern.
+- 2026-11-04 (WWW-95 refresh): Theme demo `28:4368` / `28:4455` / `28:4542` rebuilt from Channel `17:2` (same ids, instances linked). RTL `27:2`, `27:1172`, `27:1805`, `27:2311`, `28:2`, `28:1241` rebuilt from their LTR frames (same ids, fully detached, since an instance's children can't be reordered), with UI text from `locales/ar` and Latin digits. Onboarding 2 RTL `28:1918` / `28:2062`: digits only. `Tilt` `36:529` deleted.
+
 ## Next steps
 
-1. User review. The theme demo (`28:4368`/`28:4455`/`28:4542`) and RTL frames still show the old Post Preview (RTL also the aside); refresh them if the chosen versions stick.
-2. Blocks & Posts was reorganised outside these sessions (new section ids `42:*`, superseded concepts removed). An empty frame `Tilt` (`36:529`) sits at the page origin.
+1. User review.
+2. Blocks & Posts was reorganised outside these sessions (new section ids `42:*`, superseded concepts removed).
 3. Photo covers only if the user approves spending Figma AI credits (`generate_image`).
 
 ## Gotchas
@@ -47,6 +62,8 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 - Hover tint rectangles must be resized to the button after its auto width settles.
 
 - `figma.createAutoLayout()` frames get a default white fill. Clear `fills` on wrappers that shouldn't have one (or bind them).
+- `base/scrim` is opaque; put the 50% on the layer's `opacity`, not on the paint.
+- A bound paint keeps the placeholder `color` you pass to `setBoundVariableForPaint` until the file re-resolves it (screenshots and frames without an explicit mode show it). Pass the variable's Deep Tide Light value as the placeholder. To add paint opacity, JSON-copy the bound paint and set `opacity` (spreading the frozen paint loses the binding).
 - A frame's Theme mode is set with `setExplicitVariableModeForCollection(themeCollection, modeId)`; children inherit it.
 - Text styles bind `fontSize` to `Breakpoint` variables; a frame set to a Breakpoint mode resizes its type.
 
@@ -64,6 +81,8 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Profile & Personas` | `3:7` |
 | `Public & Onboarding` | `3:8` |
 | `RTL` | `3:9` |
+| `Notifications & Settings` | `109:6` |
+| `Admin` | `148:6` |
 
 ### Collections and modes
 | Collection | ID |
@@ -202,10 +221,19 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Menu/Item` | `11:257` |
 | `Menu` | `11:262` |
 | `Toast` | `11:288` |
+| `Save Button` | `159:4538` |
 | `Skeleton` | `12:168` |
 | `Skeleton/Post` | `12:169` |
 | `Empty State` | `12:178` |
 | `Error State` | `12:192` |
+| `Notification Row` | `104:266` |
+| `Notification Popover` | `108:448` |
+| `Switch` | `119:335` |
+| `Segmented Control` | `119:346` |
+| `Radio Card` | `119:368` |
+| `Theme Swatch` | `119:381` |
+| `Cover Option` | `119:398` |
+| `Checklist Rule` | `119:413` |
 
 ### Patterns
 | Pattern | ID |
@@ -223,6 +251,12 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Masonry Tile` | `16:401` |
 | `Composer` | `16:496` |
 | `Interest Filter` | `16:497` |
+| `Community Option` | `130:17001` |
+| `Channel Request Row` | `136:19531` |
+| `Interest Row` | `147:560` |
+| `Voice Pill` | `159:20194` |
+| `Comment Composer` | `161:916` |
+| `Saved Unavailable Row` | `162:4975` |
 
 ### Variants
 | Variant | ID |
@@ -247,9 +281,18 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Tag` | `{"Label": "Label#9:127", "Show icon": "Show icon#9:128", "Icon": "Icon#9:129"}` |
 | `Count Badge` | `{"Count": "Count#11:0"}` |
 | `Sidebar/Item` | `{"Label": "Label#11:1", "Icon": "Icon#11:6", "Show badge": "Show badge#11:11"}` |
+| `Sidebar` | `{"Show admin": "Show admin#145:0", "Show saved": "Show saved#159:2"}` |
+| `Interest Row` | `{"Slug": "Slug#147:0", "Group": "Group#147:4", "Show move up": "Show move up#147:8", "Show move down": "Show move down#147:12"}` (label and emoji on the nested `Chip`) |
+| `Segmented Control` | `{"Option 1": "Option 1#119:0", "Option 2": "Option 2#119:3"}` |
+| `Radio Card` | `{"Title": "Title#119:6", "Body": "Body#119:9", "Icon": "Icon#119:12"}` |
+| `Theme Swatch` | `{"Name": "Name#119:15"}` |
+| `Cover Option` | `{"Name": "Name#119:18"}` |
+| `Checklist Rule` | `{"Label": "Label#119:21"}` |
 | `Tooltip` | `{"Text": "Text#11:16"}` |
 | `Menu/Item` | `{"Label": "Label#11:17", "Icon": "Icon#11:18"}` |
-| `Toast` | `{"Message": "Message#11:19"}` |
+| `Toast` | `{"Message": "Message#11:19", "Action": "Action#159:0", "Show action": "Show action#159:1"}` |
+| `Comment` | `{"Show body": "Show body#159:5", "Show image": "Show image#159:10", "Show voice": "Show voice#159:15"}` (plus the earlier Name/Time/Body/… keys) |
+| `Voice Pill` | `{"Duration": "Duration#159:20"}` |
 | `Form Field` | `{"Label": "Label#10:0", "Value": "Value#10:9", "Helper": "Helper#10:18", "Show helper": "Show helper#10:27"}` |
 | `Section Nav/Tab` | `{"Label": "Label#10:36"}` |
 | `Avatar` | `{"Initials": "Initials#10:39"}` |
@@ -260,6 +303,7 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `Section Header` | `{"Overline": "Overline#15:0", "Title": "Title#15:1", "Show link": "Show link#15:2"}` |
 | `Tile` | `{"Name": "Name#15:3", "Meta": "Meta#15:10", "Description": "Description#15:17", "Facts": "Facts#15:24"}` |
 | `People Strip` | `{"More": "More#15:31"}` |
+| `Notification Row` | `{"Kind icon": "Kind icon#104:0"}` (Text and Meta are plain layers: set `characters`, then SemiBold on the actor range) |
 
 ### Icons
 | Icon | ID |
@@ -316,6 +360,15 @@ Progress and IDs for the "Flookaa v2" build. Plan: `plans/WWW-77-redesign.md`.
 | `list` | `8:245` |
 | `bookmark` | `8:248` |
 | `user-round-check` | `8:253` |
+| `arrow-up` | `145:10114` |
+| `arrow-down` | `145:10118` |
+| `archive` | `145:10123` |
+| `rotate-ccw` | `145:10127` |
+| `bookmark-filled` | `159:4522` |
+| `send` | `160:356` |
+| `square` | `160:359` |
+| `trash-2` | `160:366` |
+| `loader-circle` | `160:369` |
 
 ## Resume prompt
 

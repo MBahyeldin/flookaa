@@ -1,6 +1,4 @@
-import { gql } from '@apollo/client';
-import * as Apollo from '@apollo/client';
-import * as ApolloReactHooks from '@apollo/client/react';
+import type { TypedDocumentNode as DocumentNode } from '@apollo/client';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -8,7 +6,6 @@ export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: 
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
 export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
-const defaultOptions = {} as const;
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: { input: string; output: string; }
@@ -164,6 +161,7 @@ export type CalloutBlock = Block & {
   _type: BlockType;
   description: Scalars['String']['output'];
   icon?: Maybe<CalloutIcon>;
+  tag?: Maybe<Scalars['String']['output']>;
   title?: Maybe<Scalars['String']['output']>;
   tone?: Maybe<CalloutTone>;
 };
@@ -173,6 +171,7 @@ export type CalloutBlockInput = {
   _type: BlockType;
   description: Scalars['String']['input'];
   icon?: InputMaybe<CalloutIcon>;
+  tag?: InputMaybe<Scalars['String']['input']>;
   title?: InputMaybe<Scalars['String']['input']>;
   tone?: InputMaybe<CalloutTone>;
 };
@@ -197,20 +196,28 @@ export type CalloutTone =
 export type Channel = {
   __typename?: 'Channel';
   bannerImageUrl?: Maybe<Scalars['String']['output']>;
+  bannerX: Scalars['Int']['output'];
+  bannerY: Scalars['Int']['output'];
   canModerate: Scalars['Boolean']['output'];
   community?: Maybe<CommunityRef>;
+  coverPattern: CoverPattern;
   createdAt: Scalars['DateTime']['output'];
   description?: Maybe<Scalars['String']['output']>;
   followersCount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['Int64']['output'];
   isFollower: Scalars['Boolean']['output'];
   isMember: Scalars['Boolean']['output'];
+  isOwner: Scalars['Boolean']['output'];
+  isPending: Scalars['Boolean']['output'];
+  isPrivate: Scalars['Boolean']['output'];
   membersCount?: Maybe<Scalars['Int']['output']>;
   minAge: Scalars['Int']['output'];
   name: Scalars['String']['output'];
+  ownTheme?: Maybe<Theme>;
   owner: Persona;
   posts: Array<Post>;
   profileImageUrl?: Maybe<Scalars['String']['output']>;
+  theme: Theme;
   thumbnailUrl?: Maybe<Scalars['String']['output']>;
   totalPosts: Scalars['Int']['output'];
   updatedAt: Scalars['DateTime']['output'];
@@ -299,6 +306,28 @@ export type CountdownBlockInput = {
   endedText?: InputMaybe<Scalars['String']['input']>;
   endsAt: Scalars['DateTime']['input'];
   label?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CoverPattern =
+  | 'hills'
+  | 'horizon'
+  | 'stripes'
+  | 'waves';
+
+export type FeedChannel = {
+  __typename?: 'FeedChannel';
+  canModerate: Scalars['Boolean']['output'];
+  id: Scalars['Int64']['output'];
+  name: Scalars['String']['output'];
+  theme: Theme;
+  thumbnail: Scalars['String']['output'];
+};
+
+export type FeedPage = {
+  __typename?: 'FeedPage';
+  channels: Array<FeedChannel>;
+  nextCursor?: Maybe<Scalars['String']['output']>;
+  posts: Array<Post>;
 };
 
 export type GalleryBlock = Block & {
@@ -454,6 +483,8 @@ export type Mutation = {
   createPost: PostGenericDocument;
   deleteComment: Scalars['Boolean']['output'];
   deletePost: Scalars['Boolean']['output'];
+  savePost: Scalars['Boolean']['output'];
+  unsavePost: Scalars['Boolean']['output'];
 };
 
 
@@ -478,6 +509,16 @@ export type MutationDeleteCommentArgs = {
 
 
 export type MutationDeletePostArgs = {
+  id: Scalars['ObjectId']['input'];
+};
+
+
+export type MutationSavePostArgs = {
+  id: Scalars['ObjectId']['input'];
+};
+
+
+export type MutationUnsavePostArgs = {
   id: Scalars['ObjectId']['input'];
 };
 
@@ -510,6 +551,7 @@ export type PersonalizedMeta = {
   __typename?: 'PersonalizedMeta';
   acl: Acl;
   likedByPersona: Scalars['Boolean']['output'];
+  savedByPersona: Scalars['Boolean']['output'];
   sharedByPersona: Scalars['Boolean']['output'];
   viewedByPersona: Scalars['Boolean']['output'];
 };
@@ -588,7 +630,11 @@ export type Query = {
   __typename?: 'Query';
   getChannel?: Maybe<Channel>;
   getComments: Array<Comment>;
+  getCommunityFeed: FeedPage;
+  getDiscover: FeedPage;
+  getFeed: FeedPage;
   getPosts: Array<Post>;
+  getSaved: SavedPage;
 };
 
 
@@ -604,11 +650,38 @@ export type QueryGetCommentsArgs = {
 };
 
 
+export type QueryGetCommunityFeedArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  communityId: Scalars['Int64']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryGetDiscoverArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  all?: InputMaybe<Scalars['Boolean']['input']>;
+  interests?: InputMaybe<Array<Scalars['String']['input']>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryGetFeedArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
 export type QueryGetPostsArgs = {
   ids?: InputMaybe<Array<Scalars['ObjectId']['input']>>;
   limit?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   owner: OwnerInput;
+};
+
+
+export type QueryGetSavedArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type QuoteBlock = Block & {
@@ -626,6 +699,20 @@ export type QuoteBlockInput = {
   name?: InputMaybe<Scalars['String']['input']>;
   role?: InputMaybe<Scalars['String']['input']>;
   text: Scalars['String']['input'];
+};
+
+export type SavedPage = {
+  __typename?: 'SavedPage';
+  channels: Array<FeedChannel>;
+  items: Array<SavedPost>;
+  nextCursor?: Maybe<Scalars['String']['output']>;
+};
+
+export type SavedPost = {
+  __typename?: 'SavedPost';
+  post?: Maybe<Post>;
+  postId: Scalars['ObjectId']['output'];
+  savedAt: Scalars['DateTime']['output'];
 };
 
 export type SimpleInput = {
@@ -710,6 +797,14 @@ export type StyleType =
   | 'h6'
   | 'normal';
 
+export type Theme =
+  | 'ember'
+  | 'forest'
+  | 'plum'
+  | 'rose'
+  | 'slate'
+  | 'tide';
+
 export type VoiceNoteBlock = Block & {
   __typename?: 'VoiceNoteBlock';
   _key: Scalars['ID']['output'];
@@ -779,12 +874,33 @@ export type CreateLikeMutationVariables = Exact<{
 
 export type CreateLikeMutation = { __typename?: 'Mutation', createLike: boolean };
 
+export type SavePostMutationVariables = Exact<{
+  id: Scalars['ObjectId']['input'];
+}>;
+
+
+export type SavePostMutation = { __typename?: 'Mutation', savePost: boolean };
+
+export type UnsavePostMutationVariables = Exact<{
+  id: Scalars['ObjectId']['input'];
+}>;
+
+
+export type UnsavePostMutation = { __typename?: 'Mutation', unsavePost: boolean };
+
 export type GetChannelQueryVariables = Exact<{
   id: Scalars['Int64']['input'];
 }>;
 
 
-export type GetChannelQuery = { __typename?: 'Query', getChannel?: { __typename?: 'Channel', id: any, name: string, description?: string | null, bannerImageUrl?: string | null, thumbnailUrl?: string | null, createdAt: string, totalPosts: number, isMember: boolean, isFollower: boolean, canModerate: boolean, membersCount?: number | null, followersCount?: number | null, minAge: number, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, owner: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null }, community?: { __typename?: 'CommunityRef', id: any, name: string, slug: string } | null } | null };
+export type GetChannelQuery = { __typename?: 'Query', getChannel?: { __typename?: 'Channel', id: any, name: string, description?: string | null, bannerImageUrl?: string | null, bannerX: number, bannerY: number, thumbnailUrl?: string | null, createdAt: string, totalPosts: number, isMember: boolean, isFollower: boolean, isPending: boolean, isOwner: boolean, isPrivate: boolean, canModerate: boolean, membersCount?: number | null, followersCount?: number | null, minAge: number, theme: Theme, ownTheme?: Theme | null, coverPattern: CoverPattern, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, savedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, owner: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, community?: { __typename?: 'CommunityRef', id: any, name: string, slug: string } | null } | null };
+
+export type GetChannelBarQueryVariables = Exact<{
+  id: Scalars['Int64']['input'];
+}>;
+
+
+export type GetChannelBarQuery = { __typename?: 'Query', getChannel?: { __typename?: 'Channel', id: any, name: string, thumbnailUrl?: string | null, theme: Theme, membersCount?: number | null, isPrivate: boolean, isMember: boolean, isPending: boolean, isOwner: boolean, canModerate: boolean } | null };
 
 export type GetChannelCommunityQueryVariables = Exact<{
   id: Scalars['Int64']['input'];
@@ -800,7 +916,34 @@ export type GetCommentsQueryVariables = Exact<{
 }>;
 
 
-export type GetCommentsQuery = { __typename?: 'Query', getComments: Array<{ __typename?: 'Comment', _id: any, type: PostType, parentId: any, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }> };
+export type GetCommentsQuery = { __typename?: 'Query', getComments: Array<{ __typename?: 'Comment', _id: any, type: PostType, parentId: any, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, savedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }> };
+
+export type GetCommunityFeedQueryVariables = Exact<{
+  communityId: Scalars['Int64']['input'];
+  after?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type GetCommunityFeedQuery = { __typename?: 'Query', getCommunityFeed: { __typename?: 'FeedPage', nextCursor?: string | null, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, savedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, channels: Array<{ __typename?: 'FeedChannel', id: any, name: string, theme: Theme, thumbnail: string, canModerate: boolean }> } };
+
+export type GetDiscoverQueryVariables = Exact<{
+  interests?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
+  all?: InputMaybe<Scalars['Boolean']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type GetDiscoverQuery = { __typename?: 'Query', getDiscover: { __typename?: 'FeedPage', nextCursor?: string | null, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, savedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, channels: Array<{ __typename?: 'FeedChannel', id: any, name: string, theme: Theme, thumbnail: string, canModerate: boolean }> } };
+
+export type GetFeedQueryVariables = Exact<{
+  after?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type GetFeedQuery = { __typename?: 'Query', getFeed: { __typename?: 'FeedPage', nextCursor?: string | null, posts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, savedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }>, channels: Array<{ __typename?: 'FeedChannel', id: any, name: string, theme: Theme, thumbnail: string, canModerate: boolean }> } };
 
 export type GetPostsQueryVariables = Exact<{
   owner: OwnerInput;
@@ -810,489 +953,41 @@ export type GetPostsQueryVariables = Exact<{
 }>;
 
 
-export type GetPostsQuery = { __typename?: 'Query', getPosts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }> };
+export type GetPostsQuery = { __typename?: 'Query', getPosts: Array<{ __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, savedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } }> };
 
-export type CommentFieldsFragment = { __typename?: 'Comment', _id: any, type: PostType, parentId: any, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } };
+export type GetSavedQueryVariables = Exact<{
+  after?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type GetSavedQuery = { __typename?: 'Query', getSaved: { __typename?: 'SavedPage', nextCursor?: string | null, items: Array<{ __typename?: 'SavedPost', postId: any, savedAt: string, post?: { __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, savedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } } | null }>, channels: Array<{ __typename?: 'FeedChannel', id: any, name: string, theme: Theme, thumbnail: string, canModerate: boolean }> } };
+
+export type CommentFieldsFragment = { __typename?: 'Comment', _id: any, type: PostType, parentId: any, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, savedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } };
 
 export type MetaFieldsFragment = { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any };
 
-export type PersonalizedMetaFieldsFragment = { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } };
+export type PersonalizedMetaFieldsFragment = { __typename?: 'PersonalizedMeta', likedByPersona: boolean, savedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } };
 
-export type PostFieldsFragment = { __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } };
+export type PostFieldsFragment = { __typename?: 'Post', _id: any, type: PostType, authorId: any, rawContent: any, createdAt: string, privacy: Privacy, allowedPersonaIds: Array<any>, deniedPersonaIds: Array<any>, edited: boolean, tags: Array<string>, updatedAt: string, author: { __typename?: 'Persona', id: any, username: string, fullName: string, profileImageUrl?: string | null, anonymous: boolean }, owner: { __typename?: 'Owner', id: any, type: OwnerType }, meta: { __typename?: 'Meta', commentsCount?: any | null, likesCount: any, viewsCount: any, sharesCount: any }, personalizedMeta: { __typename?: 'PersonalizedMeta', likedByPersona: boolean, savedByPersona: boolean, viewedByPersona: boolean, sharedByPersona: boolean, acl: { __typename?: 'ACL', canView: boolean, canLike: boolean, canReply: boolean, canShare: boolean, canComment: boolean } } };
 
-export const MetaFieldsFragmentDoc = gql`
-    fragment MetaFields on Meta {
-  commentsCount
-  likesCount
-  viewsCount
-  sharesCount
-}
-    `;
-export const PersonalizedMetaFieldsFragmentDoc = gql`
-    fragment PersonalizedMetaFields on PersonalizedMeta {
-  likedByPersona
-  viewedByPersona
-  sharedByPersona
-  acl {
-    canView
-    canLike
-    canReply
-    canShare
-    canComment
-  }
-}
-    `;
-export const CommentFieldsFragmentDoc = gql`
-    fragment CommentFields on Comment {
-  _id
-  type
-  parentId
-  authorId
-  author {
-    id
-    username
-    fullName
-    profileImageUrl
-    anonymous
-  }
-  rawContent
-  createdAt
-  privacy
-  meta {
-    ...MetaFields
-  }
-  personalizedMeta {
-    ...PersonalizedMetaFields
-  }
-  allowedPersonaIds
-  deniedPersonaIds
-  edited
-  tags
-  updatedAt
-}
-    ${MetaFieldsFragmentDoc}
-${PersonalizedMetaFieldsFragmentDoc}`;
-export const PostFieldsFragmentDoc = gql`
-    fragment PostFields on Post {
-  _id
-  type
-  authorId
-  author {
-    id
-    username
-    fullName
-    profileImageUrl
-    anonymous
-  }
-  owner {
-    id
-    type
-  }
-  rawContent
-  createdAt
-  privacy
-  meta {
-    ...MetaFields
-  }
-  personalizedMeta {
-    ...PersonalizedMetaFields
-  }
-  allowedPersonaIds
-  deniedPersonaIds
-  edited
-  tags
-  updatedAt
-}
-    ${MetaFieldsFragmentDoc}
-${PersonalizedMetaFieldsFragmentDoc}`;
-export const CreateCommentDocument = gql`
-    mutation CreateComment($parentId: ObjectId!, $level: Int32!, $authorId: Int64!, $content: SimpleInput!, $tags: [String!], $privacy: Privacy!, $owner: OwnerInput!, $allowedPersonaIds: [Int64!]!, $deniedPersonaIds: [Int64!]!) {
-  createComment(
-    input: {owner: $owner, parentId: $parentId, level: $level, authorId: $authorId, tags: $tags, privacy: $privacy, content: $content, allowedPersonaIds: $allowedPersonaIds, deniedPersonaIds: $deniedPersonaIds}
-  ) {
-    _id
-    authorId
-    rawContent
-    tags
-    privacy
-    createdAt
-  }
-}
-    `;
-export type CreateCommentMutationFn = Apollo.MutationFunction<CreateCommentMutation, CreateCommentMutationVariables>;
-
-/**
- * __useCreateCommentMutation__
- *
- * To run a mutation, you first call `useCreateCommentMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreateCommentMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [createCommentMutation, { data, loading, error }] = useCreateCommentMutation({
- *   variables: {
- *      parentId: // value for 'parentId'
- *      level: // value for 'level'
- *      authorId: // value for 'authorId'
- *      content: // value for 'content'
- *      tags: // value for 'tags'
- *      privacy: // value for 'privacy'
- *      owner: // value for 'owner'
- *      allowedPersonaIds: // value for 'allowedPersonaIds'
- *      deniedPersonaIds: // value for 'deniedPersonaIds'
- *   },
- * });
- */
-export function useCreateCommentMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateCommentMutation, CreateCommentMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<CreateCommentMutation, CreateCommentMutationVariables>(CreateCommentDocument, options);
-      }
-export type CreateCommentMutationHookResult = ReturnType<typeof useCreateCommentMutation>;
-export type CreateCommentMutationResult = Apollo.MutationResult<CreateCommentMutation>;
-export type CreateCommentMutationOptions = Apollo.BaseMutationOptions<CreateCommentMutation, CreateCommentMutationVariables>;
-export const CreatePostDocument = gql`
-    mutation CreatePost($authorId: Int64!, $content: PortableTextInput!, $tags: [String!], $privacy: Privacy!, $owner: OwnerInput!, $allowedPersonaIds: [Int64!]!, $deniedPersonaIds: [Int64!]!) {
-  createPost(
-    input: {authorId: $authorId, tags: $tags, privacy: $privacy, owner: $owner, content: $content, deniedPersonaIds: $deniedPersonaIds, allowedPersonaIds: $allowedPersonaIds}
-  ) {
-    _id
-    authorId
-    owner {
-      type
-    }
-    rawContent
-    tags
-    privacy
-    createdAt
-  }
-}
-    `;
-export type CreatePostMutationFn = Apollo.MutationFunction<CreatePostMutation, CreatePostMutationVariables>;
-
-/**
- * __useCreatePostMutation__
- *
- * To run a mutation, you first call `useCreatePostMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreatePostMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [createPostMutation, { data, loading, error }] = useCreatePostMutation({
- *   variables: {
- *      authorId: // value for 'authorId'
- *      content: // value for 'content'
- *      tags: // value for 'tags'
- *      privacy: // value for 'privacy'
- *      owner: // value for 'owner'
- *      allowedPersonaIds: // value for 'allowedPersonaIds'
- *      deniedPersonaIds: // value for 'deniedPersonaIds'
- *   },
- * });
- */
-export function useCreatePostMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreatePostMutation, CreatePostMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<CreatePostMutation, CreatePostMutationVariables>(CreatePostDocument, options);
-      }
-export type CreatePostMutationHookResult = ReturnType<typeof useCreatePostMutation>;
-export type CreatePostMutationResult = Apollo.MutationResult<CreatePostMutation>;
-export type CreatePostMutationOptions = Apollo.BaseMutationOptions<CreatePostMutation, CreatePostMutationVariables>;
-export const DeleteCommentDocument = gql`
-    mutation DeleteComment($id: ObjectId!) {
-  deleteComment(id: $id)
-}
-    `;
-export type DeleteCommentMutationFn = Apollo.MutationFunction<DeleteCommentMutation, DeleteCommentMutationVariables>;
-
-/**
- * __useDeleteCommentMutation__
- *
- * To run a mutation, you first call `useDeleteCommentMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeleteCommentMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [deleteCommentMutation, { data, loading, error }] = useDeleteCommentMutation({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useDeleteCommentMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteCommentMutation, DeleteCommentMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<DeleteCommentMutation, DeleteCommentMutationVariables>(DeleteCommentDocument, options);
-      }
-export type DeleteCommentMutationHookResult = ReturnType<typeof useDeleteCommentMutation>;
-export type DeleteCommentMutationResult = Apollo.MutationResult<DeleteCommentMutation>;
-export type DeleteCommentMutationOptions = Apollo.BaseMutationOptions<DeleteCommentMutation, DeleteCommentMutationVariables>;
-export const DeletePostDocument = gql`
-    mutation DeletePost($id: ObjectId!) {
-  deletePost(id: $id)
-}
-    `;
-export type DeletePostMutationFn = Apollo.MutationFunction<DeletePostMutation, DeletePostMutationVariables>;
-
-/**
- * __useDeletePostMutation__
- *
- * To run a mutation, you first call `useDeletePostMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeletePostMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [deletePostMutation, { data, loading, error }] = useDeletePostMutation({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useDeletePostMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeletePostMutation, DeletePostMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<DeletePostMutation, DeletePostMutationVariables>(DeletePostDocument, options);
-      }
-export type DeletePostMutationHookResult = ReturnType<typeof useDeletePostMutation>;
-export type DeletePostMutationResult = Apollo.MutationResult<DeletePostMutation>;
-export type DeletePostMutationOptions = Apollo.BaseMutationOptions<DeletePostMutation, DeletePostMutationVariables>;
-export const CreateLikeDocument = gql`
-    mutation CreateLike($targetId: ObjectId!, $targetType: PostType!, $owner: OwnerInput!, $liked: Boolean!) {
-  createLike(
-    input: {owner: $owner, targetId: $targetId, targetType: $targetType, liked: $liked}
-  )
-}
-    `;
-export type CreateLikeMutationFn = Apollo.MutationFunction<CreateLikeMutation, CreateLikeMutationVariables>;
-
-/**
- * __useCreateLikeMutation__
- *
- * To run a mutation, you first call `useCreateLikeMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreateLikeMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [createLikeMutation, { data, loading, error }] = useCreateLikeMutation({
- *   variables: {
- *      targetId: // value for 'targetId'
- *      targetType: // value for 'targetType'
- *      owner: // value for 'owner'
- *      liked: // value for 'liked'
- *   },
- * });
- */
-export function useCreateLikeMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateLikeMutation, CreateLikeMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<CreateLikeMutation, CreateLikeMutationVariables>(CreateLikeDocument, options);
-      }
-export type CreateLikeMutationHookResult = ReturnType<typeof useCreateLikeMutation>;
-export type CreateLikeMutationResult = Apollo.MutationResult<CreateLikeMutation>;
-export type CreateLikeMutationOptions = Apollo.BaseMutationOptions<CreateLikeMutation, CreateLikeMutationVariables>;
-export const GetChannelDocument = gql`
-    query GetChannel($id: Int64!) {
-  getChannel(id: $id) {
-    id
-    name
-    description
-    bannerImageUrl
-    thumbnailUrl
-    createdAt
-    posts {
-      ...PostFields
-    }
-    totalPosts
-    owner {
-      id
-      username
-      fullName
-      profileImageUrl
-    }
-    isMember
-    isFollower
-    canModerate
-    community {
-      id
-      name
-      slug
-    }
-    membersCount
-    followersCount
-    minAge
-  }
-}
-    ${PostFieldsFragmentDoc}`;
-
-/**
- * __useGetChannelQuery__
- *
- * To run a query within a React component, call `useGetChannelQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetChannelQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetChannelQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useGetChannelQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetChannelQuery, GetChannelQueryVariables> & ({ variables: GetChannelQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetChannelQuery, GetChannelQueryVariables>(GetChannelDocument, options);
-      }
-export function useGetChannelLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetChannelQuery, GetChannelQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetChannelQuery, GetChannelQueryVariables>(GetChannelDocument, options);
-        }
-export function useGetChannelSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetChannelQuery, GetChannelQueryVariables>) {
-          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useSuspenseQuery<GetChannelQuery, GetChannelQueryVariables>(GetChannelDocument, options);
-        }
-export type GetChannelQueryHookResult = ReturnType<typeof useGetChannelQuery>;
-export type GetChannelLazyQueryHookResult = ReturnType<typeof useGetChannelLazyQuery>;
-export type GetChannelSuspenseQueryHookResult = ReturnType<typeof useGetChannelSuspenseQuery>;
-export type GetChannelQueryResult = Apollo.QueryResult<GetChannelQuery, GetChannelQueryVariables>;
-export const GetChannelCommunityDocument = gql`
-    query GetChannelCommunity($id: Int64!) {
-  getChannel(id: $id) {
-    id
-    community {
-      id
-      name
-      slug
-    }
-  }
-}
-    `;
-
-/**
- * __useGetChannelCommunityQuery__
- *
- * To run a query within a React component, call `useGetChannelCommunityQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetChannelCommunityQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetChannelCommunityQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useGetChannelCommunityQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetChannelCommunityQuery, GetChannelCommunityQueryVariables> & ({ variables: GetChannelCommunityQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>(GetChannelCommunityDocument, options);
-      }
-export function useGetChannelCommunityLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>(GetChannelCommunityDocument, options);
-        }
-export function useGetChannelCommunitySuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>) {
-          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useSuspenseQuery<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>(GetChannelCommunityDocument, options);
-        }
-export type GetChannelCommunityQueryHookResult = ReturnType<typeof useGetChannelCommunityQuery>;
-export type GetChannelCommunityLazyQueryHookResult = ReturnType<typeof useGetChannelCommunityLazyQuery>;
-export type GetChannelCommunitySuspenseQueryHookResult = ReturnType<typeof useGetChannelCommunitySuspenseQuery>;
-export type GetChannelCommunityQueryResult = Apollo.QueryResult<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>;
-export const GetCommentsDocument = gql`
-    query GetComments($parentId: ObjectId!, $limit: Int, $offset: Int) {
-  getComments(parentId: $parentId, limit: $limit, offset: $offset) {
-    ...CommentFields
-  }
-}
-    ${CommentFieldsFragmentDoc}`;
-
-/**
- * __useGetCommentsQuery__
- *
- * To run a query within a React component, call `useGetCommentsQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetCommentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetCommentsQuery({
- *   variables: {
- *      parentId: // value for 'parentId'
- *      limit: // value for 'limit'
- *      offset: // value for 'offset'
- *   },
- * });
- */
-export function useGetCommentsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetCommentsQuery, GetCommentsQueryVariables> & ({ variables: GetCommentsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetCommentsQuery, GetCommentsQueryVariables>(GetCommentsDocument, options);
-      }
-export function useGetCommentsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetCommentsQuery, GetCommentsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetCommentsQuery, GetCommentsQueryVariables>(GetCommentsDocument, options);
-        }
-export function useGetCommentsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetCommentsQuery, GetCommentsQueryVariables>) {
-          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useSuspenseQuery<GetCommentsQuery, GetCommentsQueryVariables>(GetCommentsDocument, options);
-        }
-export type GetCommentsQueryHookResult = ReturnType<typeof useGetCommentsQuery>;
-export type GetCommentsLazyQueryHookResult = ReturnType<typeof useGetCommentsLazyQuery>;
-export type GetCommentsSuspenseQueryHookResult = ReturnType<typeof useGetCommentsSuspenseQuery>;
-export type GetCommentsQueryResult = Apollo.QueryResult<GetCommentsQuery, GetCommentsQueryVariables>;
-export const GetPostsDocument = gql`
-    query GetPosts($owner: OwnerInput!, $ids: [ObjectId!], $limit: Int, $offset: Int) {
-  getPosts(owner: $owner, ids: $ids, limit: $limit, offset: $offset) {
-    ...PostFields
-  }
-}
-    ${PostFieldsFragmentDoc}`;
-
-/**
- * __useGetPostsQuery__
- *
- * To run a query within a React component, call `useGetPostsQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetPostsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetPostsQuery({
- *   variables: {
- *      owner: // value for 'owner'
- *      ids: // value for 'ids'
- *      limit: // value for 'limit'
- *      offset: // value for 'offset'
- *   },
- * });
- */
-export function useGetPostsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetPostsQuery, GetPostsQueryVariables> & ({ variables: GetPostsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetPostsQuery, GetPostsQueryVariables>(GetPostsDocument, options);
-      }
-export function useGetPostsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetPostsQuery, GetPostsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetPostsQuery, GetPostsQueryVariables>(GetPostsDocument, options);
-        }
-export function useGetPostsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetPostsQuery, GetPostsQueryVariables>) {
-          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useSuspenseQuery<GetPostsQuery, GetPostsQueryVariables>(GetPostsDocument, options);
-        }
-export type GetPostsQueryHookResult = ReturnType<typeof useGetPostsQuery>;
-export type GetPostsLazyQueryHookResult = ReturnType<typeof useGetPostsLazyQuery>;
-export type GetPostsSuspenseQueryHookResult = ReturnType<typeof useGetPostsSuspenseQuery>;
-export type GetPostsQueryResult = Apollo.QueryResult<GetPostsQuery, GetPostsQueryVariables>;
+export const MetaFieldsFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"MetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Meta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"commentsCount"}},{"kind":"Field","name":{"kind":"Name","value":"likesCount"}},{"kind":"Field","name":{"kind":"Name","value":"viewsCount"}},{"kind":"Field","name":{"kind":"Name","value":"sharesCount"}}]}}]} as unknown as DocumentNode<MetaFieldsFragment, unknown>;
+export const PersonalizedMetaFieldsFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PersonalizedMetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"PersonalizedMeta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"likedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"savedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"viewedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"sharedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"acl"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"canView"}},{"kind":"Field","name":{"kind":"Name","value":"canLike"}},{"kind":"Field","name":{"kind":"Name","value":"canReply"}},{"kind":"Field","name":{"kind":"Name","value":"canShare"}},{"kind":"Field","name":{"kind":"Name","value":"canComment"}}]}}]}}]} as unknown as DocumentNode<PersonalizedMetaFieldsFragment, unknown>;
+export const CommentFieldsFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"CommentFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Comment"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"_id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"parentId"}},{"kind":"Field","name":{"kind":"Name","value":"authorId"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"fullName"}},{"kind":"Field","name":{"kind":"Name","value":"profileImageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"anonymous"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rawContent"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"privacy"}},{"kind":"Field","name":{"kind":"Name","value":"meta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"MetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"personalizedMeta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PersonalizedMetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"allowedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"deniedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"edited"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"MetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Meta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"commentsCount"}},{"kind":"Field","name":{"kind":"Name","value":"likesCount"}},{"kind":"Field","name":{"kind":"Name","value":"viewsCount"}},{"kind":"Field","name":{"kind":"Name","value":"sharesCount"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PersonalizedMetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"PersonalizedMeta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"likedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"savedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"viewedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"sharedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"acl"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"canView"}},{"kind":"Field","name":{"kind":"Name","value":"canLike"}},{"kind":"Field","name":{"kind":"Name","value":"canReply"}},{"kind":"Field","name":{"kind":"Name","value":"canShare"}},{"kind":"Field","name":{"kind":"Name","value":"canComment"}}]}}]}}]} as unknown as DocumentNode<CommentFieldsFragment, unknown>;
+export const PostFieldsFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PostFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Post"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"_id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"authorId"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"fullName"}},{"kind":"Field","name":{"kind":"Name","value":"profileImageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"anonymous"}}]}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rawContent"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"privacy"}},{"kind":"Field","name":{"kind":"Name","value":"meta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"MetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"personalizedMeta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PersonalizedMetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"allowedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"deniedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"edited"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"MetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Meta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"commentsCount"}},{"kind":"Field","name":{"kind":"Name","value":"likesCount"}},{"kind":"Field","name":{"kind":"Name","value":"viewsCount"}},{"kind":"Field","name":{"kind":"Name","value":"sharesCount"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PersonalizedMetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"PersonalizedMeta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"likedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"savedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"viewedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"sharedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"acl"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"canView"}},{"kind":"Field","name":{"kind":"Name","value":"canLike"}},{"kind":"Field","name":{"kind":"Name","value":"canReply"}},{"kind":"Field","name":{"kind":"Name","value":"canShare"}},{"kind":"Field","name":{"kind":"Name","value":"canComment"}}]}}]}}]} as unknown as DocumentNode<PostFieldsFragment, unknown>;
+export const CreateCommentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateComment"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"parentId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectId"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"level"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int32"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"authorId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int64"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"content"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SimpleInput"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tags"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"privacy"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Privacy"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"owner"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"OwnerInput"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"allowedPersonaIds"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int64"}}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"deniedPersonaIds"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int64"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createComment"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"owner"},"value":{"kind":"Variable","name":{"kind":"Name","value":"owner"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"parentId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"parentId"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"level"},"value":{"kind":"Variable","name":{"kind":"Name","value":"level"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"authorId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"authorId"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"tags"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tags"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"privacy"},"value":{"kind":"Variable","name":{"kind":"Name","value":"privacy"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"content"},"value":{"kind":"Variable","name":{"kind":"Name","value":"content"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"allowedPersonaIds"},"value":{"kind":"Variable","name":{"kind":"Name","value":"allowedPersonaIds"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"deniedPersonaIds"},"value":{"kind":"Variable","name":{"kind":"Name","value":"deniedPersonaIds"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"_id"}},{"kind":"Field","name":{"kind":"Name","value":"authorId"}},{"kind":"Field","name":{"kind":"Name","value":"rawContent"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"privacy"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<CreateCommentMutation, CreateCommentMutationVariables>;
+export const CreatePostDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreatePost"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"authorId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int64"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"content"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"PortableTextInput"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tags"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"privacy"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Privacy"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"owner"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"OwnerInput"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"allowedPersonaIds"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int64"}}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"deniedPersonaIds"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int64"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createPost"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"authorId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"authorId"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"tags"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tags"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"privacy"},"value":{"kind":"Variable","name":{"kind":"Name","value":"privacy"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"owner"},"value":{"kind":"Variable","name":{"kind":"Name","value":"owner"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"content"},"value":{"kind":"Variable","name":{"kind":"Name","value":"content"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"deniedPersonaIds"},"value":{"kind":"Variable","name":{"kind":"Name","value":"deniedPersonaIds"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"allowedPersonaIds"},"value":{"kind":"Variable","name":{"kind":"Name","value":"allowedPersonaIds"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"_id"}},{"kind":"Field","name":{"kind":"Name","value":"authorId"}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rawContent"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"privacy"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<CreatePostMutation, CreatePostMutationVariables>;
+export const DeleteCommentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteComment"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectId"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteComment"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<DeleteCommentMutation, DeleteCommentMutationVariables>;
+export const DeletePostDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeletePost"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectId"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deletePost"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<DeletePostMutation, DeletePostMutationVariables>;
+export const CreateLikeDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateLike"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"targetId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectId"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"targetType"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"PostType"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"owner"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"OwnerInput"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"liked"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createLike"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"owner"},"value":{"kind":"Variable","name":{"kind":"Name","value":"owner"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"targetId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"targetId"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"targetType"},"value":{"kind":"Variable","name":{"kind":"Name","value":"targetType"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"liked"},"value":{"kind":"Variable","name":{"kind":"Name","value":"liked"}}}]}}]}]}}]} as unknown as DocumentNode<CreateLikeMutation, CreateLikeMutationVariables>;
+export const SavePostDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SavePost"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectId"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"savePost"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<SavePostMutation, SavePostMutationVariables>;
+export const UnsavePostDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UnsavePost"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectId"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"unsavePost"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<UnsavePostMutation, UnsavePostMutationVariables>;
+export const GetChannelDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetChannel"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int64"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getChannel"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"bannerImageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"bannerX"}},{"kind":"Field","name":{"kind":"Name","value":"bannerY"}},{"kind":"Field","name":{"kind":"Name","value":"thumbnailUrl"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"posts"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PostFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"totalPosts"}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"fullName"}},{"kind":"Field","name":{"kind":"Name","value":"profileImageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"anonymous"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isMember"}},{"kind":"Field","name":{"kind":"Name","value":"isFollower"}},{"kind":"Field","name":{"kind":"Name","value":"isPending"}},{"kind":"Field","name":{"kind":"Name","value":"isOwner"}},{"kind":"Field","name":{"kind":"Name","value":"isPrivate"}},{"kind":"Field","name":{"kind":"Name","value":"canModerate"}},{"kind":"Field","name":{"kind":"Name","value":"community"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"slug"}}]}},{"kind":"Field","name":{"kind":"Name","value":"membersCount"}},{"kind":"Field","name":{"kind":"Name","value":"followersCount"}},{"kind":"Field","name":{"kind":"Name","value":"minAge"}},{"kind":"Field","name":{"kind":"Name","value":"theme"}},{"kind":"Field","name":{"kind":"Name","value":"ownTheme"}},{"kind":"Field","name":{"kind":"Name","value":"coverPattern"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"MetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Meta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"commentsCount"}},{"kind":"Field","name":{"kind":"Name","value":"likesCount"}},{"kind":"Field","name":{"kind":"Name","value":"viewsCount"}},{"kind":"Field","name":{"kind":"Name","value":"sharesCount"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PersonalizedMetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"PersonalizedMeta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"likedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"savedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"viewedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"sharedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"acl"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"canView"}},{"kind":"Field","name":{"kind":"Name","value":"canLike"}},{"kind":"Field","name":{"kind":"Name","value":"canReply"}},{"kind":"Field","name":{"kind":"Name","value":"canShare"}},{"kind":"Field","name":{"kind":"Name","value":"canComment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PostFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Post"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"_id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"authorId"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"fullName"}},{"kind":"Field","name":{"kind":"Name","value":"profileImageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"anonymous"}}]}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rawContent"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"privacy"}},{"kind":"Field","name":{"kind":"Name","value":"meta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"MetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"personalizedMeta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PersonalizedMetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"allowedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"deniedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"edited"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]} as unknown as DocumentNode<GetChannelQuery, GetChannelQueryVariables>;
+export const GetChannelBarDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetChannelBar"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int64"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getChannel"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"thumbnailUrl"}},{"kind":"Field","name":{"kind":"Name","value":"theme"}},{"kind":"Field","name":{"kind":"Name","value":"membersCount"}},{"kind":"Field","name":{"kind":"Name","value":"isPrivate"}},{"kind":"Field","name":{"kind":"Name","value":"isMember"}},{"kind":"Field","name":{"kind":"Name","value":"isPending"}},{"kind":"Field","name":{"kind":"Name","value":"isOwner"}},{"kind":"Field","name":{"kind":"Name","value":"canModerate"}}]}}]}}]} as unknown as DocumentNode<GetChannelBarQuery, GetChannelBarQueryVariables>;
+export const GetChannelCommunityDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetChannelCommunity"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int64"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getChannel"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"community"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"slug"}}]}}]}}]}}]} as unknown as DocumentNode<GetChannelCommunityQuery, GetChannelCommunityQueryVariables>;
+export const GetCommentsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetComments"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"parentId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectId"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"offset"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getComments"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"parentId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"parentId"}}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"offset"},"value":{"kind":"Variable","name":{"kind":"Name","value":"offset"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"CommentFields"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"MetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Meta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"commentsCount"}},{"kind":"Field","name":{"kind":"Name","value":"likesCount"}},{"kind":"Field","name":{"kind":"Name","value":"viewsCount"}},{"kind":"Field","name":{"kind":"Name","value":"sharesCount"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PersonalizedMetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"PersonalizedMeta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"likedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"savedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"viewedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"sharedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"acl"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"canView"}},{"kind":"Field","name":{"kind":"Name","value":"canLike"}},{"kind":"Field","name":{"kind":"Name","value":"canReply"}},{"kind":"Field","name":{"kind":"Name","value":"canShare"}},{"kind":"Field","name":{"kind":"Name","value":"canComment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"CommentFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Comment"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"_id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"parentId"}},{"kind":"Field","name":{"kind":"Name","value":"authorId"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"fullName"}},{"kind":"Field","name":{"kind":"Name","value":"profileImageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"anonymous"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rawContent"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"privacy"}},{"kind":"Field","name":{"kind":"Name","value":"meta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"MetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"personalizedMeta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PersonalizedMetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"allowedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"deniedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"edited"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]} as unknown as DocumentNode<GetCommentsQuery, GetCommentsQueryVariables>;
+export const GetCommunityFeedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetCommunityFeed"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"communityId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int64"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"after"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getCommunityFeed"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"communityId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"communityId"}}},{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"after"}}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"posts"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PostFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"channels"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"theme"}},{"kind":"Field","name":{"kind":"Name","value":"thumbnail"}},{"kind":"Field","name":{"kind":"Name","value":"canModerate"}}]}},{"kind":"Field","name":{"kind":"Name","value":"nextCursor"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"MetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Meta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"commentsCount"}},{"kind":"Field","name":{"kind":"Name","value":"likesCount"}},{"kind":"Field","name":{"kind":"Name","value":"viewsCount"}},{"kind":"Field","name":{"kind":"Name","value":"sharesCount"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PersonalizedMetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"PersonalizedMeta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"likedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"savedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"viewedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"sharedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"acl"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"canView"}},{"kind":"Field","name":{"kind":"Name","value":"canLike"}},{"kind":"Field","name":{"kind":"Name","value":"canReply"}},{"kind":"Field","name":{"kind":"Name","value":"canShare"}},{"kind":"Field","name":{"kind":"Name","value":"canComment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PostFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Post"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"_id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"authorId"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"fullName"}},{"kind":"Field","name":{"kind":"Name","value":"profileImageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"anonymous"}}]}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rawContent"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"privacy"}},{"kind":"Field","name":{"kind":"Name","value":"meta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"MetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"personalizedMeta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PersonalizedMetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"allowedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"deniedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"edited"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]} as unknown as DocumentNode<GetCommunityFeedQuery, GetCommunityFeedQueryVariables>;
+export const GetDiscoverDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDiscover"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"interests"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"all"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"after"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getDiscover"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"interests"},"value":{"kind":"Variable","name":{"kind":"Name","value":"interests"}}},{"kind":"Argument","name":{"kind":"Name","value":"all"},"value":{"kind":"Variable","name":{"kind":"Name","value":"all"}}},{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"after"}}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"posts"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PostFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"channels"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"theme"}},{"kind":"Field","name":{"kind":"Name","value":"thumbnail"}},{"kind":"Field","name":{"kind":"Name","value":"canModerate"}}]}},{"kind":"Field","name":{"kind":"Name","value":"nextCursor"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"MetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Meta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"commentsCount"}},{"kind":"Field","name":{"kind":"Name","value":"likesCount"}},{"kind":"Field","name":{"kind":"Name","value":"viewsCount"}},{"kind":"Field","name":{"kind":"Name","value":"sharesCount"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PersonalizedMetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"PersonalizedMeta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"likedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"savedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"viewedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"sharedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"acl"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"canView"}},{"kind":"Field","name":{"kind":"Name","value":"canLike"}},{"kind":"Field","name":{"kind":"Name","value":"canReply"}},{"kind":"Field","name":{"kind":"Name","value":"canShare"}},{"kind":"Field","name":{"kind":"Name","value":"canComment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PostFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Post"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"_id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"authorId"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"fullName"}},{"kind":"Field","name":{"kind":"Name","value":"profileImageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"anonymous"}}]}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rawContent"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"privacy"}},{"kind":"Field","name":{"kind":"Name","value":"meta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"MetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"personalizedMeta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PersonalizedMetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"allowedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"deniedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"edited"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]} as unknown as DocumentNode<GetDiscoverQuery, GetDiscoverQueryVariables>;
+export const GetFeedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetFeed"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"after"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getFeed"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"after"}}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"posts"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PostFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"channels"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"theme"}},{"kind":"Field","name":{"kind":"Name","value":"thumbnail"}},{"kind":"Field","name":{"kind":"Name","value":"canModerate"}}]}},{"kind":"Field","name":{"kind":"Name","value":"nextCursor"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"MetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Meta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"commentsCount"}},{"kind":"Field","name":{"kind":"Name","value":"likesCount"}},{"kind":"Field","name":{"kind":"Name","value":"viewsCount"}},{"kind":"Field","name":{"kind":"Name","value":"sharesCount"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PersonalizedMetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"PersonalizedMeta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"likedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"savedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"viewedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"sharedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"acl"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"canView"}},{"kind":"Field","name":{"kind":"Name","value":"canLike"}},{"kind":"Field","name":{"kind":"Name","value":"canReply"}},{"kind":"Field","name":{"kind":"Name","value":"canShare"}},{"kind":"Field","name":{"kind":"Name","value":"canComment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PostFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Post"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"_id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"authorId"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"fullName"}},{"kind":"Field","name":{"kind":"Name","value":"profileImageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"anonymous"}}]}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rawContent"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"privacy"}},{"kind":"Field","name":{"kind":"Name","value":"meta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"MetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"personalizedMeta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PersonalizedMetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"allowedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"deniedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"edited"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]} as unknown as DocumentNode<GetFeedQuery, GetFeedQueryVariables>;
+export const GetPostsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPosts"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"owner"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"OwnerInput"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ids"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectId"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"offset"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getPosts"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"owner"},"value":{"kind":"Variable","name":{"kind":"Name","value":"owner"}}},{"kind":"Argument","name":{"kind":"Name","value":"ids"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ids"}}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"offset"},"value":{"kind":"Variable","name":{"kind":"Name","value":"offset"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PostFields"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"MetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Meta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"commentsCount"}},{"kind":"Field","name":{"kind":"Name","value":"likesCount"}},{"kind":"Field","name":{"kind":"Name","value":"viewsCount"}},{"kind":"Field","name":{"kind":"Name","value":"sharesCount"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PersonalizedMetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"PersonalizedMeta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"likedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"savedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"viewedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"sharedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"acl"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"canView"}},{"kind":"Field","name":{"kind":"Name","value":"canLike"}},{"kind":"Field","name":{"kind":"Name","value":"canReply"}},{"kind":"Field","name":{"kind":"Name","value":"canShare"}},{"kind":"Field","name":{"kind":"Name","value":"canComment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PostFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Post"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"_id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"authorId"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"fullName"}},{"kind":"Field","name":{"kind":"Name","value":"profileImageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"anonymous"}}]}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rawContent"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"privacy"}},{"kind":"Field","name":{"kind":"Name","value":"meta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"MetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"personalizedMeta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PersonalizedMetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"allowedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"deniedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"edited"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]} as unknown as DocumentNode<GetPostsQuery, GetPostsQueryVariables>;
+export const GetSavedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetSaved"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"after"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getSaved"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"after"}}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"postId"}},{"kind":"Field","name":{"kind":"Name","value":"savedAt"}},{"kind":"Field","name":{"kind":"Name","value":"post"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PostFields"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"channels"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"theme"}},{"kind":"Field","name":{"kind":"Name","value":"thumbnail"}},{"kind":"Field","name":{"kind":"Name","value":"canModerate"}}]}},{"kind":"Field","name":{"kind":"Name","value":"nextCursor"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"MetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Meta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"commentsCount"}},{"kind":"Field","name":{"kind":"Name","value":"likesCount"}},{"kind":"Field","name":{"kind":"Name","value":"viewsCount"}},{"kind":"Field","name":{"kind":"Name","value":"sharesCount"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PersonalizedMetaFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"PersonalizedMeta"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"likedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"savedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"viewedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"sharedByPersona"}},{"kind":"Field","name":{"kind":"Name","value":"acl"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"canView"}},{"kind":"Field","name":{"kind":"Name","value":"canLike"}},{"kind":"Field","name":{"kind":"Name","value":"canReply"}},{"kind":"Field","name":{"kind":"Name","value":"canShare"}},{"kind":"Field","name":{"kind":"Name","value":"canComment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PostFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Post"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"_id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"authorId"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"fullName"}},{"kind":"Field","name":{"kind":"Name","value":"profileImageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"anonymous"}}]}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rawContent"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"privacy"}},{"kind":"Field","name":{"kind":"Name","value":"meta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"MetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"personalizedMeta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PersonalizedMetaFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"allowedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"deniedPersonaIds"}},{"kind":"Field","name":{"kind":"Name","value":"edited"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]} as unknown as DocumentNode<GetSavedQuery, GetSavedQueryVariables>;

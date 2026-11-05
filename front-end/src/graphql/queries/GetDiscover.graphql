@@ -1,0 +1,15 @@
+query GetDiscover($interests: [String!], $all: Boolean, $after: String, $limit: Int) {
+  getDiscover(interests: $interests, all: $all, after: $after, limit: $limit) {
+    posts {
+      ...PostFields
+    }
+    channels {
+      id
+      name
+      theme
+      thumbnail
+      canModerate
+    }
+    nextCursor
+  }
+}

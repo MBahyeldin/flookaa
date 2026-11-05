@@ -1,114 +1,120 @@
+import { Check, ChevronDown, LogOut, Settings, SunMoon } from "lucide-react";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+
 import {
   SidebarFooter,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
-
-import { ChevronsUpDown, User2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/Auth.context";
-import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
-import clsx from "clsx";
+import { useTheme } from "@/Theme.context";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import { setCurrentPersona } from "@/services/persona";
+import type { Persona } from "@/types/persona";
+import { personaInitials as initials } from "@/lib/personaInitials";
+import { cn } from "@/lib/utils";
+import { direction } from "@/i18n";
 
-export default function AppSidebarFooter({ open }: { open: boolean }) {
+function PersonaAvatar({ persona }: { persona: Persona }) {
+  return (
+    <Avatar size="sm">
+      <AvatarImage src={persona.thumbnail} className="object-cover" />
+      <AvatarFallback>{initials(persona)}</AvatarFallback>
+    </Avatar>
+  );
+}
+
+export default function AppSidebarFooter() {
+  const { t } = useTranslation();
   const { handleLogOut } = useAuth();
-  const { personas } = useUserProfileStore();
-  const { persona } = useUserProfileStore();
+  const { isDarkMode, toggleTheme } = useTheme();
+  const { persona, personas } = useUserProfileStore();
+  const { state, isMobile, setOpenMobile } = useSidebar();
+  const collapsed = state === "collapsed";
 
+  if (!persona) return null;
+  const displayName = `${persona.first_name} ${persona.last_name}`;
 
   return (
     <SidebarFooter>
       <SidebarMenu>
         <SidebarMenuItem>
-          <DropdownMenu>
-            {/*
-              One trigger on the row itself. There used to be two
-              DropdownMenuTriggers inside this button — both received the same
-              generated id (duplicate DOM ids) and both targeted a plain div /
-              svg, so neither was keyboard reachable.
-            */}
-            <DropdownMenuTrigger asChild>
-              <SidebarMenuButton
-                aria-label="Switch persona or sign out"
-                className="flex items-center gap-3 px-2 py-1.5"
-              >
-                <div className="absolute left-2 top-1/2 -translate-y-1/2 -ml-2 z-2 bg-sidebar">
-                  <Avatar className="w-8 h-8 cursor-pointer block">
-                    <AvatarImage
-                      src={persona?.thumbnail}
-                      alt=""
-                      className="w-8 h-8 object-cover rounded-full"
-                    />
-                    <AvatarFallback className="flex items-center justify-center bg-muted rounded-full w-8 h-8">
-                      <User2 className="w-5 h-5" />
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-                <div className="flex-1 min-w-0 ml-8 text-left">
-                  <p className="truncate font-medium text-sm">{persona?.first_name} {persona?.last_name}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {persona?.name}
-                  </p>
-                </div>
-                <ChevronsUpDown
-                  aria-hidden="true"
-                  className={clsx(
-                    "w-4 h-4 ml-2 text-muted-foreground shrink-0",
-                    {
-                      "absolute left-2 top-1/2 ": !open,
-                    }
-                  )}
-                />
-              </SidebarMenuButton>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent
-              side="right"
-              className="w-[--radix-popper-anchor-width] min-w-[150px] mb-2 ml-1"
-            >
-                {
-                  personas.filter(p => p.id !== persona?.id).map((p) => (
-                    <DropdownMenuItem
-                        key={p.id}
-                        onClick={async () => {
-                          await setCurrentPersona(p.id);
-                          window.location.reload();
-                        }}
-                        className="cursor-pointer"
-                      >
-                      <div
-                        className="cursor-pointer flex items-center gap-2 flex-row"
-                      >
-                        <Avatar className="w-8 h-8 cursor-pointer block">
-                          <AvatarImage
-                            src={p?.thumbnail}
-                            alt={p?.name}
-                            className="w-8 h-8 object-cover rounded-full"
-                          />
-                          <AvatarFallback className="flex items-center justify-center bg-muted rounded-full w-8 h-8">
-                            <User2 className="w-5 h-5" />
-                          </AvatarFallback>
-                        </Avatar>
-                        {p.first_name} {p.last_name} ({p.name})
-                      </div>
-                    </DropdownMenuItem>
-                  ))
-                }
-              <DropdownMenuItem onClick={handleLogOut}>
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <SidebarMenuButton tooltip={t("shell.appearance")} aria-pressed={isDarkMode} onClick={toggleTheme}>
+            <SunMoon aria-hidden="true" />
+            <span>{t("shell.appearance")}</span>
+          </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label={t("shell.personaMenu", { name: displayName })}
+            className="flex w-full items-center gap-2.5 rounded-md border border-sidebar-border p-2 text-start outline-hidden transition-colors hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[state=open]:bg-sidebar-accent group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:p-0"
+          >
+            <PersonaAvatar persona={persona} />
+            <span className="flex min-w-0 flex-1 flex-col group-data-[collapsible=icon]:hidden">
+              <span dir="auto" className="truncate text-match-parent text-sm font-medium text-foreground">{displayName}</span>
+              <span dir="ltr" className="truncate text-match-parent text-xs text-muted-foreground">@{persona.slug}</span>
+            </span>
+            <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          side={collapsed && !isMobile ? (direction() === "rtl" ? "left" : "right") : "top"}
+          align={collapsed && !isMobile ? "end" : "start"}
+          className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
+        >
+          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">{t("shell.switchPersona")}</DropdownMenuLabel>
+          {personas.map((p) => {
+            const current = p.id === persona.id;
+            return (
+              <DropdownMenuItem
+                key={p.id}
+                aria-current={current || undefined}
+                className={cn("h-auto py-1.5", current && "bg-accent")}
+                onClick={async () => {
+                  if (current) return;
+                  if (await setCurrentPersona(p.id)) window.location.reload();
+                  else toast.error(t("shell.switchFailed"));
+                }}
+              >
+                <PersonaAvatar persona={p} />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span dir="auto" className="truncate text-match-parent text-sm font-medium">{p.first_name} {p.last_name}</span>
+                  <span dir="ltr" className="truncate text-match-parent text-xs text-muted-foreground">@{p.slug}</span>
+                </span>
+                {current && <Check aria-hidden className="text-primary" />}
+              </DropdownMenuItem>
+            );
+          })}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link to="/persona-manager" onClick={() => isMobile && setOpenMobile(false)}>
+              <Settings aria-hidden />
+              {t("shell.managePersonas")}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleLogOut}>
+            <LogOut aria-hidden className="rtl:-scale-x-100" />
+            {t("shell.logOut")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </SidebarFooter>
   );
 }

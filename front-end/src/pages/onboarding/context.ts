@@ -2,7 +2,9 @@ import { createContext, useContext, type ComponentType } from "react";
 import type { MoveResult, OnboardingAction, OnboardingStepInfo } from "@/types/onboarding";
 
 export type OnboardingStepDef = {
+  label: string;
   title: string;
+  lead?: string;
   Component: ComponentType;
 };
 

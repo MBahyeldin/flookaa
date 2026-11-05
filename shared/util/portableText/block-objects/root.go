@@ -74,8 +74,10 @@ func Key(b *models.Blocks) string {
 func TextLength(b *models.Blocks) int {
 	if b.Callout != nil {
 		n := utf16Len(b.Callout.Description)
-		if b.Callout.Title != nil {
-			n += utf16Len(*b.Callout.Title)
+		for _, s := range []*string{b.Callout.Tag, b.Callout.Title} {
+			if s != nil {
+				n += utf16Len(*s)
+			}
 		}
 		return n
 	}

@@ -11,6 +11,7 @@ export default function SwitchInput({
   value,
   field,
 }: FormFieldProps) {
+  const hint = field.hint?.(String(value === true));
   return (
     <div className={cn(className, field.width)}>
       <div className="flex items-center gap-2">
@@ -21,7 +22,11 @@ export default function SwitchInput({
         />
         <Label htmlFor={field.id}>{field.label}</Label>
       </div>
-      {error && touched && <p className="text-sm text-destructive mt-1">{error}</p>}
+      {error && touched ? (
+        <p className="text-sm text-destructive mt-1">{error}</p>
+      ) : (
+        hint && <p className="text-sm text-muted-foreground mt-1">{hint}</p>
+      )}
     </div>
   );
 }

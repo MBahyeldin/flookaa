@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import AppLoader from "@/components/app-loader";
 import { Button } from "@/components/ui/button";
 import { moveOnboarding } from "@/services/onboarding";
-import { setCurrentPersona } from "@/services/persona";
+import { fetchUserPersonas, setCurrentPersona } from "@/services/persona";
 import { useUserProfileStore } from "@/stores/UserProfileStore";
 import OnboardingShell from "./OnboardingShell";
+import { useTranslation } from "react-i18next";
 
 const PERSONA_ATTEMPT_KEY = "onboarding_persona_attempt";
 
@@ -28,11 +29,10 @@ function clearAttempt() {
 
 /** Onboarding runs as the default persona, so the persona steps can use Persona-tier endpoints. */
 export default function OnboardingPage() {
-  const { user, persona, personas } = useUserProfileStore();
+  const { t } = useTranslation(["onboarding", "common"]);
+  const { user, persona } = useUserProfileStore();
   const [failed, setFailed] = useState(false);
   const started = useRef(false);
-
-  const defaultPersona = personas.find((p) => p.is_default) ?? personas[0];
 
   useEffect(() => {
     if (persona) {
@@ -42,16 +42,22 @@ export default function OnboardingPage() {
     if (started.current) return;
     started.current = true;
     // One reload per session, so a persona that never sticks can't loop.
-    if (!defaultPersona || !takeAttempt()) {
+    if (!takeAttempt()) {
       setFailed(true);
       return;
     }
-    setCurrentPersona(defaultPersona.id).then((ok) => {
-      // Reload like persona selection: the websocket subscribes on load only.
-      if (ok) window.location.reload();
-      else setFailed(true);
-    });
-  }, [persona, defaultPersona]);
+    // Fetched here: right after verification the store still holds the list from before it.
+    fetchUserPersonas()
+      .then((personas) => {
+        const defaultPersona = personas.find((p) => p.is_default) ?? personas[0];
+        return defaultPersona ? setCurrentPersona(defaultPersona.id) : false;
+      })
+      .then((ok) => {
+        // Reload like persona selection: the websocket subscribes on load only.
+        if (ok) window.location.reload();
+        else setFailed(true);
+      });
+  }, [persona]);
 
   if (!user?.onboarding) return null;
 
@@ -59,15 +65,15 @@ export default function OnboardingPage() {
     if (!failed) return <AppLoader />;
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
-        <p className="text-muted-foreground">We couldn't open your persona.</p>
+        <p className="text-muted-foreground">{t("personaFailed")}</p>
         <Button
-          borderRadius="full"
+         
           onClick={() => {
             clearAttempt();
             window.location.reload();
           }}
         >
-          Try again
+          {t("common:actions.tryAgain")}
         </Button>
       </main>
     );

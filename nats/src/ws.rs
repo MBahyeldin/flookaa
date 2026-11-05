@@ -10,7 +10,7 @@ use crate::{go_bridge};
 use std::sync::Arc;
 use tokio::{sync::{Mutex, watch}, task::JoinHandle};
 use std::collections::HashMap;
-type Subscriptions = Arc<Mutex<HashMap<String, JoinHandle<()>>>>;
+type Subscriptions = Arc<Mutex<HashMap<String, HashMap<String, JoinHandle<()>>>>>;
 
 
 pub async fn ws_handler(

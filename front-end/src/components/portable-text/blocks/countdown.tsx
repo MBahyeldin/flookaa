@@ -1,18 +1,21 @@
-import { TimerIcon } from "lucide-react";
+import { ClockIcon, SparklesIcon, TimerIcon } from "lucide-react";
 import { z } from "zod";
 import { FormField } from "@/models/Forms/FormField";
 import { useNow } from "@/hooks/useNow";
+import { perLanguage, t } from "@/i18n";
+import { dateFormat, relativeFormat } from "@/lib/format";
+import { dateRange, maxChars, oneLine, required } from "./validation";
 import { defineBlock } from "./defineBlock";
 
 const MAX_TEXT = 120;
 const MAX_YEARS = 100;
 const MIN_ENDS_AT = Date.UTC(2000, 0, 1);
-const DEFAULT_ENDED_TEXT = "This countdown has ended.";
+const defaultEndedText = () => t("blocks:countdown.ended");
 
-const oneLine = z
+const shortText = z
   .string()
-  .refine((text) => text.length <= MAX_TEXT, `must be at most ${MAX_TEXT} characters`)
-  .refine((text) => !/[\r\n]/.test(text), "must be one line")
+  .refine((text) => text.length <= MAX_TEXT, maxChars(MAX_TEXT))
+  .refine((text) => !/[\r\n]/.test(text), oneLine)
   .optional();
 
 function maxEndsAt() {
@@ -23,14 +26,14 @@ function maxEndsAt() {
 
 const countdownSchema = z.object({
   endsAt: z
-    .string({ error: "is required" })
-    .refine((endsAt) => !Number.isNaN(Date.parse(endsAt)), "is required")
+    .string(required)
+    .refine((endsAt) => !Number.isNaN(Date.parse(endsAt)), required)
     .refine((endsAt) => {
       const time = Date.parse(endsAt);
       return Number.isNaN(time) || (time >= MIN_ENDS_AT && time <= maxEndsAt());
-    }, `must be between 2000 and ${MAX_YEARS} years from now`),
-  label: oneLine,
-  endedText: oneLine,
+    }, dateRange(MAX_YEARS)),
+  label: shortText,
+  endedText: shortText,
 });
 
 type CountdownValue = z.infer<typeof countdownSchema>;
@@ -51,60 +54,73 @@ function fromLocalInput(local: unknown) {
 }
 
 function zoneName(date: Date) {
-  return new Intl.DateTimeFormat(undefined, { timeZoneName: "short" })
+  return dateFormat({ timeZoneName: "short" })
     .formatToParts(date)
     .find((part) => part.type === "timeZoneName")?.value;
 }
 
 function formatTarget(date: Date) {
-  const text = new Intl.DateTimeFormat(undefined, { dateStyle: "full", timeStyle: "short" }).format(date);
+  const text = dateFormat({ dateStyle: "full", timeStyle: "short" }).format(date);
   const zone = zoneName(date);
   return zone ? `${text} ${zone}` : text;
 }
 
-const countdownFormFields: FormField[] = [
+const relativeUnits: [Intl.RelativeTimeFormatUnit, number][] = [
+  ["year", 365 * 86400],
+  ["month", 30 * 86400],
+  ["week", 7 * 86400],
+  ["day", 86400],
+  ["hour", 3600],
+  ["minute", 60],
+];
+
+function formatAgo(seconds: number) {
+  const rtf = relativeFormat();
+  const found = relativeUnits.find(([, size]) => seconds >= size);
+  return found ? rtf.format(-Math.floor(seconds / found[1]), found[0]) : rtf.format(0, "minute");
+}
+
+const countdownFormFields = perLanguage((): FormField[] => [
   new FormField({
     id: "label",
     name: "label",
-    label: "Label",
+    label: t("blocks:countdown.fields.label"),
     type: "string",
     interfaceType: "text",
-    placeholder: "What are we counting down to?",
+    placeholder: t("blocks:countdown.fields.whatAreWeCountingDown"),
   }),
   new FormField({
     id: "endsAt",
     name: "endsAt",
-    label: "Ends at",
+    label: t("blocks:countdown.fields.endsAt"),
     type: "string",
     interfaceType: "datetime",
     isRequired: true,
     hint: (value) => {
       const time = value ? new Date(value).getTime() : NaN;
       if (!Number.isNaN(time) && time <= Date.now()) {
-        return "This time has passed, so the countdown will show as ended.";
+        return t("blocks:countdown.passed");
       }
       const zone = zoneName(Number.isNaN(time) ? new Date() : new Date(time));
-      return zone ? `Your time, ${zone}` : "Your time";
+      return zone ? t("blocks:countdown.yourTimeZone", { zone }) : t("blocks:countdown.yourTime");
     },
   }),
   new FormField({
     id: "endedText",
     name: "endedText",
-    label: "Ended text",
+    label: t("blocks:countdown.fields.endedText"),
     type: "string",
     interfaceType: "text",
-    placeholder: DEFAULT_ENDED_TEXT,
+    placeholder: defaultEndedText(),
   }),
-];
-
-const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"}`;
+]);
 
 function CountdownView({ value }: { value: CountdownValue }) {
   const endsAt = Date.parse(value.endsAt);
   const now = useNow(endsAt);
   const target = new Date(endsAt);
   const label = value.label?.trim() ? value.label : undefined;
-  const endedText = value.endedText?.trim() ? value.endedText : DEFAULT_ENDED_TEXT;
+  const endedText = value.endedText?.trim() ? value.endedText : defaultEndedText();
 
   if (Number.isNaN(endsAt)) return null;
   const total = Math.max(0, Math.ceil((endsAt - now) / 1000));
@@ -115,49 +131,68 @@ function CountdownView({ value }: { value: CountdownValue }) {
   const seconds = total % 60;
 
   const units = [
-    ...(days > 0 ? [{ value: String(days), unit: days === 1 ? "day" : "days" }] : []),
-    { value: pad(hours), unit: "hours" },
-    { value: pad(minutes), unit: "min" },
-    { value: pad(seconds), unit: "sec" },
+    ...(days > 0 ? [{ key: "days", value: String(days), unit: t("blocks:countdown.units.days", { count: days }) }] : []),
+    { key: "hours", value: pad(hours), unit: t("blocks:countdown.units.hours") },
+    { key: "min", value: pad(minutes), unit: t("blocks:countdown.units.min") },
+    { key: "sec", value: pad(seconds), unit: t("blocks:countdown.units.sec") },
   ];
   const spoken = ended
     ? endedText
-    : `Ends in ${[days && plural(days, "day"), hours && plural(hours, "hour"), plural(minutes, "minute")]
-        .filter(Boolean)
-        .join(", ")}`;
+    : t("blocks:countdown.endsIn", {
+        parts: [
+          days && t("blocks:countdown.spoken.days", { count: days }),
+          hours && t("blocks:countdown.spoken.hours", { count: hours }),
+          t("blocks:countdown.spoken.minutes", { count: minutes }),
+        ]
+          .filter(Boolean)
+          .join(t("blocks:countdown.separator")),
+      });
+
+  const LabelIcon = ended ? SparklesIcon : ClockIcon;
 
   return (
-    <div className="rounded-md border border-border bg-card px-4 py-3 text-card-foreground">
-      <div className="flex min-w-0 items-center gap-2">
-        <TimerIcon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-        <span dir="auto" className="min-w-0 font-semibold break-words">
-          {label ?? "Countdown"}
+    <div className="relative overflow-hidden rounded-2xl bg-primary px-5 py-6 text-center text-primary-foreground md:px-8">
+      <span aria-hidden className="absolute -top-12 -start-12 size-40 rounded-full bg-primary-foreground/10" />
+      <span aria-hidden className="absolute -end-10 -bottom-14 size-36 rounded-full bg-primary-foreground/10" />
+      <p className="relative flex items-center justify-center gap-2 text-overline uppercase">
+        <LabelIcon aria-hidden className="size-4 shrink-0" />
+        <span dir="auto" className="min-w-0 break-words">
+          {label ?? t("blocks:countdown.title")}
         </span>
-      </div>
+      </p>
       <span className="sr-only" aria-live="polite">
         {spoken}
       </span>
       {ended ? (
-        <p dir="auto" aria-hidden className="mt-3 text-lg font-semibold break-words">
-          {endedText}
-        </p>
+        <>
+          <p dir="auto" aria-hidden className="relative mt-3 text-h3 break-words">
+            {endedText}
+          </p>
+          <p className="relative mt-2 text-sm opacity-90">
+            {t("blocks:countdown.endedPrefix")}{" "}
+            <time dateTime={value.endsAt} title={formatTarget(target)}>
+              {formatAgo(Math.floor((now - endsAt) / 1000))}
+            </time>
+          </p>
+        </>
       ) : (
-        <div aria-hidden className="mt-3 flex flex-wrap gap-2">
-          {units.map((part) => (
-            <div
-              key={part.unit}
-              className="flex min-w-16 flex-col items-center rounded-md border border-border bg-background px-3 py-2"
-            >
-              <span className="text-2xl font-semibold tabular-nums text-foreground">{part.value}</span>
-              <span className="text-xs text-muted-foreground">{part.unit}</span>
-            </div>
-          ))}
-        </div>
+        <>
+          <div aria-hidden className="relative mt-4 flex flex-wrap justify-center gap-2 md:gap-3">
+            {units.map((part) => (
+              <div
+                key={part.key}
+                className="flex min-w-16 flex-col items-center rounded-xl bg-card px-3 py-2 text-card-foreground md:min-w-20 md:py-3"
+              >
+                <span className="text-3xl font-semibold text-primary tabular-nums md:text-4xl">{part.value}</span>
+                <span className="text-xs text-muted-foreground">{part.unit}</span>
+              </div>
+            ))}
+          </div>
+          <p className="sr-only">
+            {t("blocks:countdown.endsPrefix")} <time dateTime={value.endsAt}>{formatTarget(target)}</time>
+          </p>
+        </>
       )}
-      <p className="mt-3 text-sm text-muted-foreground">
-        {ended ? "Ended " : "Ends "}
-        <time dateTime={value.endsAt}>{formatTarget(target)}</time>
-      </p>
     </div>
   );
 }
@@ -166,11 +201,17 @@ const inMs = (ms: number) => fromLocalInput(toLocalInput(new Date(Date.now() + m
 
 export const countdown = defineBlock<CountdownValue>({
   name: "countdown",
-  title: "Countdown",
-  description: "A live countdown to a date and time.",
+  get title() {
+    return t("blocks:countdown.title");
+  },
+  get description() {
+    return t("blocks:countdown.description");
+  },
   icon: TimerIcon,
   category: "layout",
-  fields: countdownFormFields,
+  get fields() {
+    return countdownFormFields();
+  },
   defaultValues: {},
   schema: countdownSchema,
   View: CountdownView,

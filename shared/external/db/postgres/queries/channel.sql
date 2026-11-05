@@ -2,20 +2,28 @@
 -- 1. Create a channel
 -- -------------------------------
 -- name: CreateChannel :one
-INSERT INTO channels (name, description,  owner_id, thumbnail, banner, visibility, min_age, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, sqlc.arg(min_age)::smallint, NOW())
+INSERT INTO channels (name, description,  owner_id, thumbnail, banner, banner_x, banner_y, visibility, min_age, theme, cover_pattern, created_at)
+VALUES ($1, $2, $3, $4, $5, COALESCE(sqlc.narg(banner_x)::smallint, 50), COALESCE(sqlc.narg(banner_y)::smallint, 50), $6, sqlc.arg(min_age)::smallint, sqlc.narg(theme)::theme_enum, sqlc.arg(cover_pattern), NOW())
 RETURNING *;
 
 -- -------------------------------
 -- 2. Update channel
 -- -------------------------------
 -- name: UpdateChannel :one
+-- clear_theme wins over theme: the channel goes back to its community's.
 UPDATE channels
-SET name = COALESCE($1, name),
-    description = COALESCE($2, description),
+SET theme = CASE WHEN sqlc.arg(clear_theme)::bool THEN NULL
+                 ELSE COALESCE(sqlc.narg(theme)::theme_enum, theme) END,
+    cover_pattern = COALESCE(sqlc.narg(cover_pattern)::cover_pattern_enum, cover_pattern),
+    thumbnail = COALESCE(sqlc.narg(thumbnail), thumbnail),
+    banner = COALESCE(sqlc.narg(banner), banner),
+    banner_x = COALESCE(sqlc.narg(banner_x)::smallint, banner_x),
+    banner_y = COALESCE(sqlc.narg(banner_y)::smallint, banner_y),
+    name = COALESCE(sqlc.narg(name), name),
+    description = COALESCE(sqlc.narg(description), description),
     updated_at = NOW()
-WHERE id = $3
-RETURNING *;
+WHERE id = sqlc.arg(id) AND deleted_at IS NULL
+RETURNING *, channel_theme(theme, id)::theme_enum AS effective_theme;
 
 -- name: SetChannelMinAge :exec
 UPDATE channels
@@ -114,6 +122,7 @@ WHERE channel_id = $1 AND persona_id = $2 AND unfollowed_at IS NULL;
 -- name: GetAllChannels :many
 SELECT 
     sqlc.embed(c),
+    channel_theme(c.theme, c.id)::theme_enum AS effective_theme,
     (c.owner_id = $1) AS is_owner,
     EXISTS (
         SELECT 1 
@@ -152,11 +161,11 @@ SELECT
 FROM channels c
 WHERE c.deleted_at IS NULL
   AND persona_meets_min_age($1, c.min_age)
-  AND (sqlc.narg(interest_slug)::text IS NULL OR EXISTS (
+  AND (coalesce(cardinality(sqlc.arg(interest_slugs)::text[]), 0) = 0 OR EXISTS (
       SELECT 1
       FROM channel_interests ci
       JOIN interests i ON i.id = ci.interest_id
-      WHERE ci.channel_id = c.id AND i.slug = sqlc.narg(interest_slug)::text
+      WHERE ci.channel_id = c.id AND i.slug = ANY(sqlc.arg(interest_slugs)::text[])
   ))
   AND (sqlc.narg(community_id)::bigint IS NULL OR EXISTS (
       SELECT 1 FROM community_channels cc
@@ -185,6 +194,7 @@ WITH viewer AS (
 )
 SELECT
     sqlc.embed(c),
+    channel_theme(c.theme, c.id)::theme_enum AS effective_theme,
     m.members::int AS members_count,
     (
         SELECT COUNT(DISTINCT cf.persona_id)
@@ -241,6 +251,7 @@ LIMIT sqlc.arg(lim) OFFSET sqlc.arg(off);
 -- name: GetChannel :one
 SELECT 
     c.*,
+    channel_theme(c.theme, c.id)::theme_enum AS effective_theme,
     (c.owner_id = $1) AS is_owner,
     EXISTS (
         SELECT 1 
@@ -415,3 +426,269 @@ SELECT (EXISTS (
     WHERE p.user_id = $1 AND p.is_default AND p.deleted_at IS NULL
       AND cf.unfollowed_at IS NULL
 ))::boolean AS done;
+
+-- The channels whose posts make a persona's feed: active member, or follows a
+-- channel it may read. Same read rule as access.Channel.CanRead plus age.
+-- name: ListFeedChannels :many
+SELECT
+    c.id,
+    c.name,
+    channel_theme(c.theme, c.id)::theme_enum AS theme,
+    c.thumbnail,
+    (
+        c.owner_id = sqlc.arg(persona_id)::bigint
+        OR EXISTS (
+            SELECT 1
+            FROM channel_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.channel_id = c.id
+              AND cr.persona_id = sqlc.arg(persona_id)::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name IN ('moderator', 'Administrator')
+        )
+        OR EXISTS (
+            SELECT 1
+            FROM personas p
+            JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
+            JOIN roles r ON r.id = ur.role_id
+            WHERE p.id = sqlc.arg(persona_id)::bigint
+              AND r.name = 'Administrator'
+        )
+    )::boolean AS can_moderate
+FROM channels c
+WHERE c.deleted_at IS NULL
+  AND persona_meets_min_age(sqlc.arg(persona_id)::bigint, c.min_age)
+  AND (
+      EXISTS (
+          SELECT 1
+          FROM channel_members cm
+          WHERE cm.channel_id = c.id
+            AND cm.persona_id = sqlc.arg(persona_id)::bigint
+            AND cm.left_at IS NULL AND cm.status = 'active'
+      )
+      OR (
+          c.visibility = 'public'
+          AND EXISTS (
+              SELECT 1
+              FROM channel_followers cf
+              WHERE cf.channel_id = c.id
+                AND cf.persona_id = sqlc.arg(persona_id)::bigint
+                AND cf.unfollowed_at IS NULL
+          )
+      )
+  )
+ORDER BY c.id;
+
+-- name: ListReadableChannels :many
+SELECT
+    c.id,
+    c.name,
+    channel_theme(c.theme, c.id)::theme_enum AS theme,
+    c.thumbnail,
+    (
+        c.owner_id = sqlc.arg(persona_id)::bigint
+        OR EXISTS (
+            SELECT 1
+            FROM channel_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.channel_id = c.id
+              AND cr.persona_id = sqlc.arg(persona_id)::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name IN ('moderator', 'Administrator')
+        )
+        OR EXISTS (
+            SELECT 1
+            FROM personas p
+            JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
+            JOIN roles r ON r.id = ur.role_id
+            WHERE p.id = sqlc.arg(persona_id)::bigint
+              AND r.name = 'Administrator'
+        )
+    )::boolean AS can_moderate
+FROM channels c
+WHERE c.id = ANY(sqlc.arg(ids)::bigint[])
+  AND c.deleted_at IS NULL
+  AND persona_meets_min_age(sqlc.arg(persona_id)::bigint, c.min_age)
+  AND (
+      c.visibility = 'public'
+      OR EXISTS (
+          SELECT 1
+          FROM channel_members cm
+          WHERE cm.channel_id = c.id
+            AND cm.persona_id = sqlc.arg(persona_id)::bigint
+            AND cm.left_at IS NULL AND cm.status = 'active'
+      )
+  )
+ORDER BY c.id;
+
+-- name: ListCommunityFeedChannels :many
+SELECT
+    c.id,
+    c.name,
+    channel_theme(c.theme, c.id)::theme_enum AS theme,
+    c.thumbnail,
+    (
+        c.owner_id = sqlc.arg(persona_id)::bigint
+        OR EXISTS (
+            SELECT 1
+            FROM channel_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.channel_id = c.id
+              AND cr.persona_id = sqlc.arg(persona_id)::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name IN ('moderator', 'Administrator')
+        )
+        OR EXISTS (
+            SELECT 1
+            FROM personas p
+            JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
+            JOIN roles r ON r.id = ur.role_id
+            WHERE p.id = sqlc.arg(persona_id)::bigint
+              AND r.name = 'Administrator'
+        )
+    )::boolean AS can_moderate
+FROM channels c
+JOIN community_channels cc
+  ON cc.channel_id = c.id
+ AND cc.community_id = sqlc.arg(community_id)::bigint
+ AND cc.status = 'active' AND cc.removed_at IS NULL
+WHERE c.deleted_at IS NULL
+  AND persona_meets_min_age(sqlc.arg(persona_id)::bigint, c.min_age)
+  AND (
+      c.visibility = 'public'
+      OR EXISTS (
+          SELECT 1
+          FROM channel_members cm
+          WHERE cm.channel_id = c.id
+            AND cm.persona_id = sqlc.arg(persona_id)::bigint
+            AND cm.left_at IS NULL AND cm.status = 'active'
+      )
+  )
+ORDER BY c.id;
+
+-- Discover: public channels the persona isn't in and doesn't follow; all of
+-- them, those tagged with any of the interests, or (neither) those sharing an
+-- interest with the persona.
+-- name: ListDiscoverChannels :many
+SELECT
+    c.id,
+    c.name,
+    channel_theme(c.theme, c.id)::theme_enum AS theme,
+    c.thumbnail,
+    (
+        c.owner_id = sqlc.arg(persona_id)::bigint
+        OR EXISTS (
+            SELECT 1
+            FROM channel_roles cr
+            JOIN roles r ON r.id = cr.role_id
+            WHERE cr.channel_id = c.id
+              AND cr.persona_id = sqlc.arg(persona_id)::bigint
+              AND cr.deleted_at IS NULL
+              AND r.name IN ('moderator', 'Administrator')
+        )
+        OR EXISTS (
+            SELECT 1
+            FROM personas p
+            JOIN user_roles ur ON ur.user_id = p.user_id AND ur.deleted_at IS NULL
+            JOIN roles r ON r.id = ur.role_id
+            WHERE p.id = sqlc.arg(persona_id)::bigint
+              AND r.name = 'Administrator'
+        )
+    )::boolean AS can_moderate
+FROM channels c
+WHERE c.deleted_at IS NULL
+  AND c.visibility = 'public'
+  AND persona_meets_min_age(sqlc.arg(persona_id)::bigint, c.min_age)
+  AND NOT EXISTS (
+      SELECT 1
+      FROM channel_members cm
+      WHERE cm.channel_id = c.id
+        AND cm.persona_id = sqlc.arg(persona_id)::bigint
+        AND cm.left_at IS NULL
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM channel_followers cf
+      WHERE cf.channel_id = c.id
+        AND cf.persona_id = sqlc.arg(persona_id)::bigint
+        AND cf.unfollowed_at IS NULL
+  )
+  AND (
+      sqlc.arg(all_channels)::boolean
+      OR (coalesce(cardinality(sqlc.arg(interest_slugs)::text[]), 0) > 0 AND EXISTS (
+          SELECT 1
+          FROM channel_interests ci
+          JOIN interests i ON i.id = ci.interest_id
+          WHERE ci.channel_id = c.id AND i.slug = ANY(sqlc.arg(interest_slugs)::text[])
+      ))
+      OR (coalesce(cardinality(sqlc.arg(interest_slugs)::text[]), 0) = 0 AND EXISTS (
+          SELECT 1
+          FROM channel_interests ci
+          JOIN persona_interests pi ON pi.interest_id = ci.interest_id
+          WHERE ci.channel_id = c.id AND pi.persona_id = sqlc.arg(persona_id)::bigint
+      ))
+  )
+ORDER BY c.id;
+
+-- Profile Channels tab: the persona's active memberships the viewer can read,
+-- which each channel's member list already shows the viewer.
+-- name: ListProfileChannels :many
+SELECT
+    sqlc.embed(c),
+    channel_theme(c.theme, c.id)::theme_enum AS effective_theme,
+    (c.owner_id = sqlc.arg(viewer_id)::bigint) AS is_owner,
+    EXISTS (
+        SELECT 1
+        FROM channel_members cm
+        WHERE cm.channel_id = c.id
+          AND cm.persona_id = sqlc.arg(viewer_id)::bigint
+          AND cm.left_at IS NULL AND cm.status = 'active'
+    ) AS is_member,
+    EXISTS (
+        SELECT 1
+        FROM channel_members cm
+        WHERE cm.channel_id = c.id
+          AND cm.persona_id = sqlc.arg(viewer_id)::bigint
+          AND cm.left_at IS NULL AND cm.status = 'pending'
+    ) AS is_pending,
+    EXISTS (
+        SELECT 1
+        FROM channel_followers cf
+        WHERE cf.channel_id = c.id
+          AND cf.persona_id = sqlc.arg(viewer_id)::bigint
+          AND cf.unfollowed_at IS NULL
+    ) AS is_follower,
+    (
+        SELECT COUNT(*)
+        FROM channel_members cm
+        WHERE cm.channel_id = c.id
+          AND cm.left_at IS NULL AND cm.status = 'active'
+    )::int AS members_count,
+    (
+        SELECT COUNT(DISTINCT cf.persona_id)
+        FROM channel_followers cf
+        WHERE cf.channel_id = c.id
+          AND cf.unfollowed_at IS NULL
+    )::int AS followers_count
+FROM channels c
+JOIN LATERAL (
+    SELECT MAX(pm.joined_at) AS joined_at
+    FROM channel_members pm
+    WHERE pm.channel_id = c.id
+      AND pm.persona_id = sqlc.arg(persona_id)::bigint
+      AND pm.left_at IS NULL AND pm.status = 'active'
+) m ON m.joined_at IS NOT NULL
+WHERE c.deleted_at IS NULL
+  AND persona_meets_min_age(sqlc.arg(viewer_id)::bigint, c.min_age)
+  AND (
+      c.visibility = 'public'
+      OR EXISTS (
+          SELECT 1
+          FROM channel_members vm
+          WHERE vm.channel_id = c.id
+            AND vm.persona_id = sqlc.arg(viewer_id)::bigint
+            AND vm.left_at IS NULL AND vm.status = 'active'
+      )
+  )
+ORDER BY m.joined_at DESC, c.id DESC
+LIMIT sqlc.arg(row_limit)::bigint OFFSET sqlc.arg(row_offset)::bigint;

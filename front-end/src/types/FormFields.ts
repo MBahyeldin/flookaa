@@ -18,12 +18,7 @@ type FormFieldInterfaceTypes =
   | "file"
   | "pic"
   | "voice"
-  | "profile-picture"
-  | "dropdown-country"
-  | "dropdown-state"
-  | "dropdown-city"
   | "list"
-  | "theme"
   | "interests";
 
 export type { FormFieldInterfaceTypes };

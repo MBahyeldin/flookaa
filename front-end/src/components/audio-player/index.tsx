@@ -3,6 +3,7 @@ import { Pause, Play } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 import useAudioPeaks from "./useAudioPeaks";
+import { t } from "@/i18n";
 
 /**
  * Voice-note player.
@@ -25,13 +26,21 @@ function formatTime(seconds: number): string {
 export default function AudioPlayer({
   src,
   initialDuration,
+  title,
+  variant = "default",
   className,
 }: {
   src: string;
   // Shown until the file's own duration is known.
   initialDuration?: number;
+  // Only drawn by the pill variant, above the waveform.
+  title?: string;
+  // pill-sm: the 44 px Voice Pill in comments, without the speed control.
+  variant?: "default" | "pill" | "pill-sm";
   className?: string;
 }) {
+  const small = variant === "pill-sm";
+  const pill = variant === "pill" || small;
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [loadedDuration, setDuration] = useState(0);
@@ -131,7 +140,12 @@ export default function AudioPlayer({
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 items-center gap-3 rounded-xl border border-border bg-background/60 px-3 py-2",
+        "flex w-full min-w-0 items-center gap-3",
+        pill
+          ? small
+            ? "rounded-full bg-accent py-1.5 ps-1.5 pe-3 text-accent-foreground"
+            : "rounded-full bg-accent py-2 ps-2 pe-4 text-accent-foreground md:pe-6"
+          : "rounded-xl border border-border bg-background/60 px-3 py-2",
         className
       )}
     >
@@ -141,23 +155,28 @@ export default function AudioPlayer({
       <Button
         type="button"
         size="icon"
-        variant="secondary"
-        className="h-9 w-9 shrink-0 rounded-full"
+        variant={pill ? "default" : "secondary"}
+        className={cn("shrink-0 rounded-full", small ? "size-8" : pill ? "size-12 md:size-13" : "h-9 w-9")}
         onClick={togglePlay}
-        aria-label={isPlaying ? "Pause voice note" : "Play voice note"}
+        aria-label={isPlaying ? t("posts:audio.pause") : t("posts:audio.play")}
       >
         {isPlaying ? (
-          <Pause className="h-4 w-4" />
+          <Pause className={pill && !small ? "size-5" : "h-4 w-4"} />
         ) : (
-          <Play className="h-4 w-4 translate-x-px" />
+          <Play className={cn("translate-x-px", pill && !small ? "size-5" : "h-4 w-4")} />
         )}
       </Button>
 
       {/* Waveform + scrubber */}
       <div className="relative min-w-0 flex-1">
+        {pill && title ? (
+          <p dir="auto" className="truncate text-sm font-semibold" title={title}>
+            {title}
+          </p>
+        ) : null}
         <div
           aria-hidden="true"
-          className="flex h-8 items-center gap-[2px] overflow-hidden"
+          className={cn("flex items-center gap-[2px] overflow-hidden", small ? "h-5" : pill ? "h-6" : "h-8")}
         >
           {peaks.map((peak, index) => {
             const played = index / peaks.length <= progress;
@@ -166,7 +185,7 @@ export default function AudioPlayer({
                 key={index}
                 className={cn(
                   "min-w-[2px] flex-1 rounded-full transition-colors",
-                  played ? "bg-primary" : "bg-muted-foreground/30"
+                  played ? "bg-primary" : pill ? "bg-primary/30" : "bg-muted-foreground/30"
                 )}
                 style={{ height: `${Math.max(10, peak * 100)}%` }}
               />
@@ -187,29 +206,31 @@ export default function AudioPlayer({
           value={Math.min(currentTime, duration || 0)}
           onChange={(event) => seekTo(Number(event.target.value))}
           disabled={!duration}
-          aria-label="Seek voice note"
+          aria-label={t("posts:audio.seek")}
           aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
         />
       </div>
 
-      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+      <span className={cn("shrink-0 tabular-nums text-muted-foreground", pill && !small ? "text-sm" : "text-xs")}>
         {/* Counts down while playing, like most voice-note UIs; shows total at rest. */}
         {isPlaying || currentTime > 0
           ? formatTime(remaining)
           : formatTime(duration)}
       </span>
 
-      <Button
-        type="button"
-        size="sm"
-        variant="ghost"
-        className="h-7 shrink-0 px-2 text-xs font-medium tabular-nums"
-        onClick={() => setSpeedIndex((index) => (index + 1) % SPEEDS.length)}
-        aria-label={`Playback speed ${speed}x — tap to change`}
-      >
-        {speed}x
-      </Button>
+      {!small && (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-7 shrink-0 px-2 text-xs font-medium tabular-nums"
+          onClick={() => setSpeedIndex((index) => (index + 1) % SPEEDS.length)}
+          aria-label={t("posts:audio.speed", { speed })}
+        >
+          {t("posts:audio.speedShort", { speed })}
+        </Button>
+      )}
     </div>
   );
 }

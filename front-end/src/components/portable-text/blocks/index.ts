@@ -23,6 +23,10 @@ export function blockByName(name: string): AnyBlock | undefined {
 
 export const blockNames = blocks.map((block) => block.name);
 
+export function blockSummary(block: AnyBlock, value: unknown): string {
+  return block.summary?.(value) ?? block.title;
+}
+
 export function toFormValue(block: AnyBlock | undefined, value: Record<string, unknown>) {
   return block?.toForm ? block.toForm(value) : value;
 }
