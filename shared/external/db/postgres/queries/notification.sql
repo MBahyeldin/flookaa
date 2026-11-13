@@ -78,6 +78,17 @@ WHERE subject_type = sqlc.arg(subject_type)::notification_subject_enum
 RETURNING id, recipient_id;
 
 -- -------------------------------
+-- 3.0.1 Remove everything in a deleted post's thread (data.post_id)
+-- -------------------------------
+-- name: SoftDeleteNotificationsByPost :many
+UPDATE notifications
+SET deleted_at = NOW(),
+    last_event_at = GREATEST(last_event_at, sqlc.arg(event_at)::timestamptz)
+WHERE data->>'post_id' = sqlc.arg(post_id)::text
+  AND deleted_at IS NULL
+RETURNING id, recipient_id;
+
+-- -------------------------------
 -- 3.1 Remove everything inside a scope that went away (deleted channel)
 -- -------------------------------
 -- name: SoftDeleteNotificationsByScope :many

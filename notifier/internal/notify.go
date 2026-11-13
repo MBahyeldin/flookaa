@@ -174,6 +174,22 @@ func (w *Worker) removeSubject(ctx context.Context, subjectType db.NotificationS
 	return nil
 }
 
+// removeThread soft-deletes every notification whose thread is a deleted
+// post: replies and likes on its comments, at any depth.
+func (w *Worker) removeThread(ctx context.Context, postID string, sourceActorID int64, eventAt time.Time) error {
+	removed, err := w.q.SoftDeleteNotificationsByPost(ctx, db.SoftDeleteNotificationsByPostParams{
+		PostID:  postID,
+		EventAt: eventAt,
+	})
+	if err != nil {
+		return fmt.Errorf("remove notifications in the thread of post %s: %w", postID, err)
+	}
+	for _, r := range removed {
+		w.publish(ctx, db.EventActionEnumDelete, r.ID, r.RecipientID, sourceActorID)
+	}
+	return nil
+}
+
 // publish tells the recipient's browsers that notification id was created
 // (or moved to the top) or deleted. The row is already stored, so a failed
 // publish is logged, not retried: the browser catches up on its next load.

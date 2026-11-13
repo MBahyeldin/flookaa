@@ -813,6 +813,51 @@ func (q *Queries) SoftDeleteNotificationsByGroup(ctx context.Context, arg SoftDe
 	return items, nil
 }
 
+const softDeleteNotificationsByPost = `-- name: SoftDeleteNotificationsByPost :many
+UPDATE notifications
+SET deleted_at = NOW(),
+    last_event_at = GREATEST(last_event_at, $1::timestamptz)
+WHERE data->>'post_id' = $2::text
+  AND deleted_at IS NULL
+RETURNING id, recipient_id
+`
+
+type SoftDeleteNotificationsByPostParams struct {
+	EventAt time.Time
+	PostID  string
+}
+
+type SoftDeleteNotificationsByPostRow struct {
+	ID          int64
+	RecipientID int64
+}
+
+// -------------------------------
+// 3.0.1 Remove everything in a deleted post's thread (data.post_id)
+// -------------------------------
+func (q *Queries) SoftDeleteNotificationsByPost(ctx context.Context, arg SoftDeleteNotificationsByPostParams) ([]SoftDeleteNotificationsByPostRow, error) {
+	rows, err := q.db.QueryContext(ctx, softDeleteNotificationsByPost, arg.EventAt, arg.PostID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SoftDeleteNotificationsByPostRow
+	for rows.Next() {
+		var i SoftDeleteNotificationsByPostRow
+		if err := rows.Scan(&i.ID, &i.RecipientID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const softDeleteNotificationsByScope = `-- name: SoftDeleteNotificationsByScope :many
 UPDATE notifications
 SET deleted_at = NOW(),

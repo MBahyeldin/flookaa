@@ -234,7 +234,8 @@ func (r *Resolver) objectType(ctx context.Context, id string) (models.PostType, 
 const maxThreadDepth = 32
 
 // threadPostID returns the id of the post at the top of obj's thread: obj
-// itself for a post, else the post its chain of parents leads to.
+// itself for a post, else the post its chain of parents leads to. A deleted
+// parent anywhere up the chain is errObjectNotFound.
 func (r *Resolver) threadPostID(ctx context.Context, obj *models.PostGenericDocument) (string, error) {
 	type ref struct {
 		ID       string          `bson:"id"`
@@ -251,7 +252,7 @@ func (r *Resolver) threadPostID(ctx context.Context, obj *models.PostGenericDocu
 		}
 		parentID := *cur.ParentID
 		cur = ref{}
-		err := r.Objects.FindOne(ctx, bson.M{"id": parentID},
+		err := r.Objects.FindOne(ctx, bson.M{"id": parentID, "deletedat": nil},
 			options.FindOne().SetProjection(bson.M{"id": 1, "type": 1, "parentid": 1}),
 		).Decode(&cur)
 		if errors.Is(err, mongo.ErrNoDocuments) {
