@@ -41,9 +41,9 @@ CREATE TABLE personas (
     theme theme_enum NOT NULL DEFAULT 'tide',
     cover_pattern cover_pattern_enum NOT NULL DEFAULT 'waves',
 
-    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
-    deleted_at TIMESTAMP WITHOUT TIME ZONE,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
     invite_token TEXT,
 
     UNIQUE (user_id, slug),
@@ -64,8 +64,8 @@ CREATE TABLE interest_groups (
     name_ar VARCHAR(100),
     slug VARCHAR(50) NOT NULL,
     sort_order INT NOT NULL DEFAULT 0,
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT interest_groups_slug_key UNIQUE (slug)
 );
 
@@ -79,9 +79,9 @@ CREATE TABLE interests (
     slug VARCHAR(50) NOT NULL UNIQUE,
     emoji VARCHAR(32) NOT NULL,
     sort_order INT NOT NULL DEFAULT 0,
-    retired_at TIMESTAMP WITHOUT TIME ZONE,
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    retired_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     group_id BIGINT REFERENCES interest_groups(id)
 );
 
@@ -92,7 +92,7 @@ CREATE INDEX interests_group_id_idx ON interests (group_id);
 CREATE TABLE persona_interests (
     persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
     interest_id BIGINT REFERENCES interests(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (persona_id, interest_id)
 );
 
@@ -107,9 +107,9 @@ CREATE TABLE persona_relationships (
     target_persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
 
     relationship relationship_enum NOT NULL,
-    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
-    deleted_at TIMESTAMP WITHOUT TIME ZONE,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
 
     PRIMARY KEY (source_persona_id, target_persona_id)
 );
@@ -122,9 +122,9 @@ CREATE TABLE persona_friend_groups (
     id BIGSERIAL PRIMARY KEY,
     owner_persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
-    deleted_at TIMESTAMP WITHOUT TIME ZONE 
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    deleted_at TIMESTAMPTZ 
 );
 
 CREATE TABLE persona_friend_group_members (

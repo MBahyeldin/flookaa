@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -23,5 +24,18 @@ func Connect(ctx context.Context, dsn string) (*sql.DB, error) {
 		db.Close()
 		return nil, fmt.Errorf("postgres: ping: %w", err)
 	}
+	warnIfNotUTC(pingCtx, db)
 	return db, nil
+}
+
+// SQL such as persona_meets_min_age assumes the server runs in UTC.
+func warnIfNotUTC(ctx context.Context, db *sql.DB) {
+	var tz string
+	if err := db.QueryRowContext(ctx, "SHOW TimeZone").Scan(&tz); err != nil {
+		log.Printf("postgres: warning: can't read server TimeZone: %v", err)
+		return
+	}
+	if tz != "UTC" && tz != "Etc/UTC" {
+		log.Printf("postgres: warning: server TimeZone is %q, expected UTC", tz)
+	}
 }

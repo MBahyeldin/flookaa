@@ -10,9 +10,9 @@ CREATE TABLE communities (
     banner VARCHAR(255) NOT NULL DEFAULT '',
     visibility community_visibility_enum NOT NULL DEFAULT 'public',
     owner_id BIGINT NOT NULL REFERENCES personas(id),
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
-    deleted_at TIMESTAMP WITHOUT TIME ZONE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
     rules TEXT NOT NULL DEFAULT '',
     min_age SMALLINT NOT NULL CHECK (min_age IN (13, 16, 18, 21)),
     theme theme_enum NOT NULL DEFAULT 'tide',
@@ -25,7 +25,7 @@ CREATE TABLE communities (
 CREATE TABLE community_interests (
     community_id BIGINT NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
     interest_id BIGINT NOT NULL REFERENCES interests(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (community_id, interest_id)
 );
 
@@ -37,11 +37,11 @@ CREATE TYPE community_channel_status_enum AS ENUM ('pending', 'active', 'rejecte
 CREATE TABLE community_channels (
     community_id BIGINT NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
     channel_id BIGINT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     status community_channel_status_enum NOT NULL,
     requested_by BIGINT REFERENCES personas(id) ON DELETE SET NULL,
-    resolved_at TIMESTAMP WITHOUT TIME ZONE,
-    removed_at TIMESTAMP WITHOUT TIME ZONE,
+    resolved_at TIMESTAMPTZ,
+    removed_at TIMESTAMPTZ,
     PRIMARY KEY (community_id, channel_id)
 );
 
@@ -58,9 +58,9 @@ CREATE TABLE community_members (
     community_id BIGINT NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
     persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE,
     status community_membership_status_enum NOT NULL,
-    joined_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
-    resolved_at TIMESTAMP WITHOUT TIME ZONE,
-    left_at TIMESTAMP WITHOUT TIME ZONE,
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    resolved_at TIMESTAMPTZ,
+    left_at TIMESTAMPTZ,
     PRIMARY KEY (community_id, persona_id)
 );
 
@@ -69,8 +69,8 @@ CREATE INDEX community_members_persona_id_idx ON community_members (persona_id);
 CREATE TABLE community_followers (
     community_id BIGINT NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
     persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE,
-    followed_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
-    unfollowed_at TIMESTAMP WITHOUT TIME ZONE,
+    followed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    unfollowed_at TIMESTAMPTZ,
     PRIMARY KEY (community_id, persona_id)
 );
 
@@ -81,9 +81,9 @@ CREATE TABLE community_roles (
     community_id BIGINT NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
     persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE,
     role_id INT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
-    deleted_at TIMESTAMP WITHOUT TIME ZONE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
     PRIMARY KEY (community_id, persona_id, role_id)
 );
 

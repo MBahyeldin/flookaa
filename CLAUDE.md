@@ -47,7 +47,7 @@ make migrate-force          # force version 1 after a dirty failure
 ./seed-countries.sh         # psql-load the geo seed dumps (host/user hardcoded in the script)
 ```
 
-Migrations are numbered pairs in `shared/external/db/postgres/migrations/` (`NNN_name.up.sql` / `.down.sql`). Add new ones with the next number and always write the down file.
+Migrations are numbered pairs in `shared/external/db/postgres/migrations/` (`NNN_name.up.sql` / `.down.sql`). Add new ones with the next number and always write the down file. Time columns are `TIMESTAMPTZ`, never `TIMESTAMP` (migration 044 converted the old ones); dates of birth stay `date`. The server is meant to run in UTC: `postgres.Connect` logs a warning at startup when its `TimeZone` isn't.
 
 Tooling assumed on PATH (see `backend/README.md`):
 ```bash

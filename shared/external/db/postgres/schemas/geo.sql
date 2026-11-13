@@ -9,8 +9,8 @@ CREATE TABLE public.cities (
     latitude numeric(10,8) NOT NULL,
     longitude numeric(11,8) NOT NULL,
     timezone character varying(255),
-    created_at timestamp without time zone DEFAULT '2014-01-01 12:01:01'::timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT '2014-01-01 12:01:01+00'::timestamptz NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     flag smallint DEFAULT 1 NOT NULL,
     "wikiDataId" character varying(255)
 );
@@ -40,8 +40,8 @@ CREATE TABLE public.countries (
     longitude numeric(11,8),
     emoji character varying(191),
     "emojiU" character varying(191),
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     flag smallint DEFAULT 1 NOT NULL,
     "wikiDataId" character varying(255)
 );
@@ -55,8 +55,8 @@ CREATE TABLE public.regions (
     id bigint NOT NULL PRIMARY KEY,
     name character varying(100) NOT NULL,
     translations text,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     flag smallint DEFAULT 1 NOT NULL,
     "wikiDataId" character varying(255)
 );
@@ -82,8 +82,8 @@ CREATE TABLE public.states (
     latitude numeric(10,8),
     longitude numeric(11,8),
     timezone character varying(255),
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     flag smallint DEFAULT 1 NOT NULL,
     "wikiDataId" character varying(255)
 );
@@ -98,8 +98,8 @@ CREATE TABLE public.subregions (
     name character varying(100) NOT NULL,
     translations text,
     region_id bigint NOT NULL,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     flag smallint DEFAULT 1 NOT NULL,
     "wikiDataId" character varying(255)
 );

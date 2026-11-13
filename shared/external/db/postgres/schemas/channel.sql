@@ -18,9 +18,9 @@ CREATE TABLE channels (
     banner VARCHAR(255) NOT NULL,
     owner_id BIGINT REFERENCES personas(id) ON DELETE SET NULL NOT NULL,
     visibility channel_visibility_enum NOT NULL DEFAULT 'public',
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now(),
-    deleted_at TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
     min_age SMALLINT NOT NULL CHECK (min_age IN (13, 16, 18, 21)),
     -- NULL: the channel takes its community's.
     theme theme_enum,
@@ -38,8 +38,8 @@ CREATE TABLE channel_roles (
     role_id INT REFERENCES roles(id) ON DELETE CASCADE NOT NULL,
     persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE NOT NULL,
     PRIMARY KEY (channel_id, persona_id, role_id),
-    deleted_at TIMESTAMP WITHOUT TIME ZONE,
-    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now()
+    deleted_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- -------------------------------
@@ -49,8 +49,8 @@ CREATE TABLE channel_members (
     id SERIAL PRIMARY KEY,
     channel_id BIGINT REFERENCES channels(id) ON DELETE CASCADE NOT NULL,
     persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE NOT NULL,
-    joined_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
-    left_at TIMESTAMP WITHOUT TIME ZONE,
+    joined_at TIMESTAMPTZ DEFAULT now(),
+    left_at TIMESTAMPTZ,
     status channel_membership_status_enum NOT NULL DEFAULT 'active'
 );
 
@@ -61,8 +61,8 @@ CREATE TABLE channel_followers (
     id SERIAL PRIMARY KEY,
     channel_id BIGINT REFERENCES channels(id) ON DELETE CASCADE NOT NULL,
     persona_id BIGINT REFERENCES personas(id) ON DELETE CASCADE NOT NULL,
-    followed_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
-    unfollowed_at TIMESTAMP WITHOUT TIME ZONE
+    followed_at TIMESTAMPTZ DEFAULT now(),
+    unfollowed_at TIMESTAMPTZ
 );
 
 -- -------------------------------
@@ -73,7 +73,7 @@ CREATE TABLE post_references (
     mongo_id CHAR(24) NOT NULL,   -- Mongo ObjectId as string
     owner_type VARCHAR(10) NOT NULL CHECK (owner_type IN ('PERSONA','CHANNEL')),
     owner_id BIGINT NOT NULL,         -- references Persona.id, channels.id
-    created_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 -- -------------------------------
 -- Channel interests
@@ -81,7 +81,7 @@ CREATE TABLE post_references (
 CREATE TABLE channel_interests (
     channel_id BIGINT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
     interest_id BIGINT NOT NULL REFERENCES interests(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (channel_id, interest_id)
 );
 
