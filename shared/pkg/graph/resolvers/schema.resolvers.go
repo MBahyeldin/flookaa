@@ -128,6 +128,10 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 	if err := r.authorizeOwner(ctx, parent.Owner, personaId, accessReact); err != nil {
 		return nil, err
 	}
+	postID, err := r.threadPostID(ctx, parent)
+	if err != nil {
+		return nil, err
+	}
 	owner := parent.Owner
 	content, err := r.parseSimpleInput(*input.Content)
 	if err != nil {
@@ -222,11 +226,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input models.Comme
 
 	natsEvent := models.EventMapper(event)
 	natsEvent.RecipientID = &parent.AuthorID
-	if postID, err := r.threadPostID(ctx, parent); err != nil {
-		log.Println("Warning: failed to find the thread's post:", err)
-	} else {
-		natsEvent.PostID = postID
-	}
+	natsEvent.PostID = postID
 
 	err = r.NATS.PublishMessage(
 		ctx,
@@ -255,6 +255,11 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 	}
 	if err := r.authorizeOwner(ctx, target.Owner, personaId, accessReact); err != nil {
 		return false, err
+	}
+	// An unlike still works in a deleted thread; a like doesn't.
+	postID, threadErr := r.threadPostID(ctx, target)
+	if threadErr != nil && input.Liked {
+		return false, threadErr
 	}
 	owner := target.Owner
 
@@ -319,11 +324,7 @@ func (r *mutationResolver) CreateLike(ctx context.Context, input models.LikeInpu
 
 	natsEvent := models.EventMapper(event)
 	natsEvent.RecipientID = &target.AuthorID
-	if postID, err := r.threadPostID(ctx, target); err != nil {
-		log.Println("Warning: failed to find the thread's post:", err)
-	} else {
-		natsEvent.PostID = postID
-	}
+	natsEvent.PostID = postID
 
 	// The like is already stored; a failed publish only delays the counter
 	// until the next event on this target or the cache TTL.

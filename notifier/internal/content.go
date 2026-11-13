@@ -67,7 +67,10 @@ func (w *Worker) content(ctx context.Context, m message, eventAt time.Time) erro
 			return nil
 		}
 		if e.Name == db.EventEnumPost {
-			return w.removeSubject(ctx, db.NotificationSubjectEnumPOST, payload.ObjectID, e.ActorID, eventAt)
+			if err := w.removeSubject(ctx, db.NotificationSubjectEnumPOST, payload.ObjectID, e.ActorID, eventAt); err != nil {
+				return err
+			}
+			return w.removeThread(ctx, payload.ObjectID, e.ActorID, eventAt)
 		}
 		if err := w.removeSubject(ctx, db.NotificationSubjectEnumCOMMENT, payload.ObjectID, e.ActorID, eventAt); err != nil {
 			return err
